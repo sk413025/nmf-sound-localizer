@@ -1,0 +1,24 @@
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt
+
+# Include examples
+recursive-include examples *.py
+
+# Include configuration files
+recursive-include nmf_localizer/configs *.yaml *.json
+
+# Include package data
+recursive-include nmf_localizer *.md
+
+# Exclude development and testing files
+exclude *.pyc
+exclude .coverage
+exclude .pytest_cache
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude tests *
+recursive-exclude .github *
+recursive-exclude docs/_build *
