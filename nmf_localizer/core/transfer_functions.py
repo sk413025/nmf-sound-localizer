@@ -224,7 +224,7 @@ class TransferFunctionProcessor:
         if not self.config.apply_contrast_enhancement:
             logger.info("Contrast enhancement disabled in config")
             return H
-        
+
         H_enhanced = H.clone()
         
         for f_idx in range(H_enhanced.shape[0]):
@@ -254,8 +254,130 @@ class TransferFunctionProcessor:
         
         logger.info(f"Contrast enhancement: mean range {original_range:.4f} → {enhanced_range:.4f} "
                    f"(factor: {enhanced_range/original_range:.2f})")
-        
+
         return H_enhanced
+
+    def smooth_transfer_functions(
+        self,
+        H: torch.Tensor,
+        kernel_size: Optional[int] = None
+    ) -> torch.Tensor:
+        """
+        Smooth transfer functions along frequency axis using moving average.
+
+        Args:
+            H: Input transfer functions (F, D)
+            kernel_size: Moving average kernel size
+
+        Returns:
+            Smoothed transfer functions
+        """
+        ks = kernel_size or self.config.smoothing_kernel_size
+        ks = max(1, int(ks))
+        # Ensure odd kernel size for same-length output
+        if ks % 2 == 0:
+            ks += 1
+        if ks <= 1:
+            return H
+
+        pad = ks // 2
+        # Use 1D conv via unfold for each direction
+        H_pad = torch.nn.functional.pad(H, (0, 0, pad, pad), mode='reflect')
+        kernel = torch.ones((ks,), dtype=H.dtype, device=H.device) / ks
+        # Apply per direction (column)
+        out = torch.empty_like(H)
+        for d in range(H.shape[1]):
+            col = H_pad[:, d]
+            conv = torch.nn.functional.conv1d(
+                col.view(1, 1, -1), kernel.view(1, 1, -1), padding=0
+            ).view(-1)
+            out[:, d] = conv
+        return out
+
+    def prune_low_variance_bins(
+        self,
+        H: torch.Tensor,
+        threshold: Optional[float] = None,
+        min_bins: Optional[int] = None,
+        freqs: Optional[np.ndarray] = None
+    ) -> Tuple[torch.Tensor, np.ndarray, Dict[str, Any]]:
+        """
+        Remove frequency bins with very low directional variation.
+
+        Args:
+            H: Transfer function matrix (F, D)
+            threshold: Keep bins with range >= threshold * median(range)
+            min_bins: Minimum number of bins to keep
+            freqs: Optional frequency array to prune synchronously
+
+        Returns:
+            H_pruned, freqs_pruned, stats
+        """
+        thr = self.config.low_variance_threshold if threshold is None else threshold
+        min_keep = self.config.min_freq_bins if min_bins is None else min_bins
+
+        ranges = (H.max(dim=1)[0] - H.min(dim=1)[0]).detach().cpu()
+        median_range = torch.median(ranges)
+        keep_mask = ranges >= (thr * (median_range + self.epsilon))
+
+        # Ensure at least min_keep bins by keeping top-k ranges if needed
+        if keep_mask.sum().item() < min_keep:
+            topk = min(min_keep, len(ranges))
+            topk_idx = torch.topk(ranges, k=topk).indices
+            mask_np = torch.zeros_like(keep_mask, dtype=torch.bool)
+            mask_np[topk_idx] = True
+            keep_mask = mask_np
+
+        H_pruned = H[keep_mask, :]
+        if freqs is not None:
+            freqs_pruned = freqs[keep_mask.numpy()]
+        else:
+            freqs_pruned = np.arange(H_pruned.shape[0])
+
+        stats = {
+            'original_bins': int(H.shape[0]),
+            'kept_bins': int(H_pruned.shape[0]),
+            'median_range': float(median_range.item()),
+            'threshold': float(thr),
+        }
+        return H_pruned, freqs_pruned, stats
+
+    def compute_frequency_weights(
+        self,
+        H: torch.Tensor,
+        method: Optional[str] = None,
+        clip_factor: Optional[float] = None
+    ) -> torch.Tensor:
+        """
+        Compute per-frequency weights to emphasize informative bins.
+
+        Args:
+            H: Transfer function matrix (F, D)
+            method: 'range' or 'variance'
+            clip_factor: clip weights to mean ± factor*std
+
+        Returns:
+            weights (F,)
+        """
+        m = (method or self.config.freq_weight_method).lower()
+        cf = self.config.freq_weight_clip if clip_factor is None else clip_factor
+
+        Hc = H.detach().cpu()
+        if m == 'variance':
+            w = torch.var(Hc, dim=1)
+        else:  # default 'range'
+            w = Hc.max(dim=1)[0] - Hc.min(dim=1)[0]
+
+        # Normalize to mean 1
+        w = w / (w.mean() + self.epsilon)
+        # Clip extreme weights
+        mean = w.mean()
+        std = w.std(unbiased=False) + self.epsilon
+        lo = mean - cf * std
+        hi = mean + cf * std
+        w = torch.clamp(w, min=lo, max=hi)
+
+        return w.to(H.device)
     
     def analyze_separability(self, H: torch.Tensor) -> Dict[str, float]:
         """
@@ -353,6 +475,13 @@ class TransferFunctionProcessor:
         }
         
         H_processed = H.clone()
+
+        # Baseline separability before processing
+        try:
+            base_sep = self.analyze_separability(H_processed)
+            processing_info['baseline_separability'] = base_sep
+        except Exception:
+            pass
         
         # 1. Apply frequency limiting if frequencies are provided
         if freqs is not None:
@@ -380,17 +509,46 @@ class TransferFunctionProcessor:
             # Fall back to per-frequency normalization
             H_processed = self.normalize_transfer_functions(H_processed, method='per_freq')
             processing_info['steps_applied'].append('per_freq_normalization')
-        
-        # 3. Apply contrast enhancement
+
+        # 3. Optional smoothing to reduce narrowband spikes
+        if self.config.enable_frequency_smoothing:
+            H_processed = self.smooth_transfer_functions(
+                H_processed, kernel_size=self.config.smoothing_kernel_size
+            )
+            processing_info['steps_applied'].append('frequency_smoothing')
+
+        # 4. Optional pruning of low-variance bins
+        if self.config.enable_low_variance_pruning:
+            H_processed, pruned_freqs, prune_stats = self.prune_low_variance_bins(
+                H_processed, threshold=self.config.low_variance_threshold,
+                min_bins=self.config.min_freq_bins,
+                freqs=freqs if freqs is not None else None
+            )
+            processing_info['low_variance_pruning'] = prune_stats
+            if freqs is not None:
+                freqs = pruned_freqs
+            processing_info['steps_applied'].append('low_variance_pruning')
+
+        # 5. Apply contrast enhancement (after smoothing/pruning)
         if self.config.apply_contrast_enhancement:
             ref_idx = processing_info.get('reference_normalization', {}).get('reference_index')
-            H_processed = self.enhance_contrast(H_processed, reference_idx=ref_idx)
+            H_processed = self.enhance_contrast(
+                H_processed,
+                reference_idx=ref_idx,
+                enhancement_factor=self.config.contrast_enhancement_factor
+            )
             processing_info['steps_applied'].append('contrast_enhancement')
-        
-        # 4. Analyze final separability
+
+        # 6. Optional frequency weighting
+        if self.config.enable_auto_frequency_weights:
+            weights = self.compute_frequency_weights(H_processed)
+            processing_info['frequency_weights'] = weights
+            processing_info['steps_applied'].append('frequency_weighting')
+
+        # 7. Analyze final separability
         separability = self.analyze_separability(H_processed)
         processing_info['separability'] = separability
-        
+
         processing_info['final_shape'] = H_processed.shape
         
         logger.info(f"Transfer function processing complete:")

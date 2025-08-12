@@ -42,6 +42,7 @@ class NMFConfig:
     n_files_per_angle: int = 50
     use_90deg_reference: bool = True
     apply_contrast_enhancement: bool = True
+    contrast_enhancement_factor: float = 2.0
     
     # Data preparation
     n_speakers: int = 10
@@ -54,6 +55,16 @@ class NMFConfig:
     
     # Hardware
     device: str = 'cpu'
+
+    # Transfer function conditioning (mitigations)
+    enable_frequency_smoothing: bool = True
+    smoothing_kernel_size: int = 5
+    enable_low_variance_pruning: bool = True
+    low_variance_threshold: float = 0.1  # keep bins with range >= threshold * median(range)
+    min_freq_bins: int = 64
+    enable_auto_frequency_weights: bool = True
+    freq_weight_method: str = 'range'  # 'range' or 'variance'
+    freq_weight_clip: float = 3.0  # clip weights to mean ± factor*std
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary."""

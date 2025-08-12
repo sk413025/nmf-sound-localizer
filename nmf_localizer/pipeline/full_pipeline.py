@@ -256,6 +256,18 @@ class NMFLocalizationPipeline:
         # Load components into localizer
         self.localizer.load_source_dictionary(W)
         self.localizer.load_transfer_functions(H, angle_array)
+
+        # If processing computed frequency weights, apply them now
+        try:
+            if self.data_pack and 'frequency_weights' in self.data_pack.metadata:
+                fw = self.data_pack.metadata['frequency_weights']
+                fw_t = fw if torch.is_tensor(fw) else torch.as_tensor(
+                    fw, dtype=torch.float32, device=self.config.device
+                )
+                self.localizer.set_frequency_weights(fw_t)
+                logger.info("Applied auto-computed frequency weights to localizer")
+        except Exception as e:
+            logger.warning(f"Failed to set frequency weights: {e}")
         
         self.trained_localizer = self.localizer
         
