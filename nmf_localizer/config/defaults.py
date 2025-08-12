@@ -48,6 +48,9 @@ class NMFConfig:
     n_files_per_speaker: int = 20
     use_90deg_only: bool = True  # For USM training consistency
     
+    # Separate dataset support
+    speech_data_root: Optional[str] = None  # Path to speech dataset for USM training and testing
+    
     # Evaluation parameters
     tolerance_degrees: float = 10.0
     n_test_examples: int = 1000

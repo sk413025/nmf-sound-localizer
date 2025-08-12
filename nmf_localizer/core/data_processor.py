@@ -478,14 +478,16 @@ class DataProcessor:
     def process_full_dataset(
         self, 
         data_root: str,
-        output_dir: Optional[str] = None
+        output_dir: Optional[str] = None,
+        speech_data_root: Optional[str] = None
     ) -> DataPack:
         """
         Process complete dataset for NMF localization.
         
         Args:
-            data_root: Root data directory
+            data_root: Root data directory (for transfer function estimation)
             output_dir: Optional output directory to save results
+            speech_data_root: Optional separate path for speech data (USM training and testing)
             
         Returns:
             Complete DataPack with all processed data
@@ -496,6 +498,16 @@ class DataProcessor:
             raise FileNotFoundError(f"Data root not found: {root_path}")
         
         logger.info(f"Processing dataset from: {root_path}")
+        
+        # Determine speech data path
+        if speech_data_root is not None:
+            speech_path = Path(speech_data_root)
+            if not speech_path.exists():
+                raise FileNotFoundError(f"Speech data root not found: {speech_path}")
+            logger.info(f"Using separate speech data from: {speech_path}")
+        else:
+            speech_path = root_path
+            logger.info("Using same path for transfer functions and speech data")
         
         # Create data pack
         data_pack = DataPack()
@@ -515,23 +527,33 @@ class DataProcessor:
         # Prepare speech data
         logger.info("Preparing speech data...")
         freq_limit = H.shape[0] if H is not None else None
-        speaker_data = self.prepare_speech_data(root_path, freq_limit=freq_limit)
+        speaker_data = self.prepare_speech_data(speech_path, freq_limit=freq_limit)
         data_pack.speaker_data = speaker_data
         
         # Load test data if available
-        test_data_path = root_path.parent / "root_split" / "test"
-        if test_data_path.exists():
-            logger.info("Loading test data from root_split/test...")
+        # First try speech data split, then fall back to root data split
+        speech_test_path = speech_path.parent / "root_split" / "test" if speech_data_root else None
+        root_test_path = root_path.parent / "root_split" / "test"
+        
+        if speech_test_path and speech_test_path.exists():
+            logger.info(f"Loading test data from speech data split: {speech_test_path}")
             test_data = self.load_real_angle_test_data(
-                str(test_data_path), 
+                str(speech_test_path), 
+                self.config.n_test_examples
+            )
+            data_pack.test_data = test_data
+        elif root_test_path.exists():
+            logger.info(f"Loading test data from root data split: {root_test_path}")
+            test_data = self.load_real_angle_test_data(
+                str(root_test_path), 
                 self.config.n_test_examples
             )
             data_pack.test_data = test_data
         else:
-            # If no separate test data, create test data from main root directory
-            logger.info("No separate test data found. Creating test data from root directory...")
+            # If no separate test data, create test data from speech directory
+            logger.info("No separate test data found. Creating test data from speech data directory...")
             test_data = self.load_real_angle_test_data(
-                str(root_path), 
+                str(speech_path), 
                 min(self.config.n_test_examples, 20)  # Use fewer samples from training data
             )
             data_pack.test_data = test_data

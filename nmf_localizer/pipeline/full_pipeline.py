@@ -57,15 +57,17 @@ class NMFLocalizationPipeline:
         self, 
         data_root: Union[str, Path],
         output_dir: Optional[Union[str, Path]] = None,
-        force_reprocess: bool = False
+        force_reprocess: bool = False,
+        speech_data_root: Optional[Union[str, Path]] = None
     ) -> DataPack:
         """
         Prepare complete dataset for NMF localization.
         
         Args:
-            data_root: Root directory containing angle folders
+            data_root: Root directory containing angle folders (for TF estimation)
             output_dir: Optional output directory to save processed data
             force_reprocess: Whether to force reprocessing even if data exists
+            speech_data_root: Optional separate path for speech data
             
         Returns:
             Processed data pack
@@ -90,7 +92,9 @@ class NMFLocalizationPipeline:
         
         # Process complete dataset
         self.data_pack = self.data_processor.process_full_dataset(
-            str(data_root), output_dir=output_dir
+            str(data_root), 
+            output_dir=output_dir,
+            speech_data_root=str(speech_data_root) if speech_data_root else None
         )
         
         processing_time = time.time() - start_time
@@ -333,14 +337,18 @@ class NMFLocalizationPipeline:
         n_sources: int = 1,
         test_multiple_betas: bool = False,
         force_reprocess: bool = False,
-        save_models: bool = True
+        save_models: bool = True,
+        tf_path: Optional[Union[str, Path]] = None,
+        speech_data_root: Optional[Union[str, Path]] = None
     ) -> Dict[str, Any]:
         """
         Run complete NMF localization experiment.
         
         Args:
-            data_root: Root directory containing data
+            data_root: Root directory containing data (for TF estimation if tf_path not provided)
             output_dir: Output directory for results
+            tf_path: Optional path to pre-computed transfer functions
+            speech_data_root: Optional separate path for speech data (USM training and testing)
             n_sources: Number of sources to localize
             test_multiple_betas: Whether to test multiple beta values for USM
             force_reprocess: Whether to force data reprocessing
@@ -371,11 +379,32 @@ class NMFLocalizationPipeline:
             logger.info("\n--- STAGE 1: DATA PREPARATION ---")
             stage_start = time.time()
             
-            self.prepare_data(
-                data_root, 
-                output_dir=output_path / "processed_data",
-                force_reprocess=force_reprocess
-            )
+            # Prepare data (skip if using pre-computed transfer functions)
+            if tf_path is None:
+                self.prepare_data(
+                    data_root, 
+                    output_dir=output_path / "processed_data",
+                    force_reprocess=force_reprocess,
+                    speech_data_root=speech_data_root
+                )
+            else:
+                # Use speech data only for USM training and testing
+                if speech_data_root is None:
+                    raise ValueError("speech_data_root is required when using pre-computed transfer functions")
+                
+                # Create minimal data pack for speech processing
+                logger.info(f"Using pre-computed transfer functions from: {tf_path}")
+                logger.info(f"Processing speech data from: {speech_data_root}")
+                
+                self.data_pack = self.data_processor.process_full_dataset(
+                    str(speech_data_root),  # Use speech data as main source
+                    output_dir=output_path / "processed_data",
+                    speech_data_root=None  # Don't split since we're already using speech data
+                )
+                
+                # Clear the transfer functions - will be loaded separately
+                self.data_pack.transfer_functions = None
+                self.data_pack.angles = None
             
             experiment_results['stages']['data_preparation'] = {
                 'duration': time.time() - stage_start,
@@ -405,7 +434,12 @@ class NMFLocalizationPipeline:
             logger.info("\n--- STAGE 3: TRANSFER FUNCTION PROCESSING ---")
             stage_start = time.time()
             
-            self.load_transfer_functions()
+            if tf_path is not None:
+                # Load pre-computed transfer functions
+                self.load_transfer_functions(tf_path=tf_path)
+            else:
+                # Use transfer functions from data pack
+                self.load_transfer_functions()
             
             experiment_results['stages']['transfer_function_processing'] = {
                 'duration': time.time() - stage_start,
