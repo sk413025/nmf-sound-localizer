@@ -10,6 +10,7 @@ A modular, high-performance toolkit for **Non-negative Matrix Factorization (NMF
 ## 🎯 Features
 
 - **🔧 Modular Architecture**: Use individual components or complete pipeline
+- **🔬 Separate Datasets Support**: Eliminate data leakage with dedicated noise/speech datasets
 - **📊 Parameter Sweeps**: Automated batch experiments for optimal parameter finding
 - **📈 Comprehensive Evaluation**: Multiple metrics and sensitivity analysis
 - **🎨 Rich Visualization**: Transfer functions, results, and experimental dashboards
@@ -45,15 +46,73 @@ data/
 │   ├── clip_000.npy
 │   ├── clip_001.npy
 │   └── ...
-├── angle_18/          # 18-degree recordings  
+├── angle_05/          # 5-degree recordings (supports any interval)
 │   └── ...
-└── angle_36/          # Additional angles
+├── angle_10/          # 10-degree recordings
+│   └── ...
+└── angle_15/          # Additional angles
     └── ...
 ```
 
-Each `.npy` file contains a 1D audio signal array.
+Each `.npy` file contains a 1D audio signal array. The toolkit supports **any angle interval** (5°, 10°, 18°, etc.) and **any number of directions**.
+
+### Separate Datasets (Recommended)
+
+For scientific rigor and to eliminate data leakage:
+```
+noise_dataset/         # For transfer function estimation
+├── angle_00/
+│   ├── noise_000.npy
+│   └── ...
+├── angle_05/
+│   └── ...
+└── ...
+
+speech_dataset/        # For localization testing
+├── angle_00/
+│   ├── speech_000.npy
+│   └── ...
+├── angle_05/
+│   └── ...
+└── ...
+```
 
 ## 🔬 Advanced Usage
+
+### Separate Datasets (Eliminates Data Leakage)
+
+**Step 1**: Estimate transfer functions from noise data
+```bash
+python scripts/estimate_transfer_functions.py noise_dataset/ --output tf_noise.pth \
+  --method improved --freq-min 500 --freq-max 1500 --files-per-angle 100
+```
+
+**Step 2**: Run localization experiment with speech data
+```python
+from nmf_localizer import NMFLocalizationPipeline, NMFConfig
+
+config = NMFConfig(
+    tolerance_degrees=5.0,  # For 5-degree intervals
+    n_test_examples=500,
+    device='mps'  # Apple Silicon GPU
+)
+
+pipeline = NMFLocalizationPipeline(config)
+results = pipeline.run_full_experiment(
+    data_root="dummy",  # Not used when tf_path provided
+    tf_path="tf_noise.pth",
+    speech_data_root="speech_dataset/",
+    output_dir="results/separate_datasets"
+)
+
+print(f"Clean evaluation accuracy: {results['stages']['evaluation']['results']['accuracy']:.1f}%")
+```
+
+This approach ensures:
+- ✅ **No data leakage** between training and testing
+- ✅ **Optimal signal types**: noise for transfer functions, speech for localization
+- ✅ **Scientific rigor**: proper train/test separation
+- ✅ **Reproducible results**: reliable performance metrics
 
 ### Parameter Sweeps
 
@@ -162,8 +221,14 @@ Where:
 
 Check the `examples/` directory:
 - [`basic_experiment.py`](examples/basic_experiment.py): Simple localization experiment
+- [`separate_datasets_example.py`](examples/separate_datasets_example.py): **NEW!** Separate datasets usage
 - [`parameter_sweep.py`](examples/parameter_sweep.py): Automated parameter optimization
 - More examples in the documentation
+
+### Scripts
+
+Standalone utilities:
+- [`scripts/estimate_transfer_functions.py`](scripts/estimate_transfer_functions.py): **NEW!** Pre-compute transfer functions from noise data
 
 ## 🧪 Testing
 
