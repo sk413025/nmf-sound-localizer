@@ -126,9 +126,12 @@ class USMTrainer(nn.Module):
                 logger.info(f"NMF converged at iteration {iteration}")
                 break
                 
-        # Normalize W columns
-        W_norms = W.norm(p=2, dim=0, keepdim=True)
-        W = W / (W_norms + self.epsilon)
+        # Preserve natural diversity in W for effective group sparsity
+        W = torch.clamp(W, min=self.epsilon)
+        
+        # Cap extreme values to prevent numerical issues
+        W_max = torch.quantile(W, 0.99)
+        W = torch.clamp(W, max=W_max * 10)
         
         info = {
             'final_loss': losses[-1] if losses else float('inf'),

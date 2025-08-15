@@ -128,7 +128,7 @@ class NMFSoundLocalizer(nn.Module):
         if self.W is None or self.H is None:
             return
             
-        logger.info("=== Constructing Mixing Matrix A ===")
+        logger.info("Constructing mixing matrix A")
         logger.info(f"W shape: {self.W.shape}, H shape: {self.H.shape}")
         
         # A will be F x KD
@@ -194,6 +194,8 @@ class NMFSoundLocalizer(nn.Module):
         Compute group penalty matrix P where P_d = 1/(ε + ||vec(X_d)||_1).
         X shape: (KD x N)
         Returns P shape: (KD x N)
+        
+        Improved version with better numerical stability.
         """
         K = self.n_components
         D = self.n_directions
@@ -201,54 +203,83 @@ class NMFSoundLocalizer(nn.Module):
         
         P = torch.zeros_like(X)
         
+        # Use larger epsilon for group penalty to avoid extreme values
+        group_epsilon = max(self.epsilon, 1e-4)
+        
         for d in range(D):
             # Extract group X_d (K x N)
             start_idx = d * K
             end_idx = (d + 1) * K
             X_d = X[start_idx:end_idx, :]
             
-            # Compute group norm
-            group_norm = torch.sum(torch.abs(X_d)) + self.epsilon
+            # Compute group norm with better stability
+            group_norm = torch.sum(torch.abs(X_d)) + group_epsilon
             
-            # Set penalty for this group
-            P[start_idx:end_idx, :] = 1.0 / group_norm
+            # Set penalty for this group with reasonable upper bound
+            penalty = 1.0 / group_norm
+            max_penalty = 1000.0  # Prevent extreme penalty values
+            penalty = min(penalty, max_penalty)
+            
+            P[start_idx:end_idx, :] = penalty
             
         return P
         
     def _multiplicative_update(self, Y: torch.Tensor, X: torch.Tensor) -> torch.Tensor:
         """
-        Multiplicative update for X with sparse-group sparsity.
-        Implements Algorithm 2 from the paper.
+        Improved multiplicative update for X with proper group sparsity.
+        Uses a simpler, more stable approach for Euclidean distance (beta=2).
         """
         Y_hat = self.A @ X
         
-        # Compute group penalty matrix
-        P = self._compute_group_penalty_matrix(X)
-        
-        if self.beta == 0:  # Itakura-Saito
-            y_over_yhat2 = Y / (Y_hat ** 2 + self.epsilon)
-            inv_yhat = 1.0 / (Y_hat + self.epsilon)
+        if self.beta == 2:  # Euclidean distance - use simplified approach
+            # Standard multiplicative update
+            numerator = self.A.T @ Y
+            denominator = self.A.T @ Y_hat + self.gamma_sparse  # Small sparsity term
             
-            numerator = self.A.T @ y_over_yhat2
-            denominator = self.A.T @ inv_yhat + self.lambda_group * P + self.gamma_sparse
+            # Add mild group sparsity encouragement
+            group_penalty_matrix = torch.zeros_like(X)
+            for d in range(self.n_directions):
+                start_idx = d * self.n_components
+                end_idx = (d + 1) * self.n_components
+                X_d = X[start_idx:end_idx, :]
+                group_norm = torch.sum(torch.abs(X_d))
+                
+                # Encourage groups to be either large or small (not medium)
+                # Use mild penalty that doesn't overwhelm the data fit term
+                if group_norm > 0.1:  # If group is somewhat active
+                    penalty = -self.lambda_group * 0.01  # Small encouragement to be more active
+                else:  # If group is small
+                    penalty = self.lambda_group * 0.01   # Small encouragement to stay small
+                
+                group_penalty_matrix[start_idx:end_idx, :] = penalty
             
-            ratio = numerator / (denominator + self.epsilon)
+            # Apply update with penalty
+            ratio = (numerator + group_penalty_matrix) / (denominator + self.epsilon)
+            X_new = X * torch.clamp(ratio, min=0.1, max=10.0)  # Limit update magnitude
             
-            # Ensure ratio is non-negative before taking square root
-            ratio = torch.clamp(ratio, min=self.epsilon)
-            X_new = X * torch.sqrt(ratio)
+        else:  # Original complex updates for other beta values
+            # Compute group penalty matrix
+            P = self._compute_group_penalty_matrix(X)
             
-        elif self.beta == 2:  # Euclidean
-            numerator = self.A.T @ Y - self.lambda_group * P - self.gamma_sparse
-            denominator = self.A.T @ Y_hat
-            X_new = X * torch.clamp(numerator / (denominator + self.epsilon), min=self.epsilon)
-            
-        else:  # General beta (including KL for beta=1)
-            numerator = self.A.T @ (Y * Y_hat.pow(self.beta - 2))
-            denominator = self.A.T @ Y_hat.pow(self.beta - 1) + \
-                          self.lambda_group * P + self.gamma_sparse
-            exponent = 1.0 if self.beta == 1 else 0.5
-            X_new = X * (numerator / (denominator + self.epsilon)) ** exponent
+            if self.beta == 0:  # Itakura-Saito
+                y_over_yhat2 = Y / (Y_hat ** 2 + self.epsilon)
+                inv_yhat = 1.0 / (Y_hat + self.epsilon)
+                
+                numerator = self.A.T @ y_over_yhat2
+                denominator = self.A.T @ inv_yhat + self.lambda_group * P + self.gamma_sparse
+                
+                ratio = numerator / (denominator + self.epsilon)
+                
+                # Ensure ratio is non-negative before taking square root
+                ratio = torch.clamp(ratio, min=self.epsilon)
+                X_new = X * torch.sqrt(ratio)
+                
+            else:  # General beta (including KL for beta=1)
+                numerator = self.A.T @ (Y * Y_hat.pow(self.beta - 2))
+                denominator = self.A.T @ Y_hat.pow(self.beta - 1) + \
+                              self.lambda_group * P + self.gamma_sparse
+                exponent = 1.0 if self.beta == 1 else 0.5
+                X_new = X * (numerator / (denominator + self.epsilon)) ** exponent
         
         # Replace nan and inf values with epsilon
         X_new = torch.where(torch.isnan(X_new) | torch.isinf(X_new), self.epsilon, X_new)
@@ -274,7 +305,7 @@ class NMFSoundLocalizer(nn.Module):
         if F != self.n_freq:
             raise ValueError(f"Expected {self.n_freq} frequency bins, got {F}")
         
-        logger.info(f"=== NMF Factorization ===")
+        logger.info("Starting NMF factorization")
         logger.info(f"Input Y shape: {Y.shape}")
         logger.info(f"A shape: {self.A.shape}")
 
@@ -282,20 +313,28 @@ class NMFSoundLocalizer(nn.Module):
         if self.freq_weights is not None:
             Y = self.freq_weights.view(-1, 1) * Y
         
-        # Initialize X = A^T @ Y
-        X = self.A.T @ Y
-        
-        # Better initialization: use random positive values if too small
-        if X.mean() < 1e-6:
-            logger.info("X too small, using random initialization")
-            X = torch.rand_like(X) * Y.mean() * 0.1 + self.epsilon
-        else:
+        # Improved initialization strategy
+        # Method 1: Use pseudo-inverse for better initial guess
+        try:
+            A_pinv = torch.pinverse(self.A)
+            X_pinv = A_pinv @ Y
+            X_pinv = torch.clamp(torch.abs(X_pinv), min=self.epsilon)
+            logger.info("Using pseudo-inverse initialization")
+            X = X_pinv
+        except:
+            logger.info("Pseudo-inverse failed, using random initialization")
+            Y_mean = Y.mean()
+            X = torch.rand(self.A.shape[1], N, device=self.device) * Y_mean * 0.1
             X = torch.clamp(X, min=self.epsilon)
         
-        # Add small random noise to avoid getting stuck
-        noise = torch.rand_like(X) * X.mean() * 0.01
-        X = X + noise
-        logger.info(f"X initialized: shape={X.shape}, min={X.min():.6f}, max={X.max():.6f}")
+        # Better initialization check
+        if X.mean() < 1e-6:
+            logger.info("X still too small, using scaled random initialization")
+            Y_mean = Y.mean()
+            X = torch.rand(self.A.shape[1], N, device=self.device) * Y_mean * 0.5
+            X = torch.clamp(X, min=self.epsilon)
+        
+        logger.info(f"X initialized: shape={X.shape}, min={X.min():.6f}, max={X.max():.6f}, mean={X.mean():.6f}")
         
         losses = []
         
@@ -307,19 +346,22 @@ class NMFSoundLocalizer(nn.Module):
             Y_hat = self.A @ X
             data_fit = self._beta_divergence(Y, Y_hat)
             
-            # Group sparsity penalty (log/l1)
-            group_penalty = 0
+            # Group sparsity penalty: count number of active groups
+            active_groups = 0
+            group_norms = []
             for d in range(self.n_directions):
                 start_idx = d * self.n_components
                 end_idx = (d + 1) * self.n_components
                 X_d = X[start_idx:end_idx, :]
                 group_norm = torch.sum(torch.abs(X_d))
-                group_penalty += torch.log(self.epsilon + group_norm)
+                group_norms.append(group_norm)
+                if group_norm > 0.1:  # Threshold for "active" group
+                    active_groups += 1
                 
             # Sparsity penalty (l1)
             sparse_penalty = torch.sum(torch.abs(X))
             
-            total_loss = data_fit + self.lambda_group * group_penalty + \
+            total_loss = data_fit + self.lambda_group * active_groups + \
                         self.gamma_sparse * sparse_penalty
             losses.append(total_loss.item())
             
@@ -366,7 +408,7 @@ class NMFSoundLocalizer(nn.Module):
         
         # Calculate group norms
         group_norms = torch.zeros(self.n_directions, device=self.device)
-        logger.info("=== Computing Group Norms ===")
+        logger.info("Computing group norms for localization")
         
         for d in range(self.n_directions):
             start_idx = d * self.n_components
@@ -374,11 +416,6 @@ class NMFSoundLocalizer(nn.Module):
             X_d = X[start_idx:end_idx, :]
             group_norm = torch.sum(torch.abs(X_d))
             group_norms[d] = group_norm
-            
-            if d < 3:  # Log first few groups
-                logger.info(f"Group {d}: indices [{start_idx}:{end_idx}], "
-                           f"norm: {group_norm:.6f}")
-            
         # Select top n_sources directions
         _, source_indices = torch.topk(group_norms, n_sources)
         

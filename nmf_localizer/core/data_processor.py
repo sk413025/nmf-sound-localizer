@@ -43,140 +43,171 @@ class DataProcessor:
     
     def estimate_transfer_functions(
         self, 
-        root_path: Path,
-        method: str = 'improved'
+        original_root: Path,
+        box_root: Path,
+        method: str = 'xy_correspondence'
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Path], Dict[str, Any]]:
         """
-        Estimate transfer functions from angle folders.
+        Estimate transfer functions using X-Y correspondence: H = Y / X.
         
         Args:
-            root_path: Path to root directory
-            method: 'simple' (original) or 'improved' (Welch method)
+            original_root: Path to original data (X)
+            box_root: Path to box recordings (Y)
+            method: Transfer function estimation method
         
         Returns:
-            H: Transfer functions (linear or normalized)
+            H: Transfer functions [freq × directions] 
             angles: Angle array
             angle_folders: List of angle folders
             metadata: Additional information (freqs, etc.)
         """
-        # Get all angle folders
-        angle_folders = sorted([d for d in root_path.iterdir() 
-                               if d.is_dir() and d.name.startswith('angle_')])
-        logger.info(f"Found {len(angle_folders)} angle folders")
+        # Get angle folders from both datasets
+        original_angles = sorted([d for d in original_root.iterdir() 
+                                 if d.is_dir() and d.name.startswith('angle_')])
+        box_angles = sorted([d for d in box_root.iterdir() 
+                            if d.is_dir() and d.name.startswith('angle_')])
+        
+        # Verify correspondence between original and box data
+        if len(original_angles) != len(box_angles):
+            raise ValueError(f"Angle count mismatch: {len(original_angles)} original vs {len(box_angles)} box angles")
+        
+        logger.info(f"Found {len(original_angles)} angle pairs for X-Y transfer function estimation")
         
         # Map angle names to degrees
         angle_mapping = {}
-        for folder in angle_folders:
+        for folder in original_angles:
             angle_str = folder.name.replace('angle_', '')
             angle_mapping[folder.name] = int(angle_str)
         
         # Sort by angle value
-        angle_folders = sorted(angle_folders, key=lambda x: angle_mapping[x.name])
-        n_directions = len(angle_folders)
+        original_angles = sorted(original_angles, key=lambda x: angle_mapping[x.name])
+        box_angles = sorted(box_angles, key=lambda x: angle_mapping[x.name])
+        n_directions = len(original_angles)
         
         # Load sample file to get dimensions
-        sample_files = list(angle_folders[0].glob('*.npy'))
+        sample_files = list(original_angles[0].glob('*.npy'))
         if not sample_files:
-            raise ValueError(f"No .npy files found in {angle_folders[0]}")
+            raise ValueError(f"No .npy files found in {original_angles[0]}")
         
         sample_data = np.load(sample_files[0])
         logger.info(f"Sample data shape: {sample_data.shape}")
-        logger.info(f"Number of angle folders: {n_directions}")
+        logger.info(f"Number of angle pairs: {n_directions}")
         
-        # Check if data is waveform or spectrogram
-        if sample_data.ndim == 1:
-            is_waveform = True
-            if method == 'improved':
-                n_freq = 1025  # Default for Welch with nperseg=2048
-            else:
-                n_freq = 513   # Default for STFT with n_fft=1024
-        else:
-            # Assume data is already spectrograms (F x T)
-            n_freq = sample_data.shape[0]
-            is_waveform = False
-            method = 'simple'  # Force simple method for pre-computed spectrograms
+        # Assume waveform data for X-Y correspondence method
+        is_waveform = True
+        logger.info(f"Estimating transfer functions using X-Y correspondence method...")
         
         # Initialize transfer functions
-        all_magnitudes_linear = []
+        all_transfer_functions = []
+        angles = []
         freqs = None
         
-        logger.info(f"Estimating transfer functions using {method} method...")
-        logger.info(f"Expected freq bins: {n_freq}")
-        
-        for i, folder in enumerate(tqdm(angle_folders)):
-            # Load files from this angle
-            data = self.load_npy_files(folder, max_files=self.config.n_files_per_angle)
+        for orig_folder, box_folder in tqdm(zip(original_angles, box_angles), 
+                                           desc="Processing angle pairs"):
+            angle_str = orig_folder.name.replace('angle_', '')
+            angle_deg = int(angle_str)
+            angles.append(angle_deg)
             
-            if not data:
-                logger.warning(f"No data found for {folder.name}")
-                continue
+            # Load corresponding files (X and Y)
+            orig_files = sorted(list(orig_folder.glob('*.npy')))[:self.config.n_files_per_angle]
+            box_files = sorted(list(box_folder.glob('*.npy')))[:self.config.n_files_per_angle]
+            
+            if len(orig_files) != len(box_files):
+                logger.warning(f"File count mismatch for angle {angle_deg}°: {len(orig_files)} vs {len(box_files)}")
+            
+            logger.info(f"Processing angle {angle_deg}° with {len(orig_files)} file pairs")
+            
+            # Estimate transfer function for this angle
+            angle_transfer_functions = []
+            
+            for orig_file, box_file in zip(orig_files, box_files):
+                # Load X (original) and Y (box recording)
+                x = np.load(orig_file)  # Source signal
+                y = np.load(box_file)   # Observed signal
                 
-            # Compute magnitude response for each file
-            angle_magnitudes_linear = []
+                # Compute STFT for both signals
+                f, _, X_stft = signal.stft(
+                    x, fs=self.config.sample_rate, nperseg=self.config.n_fft,
+                    noverlap=self.config.n_fft - self.config.hop_length, window='hann'
+                )
+                _, _, Y_stft = signal.stft(
+                    y, fs=self.config.sample_rate, nperseg=self.config.n_fft,
+                    noverlap=self.config.n_fft - self.config.hop_length, window='hann'
+                )
+                
+                # Estimate transfer function: H = Y / X (element-wise in frequency domain)
+                epsilon = 1e-10
+                H_complex = Y_stft / (X_stft + epsilon)
+                H_magnitude = np.abs(H_complex)
+                
+                # Average over time to get transfer function per frequency
+                H_avg = np.mean(H_magnitude, axis=1)
+                angle_transfer_functions.append(H_avg)
+                
+                if freqs is None:
+                    freqs = f
+                    logger.info(f"Frequency array shape: {len(freqs)}, range: {freqs[0]:.1f} - {freqs[-1]:.1f} Hz")
             
-            for waveform in data:
-                if is_waveform:
-                    if method == 'improved':
-                        # Use STFT method to preserve temporal information
-                        f, times, stft, magnitude = self.audio_processor.compute_stft_spectrogram(
-                            waveform, fs=self.config.sample_rate, 
-                            nperseg=self.config.n_fft, window=self.config.window
-                        )
-                        # Average over time to get transfer function estimate
-                        avg_magnitude = np.mean(magnitude, axis=1)
-                    else:
-                        # Original method
-                        f, avg_magnitude = self.audio_processor.compute_magnitude_response(
-                            waveform, fs=self.config.sample_rate, method='spectrogram'
-                        )
-                        
-                    if freqs is None:
-                        freqs = f
-                        logger.info(f"Frequency array shape: {len(freqs)}, range: {freqs[0]:.1f} - {freqs[-1]:.1f} Hz")
-                        
-                    if i == 0 and len(angle_magnitudes_linear) == 0:
-                        logger.info(f"Magnitude response shape for angle {i}: {len(avg_magnitude)}")
-                        
-                    angle_magnitudes_linear.append(avg_magnitude)
-                else:
-                    # Already a spectrogram - use simple averaging
-                    if np.iscomplexobj(waveform):
-                        waveform = np.abs(waveform)
-                    if waveform.ndim > 1:
-                        avg_spec = np.mean(waveform, axis=1)
-                    else:
-                        avg_spec = waveform
-                    angle_magnitudes_linear.append(avg_spec)
-            
-            # Average in linear domain
-            avg_linear = np.mean(angle_magnitudes_linear, axis=0)
-            all_magnitudes_linear.append(avg_linear)
+            # Average transfer functions across files for this angle
+            avg_tf = np.mean(angle_transfer_functions, axis=0)
+            all_transfer_functions.append(avg_tf)
+            logger.info(f"Angle {angle_deg}°: TF shape {avg_tf.shape}, mean magnitude: {np.mean(avg_tf):.4f}")
         
-        # Convert to tensors
-        H_linear = torch.tensor(np.array(all_magnitudes_linear).T, dtype=torch.float32)
-        logger.info(f"Raw H shape - linear: {H_linear.shape}")
+        # Convert to tensor format
+        H = torch.tensor(np.array(all_transfer_functions).T, dtype=torch.float32)  # [freq × directions]
+        angles_tensor = torch.tensor(angles, dtype=torch.float32)
         
-        # Apply processing based on method
-        if method == 'improved':
-            H_linear = self._apply_improved_processing(H_linear, angle_mapping, angle_folders, freqs)
-        else:
-            # Simple normalization: global normalization
-            H_max = H_linear.max()
-            H_linear = H_linear / H_max
-            logger.info(f"H max value before normalization: {H_max:.4f}")
+        logger.info(f"Raw H shape: {H.shape}")
         
-        # Create angle array (in degrees)
-        angles = torch.tensor([angle_mapping[f.name] for f in angle_folders], dtype=torch.float32)
-        logger.info(f"Angles array: {angles.tolist()}")
+        # Apply frequency filtering
+        freq_mask = (freqs >= self.config.freq_min) & (freqs <= self.config.freq_max)
+        H_filtered = H[freq_mask, :]
+        freqs_filtered = freqs[freq_mask]
+        
+        # Apply processing similar to improved method
+        if method == 'xy_correspondence':
+            # Find 90-degree reference if available
+            if 90 in angles:
+                ref_idx = angles.index(90)
+                reference_spectrum = H_filtered[:, ref_idx:ref_idx+1]
+                logger.info(f"Using angle 90° (index {ref_idx}) as reference")
+                
+                # Compute relative transfer functions
+                H_filtered = H_filtered / (reference_spectrum + 1e-10)
+                
+                # Apply per-frequency contrast enhancement
+                for f_idx in range(H_filtered.shape[0]):
+                    freq_responses = H_filtered[f_idx, :]
+                    min_val = freq_responses.min()
+                    max_val = freq_responses.max()
+                    if max_val > min_val:
+                        H_filtered[f_idx, :] = (freq_responses - min_val) / (max_val - min_val)
+                
+                logger.info("Applied contrast enhancement")
+            else:
+                # Fallback: global normalization
+                H_max = H_filtered.max()
+                H_filtered = H_filtered / H_max
+                logger.info(f"Applied global normalization: max={H_max:.4f}")
+        
+        # Apply frequency band limit
+        logger.info(f"Applied {self.config.freq_min}-{self.config.freq_max}Hz band limit: {H_filtered.shape[0]} freq bins")
+        
+        logger.info(f"Transfer function estimation complete:")
+        logger.info(f"  H shape: {H_filtered.shape} (freq × directions)")
+        logger.info(f"  Frequency range: {self.config.freq_min}-{self.config.freq_max} Hz")
+        logger.info(f"  Angles: {angles}")
+        logger.info(f"  H statistics: min={H_filtered.min():.4f}, max={H_filtered.max():.4f}, mean={H_filtered.mean():.4f}")
         
         # Create metadata
         metadata = {
             'method': method,
-            'freqs': freqs,
-            'n_files_per_angle': self.config.n_files_per_angle
+            'freqs': freqs_filtered,
+            'n_files_per_angle': self.config.n_files_per_angle,
+            'x_y_correspondence': True
         }
         
-        return H_linear, angles, angle_folders, metadata
+        return H_filtered, angles_tensor, original_angles, metadata
     
     def _apply_improved_processing(
         self, 

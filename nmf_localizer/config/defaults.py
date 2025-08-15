@@ -25,8 +25,8 @@ class NMFConfig:
     
     # NMF parameters
     beta: float = 0.0  # 0: IS divergence, 1: KL, 2: Euclidean
-    lambda_group: float = 20.0  # Group sparsity weight
-    gamma_sparse: float = 1.0   # Sparsity weight
+    lambda_group: float = 5.0   # Group sparsity weight (reduced for stability)
+    gamma_sparse: float = 0.1   # Sparsity weight (reduced for stability)
     max_iter: int = 100
     tolerance: float = 1e-4
     epsilon: float = 1e-8
