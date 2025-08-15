@@ -164,31 +164,40 @@ class DataProcessor:
         H_filtered = H[freq_mask, :]
         freqs_filtered = freqs[freq_mask]
         
-        # Apply processing similar to improved method
+        # Apply processing that preserves relative differences between angles
         if method == 'xy_correspondence':
-            # Find 90-degree reference if available
-            if 90 in angles:
-                ref_idx = angles.index(90)
-                reference_spectrum = H_filtered[:, ref_idx:ref_idx+1]
-                logger.info(f"Using angle 90° (index {ref_idx}) as reference")
+            # Use mean normalization instead of 90-degree reference to avoid bias
+            mean_spectrum = torch.mean(H_filtered, dim=1, keepdim=True)
+            logger.info("Using mean spectrum as reference (no angle bias)")
+            
+            # Compute relative transfer functions against mean
+            H_filtered = H_filtered / (mean_spectrum + 1e-10)
+            
+            # Apply mild global contrast enhancement that preserves relative differences
+            # Only normalize globally, not per-frequency to maintain angle discrimination
+            H_min = H_filtered.min()
+            H_max = H_filtered.max()
+            if H_max > H_min:
+                # Preserve dynamic range while ensuring all values are positive
+                H_filtered = (H_filtered - H_min) / (H_max - H_min) * 0.8 + 0.1
+            
+            logger.info(f"Applied global contrast enhancement: range [{H_min:.4f}, {H_max:.4f}] -> [0.1, 0.9]")
+            
+            # Apply contrast enhancement only in the frequency domain (not per-frequency)
+            if self.config.apply_contrast_enhancement:
+                # Enhance differences across angles while preserving frequency structure
+                for d in range(H_filtered.shape[1]):
+                    angle_response = H_filtered[:, d]
+                    # Mild enhancement that preserves relative magnitudes
+                    enhanced = torch.pow(angle_response, 0.8)  # Mild power law
+                    H_filtered[:, d] = enhanced
                 
-                # Compute relative transfer functions
-                H_filtered = H_filtered / (reference_spectrum + 1e-10)
-                
-                # Apply per-frequency contrast enhancement
-                for f_idx in range(H_filtered.shape[0]):
-                    freq_responses = H_filtered[f_idx, :]
-                    min_val = freq_responses.min()
-                    max_val = freq_responses.max()
-                    if max_val > min_val:
-                        H_filtered[f_idx, :] = (freq_responses - min_val) / (max_val - min_val)
-                
-                logger.info("Applied contrast enhancement")
-            else:
-                # Fallback: global normalization
-                H_max = H_filtered.max()
-                H_filtered = H_filtered / H_max
-                logger.info(f"Applied global normalization: max={H_max:.4f}")
+                logger.info("Applied frequency-preserving contrast enhancement")
+        else:
+            # Fallback: simple global normalization
+            H_max = H_filtered.max()
+            H_filtered = H_filtered / H_max
+            logger.info(f"Applied global normalization: max={H_max:.4f}")
         
         # Apply frequency band limit
         logger.info(f"Applied {self.config.freq_min}-{self.config.freq_max}Hz band limit: {H_filtered.shape[0]} freq bins")

@@ -231,31 +231,42 @@ class NMFSoundLocalizer(nn.Module):
         """
         Y_hat = self.A @ X
         
-        if self.beta == 2:  # Euclidean distance - use simplified approach
+        if self.beta == 2:  # Euclidean distance - use improved group sparsity
             # Standard multiplicative update
             numerator = self.A.T @ Y
             denominator = self.A.T @ Y_hat + self.gamma_sparse  # Small sparsity term
             
-            # Add mild group sparsity encouragement
-            group_penalty_matrix = torch.zeros_like(X)
+            # Compute proper competitive group sparsity penalty
+            group_norms = torch.zeros(self.n_directions, device=self.device)
             for d in range(self.n_directions):
                 start_idx = d * self.n_components
                 end_idx = (d + 1) * self.n_components
                 X_d = X[start_idx:end_idx, :]
-                group_norm = torch.sum(torch.abs(X_d))
+                group_norms[d] = torch.sum(torch.abs(X_d))
+            
+            # Winner-takes-all: encourage the strongest group, suppress others
+            max_group_norm = torch.max(group_norms)
+            group_penalty_matrix = torch.zeros_like(X)
+            
+            for d in range(self.n_directions):
+                start_idx = d * self.n_components
+                end_idx = (d + 1) * self.n_components
                 
-                # Encourage groups to be either large or small (not medium)
-                # Use mild penalty that doesn't overwhelm the data fit term
-                if group_norm > 0.1:  # If group is somewhat active
-                    penalty = -self.lambda_group * 0.01  # Small encouragement to be more active
-                else:  # If group is small
-                    penalty = self.lambda_group * 0.01   # Small encouragement to stay small
+                # Competitive penalty: encourage winner, suppress losers
+                if group_norms[d] >= max_group_norm * 0.8:  # Top groups
+                    penalty = -self.lambda_group * 0.5  # Strong encouragement
+                elif group_norms[d] >= max_group_norm * 0.3:  # Medium groups
+                    penalty = self.lambda_group * 0.8   # Strong suppression
+                else:  # Weak groups
+                    penalty = self.lambda_group * 0.2   # Mild suppression
                 
                 group_penalty_matrix[start_idx:end_idx, :] = penalty
             
-            # Apply update with penalty
-            ratio = (numerator + group_penalty_matrix) / (denominator + self.epsilon)
-            X_new = X * torch.clamp(ratio, min=0.1, max=10.0)  # Limit update magnitude
+            # Apply update with competitive penalty
+            ratio = numerator / (denominator + torch.abs(group_penalty_matrix) + self.epsilon)
+            # Apply penalty direction (encourage/suppress)
+            penalty_factor = torch.where(group_penalty_matrix < 0, 1.2, 0.8)
+            X_new = X * ratio * penalty_factor
             
         else:  # Original complex updates for other beta values
             # Compute group penalty matrix
@@ -313,19 +324,24 @@ class NMFSoundLocalizer(nn.Module):
         if self.freq_weights is not None:
             Y = self.freq_weights.view(-1, 1) * Y
         
-        # Improved initialization strategy
-        # Method 1: Use pseudo-inverse for better initial guess
-        try:
-            A_pinv = torch.pinverse(self.A)
-            X_pinv = A_pinv @ Y
-            X_pinv = torch.clamp(torch.abs(X_pinv), min=self.epsilon)
-            logger.info("Using pseudo-inverse initialization")
-            X = X_pinv
-        except:
-            logger.info("Pseudo-inverse failed, using random initialization")
-            Y_mean = Y.mean()
-            X = torch.rand(self.A.shape[1], N, device=self.device) * Y_mean * 0.1
-            X = torch.clamp(X, min=self.epsilon)
+        # Improved competitive initialization strategy
+        # Use randomized sparse initialization to encourage group competition
+        logger.info("Using competitive sparse initialization")
+        Y_mean = Y.mean()
+        X = torch.zeros(self.A.shape[1], N, device=self.device)
+        
+        # Initialize each group independently with different random seeds
+        for d in range(self.n_directions):
+            start_idx = d * self.n_components
+            end_idx = (d + 1) * self.n_components
+            
+            # Each group gets different initialization strength
+            group_strength = torch.rand(1, device=self.device) * 0.5 + 0.1  # 0.1 to 0.6
+            X[start_idx:end_idx, :] = torch.rand(
+                self.n_components, N, device=self.device
+            ) * Y_mean * group_strength
+        
+        X = torch.clamp(X, min=self.epsilon)
         
         # Better initialization check
         if X.mean() < 1e-6:
