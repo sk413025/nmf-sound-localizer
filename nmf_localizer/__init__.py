@@ -1,8 +1,9 @@
 """
-NMF Localizer Package
+NMF Sound Localizer
 
-A modular toolkit for traditional NMF-based sound source localization.
-Provides reusable components for large-scale experiments.
+A modular toolkit for NMF-based sound source localization with fixed group sparsity.
+Supports separate datasets workflow to eliminate data leakage.
+
 """
 
 from .pipeline.full_pipeline import NMFLocalizationPipeline
@@ -20,7 +21,7 @@ __all__ = [
     "NMFLocalizationPipeline",
     "ExperimentRunner", 
     "NMFConfig",
-    "DataProcessor",
+    "DataProcessor", 
     "USMTrainer",
     "NMFSoundLocalizer",
     "Evaluator",
