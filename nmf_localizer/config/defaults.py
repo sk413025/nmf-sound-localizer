@@ -32,6 +32,11 @@ class NMFConfig:
     epsilon: float = 1e-8
     normalize_blocks: bool = False
     
+    # IS-divergence safety parameters
+    transfer_epsilon: float = 1e-5      # Minimum value for transfer functions (A matrix regularization)
+    reconstruction_epsilon: float = 1e-5 # Minimum value for Y_hat reconstruction (safe X updates)
+    gradient_clip_max: float = 1e3      # Maximum gradient ratio for numerical stability
+    
     # USM parameters
     n_atoms_per_speaker: int = 50
     usm_sparsity_weight: float = 0.1

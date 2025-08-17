@@ -48,6 +48,11 @@ class NMFSoundLocalizer(nn.Module):
         self.device = config.device
         self.normalize_blocks = config.normalize_blocks
         
+        # IS-divergence safety parameters
+        self.transfer_epsilon = config.transfer_epsilon
+        self.reconstruction_epsilon = config.reconstruction_epsilon
+        self.gradient_clip_max = config.gradient_clip_max
+        
         # Components (will be loaded)
         self.W = None  # Source dictionary
         self.H = None  # Transfer functions
@@ -124,20 +129,31 @@ class NMFSoundLocalizer(nn.Module):
             self._construct_mixing_matrix()
             
     def _construct_mixing_matrix(self):
-        """Construct mixing matrix A = [diag(H_1)W, ..., diag(H_D)W]."""
+        """Construct mixing matrix A = [diag(H_1)W, ..., diag(H_D)W] with A matrix regularization."""
         if self.W is None or self.H is None:
             return
             
-        logger.info("Constructing mixing matrix A")
+        logger.info("Constructing mixing matrix A with regularization")
         logger.info(f"W shape: {self.W.shape}, H shape: {self.H.shape}")
+        
+        # Apply A matrix regularization: clamp H values to prevent numerical issues
+        if self.beta == 0:  # IS-divergence requires special handling
+            H_regularized = torch.clamp(self.H, min=self.transfer_epsilon)
+            h_clamped_count = (self.H < self.transfer_epsilon).sum().item()
+            if h_clamped_count > 0:
+                logger.info(f"A matrix regularization: clamped {h_clamped_count} H values below {self.transfer_epsilon}")
+                logger.info(f"H original range: [{self.H.min():.6f}, {self.H.max():.6f}]")
+                logger.info(f"H regularized range: [{H_regularized.min():.6f}, {H_regularized.max():.6f}]")
+        else:
+            H_regularized = self.H
         
         # A will be F x KD
         A_blocks = []
         block_norms = []
         
         for d in range(self.n_directions):
-            # diag(H_d) @ W
-            H_d_diag = torch.diag(self.H[:, d])
+            # diag(H_d) @ W using regularized H
+            H_d_diag = torch.diag(H_regularized[:, d])
             A_d = H_d_diag @ self.W
             
             if d == 0:  # Log first block
@@ -272,17 +288,31 @@ class NMFSoundLocalizer(nn.Module):
             # Compute group penalty matrix
             P = self._compute_group_penalty_matrix(X)
             
-            if self.beta == 0:  # Itakura-Saito
-                y_over_yhat2 = Y / (Y_hat ** 2 + self.epsilon)
-                inv_yhat = 1.0 / (Y_hat + self.epsilon)
+            if self.beta == 0:  # Itakura-Saito with safe X updates
+                # Apply reconstruction regularization to prevent division by zero
+                Y_hat_safe = torch.clamp(Y_hat, min=self.reconstruction_epsilon)
+                
+                # Check how many values were clamped for monitoring
+                clamped_count = (Y_hat < self.reconstruction_epsilon).sum().item()
+                if clamped_count > 0:
+                    logger.debug(f"Safe X updates: clamped {clamped_count} Y_hat values below {self.reconstruction_epsilon}")
+                
+                # Safe IS-divergence gradient computation
+                y_over_yhat2 = Y / (Y_hat_safe ** 2)
+                inv_yhat = 1.0 / Y_hat_safe
                 
                 numerator = self.A.T @ y_over_yhat2
                 denominator = self.A.T @ inv_yhat + self.lambda_group * P + self.gamma_sparse
                 
+                # Additional numerical stability: limit gradient ratio range
                 ratio = numerator / (denominator + self.epsilon)
+                ratio = torch.clamp(ratio, min=self.epsilon, max=self.gradient_clip_max)
                 
-                # Ensure ratio is non-negative before taking square root
-                ratio = torch.clamp(ratio, min=self.epsilon)
+                # Monitor extreme ratios
+                max_ratio = ratio.max().item()
+                if max_ratio > self.gradient_clip_max * 0.8:
+                    logger.debug(f"Safe X updates: gradient ratio approaching clip limit: {max_ratio:.2f}")
+                
                 X_new = X * torch.sqrt(ratio)
                 
             else:  # General beta (including KL for beta=1)
