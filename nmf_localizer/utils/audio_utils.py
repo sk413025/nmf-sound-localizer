@@ -195,3 +195,114 @@ class AudioProcessor:
                     enhanced[f_idx, :] = (freq_values - min_val) / range_val * enhancement_factor + min_val
                     
         return enhanced
+    
+    @staticmethod
+    def reconstruct_audio_from_spectrogram(
+        magnitude_spec: np.ndarray,
+        phase_spec: Optional[np.ndarray] = None,
+        fs: int = 16000,
+        nperseg: int = 2048,
+        noverlap: Optional[int] = None,
+        window: str = 'hann'
+    ) -> np.ndarray:
+        """
+        Reconstruct audio waveform from magnitude spectrogram using ISTFT.
+        
+        Args:
+            magnitude_spec: Magnitude spectrogram (freq x time)
+            phase_spec: Phase spectrogram (optional, if None uses random phase)
+            fs: Sampling frequency
+            nperseg: Length of each segment
+            noverlap: Number of points to overlap
+            window: Window function
+            
+        Returns:
+            Reconstructed audio waveform
+        """
+        if noverlap is None:
+            noverlap = int(nperseg * 0.75)
+        
+        # If no phase provided, use random phase or Griffin-Lim algorithm
+        if phase_spec is None:
+            # Simple random phase initialization
+            phase_spec = np.random.uniform(0, 2*np.pi, magnitude_spec.shape)
+        
+        # Reconstruct complex spectrogram
+        complex_spec = magnitude_spec * np.exp(1j * phase_spec)
+        
+        # Inverse STFT
+        _, reconstructed_audio = signal.istft(
+            complex_spec,
+            fs=fs,
+            window=window,
+            nperseg=nperseg,
+            noverlap=noverlap
+        )
+        
+        return reconstructed_audio
+    
+    @staticmethod
+    def griffin_lim_reconstruction(
+        magnitude_spec: np.ndarray,
+        fs: int = 16000,
+        nperseg: int = 2048,
+        noverlap: Optional[int] = None,
+        window: str = 'hann',
+        n_iter: int = 50
+    ) -> np.ndarray:
+        """
+        Reconstruct audio from magnitude spectrogram using Griffin-Lim algorithm.
+        
+        Args:
+            magnitude_spec: Magnitude spectrogram (freq x time)
+            fs: Sampling frequency
+            nperseg: Length of each segment
+            noverlap: Number of points to overlap
+            window: Window function
+            n_iter: Number of Griffin-Lim iterations
+            
+        Returns:
+            Reconstructed audio waveform
+        """
+        if noverlap is None:
+            noverlap = int(nperseg * 0.75)
+        
+        # Initialize with random phase
+        phase = np.random.uniform(0, 2*np.pi, magnitude_spec.shape)
+        
+        for i in range(n_iter):
+            # Reconstruct complex spectrogram
+            complex_spec = magnitude_spec * np.exp(1j * phase)
+            
+            # ISTFT to get audio
+            _, audio = signal.istft(
+                complex_spec,
+                fs=fs,
+                window=window,
+                nperseg=nperseg,
+                noverlap=noverlap
+            )
+            
+            # STFT to get new phase
+            _, _, new_complex_spec = signal.stft(
+                audio,
+                fs=fs,
+                window=window,
+                nperseg=nperseg,
+                noverlap=noverlap
+            )
+            
+            # Update phase while keeping magnitude fixed
+            phase = np.angle(new_complex_spec)
+        
+        # Final reconstruction
+        final_complex_spec = magnitude_spec * np.exp(1j * phase)
+        _, reconstructed_audio = signal.istft(
+            final_complex_spec,
+            fs=fs,
+            window=window,
+            nperseg=nperseg,
+            noverlap=noverlap
+        )
+        
+        return reconstructed_audio

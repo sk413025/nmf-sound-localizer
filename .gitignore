@@ -135,7 +135,7 @@ outputs/
 *.pt
 *.pkl
 *.npy
-*.wav
+# *.wav  # Now tracked by Git LFS
 *.png
 *.jpg
 *.pdf
@@ -155,6 +155,8 @@ datasets/
 root/
 experiments/
 results/
+# Allow tests/data/ for test audio files
+!tests/data/
 
 # Temporary files
 tmp/
