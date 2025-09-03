@@ -11,6 +11,7 @@ from .pipeline.experiment_runner import ExperimentRunner
 from .config.defaults import NMFConfig
 from .core.data_processor import DataProcessor
 from .core.usm_trainer import USMTrainer
+from .core.stft_unified_processor import STFTUnifiedProcessor
 from .core.localizer import NMFSoundLocalizer
 from .core.evaluator import Evaluator
 
@@ -23,6 +24,7 @@ __all__ = [
     "NMFConfig",
     "DataProcessor", 
     "USMTrainer",
+    "STFTUnifiedProcessor",
     "NMFSoundLocalizer",
     "Evaluator",
 ]

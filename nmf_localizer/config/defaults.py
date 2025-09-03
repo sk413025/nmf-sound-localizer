@@ -42,8 +42,7 @@ class NMFConfig:
     usm_sparsity_weight: float = 0.1
     usm_max_iter: int = 200
     
-    # Transfer function estimation
-    tf_method: str = 'improved'  # 'simple' or 'improved'
+    # Transfer function estimation (now uses STFT-unified approach only)
     n_files_per_angle: int = 50
     use_90deg_reference: bool = True
     apply_contrast_enhancement: bool = True
