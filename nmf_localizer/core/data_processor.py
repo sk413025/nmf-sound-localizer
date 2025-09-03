@@ -125,23 +125,37 @@ class DataProcessor:
                 x = np.load(orig_file)  # Source signal
                 y = np.load(box_file)   # Observed signal
                 
-                # Compute STFT for both signals
-                f, _, X_stft = signal.stft(
-                    x, fs=self.config.sample_rate, nperseg=self.config.n_fft,
-                    noverlap=self.config.n_fft - self.config.hop_length, window='hann'
-                )
-                _, _, Y_stft = signal.stft(
-                    y, fs=self.config.sample_rate, nperseg=self.config.n_fft,
-                    noverlap=self.config.n_fft - self.config.hop_length, window='hann'
+                # Compute Power Spectral Densities using Welch method
+                # Transfer function should be time-invariant: H(f) = S_yx(f) / S_xx(f)
+                nperseg = min(self.config.n_fft, len(x) // 4)  # Ensure sufficient segments
+                noverlap = nperseg // 2  # 50% overlap for Welch method
+                
+                # Auto-PSD of input signal (denominator)
+                f, S_xx = signal.welch(
+                    x, fs=self.config.sample_rate, nperseg=nperseg, 
+                    noverlap=noverlap, window='hann'
                 )
                 
-                # Estimate transfer function: H = Y / X (element-wise in frequency domain)
-                epsilon = 1e-10
-                H_complex = Y_stft / (X_stft + epsilon)
-                H_magnitude = np.abs(H_complex)
+                # Auto-PSD of output signal
+                _, S_yy = signal.welch(
+                    y, fs=self.config.sample_rate, nperseg=nperseg,
+                    noverlap=noverlap, window='hann'
+                )
                 
-                # Average over time to get transfer function per frequency
-                H_avg = np.mean(H_magnitude, axis=1)
+                # Cross-PSD between input and output
+                _, S_yx = signal.csd(
+                    y, x, fs=self.config.sample_rate, nperseg=nperseg,
+                    noverlap=noverlap, window='hann'
+                )
+                
+                # H1 estimator: H = S_yx / S_xx (theoretically correct for transfer functions)
+                epsilon = 1e-12  # Smaller epsilon for PSD denominators
+                H_complex = S_yx / (S_xx + epsilon)
+                H_avg = np.abs(H_complex)
+                
+                # Calculate coherence for quality assessment
+                coherence = np.abs(S_yx) ** 2 / ((S_xx + epsilon) * (S_yy + epsilon))
+                avg_coherence = np.mean(coherence)
                 angle_transfer_functions.append(H_avg)
                 
                 if freqs is None:
@@ -152,6 +166,12 @@ class DataProcessor:
             avg_tf = np.mean(angle_transfer_functions, axis=0)
             all_transfer_functions.append(avg_tf)
             logger.info(f"Angle {angle_deg}°: TF shape {avg_tf.shape}, mean magnitude: {np.mean(avg_tf):.4f}")
+            
+            # Log coherence statistics for this angle
+            if 'coherence_stats' not in locals():
+                coherence_stats = []
+            coherence_stats.append(avg_coherence)
+            logger.info(f"  Average coherence: {avg_coherence:.3f}")
         
         # Convert to tensor format
         H = torch.tensor(np.array(all_transfer_functions).T, dtype=torch.float32)  # [freq × directions]
@@ -208,13 +228,36 @@ class DataProcessor:
         logger.info(f"  Angles: {angles}")
         logger.info(f"  H statistics: min={H_filtered.min():.4f}, max={H_filtered.max():.4f}, mean={H_filtered.mean():.4f}")
         
-        # Create metadata
+        # Create metadata including coherence statistics
+        overall_coherence = np.mean(coherence_stats) if 'coherence_stats' in locals() else 0.0
         metadata = {
             'method': method,
             'freqs': freqs_filtered,
             'n_files_per_angle': self.config.n_files_per_angle,
-            'x_y_correspondence': True
+            'x_y_correspondence': True,
+            'coherence_stats': {
+                'mean_coherence': overall_coherence,
+                'min_coherence': np.min(coherence_stats) if 'coherence_stats' in locals() else 0.0,
+                'max_coherence': np.max(coherence_stats) if 'coherence_stats' in locals() else 0.0,
+                'per_angle_coherence': coherence_stats if 'coherence_stats' in locals() else []
+            }
         }
+        
+        # Log overall coherence summary
+        logger.info(f"Overall coherence statistics:")
+        logger.info(f"  Mean: {overall_coherence:.3f}")
+        if 'coherence_stats' in locals():
+            logger.info(f"  Range: {np.min(coherence_stats):.3f} - {np.max(coherence_stats):.3f}")
+            logger.info(f"  Std: {np.std(coherence_stats):.3f}")
+            
+            # Warn about low coherence (indicates poor signal correlation)
+            if overall_coherence < 0.3:
+                logger.warning(f"Low overall coherence ({overall_coherence:.3f}) detected!")
+                logger.warning("This may indicate:")
+                logger.warning("  - Poor signal-to-noise ratio")
+                logger.warning("  - Nonlinear system behavior") 
+                logger.warning("  - Uncorrelated input/output signals")
+                logger.warning("Transfer function estimates may be unreliable.")
         
         return H_filtered, angles_tensor, original_angles, metadata
     
