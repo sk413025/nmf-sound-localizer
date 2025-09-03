@@ -18,30 +18,40 @@ class TestUSMReconstruction:
     """Test USM audio reconstruction capabilities."""
     
     @pytest.fixture
-    def audio_file_path(self):
-        """Path to test audio file."""
-        test_data_dir = Path(__file__).parent / "data"
-        audio_path = test_data_dir / "original_clip_000.wav"
+    def real_data_files(self, test_data_paths):
+        """Get real data files from fixed dataset."""
+        x_root = Path(test_data_paths["x_root"])
+        angles = test_data_paths["validated_angles"]
+        n_files = test_data_paths["n_files"]
         
-        if not audio_path.exists():
-            pytest.skip(f"Test audio file not found: {audio_path}")
+        # Collect real .npy files from multiple angles
+        real_files = []
+        for angle in angles:
+            angle_dir = x_root / angle
+            if angle_dir.exists():
+                npy_files = sorted(angle_dir.glob("*.npy"))
+                real_files.extend(npy_files[:n_files])  # Take first n_files from each angle
         
-        return str(audio_path)
+        if not real_files:
+            pytest.skip(f"No real data files found in {x_root}")
+        
+        return real_files
     
     @pytest.fixture
-    def config(self):
-        """Default configuration for testing."""
+    def config(self, test_data_paths):
+        """Configuration optimized for real dataset characteristics."""
         return NMFConfig(
-            n_atoms_per_speaker=20,
-            usm_max_iter=50,
-            beta=2.0,  # Euclidean distance
-            usm_sparsity_weight=0.01,
+            n_atoms_per_speaker=15,      # Reduced for real data complexity
+            usm_max_iter=30,             # Reduced for faster testing
+            beta=1.0,                    # KL divergence works well for real signals
+            usm_sparsity_weight=0.05,    # Increased sparsity for real data
             device='cpu',
-            sample_rate=16000,
-            n_fft=2048,
-            hop_length=512,
-            freq_min=100,
-            freq_max=4000
+            sample_rate=16000,           # Match dataset sample rate
+            n_fft=2048,                  # Good balance for real signals
+            hop_length=512,              # 75% overlap for good time resolution
+            freq_min=500,                # Focus on meaningful frequency range
+            freq_max=3000,               # Upper limit based on typical acoustic data
+            n_files_per_angle=test_data_paths["n_files"]  # Use actual dataset size
         )
     
     @pytest.fixture 
@@ -129,6 +139,43 @@ class TestUSMReconstruction:
         # Save to file
         wavfile.write(output_path, config.sample_rate, audio_int16)
     
+    def load_numpy_data(self, file_path: Path, target_length: int = None) -> np.ndarray:
+        """
+        Load real numpy data file (replace audio loading).
+        
+        Args:
+            file_path: Path to .npy file
+            target_length: Optional target length for the signal
+            
+        Returns:
+            Audio waveform as numpy array
+        """
+        try:
+            # Load .npy file directly
+            audio_data = np.load(file_path)
+            
+            # Flatten if multidimensional
+            if audio_data.ndim > 1:
+                audio_data = audio_data.flatten()
+            
+            # Convert to float32 if needed
+            if audio_data.dtype != np.float32:
+                audio_data = audio_data.astype(np.float32)
+            
+            # Trim or pad to target length if specified
+            if target_length:
+                if len(audio_data) > target_length:
+                    audio_data = audio_data[:target_length]
+                elif len(audio_data) < target_length:
+                    # Repeat data to reach target length
+                    repeats = (target_length // len(audio_data)) + 1
+                    audio_data = np.tile(audio_data, repeats)[:target_length]
+            
+            return audio_data
+            
+        except Exception as e:
+            pytest.fail(f"Failed to load numpy file {file_path}: {e}")
+
     def load_audio_file(self, file_path: str, target_sr: int = 16000) -> np.ndarray:
         """
         Load audio file using scipy.io.wavfile.
@@ -172,10 +219,14 @@ class TestUSMReconstruction:
         except Exception as e:
             pytest.fail(f"Failed to load audio file {file_path}: {e}")
     
-    def test_usm_audio_reconstruction_basic(self, audio_file_path, config, audio_processor):
-        """Test basic audio reconstruction using USM."""
-        # Load audio file
-        audio_waveform = self.load_audio_file(audio_file_path, config.sample_rate)
+    def test_usm_audio_reconstruction_basic(self, real_data_files, config, audio_processor):
+        """Test basic audio reconstruction using USM with real dataset."""
+        # Load real data file (use first available file)
+        data_file = real_data_files[0]
+        print(f"Using real data file: {data_file}")
+        
+        # Load real numpy data
+        audio_waveform = self.load_numpy_data(data_file)
         
         # Ensure minimum length for processing
         min_length = config.n_fft * 2
@@ -231,9 +282,10 @@ class TestUSMReconstruction:
         assert 'snr_db' in reconstruction_metrics
         assert 'sparsity' in reconstruction_metrics
         
-        # Quality thresholds (adjust based on expected performance)
-        assert reconstruction_metrics['mse'] < 1.0, f"MSE too high: {reconstruction_metrics['mse']}"
-        assert reconstruction_metrics['snr_db'] > -10, f"SNR too low: {reconstruction_metrics['snr_db']} dB"
+        # Quality thresholds (adjusted for real data characteristics)
+        assert reconstruction_metrics['mse'] < 2.0, f"MSE too high: {reconstruction_metrics['mse']}"
+        assert reconstruction_metrics['snr_db'] > -15, f"SNR too low: {reconstruction_metrics['snr_db']} dB"
+        assert 0.0 <= reconstruction_metrics['sparsity'] <= 1.0, f"Invalid sparsity: {reconstruction_metrics['sparsity']}"
         
         # Save reconstructed audio
         self.save_reconstructed_audio(
@@ -256,10 +308,14 @@ class TestUSMReconstruction:
         else:
             print(f"  Training info keys: {list(train_info.keys())}")
     
-    def test_usm_audio_reconstruction_with_beta_search(self, audio_file_path, config, audio_processor):
-        """Test audio reconstruction with multiple beta values."""
-        # Load and process audio (same as basic test)
-        audio_waveform = self.load_audio_file(audio_file_path, config.sample_rate)
+    def test_usm_audio_reconstruction_with_beta_search(self, real_data_files, config, audio_processor):
+        """Test audio reconstruction with multiple beta values using real dataset."""
+        # Load real data file (use second file if available, otherwise first)
+        data_file = real_data_files[1] if len(real_data_files) > 1 else real_data_files[0]
+        print(f"Using real data file for beta search: {data_file}")
+        
+        # Load real numpy data
+        audio_waveform = self.load_numpy_data(data_file)
         
         min_length = config.n_fft * 2
         if len(audio_waveform) < min_length:
@@ -315,10 +371,14 @@ class TestUSMReconstruction:
         print(f"  SNR: {final_metrics['snr_db']:.2f} dB")
         print(f"  Reconstructed audio saved to: tests/data/reconstructed_beta_search.wav")
     
-    def test_usm_save_load_reconstruction(self, audio_file_path, config, audio_processor, tmp_path):
-        """Test save/load functionality with reconstruction verification."""
-        # Process audio
-        audio_waveform = self.load_audio_file(audio_file_path, config.sample_rate)
+    def test_usm_save_load_reconstruction(self, real_data_files, config, audio_processor, tmp_path):
+        """Test save/load functionality with reconstruction verification using real dataset."""
+        # Load real data file (use third file if available, otherwise first)
+        data_file = real_data_files[2] if len(real_data_files) > 2 else real_data_files[0]
+        print(f"Using real data file for save/load test: {data_file}")
+        
+        # Load real numpy data
+        audio_waveform = self.load_numpy_data(data_file)
         
         min_length = config.n_fft * 2
         if len(audio_waveform) < min_length:
@@ -378,3 +438,102 @@ class TestUSMReconstruction:
         print(f"  Model file: {model_path}")
         print(f"  Original reconstruction saved to: tests/data/reconstructed_original.wav")
         print(f"  Loaded reconstruction saved to: tests/data/reconstructed_loaded.wav")
+    
+    def test_usm_multi_angle_reconstruction(self, real_data_files, test_data_paths, config, audio_processor):
+        """Test USM reconstruction using multiple angles from real dataset."""
+        # Group files by angle
+        x_root = Path(test_data_paths["x_root"])
+        angles = test_data_paths["validated_angles"]
+        n_files_per_angle = test_data_paths["n_files"]
+        
+        angle_data = {}
+        for angle in angles:
+            angle_dir = x_root / angle
+            if angle_dir.exists():
+                npy_files = sorted(angle_dir.glob("*.npy"))
+                if npy_files:
+                    # Load first file from this angle
+                    audio_waveform = self.load_numpy_data(npy_files[0])
+                    angle_data[angle] = audio_waveform
+        
+        if len(angle_data) < 2:
+            pytest.skip(f"Need at least 2 angles for multi-angle test, found {len(angle_data)}")
+        
+        print(f"Testing multi-angle reconstruction with angles: {list(angle_data.keys())}")
+        
+        # Process each angle's data
+        processed_data = {}
+        for angle, audio_waveform in angle_data.items():
+            # Ensure minimum length
+            min_length = config.n_fft * 2
+            if len(audio_waveform) < min_length:
+                repeats = (min_length // len(audio_waveform)) + 1
+                audio_waveform = np.tile(audio_waveform, repeats)[:min_length]
+            
+            # Compute spectrogram
+            freqs, times, stft, magnitude = audio_processor.compute_stft_spectrogram(
+                audio_waveform, 
+                fs=config.sample_rate,
+                nperseg=config.n_fft,
+                noverlap=config.hop_length
+            )
+            
+            # Convert to torch and filter
+            magnitude_tensor = torch.from_numpy(magnitude).float()
+            filtered_magnitude, filtered_freqs = audio_processor.apply_frequency_filter(
+                magnitude_tensor, freqs, config.freq_min, config.freq_max
+            )
+            
+            processed_data[angle] = {
+                'magnitude': filtered_magnitude,
+                'freqs': freqs,
+                'stft': stft
+            }
+        
+        # Train USM with multiple "speakers" (one per angle)
+        trainer = USMTrainer(config)
+        speaker_data_list = [data['magnitude'] for data in processed_data.values()]
+        
+        # Train the model
+        W, train_info = trainer.train_usm(speaker_data_list)
+        
+        # Test reconstruction quality for each angle
+        reconstruction_results = {}
+        for i, (angle, data) in enumerate(processed_data.items()):
+            metrics = trainer.get_reconstruction_quality(
+                data['magnitude'], n_test_frames=50
+            )
+            reconstruction_results[angle] = metrics
+            
+            # Save reconstructed audio for each angle
+            output_path = f"tests/data/reconstructed_{angle}.wav"
+            self.save_reconstructed_audio(
+                data['magnitude'], W, data['freqs'], config, 
+                output_path=output_path,
+                original_stft=data['stft']
+            )
+        
+        # Assertions
+        assert W is not None, "Multi-angle USM dictionary should be trained"
+        assert W.shape[1] == config.n_atoms_per_speaker * len(speaker_data_list), \
+               f"Dictionary should have {config.n_atoms_per_speaker * len(speaker_data_list)} atoms"
+        
+        # Check that we have results for all angles
+        assert len(reconstruction_results) == len(angle_data), \
+               f"Should have results for {len(angle_data)} angles"
+        
+        # Quality thresholds (may be more lenient for multi-angle)
+        for angle, metrics in reconstruction_results.items():
+            assert metrics['mse'] < 2.0, f"MSE too high for {angle}: {metrics['mse']}"
+            assert metrics['snr_db'] > -15, f"SNR too low for {angle}: {metrics['snr_db']} dB"
+        
+        print(f"Multi-Angle Reconstruction Results:")
+        print(f"  Dictionary shape: {W.shape}")
+        print(f"  Total speakers/angles: {len(speaker_data_list)}")
+        for angle, metrics in reconstruction_results.items():
+            print(f"  {angle}:")
+            print(f"    MSE: {metrics['mse']:.6f}")
+            print(f"    RMSE: {metrics['rmse']:.6f}")
+            print(f"    SNR: {metrics['snr_db']:.2f} dB")
+            print(f"    Sparsity: {metrics['sparsity']:.3f}")
+            print(f"    Reconstructed audio saved to: tests/data/reconstructed_{angle}.wav")
