@@ -9,10 +9,12 @@ from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Any
 from tqdm import tqdm
 import logging
+import warnings
 from scipy import signal
 
 from ..config.defaults import NMFConfig, DataPack
 from ..utils.audio_utils import AudioProcessor
+from .stft_unified_processor import STFTUnifiedProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -44,222 +46,38 @@ class DataProcessor:
     def estimate_transfer_functions(
         self, 
         original_root: Path,
-        box_root: Path,
-        method: str = 'xy_correspondence'
+        box_root: Optional[Path] = None
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Path], Dict[str, Any]]:
         """
-        Estimate transfer functions using X-Y correspondence: H = Y / X.
+        Estimate transfer functions using STFT-unified approach.
+        
+        This method uses consistent STFT processing to fix the previous
+        Welch vs STFT scale/units mismatch issue.
         
         Args:
-            original_root: Path to original data (X)
-            box_root: Path to box recordings (Y)
-            method: Transfer function estimation method
+            original_root: Path to original data (X), or unified data root
+            box_root: Optional path to box recordings (Y). If None, assumes
+                     original_root contains both X and Y data (unified structure)
         
         Returns:
-            H: Transfer functions [freq × directions] 
+            H: Transfer functions [freq × directions] (magnitude-based units)
             angles: Angle array
             angle_folders: List of angle folders
-            metadata: Additional information (freqs, etc.)
+            metadata: Additional information (freqs, coherence stats, etc.)
         """
-        # Get angle folders from both datasets
-        original_angles = sorted([d for d in original_root.iterdir() 
-                                 if d.is_dir() and d.name.startswith('angle_')])
-        box_angles = sorted([d for d in box_root.iterdir() 
-                            if d.is_dir() and d.name.startswith('angle_')])
-        
-        # Verify correspondence between original and box data
-        if len(original_angles) != len(box_angles):
-            raise ValueError(f"Angle count mismatch: {len(original_angles)} original vs {len(box_angles)} box angles")
-        
-        logger.info(f"Found {len(original_angles)} angle pairs for X-Y transfer function estimation")
-        
-        # Map angle names to degrees
-        angle_mapping = {}
-        for folder in original_angles:
-            angle_str = folder.name.replace('angle_', '')
-            angle_mapping[folder.name] = int(angle_str)
-        
-        # Sort by angle value
-        original_angles = sorted(original_angles, key=lambda x: angle_mapping[x.name])
-        box_angles = sorted(box_angles, key=lambda x: angle_mapping[x.name])
-        n_directions = len(original_angles)
-        
-        # Load sample file to get dimensions
-        sample_files = list(original_angles[0].glob('*.npy'))
-        if not sample_files:
-            raise ValueError(f"No .npy files found in {original_angles[0]}")
-        
-        sample_data = np.load(sample_files[0])
-        logger.info(f"Sample data shape: {sample_data.shape}")
-        logger.info(f"Number of angle pairs: {n_directions}")
-        
-        # Assume waveform data for X-Y correspondence method
-        is_waveform = True
-        logger.info(f"Estimating transfer functions using X-Y correspondence method...")
-        
-        # Initialize transfer functions
-        all_transfer_functions = []
-        angles = []
-        freqs = None
-        
-        for orig_folder, box_folder in tqdm(zip(original_angles, box_angles), 
-                                           desc="Processing angle pairs"):
-            angle_str = orig_folder.name.replace('angle_', '')
-            angle_deg = int(angle_str)
-            angles.append(angle_deg)
-            
-            # Load corresponding files (X and Y)
-            orig_files = sorted(list(orig_folder.glob('*.npy')))[:self.config.n_files_per_angle]
-            box_files = sorted(list(box_folder.glob('*.npy')))[:self.config.n_files_per_angle]
-            
-            if len(orig_files) != len(box_files):
-                logger.warning(f"File count mismatch for angle {angle_deg}°: {len(orig_files)} vs {len(box_files)}")
-            
-            logger.info(f"Processing angle {angle_deg}° with {len(orig_files)} file pairs")
-            
-            # Estimate transfer function for this angle
-            angle_transfer_functions = []
-            
-            for orig_file, box_file in zip(orig_files, box_files):
-                # Load X (original) and Y (box recording)
-                x = np.load(orig_file)  # Source signal
-                y = np.load(box_file)   # Observed signal
-                
-                # Compute Power Spectral Densities using Welch method
-                # Transfer function should be time-invariant: H(f) = S_yx(f) / S_xx(f)
-                nperseg = min(self.config.n_fft, len(x) // 4)  # Ensure sufficient segments
-                noverlap = nperseg // 2  # 50% overlap for Welch method
-                
-                # Auto-PSD of input signal (denominator)
-                f, S_xx = signal.welch(
-                    x, fs=self.config.sample_rate, nperseg=nperseg, 
-                    noverlap=noverlap, window='hann'
-                )
-                
-                # Auto-PSD of output signal
-                _, S_yy = signal.welch(
-                    y, fs=self.config.sample_rate, nperseg=nperseg,
-                    noverlap=noverlap, window='hann'
-                )
-                
-                # Cross-PSD between input and output
-                _, S_yx = signal.csd(
-                    y, x, fs=self.config.sample_rate, nperseg=nperseg,
-                    noverlap=noverlap, window='hann'
-                )
-                
-                # H1 estimator: H = S_yx / S_xx (theoretically correct for transfer functions)
-                epsilon = 1e-12  # Smaller epsilon for PSD denominators
-                H_complex = S_yx / (S_xx + epsilon)
-                H_avg = np.abs(H_complex)
-                
-                # Calculate coherence for quality assessment
-                coherence = np.abs(S_yx) ** 2 / ((S_xx + epsilon) * (S_yy + epsilon))
-                avg_coherence = np.mean(coherence)
-                angle_transfer_functions.append(H_avg)
-                
-                if freqs is None:
-                    freqs = f
-                    logger.info(f"Frequency array shape: {len(freqs)}, range: {freqs[0]:.1f} - {freqs[-1]:.1f} Hz")
-            
-            # Average transfer functions across files for this angle
-            avg_tf = np.mean(angle_transfer_functions, axis=0)
-            all_transfer_functions.append(avg_tf)
-            logger.info(f"Angle {angle_deg}°: TF shape {avg_tf.shape}, mean magnitude: {np.mean(avg_tf):.4f}")
-            
-            # Log coherence statistics for this angle
-            if 'coherence_stats' not in locals():
-                coherence_stats = []
-            coherence_stats.append(avg_coherence)
-            logger.info(f"  Average coherence: {avg_coherence:.3f}")
-        
-        # Convert to tensor format
-        H = torch.tensor(np.array(all_transfer_functions).T, dtype=torch.float32)  # [freq × directions]
-        angles_tensor = torch.tensor(angles, dtype=torch.float32)
-        
-        logger.info(f"Raw H shape: {H.shape}")
-        
-        # Apply frequency filtering
-        freq_mask = (freqs >= self.config.freq_min) & (freqs <= self.config.freq_max)
-        H_filtered = H[freq_mask, :]
-        freqs_filtered = freqs[freq_mask]
-        
-        # Apply processing that preserves relative differences between angles
-        if method == 'xy_correspondence':
-            # Use mean normalization instead of 90-degree reference to avoid bias
-            mean_spectrum = torch.mean(H_filtered, dim=1, keepdim=True)
-            logger.info("Using mean spectrum as reference (no angle bias)")
-            
-            # Compute relative transfer functions against mean
-            H_filtered = H_filtered / (mean_spectrum + 1e-10)
-            
-            # Apply mild global contrast enhancement that preserves relative differences
-            # Only normalize globally, not per-frequency to maintain angle discrimination
-            H_min = H_filtered.min()
-            H_max = H_filtered.max()
-            if H_max > H_min:
-                # Preserve dynamic range while ensuring all values are positive
-                H_filtered = (H_filtered - H_min) / (H_max - H_min) * 0.8 + 0.1
-            
-            logger.info(f"Applied global contrast enhancement: range [{H_min:.4f}, {H_max:.4f}] -> [0.1, 0.9]")
-            
-            # Apply contrast enhancement only in the frequency domain (not per-frequency)
-            if self.config.apply_contrast_enhancement:
-                # Enhance differences across angles while preserving frequency structure
-                for d in range(H_filtered.shape[1]):
-                    angle_response = H_filtered[:, d]
-                    # Mild enhancement that preserves relative magnitudes
-                    enhanced = torch.pow(angle_response, 0.8)  # Mild power law
-                    H_filtered[:, d] = enhanced
-                
-                logger.info("Applied frequency-preserving contrast enhancement")
+        # Handle optional box_root parameter
+        if box_root is None:
+            box_root = original_root
+            logger.info(f"Using unified data root for both X and Y: {original_root}")
         else:
-            # Fallback: simple global normalization
-            H_max = H_filtered.max()
-            H_filtered = H_filtered / H_max
-            logger.info(f"Applied global normalization: max={H_max:.4f}")
+            logger.info(f"Using separate paths - X: {original_root}, Y: {box_root}")
         
-        # Apply frequency band limit
-        logger.info(f"Applied {self.config.freq_min}-{self.config.freq_max}Hz band limit: {H_filtered.shape[0]} freq bins")
-        
-        logger.info(f"Transfer function estimation complete:")
-        logger.info(f"  H shape: {H_filtered.shape} (freq × directions)")
-        logger.info(f"  Frequency range: {self.config.freq_min}-{self.config.freq_max} Hz")
-        logger.info(f"  Angles: {angles}")
-        logger.info(f"  H statistics: min={H_filtered.min():.4f}, max={H_filtered.max():.4f}, mean={H_filtered.mean():.4f}")
-        
-        # Create metadata including coherence statistics
-        overall_coherence = np.mean(coherence_stats) if 'coherence_stats' in locals() else 0.0
-        metadata = {
-            'method': method,
-            'freqs': freqs_filtered,
-            'n_files_per_angle': self.config.n_files_per_angle,
-            'x_y_correspondence': True,
-            'coherence_stats': {
-                'mean_coherence': overall_coherence,
-                'min_coherence': np.min(coherence_stats) if 'coherence_stats' in locals() else 0.0,
-                'max_coherence': np.max(coherence_stats) if 'coherence_stats' in locals() else 0.0,
-                'per_angle_coherence': coherence_stats if 'coherence_stats' in locals() else []
-            }
-        }
-        
-        # Log overall coherence summary
-        logger.info(f"Overall coherence statistics:")
-        logger.info(f"  Mean: {overall_coherence:.3f}")
-        if 'coherence_stats' in locals():
-            logger.info(f"  Range: {np.min(coherence_stats):.3f} - {np.max(coherence_stats):.3f}")
-            logger.info(f"  Std: {np.std(coherence_stats):.3f}")
-            
-            # Warn about low coherence (indicates poor signal correlation)
-            if overall_coherence < 0.3:
-                logger.warning(f"Low overall coherence ({overall_coherence:.3f}) detected!")
-                logger.warning("This may indicate:")
-                logger.warning("  - Poor signal-to-noise ratio")
-                logger.warning("  - Nonlinear system behavior") 
-                logger.warning("  - Uncorrelated input/output signals")
-                logger.warning("Transfer function estimates may be unreliable.")
-        
-        return H_filtered, angles_tensor, original_angles, metadata
+        # Use STFT-unified approach (the only correct method)
+        logger.info("Using STFT-unified transfer function estimation")
+        stft_processor = STFTUnifiedProcessor(self.config)
+        return stft_processor.estimate_transfer_functions_stft(
+            Path(original_root), Path(box_root), method='stft_unified'
+        )
     
     def _apply_improved_processing(
         self, 
@@ -599,7 +417,7 @@ class DataProcessor:
         # Estimate transfer functions
         logger.info("Estimating transfer functions...")
         H, angles, angle_folders, tf_metadata = self.estimate_transfer_functions(
-            root_path, method=self.config.tf_method
+            root_path
         )
         
         data_pack.transfer_functions = H

@@ -13,7 +13,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
-from nmf_localizer import NMFLocalizationPipeline, NMFConfig
+from nmf_localizer import NMFLocalizationPipeline, NMFConfig, STFTUnifiedProcessor
 
 # Setup logging
 logging.basicConfig(
@@ -51,13 +51,32 @@ def main():
     # Create pipeline
     pipeline = NMFLocalizationPipeline(config)
     
+    # Note: Pipeline now uses STFT-unified transfer function estimation by default
+    # This fixes the previous Welch vs STFT scale/units mismatch issue
+    # Alternative: directly use STFTUnifiedProcessor for custom processing
+    # processor = STFTUnifiedProcessor(config)
+    # H, angles, folders, metadata = processor.estimate_transfer_functions_stft(...)
+    
     # Run experiment
     print("Starting basic NMF localization experiment...")
     print(f"Configuration: beta={config.beta}, lambda_group={config.lambda_group}")
+    print("Using STFT-unified processing (fixes Welch/STFT mismatch)")
     
     try:
+        # Use test data paths from conftest.py for demonstration
+        test_data_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
+        
+        # Check if test data exists, otherwise fall back to 'root'
+        from pathlib import Path as PathLib
+        if PathLib(test_data_root).exists():
+            print(f"Using test data from: {test_data_root}")
+            data_root = test_data_root
+        else:
+            print("Test data not found, using 'root' directory")
+            data_root = "root"
+        
         results = pipeline.run_full_experiment(
-            data_root="root",  # Adjust path as needed
+            data_root=data_root,
             output_dir="outputs/basic_experiment",
             n_sources=1,
             test_multiple_betas=False,

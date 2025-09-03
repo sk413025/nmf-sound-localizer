@@ -1,0 +1,154 @@
+{
+  "analysis_type": "Y_vs_Y_hat_reconstruction_quality",
+  "test_config": {
+    "sample_rate": 16000,
+    "n_fft": 2048,
+    "hop_length": 512,
+    "freq_range": [
+      500.0,
+      3000.0
+    ]
+  },
+  "original_method": {
+    "method_name": "DataProcessor_STFT",
+    "individual_results": {
+      "angle_90": {
+        "mse": 2.6419261445198572e-08,
+        "rmse": 0.00016254003276117146,
+        "mae": 7.49278551666066e-05,
+        "relative_error": 0.9999457458982238,
+        "scale_ratio": 3.815939591875176e-05,
+        "snr_db": -9.313321436947794e-05,
+        "correlation": 0.04080531001600746,
+        "y_mean": 7.493070734199136e-05,
+        "y_hat_mean": 2.859310566094564e-09,
+        "y_std": 0.00014424201799556613,
+        "y_hat_std": 5.004351377735361e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0004094995965715498,
+        "X_sparsity": 1.0,
+        "success": true
+      },
+      "angle_100": {
+        "mse": 4.0775130827341854e-08,
+        "rmse": 0.00020192853116896003,
+        "mae": 9.609530388843268e-05,
+        "relative_error": 0.9999617102644012,
+        "scale_ratio": 2.975406244467036e-05,
+        "snr_db": -4.672182023236004e-05,
+        "correlation": 0.06456965546008632,
+        "y_mean": 9.609815606381744e-05,
+        "y_hat_mean": 2.859310566094564e-09,
+        "y_std": 0.00017760027549229562,
+        "y_hat_std": 5.004351377735361e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0006306901341304183,
+        "X_sparsity": 1.0,
+        "success": true
+      },
+      "angle_110": {
+        "mse": 1.4921418767244177e-08,
+        "rmse": 0.0001221532584168017,
+        "mae": 7.27733931853436e-05,
+        "relative_error": 0.9999047770670041,
+        "scale_ratio": 3.928905959310342e-05,
+        "snr_db": -0.0001685134764093608,
+        "correlation": 0.05880507722653362,
+        "y_mean": 7.277625263668597e-05,
+        "y_hat_mean": 2.859310566094564e-09,
+        "y_std": 9.81110060820356e-05,
+        "y_hat_std": 5.004351377735361e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0002323412918485701,
+        "X_sparsity": 1.0,
+        "success": true
+      }
+    },
+    "overall_metrics": {
+      "avg_mse": 2.7371937013261533e-08,
+      "avg_correlation": 0.0547266809008758,
+      "avg_scale_ratio": 3.5734172652175184e-05,
+      "avg_snr_db": -0.0001027895036703996,
+      "convergence_rate": 1.0,
+      "avg_sparsity": 1.0,
+      "n_successful": 3,
+      "n_total": 3
+    },
+    "success": true
+  },
+  "stft_unified_method": {
+    "method_name": "STFT_Unified",
+    "individual_results": {
+      "angle_90": {
+        "mse": 2.641926322155541e-08,
+        "rmse": 0.00016254003276117146,
+        "mae": 7.49278551666066e-05,
+        "relative_error": 0.9999458131317636,
+        "scale_ratio": 3.815939295541924e-05,
+        "snr_db": -9.342521070273238e-05,
+        "correlation": 0.03018292194883792,
+        "y_mean": 7.493070734199136e-05,
+        "y_hat_mean": 2.859310344049959e-09,
+        "y_std": 0.00014424201799556613,
+        "y_hat_std": 4.740449699447424e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0004094995965715498,
+        "X_sparsity": 1.0,
+        "success": true
+      },
+      "angle_100": {
+        "mse": 4.077513793276921e-08,
+        "rmse": 0.00020192854572087526,
+        "mae": 9.609530388843268e-05,
+        "relative_error": 0.9999618845165776,
+        "scale_ratio": 2.9754060134068244e-05,
+        "snr_db": -4.74785981709113e-05,
+        "correlation": 0.022806032408456002,
+        "y_mean": 9.609815606381744e-05,
+        "y_hat_mean": 2.859310344049959e-09,
+        "y_std": 0.00017760027549229562,
+        "y_hat_std": 4.740449699447424e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0006306901341304183,
+        "X_sparsity": 1.0,
+        "success": true
+      },
+      "angle_110": {
+        "mse": 1.4921424096314695e-08,
+        "rmse": 0.00012215328752063215,
+        "mae": 7.277340046130121e-05,
+        "relative_error": 0.9999051341753429,
+        "scale_ratio": 3.928905654204495e-05,
+        "snr_db": -0.00017006442169668144,
+        "correlation": 0.013605231066011358,
+        "y_mean": 7.277625263668597e-05,
+        "y_hat_mean": 2.859310344049959e-09,
+        "y_std": 9.81110060820356e-05,
+        "y_hat_std": 4.740449699447424e-10,
+        "factorization_converged": true,
+        "n_iterations": 2,
+        "final_loss": 0.0002323412918485701,
+        "X_sparsity": 1.0,
+        "success": true
+      }
+    },
+    "overall_metrics": {
+      "avg_mse": 2.7371941750213107e-08,
+      "avg_correlation": 0.022198061807768427,
+      "avg_scale_ratio": 3.573416987717748e-05,
+      "avg_snr_db": -0.00010365607685677504,
+      "convergence_rate": 1.0,
+      "avg_sparsity": 1.0,
+      "n_successful": 3,
+      "n_total": 3
+    },
+    "success": true
+  },
+  "improvements_count": 0,
+  "stft_unified_better": false
+}
