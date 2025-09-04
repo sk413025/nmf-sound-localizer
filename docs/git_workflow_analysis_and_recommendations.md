@@ -45,7 +45,7 @@ development → testing (merge, frequent)
 - Experimental code mixed with stable code
 - Testing branch polluted with incomplete features
 
-## Recommended Solution: Feature Branch + Cherry-Pick Workflow
+## Recommended Solution: Feature Branch + Rebase Workflow
 
 ### Worktree Responsibilities Redefinition
 
@@ -81,30 +81,29 @@ git commit -m "Results: STFT unified approach successful"
 
 #### Phase 2: Feature Development (Development Workspace)
 ```bash
-# Cherry-pick mature features from planning
+# Create feature branch from planning experiments
+git checkout planning-workspace
+git checkout -b feature/stft-unified-processor
+
+# Clean up experimental commits with interactive rebase
+git rebase -i planning-workspace~5
+# Squash, reword, and organize commits
+
+# Rebase completed feature onto development
 git checkout development-workspace
-git cherry-pick <successful-experiment-commit>
+git rebase feature/stft-unified-processor
+git branch -d feature/stft-unified-processor
 
-# Or use format-patch for complex changes
-git format-patch planning-workspace..planning-workspace~3
-git apply <patch-files>
-
-# Clean up and document
-git commit -m "Implement: STFT unified processor with coherence fix
-
-Background: Previous Welch/STFT mixed approach had scale mismatch
-Motivation: Achieve consistent magnitude spectrum units
-Purpose: Fix ~37x scale difference and improve coherence
-Expected: Coherence >0.3, consistent H/Y processing"
+# Result: Linear history with clean, documented commits
 ```
 
 #### Phase 3: Integration Testing (Testing Workspace)  
 ```bash
-# Fast-forward or cherry-pick stable features
+# Fast-forward stable features from development
 git checkout testing-workspace
-git cherry-pick <stable-feature-commits>
+git rebase development-workspace  # Linear integration
 
-# Run comprehensive tests
+# Add testing-specific commits
 git commit -m "Tests: Validate STFT unified approach across full dataset"
 ```
 
@@ -124,22 +123,22 @@ git cherry-pick b367802 f666723  # Clean commits only
 #### Step 2: Implement New Workflow
 ```bash
 # Stop using merge for cross-worktree transfers
-# Use cherry-pick for selective feature promotion
+# Use rebase for linear feature promotion
 
-# Planning → Development (mature features only)
+# Planning → Development (complete features)
 git checkout development-workspace  
-git cherry-pick planning-workspace~2  # Specific commit
+git rebase planning-workspace  # All mature commits
 
-# Development → Testing (stable features only)
+# Development → Testing (stable releases)
 git checkout testing-workspace
-git cherry-pick development-workspace~1  # Latest stable
+git rebase development-workspace  # Fast-forward integration
 ```
 
 #### Step 3: Establish Guidelines
 - **No merge commits** between worktrees
-- **Cherry-pick** for feature promotion  
-- **Rebase** to maintain linear history within worktree
-- **Squash** experimental commits before promotion
+- **Rebase** for feature promotion and linear history
+- **Interactive rebase** to clean up experimental commits
+- **Fast-forward** merges only for final integration
 
 ## Implementation Commands
 
@@ -147,41 +146,44 @@ git cherry-pick development-workspace~1  # Latest stable
 ```bash
 # 1. Document this analysis (current commit)
 git add docs/git_workflow_analysis_and_recommendations.md
-git commit -m "Documentation: Git workflow analysis and cherry-pick recommendations
+git commit -m "Documentation: Git workflow analysis and rebase recommendations
 
 Analysis reveals excessive merge commits causing history complexity.
-Recommends cherry-pick workflow with redefined worktree responsibilities.
-Planning→Development→Testing flow with selective feature promotion."
+Recommends rebase workflow with linear worktree progression.
+Planning→Development→Testing flow with rebase-based integration."
 
-# 2. Cherry-pick to other worktrees
-DOCS_COMMIT=$(git rev-parse HEAD)
+# 2. Rebase to other worktrees for linear progression
+# To planning-workspace (as base for experiments)
+cd /path/to/planning-workspace
+git rebase development-workspace
 
-# To planning-workspace
-git checkout planning-workspace  
-git cherry-pick $DOCS_COMMIT
-
-# To testing-workspace  
-git checkout testing-workspace
-git cherry-pick $DOCS_COMMIT
+# To testing-workspace (integrate stable features)  
+cd /path/to/testing-workspace
+git rebase development-workspace
 ```
 
 ### Future Workflow Example
 ```bash
-# Planning: Experiment with VAD preprocessing
+# Planning: Create experimental branch
 git checkout planning-workspace
+git checkout -b experiment/vad-preprocessing
 # ... experimental work ...
 git commit -m "Experiment: VAD preprocessing achieves 16x improvement"
+git commit -m "Refine: Optimize VAD threshold parameters"
 
-# Development: Clean implementation  
+# Development: Clean integration with interactive rebase
 git checkout development-workspace
-git cherry-pick <vad-success-commit>
-# Clean up commit message, add proper documentation
-git commit --amend
+git rebase experiment/vad-preprocessing
 
-# Testing: Validation
+# Or clean up first, then rebase
+git checkout experiment/vad-preprocessing
+git rebase -i planning-workspace  # Squash, reword commits
+git checkout development-workspace
+git rebase experiment/vad-preprocessing
+
+# Testing: Linear integration
 git checkout testing-workspace  
-git cherry-pick <clean-vad-commit>
-# Add comprehensive tests
+git rebase development-workspace  # Gets all new features linearly
 ```
 
 ## Benefits of New Approach
@@ -191,10 +193,10 @@ git cherry-pick <clean-vad-commit>
 - Clear feature boundaries
 - Easy to bisect and debug
 
-### 2. Selective Feature Promotion
-- Only proven features move between worktrees
-- Experimental work stays isolated
-- Stable codebase in development/testing
+### 2. Linear Feature Integration  
+- Complete feature sets move between worktrees
+- Experimental branches can be cleaned before integration
+- Stable linear progression in development/testing
 
 ### 3. Clear Responsibilities  
 - Planning: Research and experimentation
@@ -202,9 +204,9 @@ git cherry-pick <clean-vad-commit>
 - Testing: Integration and validation
 
 ### 4. Better Code Quality
-- Features are refined before promotion
-- Multiple review stages (planning→development→testing)
-- Cleaner commit messages and documentation
+- Interactive rebase allows commit cleanup and refinement
+- Linear history makes code review easier
+- Clear commit progression shows feature development
 
 ## Metrics for Success
 
@@ -214,25 +216,27 @@ git cherry-pick <clean-vad-commit>
 - History complexity: High (multiple merge branches)
 
 ### After (Target State)  
-- Merge commits: <10% (only for genuine feature integration)
-- Duplicate commits: 0 (selective cherry-picking)
-- History complexity: Low (mostly linear progression)
+- Merge commits: 0% (pure linear history via rebase)
+- Duplicate commits: 0 (linear progression eliminates duplication)
+- History complexity: Minimal (completely linear progression)
 
 ### Monitoring
 - Weekly git log analysis
-- Track merge vs cherry-pick ratio
+- Track merge commits (should be 0%)
 - Measure time to locate specific changes
 - Code review efficiency improvement
+- Monitor rebase conflicts and resolution time
 
 ## Next Steps
 
 1. **Immediate**: Implement this documentation workflow
-2. **This week**: Migrate to cherry-pick for feature transfers
-3. **Next week**: Establish commit message standards for each worktree
-4. **Ongoing**: Monitor and refine workflow effectiveness
+2. **This week**: Migrate to rebase for linear feature transfers
+3. **Next week**: Establish interactive rebase standards for commit cleanup
+4. **Ongoing**: Monitor and refine linear workflow effectiveness
 
 ## References
 
-- [Git Cherry-Pick Documentation](https://git-scm.com/docs/git-cherry-pick)
-- [A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/)
+- [Git Rebase Documentation](https://git-scm.com/docs/git-rebase)
+- [Interactive Rebase](https://git-scm.com/docs/git-rebase#_interactive_mode)  
 - [Linear Git History](https://www.bitsnbites.eu/a-tidy-linear-git-history/)
+- [Rebase vs Merge](https://www.atlassian.com/git/tutorials/merging-vs-rebasing)
