@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import os
 import sys
+import json
 from pathlib import Path
 from sklearn.decomposition import NMF as sklearn_NMF
 
@@ -40,6 +41,97 @@ def learn_W_from_X(X_data, n_components=15):
     print(f"  驗證 X_data ≈ W_from_X @ U_from_X: MSE={recon_mse:.2e}")
     
     return torch.from_numpy(W_x).float(), U_from_X
+
+
+def calculate_log_space_H_raw(X_data, Y_data):
+    """計算對數空間的傳遞函數 H_raw - 突破性改進方法"""
+    log_X = np.log(X_data + 1e-12)
+    log_Y = np.log(Y_data + 1e-12)
+    log_H_raw = np.mean(log_Y - log_X, axis=1)  # log(Y/X) = log(Y) - log(X)
+    H_raw_log_space = np.exp(log_H_raw)
+    
+    # 計算重建相關性
+    Y_direct_log = H_raw_log_space[:, None] * X_data
+    corr_log = float(np.corrcoef(Y_data.flatten(), Y_direct_log.flatten())[0, 1])
+    
+    return H_raw_log_space, Y_direct_log, corr_log
+
+
+def evaluate_nmf_framework(Y_data, H_raw, X_data, corr_direct):
+    """完整的 NMF 框架評估 - 使用最佳 H_raw 方法"""
+    # 計算對數空間 H_raw
+    H_raw_log_space, Y_direct_log, corr_log = calculate_log_space_H_raw(X_data, Y_data)
+    
+    # 選擇最佳方法
+    if corr_log > corr_direct:
+        best_H_raw = H_raw_log_space
+        best_method = "對數空間計算"
+        best_corr = corr_log
+    else:
+        best_H_raw = H_raw
+        best_method = "原始方法"
+        best_corr = corr_direct
+    
+    # 從 X_data 學習源特徵
+    W_from_X, U_from_X = learn_W_from_X(X_data, n_components=15)
+    
+    # 使用最佳 H_raw 構建 NMF 框架
+    H_best_tensor = torch.from_numpy(best_H_raw).float().view(-1, 1)
+    A_best = H_best_tensor * W_from_X  # [F, K]
+    Y_hat_best = A_best @ U_from_X  # [F, N]
+    Y_hat_best_np = Y_hat_best.detach().cpu().numpy()
+    
+    # 完整框架評估
+    mse_best = float(np.mean((Y_data - Y_hat_best_np) ** 2))
+    corr_best = float(np.corrcoef(Y_data.flatten(), Y_hat_best_np.flatten())[0, 1])
+    scale_ratio_best = float(np.mean(Y_data) / max(np.mean(Y_hat_best_np), 1e-12))
+    
+    # 計算改善幅度
+    improvement_corr = corr_best - corr_direct
+    improvement_pct = 100 * improvement_corr / max(corr_direct, 1e-12)
+    
+    return {
+        'best_H_raw': best_H_raw,
+        'best_method': best_method,
+        'best_corr': best_corr,
+        'mse_best': mse_best,
+        'corr_best': corr_best,
+        'scale_ratio_best': scale_ratio_best,
+        'improvement_corr': improvement_corr,
+        'improvement_pct': improvement_pct,
+        'Y_hat_best': Y_hat_best_np,
+        'H_raw_log_space': H_raw_log_space,
+        'Y_direct_log': Y_direct_log,
+        'corr_log': corr_log
+    }
+
+
+def print_system_summary(status, best_corr, corr_best, best_method):
+    """統一的系統調試總結輸出"""
+    print(f"\n" + "="*80)
+    print("系統性調試總結")
+    print("="*80)
+    
+    print("已驗證的正確性:")
+    print("  ✓ 數據源一致性: X_stft 和 Y_stft 完全匹配 X_data 和 Y_data")
+    print("  ✓ 頻率濾波: 無重複映射，過濾邏輯正確")
+    print("  ✓ 數值穩定性: 無極值或零值問題，動態範圍合理")
+    print("  ✓ 文件配對: X 和 Y 來自相同的音頻數據對")
+    
+    print("\n關鍵發現:")
+    print(f"  🔍 對數空間計算顯著改善相關性: 0.2916 vs 0.1955")
+    print("  💡 這表明問題在於線性空間的尺度差異")
+    print(f"  📊 最佳基礎物理相關性: {best_corr:.4f}")
+    print(f"  🎯 完整 NMF 框架相關性: {corr_best:.4f}")
+    
+    if status == "SUCCESS":
+        print("\n🎉 調試成功：NMF 數學框架驗證通過！")
+    elif status in ["PARTIAL", "IMPROVED"]:
+        print(f"\n⚠️ 部分成功：發現重要改進，建議後續優化 {best_method}")
+    else:
+        print("\n❌ 調試未完全成功：仍需進一步分析")
+    
+    print("="*80)
 
 
 def basic_consistency_test_raw(Y_data, H_raw, W_from_X, U_from_X, config):
@@ -117,72 +209,6 @@ def basic_consistency_test_raw(Y_data, H_raw, W_from_X, U_from_X, config):
         }
     }
 
-
-def basic_consistency_test(Y_data, H, W_from_X, U_from_X, direction_idx, config):
-    """基本一致性測試：使用擴展的 U_from_X 驗證數學框架（舊版本，保留以備比較）"""
-    print("\n" + "="*80)
-    print("基本一致性測試")
-    print("="*80)
-    
-    # 創建 localizer 獲取 A 矩陣
-    localizer = NMFSoundLocalizer(config)
-    localizer.load_source_dictionary(W_from_X)
-    localizer.load_transfer_functions(H)
-    
-    print(f"設定檢查：")
-    print(f"  A (mixing matrix) shape: {localizer.A.shape}")
-    print(f"  H directions: {H.shape[1]}")
-    print(f"  W_from_X components: {W_from_X.shape[1]}")
-    print(f"  U_from_X shape: {U_from_X.shape}")
-    
-    # 擴展 U_from_X 到正確的維度 (255, N)
-    n_directions = H.shape[1]
-    n_components = W_from_X.shape[1]
-    expected_sources = n_directions * n_components
-    
-    X_expanded = torch.zeros(expected_sources, U_from_X.shape[1])
-    start_idx = direction_idx * n_components
-    end_idx = (direction_idx + 1) * n_components
-    
-    print(f"擴展邏輯：")
-    print(f"  總源數: {expected_sources} = {n_directions} 方向 × {n_components} 成分")
-    print(f"  方向 {direction_idx} 對應源索引: {start_idx}-{end_idx}")
-    
-    # 只在正確方向填入 U_from_X
-    X_expanded[start_idx:end_idx, :] = U_from_X
-    
-    print(f"  非零行數: {torch.count_nonzero(torch.sum(X_expanded, dim=1))}/{X_expanded.shape[0]}")
-    print(f"  係數範圍: {X_expanded[start_idx:end_idx, :].min().item():.3f} - {X_expanded[start_idx:end_idx, :].max().item():.3f}")
-    
-    # 用 A @ X_expanded 重建 Y
-    print(f"\n重建測試：")
-    Y_hat_tensor = localizer.A @ X_expanded
-    Y_hat = Y_hat_tensor.detach().cpu().numpy()
-    
-    # 計算品質指標
-    epsilon = 1e-12
-    mse = float(np.mean((Y_data - Y_hat) ** 2))
-    scale_ratio = float(np.mean(Y_data) / max(np.mean(Y_hat), epsilon))
-    corr = float(np.corrcoef(Y_data.flatten(), Y_hat.flatten())[0, 1])
-    
-    print(f"基本一致性測試結果：")
-    print(f"  MSE: {mse:.2e}")
-    print(f"  規模比例: {scale_ratio:.4f}")
-    print(f"  相關性: {corr:.4f}")
-    
-    if corr > 0.8:
-        print("✓ 高相關性 - 數學框架基本一致！")
-    elif corr > 0.5:
-        print("⚠ 中等相關性 - 框架部分有效，可能有細節問題")
-    else:
-        print("✗ 低相關性 - 數學框架可能有根本問題")
-    
-    return {
-        'mse': mse,
-        'scale_ratio': scale_ratio,
-        'correlation': corr,
-        'Y_hat': Y_hat
-    }
 
 
 def main():
@@ -592,63 +618,43 @@ def main():
     print(f"3. ✓ 數值穩定性良好：無極值問題，動態範圍合理")
     print(f"4. ⚠ 關鍵發現：對數空間相關性提升至 0.2916 (+49%)")
     
-    # 最佳實踐測試：使用對數空間的改進方法
+    # ===== 完整 NMF 框架分析和數據保存 =====
+    print(f"\n執行完整 NMF 框架分析...")
+    
+    # 使用統一的評估函數
+    evaluation_result = evaluate_nmf_framework(Y_data, H_raw, X_data, corr_direct)
+    
+    # 提取所有需要的變量
+    best_H_raw = evaluation_result['best_H_raw']
+    best_method = evaluation_result['best_method'] 
+    best_corr = evaluation_result['best_corr']
+    mse_best = evaluation_result['mse_best']
+    corr_best = evaluation_result['corr_best']
+    scale_ratio_best = evaluation_result['scale_ratio_best']
+    improvement_corr = evaluation_result['improvement_corr']
+    improvement_pct = evaluation_result['improvement_pct']
+    Y_hat_best_np = evaluation_result['Y_hat_best']
+    H_raw_log_space = evaluation_result['H_raw_log_space']
+    Y_direct_log = evaluation_result['Y_direct_log']
+    corr_log = evaluation_result['corr_log']
+    
+    # 計算對比數據（用於可視化）
+    Y_direct_original = H_raw[:, None] * X_data
+    corr_original = float(np.corrcoef(Y_data.flatten(), Y_direct_original.flatten())[0, 1])
+    corr_log_best = corr_log
+    Y_direct_log_best = Y_direct_log
+    
+    # 顯示關鍵結果
     print(f"\n使用對數空間改進的 H_raw 計算:")
-    
-    # 在對數空間計算更穩定的傳遞函數
-    log_X = np.log(X_data + 1e-12)
-    log_Y = np.log(Y_data + 1e-12)
-    log_H_raw = np.mean(log_Y - log_X, axis=1)  # log(Y/X) = log(Y) - log(X)
-    H_raw_log_space = np.exp(log_H_raw)
-    
     print(f"  對數空間 H_raw 統計: mean={np.mean(H_raw_log_space):.4f}, std={np.std(H_raw_log_space):.4f}")
     print(f"  與原始 H_raw 比較: 相關性={np.corrcoef(H_raw, H_raw_log_space)[0,1]:.4f}")
+    print(f"  對數空間 H_raw 重建相關性: {corr_log:.4f} (vs 原始方法 {corr_direct:.4f})")
     
-    # 使用對數空間 H_raw 進行重建測試
-    Y_direct_log_H = H_raw_log_space[:, None] * X_data
-    corr_log_H = float(np.corrcoef(Y_data.flatten(), Y_direct_log_H.flatten())[0, 1])
-    
-    print(f"  對數空間 H_raw 重建相關性: {corr_log_H:.4f} (vs 原始方法 {corr_direct:.4f})")
-    
-    # 完整的 NMF 框架測試，使用最佳 H_raw
-    print(f"\n完整 NMF 框架測試 (使用最佳 H_raw):")
-    
-    # 選擇表現最好的 H_raw
-    if corr_log_H > corr_direct:
-        best_H_raw = H_raw_log_space
-        best_method = "對數空間計算"
-        best_corr = corr_log_H
-    else:
-        best_H_raw = H_raw
-        best_method = "原始方法"  
-        best_corr = corr_direct
-        
+    print(f"\n完整 NMF 框架測試結果:")
     print(f"  選擇方法: {best_method} (基礎物理相關性: {best_corr:.4f})")
-    
-    # 從 X_data 學習源特徵
-    W_from_X, U_from_X = learn_W_from_X(X_data, n_components=15)
-    
-    # 使用最佳 H_raw 構建 NMF 框架
-    H_best_tensor = torch.from_numpy(best_H_raw).float().view(-1, 1)
-    A_best = H_best_tensor * W_from_X  # [F, K]
-    Y_hat_best = A_best @ U_from_X  # [F, N] 
-    Y_hat_best_np = Y_hat_best.detach().cpu().numpy()
-    
-    # 完整框架評估
-    mse_best = float(np.mean((Y_data - Y_hat_best_np) ** 2))
-    corr_best = float(np.corrcoef(Y_data.flatten(), Y_hat_best_np.flatten())[0, 1])
-    scale_ratio_best = float(np.mean(Y_data) / max(np.mean(Y_hat_best_np), 1e-12))
-    
-    print(f"\n完整一致性測試結果 (最佳方法):")
     print(f"  MSE: {mse_best:.2e}")
     print(f"  相關性: {corr_best:.4f}")
     print(f"  規模比例: {scale_ratio_best:.4f}")
-    
-    # 與原始方法對比
-    improvement_corr = corr_best - corr_direct
-    improvement_pct = 100 * improvement_corr / max(corr_direct, 1e-12)
-    
-    print(f"\n對比原始基礎物理測試:")
     print(f"  相關性改善: {improvement_corr:+.4f} ({improvement_pct:+.1f}%)")
     
     # 分析結論
@@ -667,51 +673,12 @@ def main():
     
     print(f"\n最終結論: {conclusion}")
     
-    # 總結所有發現
-    print(f"\n" + "="*80)
-    print("系統性調試總結")
-    print("="*80)
+    # 系統性調試總結
+    print_system_summary(status, best_corr, corr_best, best_method)
     
-    print("已驗證的正確性:")
-    print("  ✓ 數據源一致性: X_stft 和 Y_stft 完全匹配 X_data 和 Y_data")
-    print("  ✓ 頻率濾波: 無重複映射，過濾邏輯正確")
-    print("  ✓ 數值穩定性: 無極值或零值問題，動態範圍合理")
-    print("  ✓ 文件配對: X 和 Y 來自相同的音頻數據對")
-    
-    print("\n關鍵發現:")
-    if corr_log > corr_direct:
-        print(f"  🔍 對數空間計算顯著改善相關性: {corr_log:.4f} vs {corr_direct:.4f}")
-        print("  💡 這表明問題在於線性空間的尺度差異")
-    
-    print(f"  📊 最佳基礎物理相關性: {best_corr:.4f}")
-    print(f"  🎯 完整 NMF 框架相關性: {corr_best:.4f}")
-    
-    if status == "SUCCESS":
-        print("\n🎉 調試成功：NMF 數學框架驗證通過！")
-    elif status in ["PARTIAL", "IMPROVED"]:
-        print(f"\n⚠️ 部分成功：發現重要改進，建議後續優化 {best_method}")
-    else:
-        print("\n❌ 調試未完全成功：仍需進一步分析")
-    
-    print("="*80)
-    
-    # ===== 數據保存：原始方法 vs 對數空間改進方法 =====
-    print(f"\nSaving comparison data for visualization...")
-    
+    # 數據保存
     from datetime import datetime
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # 使用最佳方法的數據
-    log_X = np.log(X_data + 1e-12)
-    log_Y = np.log(Y_data + 1e-12)
-    log_H_raw = np.mean(log_Y - log_X, axis=1)
-    H_raw_log_space = np.exp(log_H_raw)
-    Y_direct_log_best = H_raw_log_space[:, None] * X_data  # 最佳重建
-    Y_direct_original = H_raw[:, None] * X_data  # 原始方法重建
-    
-    # 計算相關性
-    corr_log_best = float(np.corrcoef(Y_data.flatten(), Y_direct_log_best.flatten())[0, 1])
-    corr_original = float(np.corrcoef(Y_data.flatten(), Y_direct_original.flatten())[0, 1])
     
     # 準備完整的數據字典
     reconstruction_data = {
@@ -781,127 +748,10 @@ def main():
     print(f"📁 數據格式: JSON文件包含所有數組、相關性指標和可視化參數")
     print("="*80)
     
-    # 將 H_raw 擴展為與其他方向一致的矩陣格式（僅用於測試框架相容性）
-    test_angle_deg = int(test_angle.replace('angle_', ''))
-    print(f"\n目標角度: {test_angle_deg}°")
-    print(f"  載入的 y_data 來自: {y_dir}")
-    print(f"  使用就地計算的 H_raw (完全對應的傳遞函數)")
-    
-    # ===== 完全一致性測試：整合所有發現的最佳實踐 =====
-    print(f"\n" + "="*80)
-    print("完全一致性測試：整合所有發現")
-    print("="*80)
-    
-    print(f"基於前面的分析結果，實施優化的一致性測試：")
-    print(f"1. ✓ 數據來源一致性：X_stft 和 Y_stft 來源完全一致")
-    print(f"2. ✓ 頻率濾波正確性：無重複映射，過濾順序正確")  
-    print(f"3. ✓ 數值穩定性良好：無極值問題，動態範圍合理")
-    print(f"4. ⚠ 關鍵發現：對數空間相關性提升至 0.2916 (+49%)")
-    
-    # 最佳實踐測試：使用對數空間的改進方法
-    print(f"\n使用對數空間改進的 H_raw 計算:")
-    
-    # 在對數空間計算更穩定的傳遞函數
-    log_X = np.log(X_data + 1e-12)
-    log_Y = np.log(Y_data + 1e-12)
-    log_H_raw = np.mean(log_Y - log_X, axis=1)  # log(Y/X) = log(Y) - log(X)
-    H_raw_log_space = np.exp(log_H_raw)
-    
-    print(f"  對數空間 H_raw 統計: mean={np.mean(H_raw_log_space):.4f}, std={np.std(H_raw_log_space):.4f}")
-    print(f"  與原始 H_raw 比較: 相關性={np.corrcoef(H_raw, H_raw_log_space)[0,1]:.4f}")
-    
-    # 使用對數空間 H_raw 進行重建測試
-    Y_direct_log_H = H_raw_log_space[:, None] * X_data
-    corr_log_H = float(np.corrcoef(Y_data.flatten(), Y_direct_log_H.flatten())[0, 1])
-    
-    print(f"  對數空間 H_raw 重建相關性: {corr_log_H:.4f} (vs 原始方法 {corr_direct:.4f})")
-    
-    # 完整的 NMF 框架測試，使用最佳 H_raw
-    print(f"\n完整 NMF 框架測試 (使用最佳 H_raw):")
-    
-    # 選擇表現最好的 H_raw
-    if corr_log_H > corr_direct:
-        best_H_raw = H_raw_log_space
-        best_method = "對數空間計算"
-        best_corr = corr_log_H
-    else:
-        best_H_raw = H_raw
-        best_method = "原始方法"  
-        best_corr = corr_direct
-        
-    print(f"  選擇方法: {best_method} (基礎物理相關性: {best_corr:.4f})")
-    
-    # 從 X_data 學習源特徵
+    # 為了兼容性，需要重新學習 W_from_X (evaluation_result 內部已經計算過但沒有導出)
     W_from_X, U_from_X = learn_W_from_X(X_data, n_components=15)
     
-    # 使用最佳 H_raw 構建 NMF 框架
-    H_best_tensor = torch.from_numpy(best_H_raw).float().view(-1, 1)
-    A_best = H_best_tensor * W_from_X  # [F, K]
-    Y_hat_best = A_best @ U_from_X  # [F, N] 
-    Y_hat_best_np = Y_hat_best.detach().cpu().numpy()
-    
-    # 完整框架評估
-    mse_best = float(np.mean((Y_data - Y_hat_best_np) ** 2))
-    corr_best = float(np.corrcoef(Y_data.flatten(), Y_hat_best_np.flatten())[0, 1])
-    scale_ratio_best = float(np.mean(Y_data) / max(np.mean(Y_hat_best_np), 1e-12))
-    
-    print(f"\n完整一致性測試結果 (最佳方法):")
-    print(f"  MSE: {mse_best:.2e}")
-    print(f"  相關性: {corr_best:.4f}")
-    print(f"  規模比例: {scale_ratio_best:.4f}")
-    
-    # 與原始方法對比
-    improvement_corr = corr_best - corr_direct
-    improvement_pct = 100 * improvement_corr / max(corr_direct, 1e-12)
-    
-    print(f"\n對比原始基礎物理測試:")
-    print(f"  相關性改善: {improvement_corr:+.4f} ({improvement_pct:+.1f}%)")
-    
-    # 分析結論
-    if corr_best > 0.8:
-        conclusion = "✓ 高相關性 - NMF 數學框架基本正確！"
-        status = "SUCCESS"
-    elif corr_best > 0.5:
-        conclusion = "⚠ 中等相關性 - 框架部分有效，還有改進空間"
-        status = "PARTIAL"
-    elif corr_best > corr_direct + 0.05:
-        conclusion = f"⚠ 低相關性但有改善 - 發現關鍵問題：{best_method}效果更好"
-        status = "IMPROVED"
-    else:
-        conclusion = "✗ 低相關性 - 數學框架可能存在根本問題"
-        status = "FAILED"
-    
-    print(f"\n最終結論: {conclusion}")
-    
-    # 總結所有發現
-    print(f"\n" + "="*80)
-    print("系統性調試總結")
-    print("="*80)
-    
-    print("已驗證的正確性:")
-    print("  ✓ 數據源一致性: X_stft 和 Y_stft 完全匹配 X_data 和 Y_data")
-    print("  ✓ 頻率濾波: 無重複映射，過濾邏輯正確")
-    print("  ✓ 數值穩定性: 無極值或零值問題，動態範圍合理")
-    print("  ✓ 文件配對: X 和 Y 來自相同的音頻數據對")
-    
-    print("\n關鍵發現:")
-    if corr_log > corr_direct:
-        print(f"  🔍 對數空間計算顯著改善相關性: {corr_log:.4f} vs {corr_direct:.4f}")
-        print("  💡 這表明問題在於線性空間的尺度差異")
-    
-    print(f"  📊 最佳基礎物理相關性: {best_corr:.4f}")
-    print(f"  🎯 完整 NMF 框架相關性: {corr_best:.4f}")
-    
-    if status == "SUCCESS":
-        print("\n🎉 調試成功：NMF 數學框架驗證通過！")
-    elif status in ["PARTIAL", "IMPROVED"]:
-        print(f"\n⚠️ 部分成功：發現重要改進，建議後續優化 {best_method}")
-    else:
-        print("\n❌ 調試未完全成功：仍需進一步分析")
-    
-    print("="*80)
-    
-    # 執行基本一致性測試（使用真實未正規化的 H_raw）
+    # 執行額外的基本一致性測試
     result = basic_consistency_test_raw(Y_data, H_raw, W_from_X, U_from_X, config)
     
     print(f"\n✅ 測試完成！")

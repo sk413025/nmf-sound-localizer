@@ -29,7 +29,7 @@ def load_reconstruction_data(json_file):
     return data, arrays
 
 def create_comparison_plot(data, arrays):
-    """Create comprehensive comparison plot"""
+    """Create comprehensive comparison plot with curve comparison"""
     Y_data = arrays['Y_data']
     Y_direct_original = arrays['Y_direct_original']
     Y_direct_log_best = arrays['Y_direct_log_best']
@@ -38,8 +38,8 @@ def create_comparison_plot(data, arrays):
     corr_log_best = data['correlations']['log_space_method']
     improvement_percent = data['correlations']['improvement_percent']
     
-    # Create figure
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    # Create figure with expanded layout for curve comparison
+    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
     fig.suptitle(f'NMF 重建品質分析 (λ_group=0.1, γ_sparse=0.01)\n'
                  f'原始方法 vs 對數空間改進方法', fontsize=16, fontweight='bold')
     
@@ -67,24 +67,50 @@ def create_comparison_plot(data, arrays):
     ax2.set_title(f'對角線對比 Y vs Y_hat\n— Y (原值)\n— Y_hat (重建值)')
     ax2.grid(True, alpha=0.3)
     
-    # Plot 3: Statistical comparison
-    ax3 = axes[1, 0]
+    # Plot 3: Time series curve comparison (sample frequencies)
+    ax3 = axes[0, 2]
+    n_freq_bins = Y_data.shape[0]
+    n_time_steps = Y_data.shape[1]
+    time_axis = np.arange(n_time_steps)
+    
+    # Select representative frequency bins for curve comparison
+    freq_indices = [n_freq_bins//4, n_freq_bins//2, 3*n_freq_bins//4]
+    colors_freq = ['red', 'green', 'purple']
+    
+    for i, freq_idx in enumerate(freq_indices):
+        # Plot original Y_data
+        ax3.plot(time_axis, Y_data[freq_idx, :], 
+                color=colors_freq[i], linestyle='-', alpha=0.7, linewidth=2,
+                label=f'Y_原始 (freq={freq_idx})')
+        # Plot reconstructed Y_direct_log_best
+        ax3.plot(time_axis, Y_direct_log_best[freq_idx, :], 
+                color=colors_freq[i], linestyle='--', alpha=0.9, linewidth=1.5,
+                label=f'Y_重建 (freq={freq_idx})')
+    
+    ax3.set_xlabel('時間步 (Time Steps)')
+    ax3.set_ylabel('振幅 (Amplitude)')
+    ax3.set_title(f'Y vs Y_hat 時間序列對比\n實線: 原始, 虛線: 重建')
+    ax3.grid(True, alpha=0.3)
+    ax3.legend(fontsize=8)
+    
+    # Plot 4: Statistical comparison
+    ax4 = axes[1, 0]
     methods = ['Y (原值)', 'Y_hat (重建值)']
     correlations = [corr_original, corr_log_best]
     colors = ['red', 'blue']
     
-    bars = ax3.bar(methods, correlations, color=colors, alpha=0.7)
-    ax3.set_ylabel('相關性')
-    ax3.set_title('統計數據對比')
-    ax3.grid(True, alpha=0.3, axis='y')
+    bars = ax4.bar(methods, correlations, color=colors, alpha=0.7)
+    ax4.set_ylabel('相關性')
+    ax4.set_title('統計數據對比')
+    ax4.grid(True, alpha=0.3, axis='y')
     
     # Add value labels
     for bar, corr in zip(bars, correlations):
         height = bar.get_height()
-        ax3.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+        ax4.text(bar.get_x() + bar.get_width()/2., height + 0.01,
                 f'{corr:.4f}', ha='center', va='bottom', fontweight='bold')
     
-    ax3.set_ylim(0, max(correlations) * 1.1)
+    ax4.set_ylim(0, max(correlations) * 1.1)
     
     # Add statistics text
     stats_text = f"""數據相關性總結：
@@ -93,25 +119,49 @@ def create_comparison_plot(data, arrays):
 差異相關性標準 {corr_log_best:.4f} vs {corr_original:.4f}
 分析標準值: Div率 = {improvement_percent:.1f}%"""
     
-    ax3.text(0.02, 0.98, stats_text, transform=ax3.transAxes, 
+    ax4.text(0.02, 0.98, stats_text, transform=ax4.transAxes, 
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='lightgray', alpha=0.5))
     
-    # Plot 4: IS Divergence analysis  
-    ax4 = axes[1, 1]
+    # Plot 5: IS Divergence analysis  
+    ax5 = axes[1, 1]
     methods_div = ['數據相關性標準', 'IS Divergence分析結果']
     div_values = [46.50, 46.07]  # Values from the analysis
     colors_div = ['blue', 'red']
     
-    bars_div = ax4.bar(methods_div, div_values, color=colors_div, alpha=0.7)
-    ax4.set_ylabel('IS Divergence分母 (越高越好)')
-    ax4.set_title('IS Divergence分析 分母 (基礎測試分析)')
-    ax4.grid(True, alpha=0.3, axis='y')
+    bars_div = ax5.bar(methods_div, div_values, color=colors_div, alpha=0.7)
+    ax5.set_ylabel('IS Divergence分母 (越高越好)')
+    ax5.set_title('IS Divergence分析 分母 (基礎測試分析)')
+    ax5.grid(True, alpha=0.3, axis='y')
     
     # Add IS divergence labels
     for bar, div_val in zip(bars_div, div_values):
         height = bar.get_height()
-        ax4.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+        ax5.text(bar.get_x() + bar.get_width()/2., height + 0.5,
                 f'{div_val:.2f}', ha='center', va='bottom', fontweight='bold')
+    
+    # Plot 6: Frequency domain comparison (sample time steps)
+    ax6 = axes[1, 2]
+    freq_axis = np.arange(n_freq_bins)
+    
+    # Select representative time steps for frequency domain comparison
+    time_indices = [n_time_steps//4, n_time_steps//2, 3*n_time_steps//4]
+    colors_time = ['orange', 'cyan', 'magenta']
+    
+    for i, time_idx in enumerate(time_indices):
+        # Plot original Y_data frequency spectrum
+        ax6.plot(freq_axis, Y_data[:, time_idx], 
+                color=colors_time[i], linestyle='-', alpha=0.7, linewidth=2,
+                label=f'Y_原始 (t={time_idx})')
+        # Plot reconstructed Y_direct_log_best frequency spectrum  
+        ax6.plot(freq_axis, Y_direct_log_best[:, time_idx], 
+                color=colors_time[i], linestyle='--', alpha=0.9, linewidth=1.5,
+                label=f'Y_重建 (t={time_idx})')
+    
+    ax6.set_xlabel('頻率bin (Frequency Bin)')
+    ax6.set_ylabel('振幅 (Amplitude)')
+    ax6.set_title(f'Y vs Y_hat 頻率域對比\n實線: 原始, 虛線: 重建')
+    ax6.grid(True, alpha=0.3)
+    ax6.legend(fontsize=8)
     
     plt.tight_layout()
     return fig
