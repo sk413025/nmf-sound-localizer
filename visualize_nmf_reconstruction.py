@@ -20,10 +20,21 @@ def load_reconstruction_data(json_file):
         data = json.load(f)
     
     print(f"數據時間戳：{data['metadata']['timestamp']}")
-    print(f"參數設置：λ_group={data['metadata']['lambda_group']}, γ_sparse={data['metadata']['gamma_sparse']}")
+    
+    # Handle different metadata formats
+    if 'lambda_group' in data['metadata']:
+        print(f"參數設置：λ_group={data['metadata']['lambda_group']}, γ_sparse={data['metadata']['gamma_sparse']}")
+    elif 'best_method' in data['metadata']:
+        print(f"最佳方法：{data['metadata']['best_method']}")
+        
     print(f"數據點數量：{data['comparison_data']['data_points']}")
     print(f"規模比例：{data['reconstruction_quality']['scale_ratio']:.4f}")
-    print(f"X 稀疏性：{data['reconstruction_quality']['x_sparsity']:.3f}")
+    
+    # Handle different quality metrics
+    if 'x_sparsity' in data['reconstruction_quality']:
+        print(f"X 稀疏性：{data['reconstruction_quality']['x_sparsity']:.3f}")
+    if 'correlation' in data['reconstruction_quality']:
+        print(f"相關性：{data['reconstruction_quality']['correlation']:.4f}")
     
     return data
 
@@ -36,8 +47,16 @@ def create_y_vs_yhat_comparison(data, save_plots=True):
     
     # 創建多子圖布局
     fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-    fig.suptitle(f'NMF 重建品質分析 (λ_group={data["metadata"]["lambda_group"]}, γ_sparse={data["metadata"]["gamma_sparse"]})', 
-                 fontsize=16, fontweight='bold')
+    
+    # Handle different title formats
+    if 'lambda_group' in data['metadata']:
+        title = f'NMF 重建品質分析 (λ_group={data["metadata"]["lambda_group"]}, γ_sparse={data["metadata"]["gamma_sparse"]})'
+    elif 'best_method' in data['metadata']:
+        title = f'學習源特徵 NMF 重建分析 (最佳方法: {data["metadata"]["best_method"]})'
+    else:
+        title = 'NMF 重建品質分析'
+        
+    fig.suptitle(title, fontsize=16, fontweight='bold')
     
     # 獲取數據
     Y_values = np.array(data['comparison_data']['Y_values'])
@@ -47,6 +66,14 @@ def create_y_vs_yhat_comparison(data, save_plots=True):
     diagonal_Y = np.array(data['curve_comparison']['diagonal_Y'])
     diagonal_Y_hat = np.array(data['curve_comparison']['diagonal_Y_hat'])
     diagonal_is_div = np.array(data['curve_comparison']['diagonal_is_div'])
+    
+    # Additional curves if available
+    if 'time_slice_Y' in data['curve_comparison']:
+        time_slice_Y = np.array(data['curve_comparison']['time_slice_Y'])
+        time_slice_Y_hat = np.array(data['curve_comparison']['time_slice_Y_hat'])
+    if 'freq_slice_Y' in data['curve_comparison']:
+        freq_slice_Y = np.array(data['curve_comparison']['freq_slice_Y'])
+        freq_slice_Y_hat = np.array(data['curve_comparison']['freq_slice_Y_hat'])
     
     # 子圖 1: Y vs Y_hat 散點圖
     ax1 = axes[0, 0]
@@ -112,10 +139,20 @@ def create_y_vs_yhat_comparison(data, save_plots=True):
     
     # 添加文字框顯示關鍵指標
     textstr = f'''關鍵指標:
-規模比例: {data["reconstruction_quality"]["scale_ratio"]:.4f}
-X 稀疏性: {data["reconstruction_quality"]["x_sparsity"]:.1%}
-IS Divergence 總計: {data["reconstruction_quality"]["is_divergence_stats"]["total"]:.2e}
-IS Divergence 平均: {data["reconstruction_quality"]["is_divergence_stats"]["mean"]:.2f}'''
+規模比例: {data["reconstruction_quality"]["scale_ratio"]:.4f}'''
+    
+    # Add available metrics
+    if 'x_sparsity' in data["reconstruction_quality"]:
+        textstr += f'\nX 稀疏性: {data["reconstruction_quality"]["x_sparsity"]:.1%}'
+    if 'correlation' in data["reconstruction_quality"]:
+        textstr += f'\n相關性: {data["reconstruction_quality"]["correlation"]:.4f}'
+    if 'is_divergence' in data["reconstruction_quality"]:
+        textstr += f'\nIS Divergence: {data["reconstruction_quality"]["is_divergence"]:.2e}'
+    if 'mse' in data["reconstruction_quality"]:
+        textstr += f'\nMSE: {data["reconstruction_quality"]["mse"]:.2e}'
+    if 'is_divergence_stats' in data["reconstruction_quality"]:
+        textstr += f'\nIS Div 總計: {data["reconstruction_quality"]["is_divergence_stats"]["total"]:.2e}'
+        textstr += f'\nIS Div 平均: {data["reconstruction_quality"]["is_divergence_stats"]["mean"]:.2f}'
     
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
     fig.text(0.02, 0.02, textstr, fontsize=10, verticalalignment='bottom', bbox=props)
@@ -135,7 +172,7 @@ IS Divergence 平均: {data["reconstruction_quality"]["is_divergence_stats"]["me
 def create_iteration_progression_plot(data, save_plots=True):
     """創建迭代過程分析圖"""
     
-    if not data['iteration_progression']:
+    if 'iteration_progression' not in data or not data['iteration_progression']:
         print("沒有迭代過程數據可供視覺化")
         return None
     
@@ -204,14 +241,30 @@ def print_detailed_analysis(data):
     
     # 基本信息
     print(f"時間戳: {data['metadata']['timestamp']}")
-    print(f"參數設置: λ_group={data['metadata']['lambda_group']}, γ_sparse={data['metadata']['gamma_sparse']}")
+    
+    # Handle different metadata formats
+    if 'lambda_group' in data['metadata']:
+        print(f"參數設置: λ_group={data['metadata']['lambda_group']}, γ_sparse={data['metadata']['gamma_sparse']}")
+    elif 'best_method' in data['metadata']:
+        print(f"最佳方法: {data['metadata']['best_method']}")
+        
     print(f"原始數據形狀: {data['metadata']['Y_shape']}")
-    print(f"重建數據形狀: {data['metadata']['Y_hat_shape']}")
+    if 'Y_hat_shape' in data['metadata']:
+        print(f"重建數據形狀: {data['metadata']['Y_hat_shape']}")
     
     # 重建品質指標
     print(f"\n📊 重建品質指標:")
     print(f"規模比例 (Scale Ratio): {data['reconstruction_quality']['scale_ratio']:.6f}")
-    print(f"X 稀疏性: {data['reconstruction_quality']['x_sparsity']:.1%}")
+    
+    # Handle different quality metrics
+    if 'x_sparsity' in data['reconstruction_quality']:
+        print(f"X 稀疏性: {data['reconstruction_quality']['x_sparsity']:.1%}")
+    if 'correlation' in data['reconstruction_quality']:
+        print(f"相關性: {data['reconstruction_quality']['correlation']:.6f}")
+    if 'mse' in data['reconstruction_quality']:
+        print(f"MSE: {data['reconstruction_quality']['mse']:.2e}")
+    if 'is_divergence' in data['reconstruction_quality']:
+        print(f"IS Divergence: {data['reconstruction_quality']['is_divergence']:.2e}")
     
     # Y 和 Y_hat 統計對比
     print(f"\n📈 Y (原始) vs Y_hat (重建) 統計對比:")
@@ -224,13 +277,14 @@ def print_detailed_analysis(data):
     print(f"最小值: {y_stats['min']:.2e} vs {y_hat_stats['min']:.2e}")
     
     # IS Divergence 分析
-    print(f"\n🔥 IS Divergence 分析:")
-    is_div_stats = data['reconstruction_quality']['is_divergence_stats']
-    print(f"總計: {is_div_stats['total']:.2e}")
-    print(f"平均: {is_div_stats['mean']:.2f}")
-    print(f"標準差: {is_div_stats['std']:.2f}")
-    print(f"最大值: {is_div_stats['max']:.2f}")
-    print(f"最小值: {is_div_stats['min']:.2f}")
+    if 'is_divergence_stats' in data['reconstruction_quality']:
+        print(f"\n🔥 IS Divergence 分析:")
+        is_div_stats = data['reconstruction_quality']['is_divergence_stats']
+        print(f"總計: {is_div_stats['total']:.2e}")
+        print(f"平均: {is_div_stats['mean']:.2f}")
+        print(f"標準差: {is_div_stats['std']:.2f}")
+        print(f"最大值: {is_div_stats['max']:.2f}")
+        print(f"最小值: {is_div_stats['min']:.2f}")
     
     # 數據抽樣信息
     print(f"\n📋 視覺化採樣信息:")
@@ -242,7 +296,7 @@ def print_detailed_analysis(data):
     print(f"對角線數據點數: {data['curve_comparison']['diagonal_length']}")
     
     # 迭代過程摘要
-    if data['iteration_progression']:
+    if 'iteration_progression' in data and data['iteration_progression']:
         print(f"\n⚙️ 優化迭代過程摘要:")
         print(f"追蹤的迭代點數: {len(data['iteration_progression'])}")
         first_iter = data['iteration_progression'][0]
@@ -252,6 +306,8 @@ def print_detailed_analysis(data):
         print(f"損失降低: {(first_iter['loss'] - last_iter['loss'])/first_iter['loss']*100:.1f}%")
         print(f"初始 X 稀疏性: {first_iter['X_sparsity']:.3f}")
         print(f"最終 X 稀疏性: {last_iter['X_sparsity']:.3f}")
+    else:
+        print(f"\n❌ 沒有迭代過程數據")
 
 def main():
     """主函數"""
