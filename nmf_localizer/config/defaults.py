@@ -46,6 +46,7 @@ class NMFConfig:
     n_files_per_angle: int = 50
     use_90deg_reference: bool = True
     apply_contrast_enhancement: bool = True
+    apply_per_freq_normalization: bool = True  # Per-frequency normalization in STFT processor
     
     # Data preparation
     n_speakers: int = 10

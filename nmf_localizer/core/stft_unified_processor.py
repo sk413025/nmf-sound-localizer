@@ -188,11 +188,15 @@ class STFTUnifiedProcessor:
         
         # Apply processing that preserves magnitude spectrum units
         if method == 'stft_unified':
-            logger.info("Applying STFT-unified processing (magnitude-preserving)")
+            logger.info("Applying STFT-unified processing")
             
-            # Normalize relative to mean spectrum (no unit conversion needed)
-            mean_spectrum = torch.mean(H_filtered, dim=1, keepdim=True)
-            H_filtered = H_filtered / (mean_spectrum + 1e-10)
+            # Optional per-frequency normalization
+            if self.config.apply_per_freq_normalization:
+                mean_spectrum = torch.mean(H_filtered, dim=1, keepdim=True)
+                H_filtered = H_filtered / (mean_spectrum + 1e-10)
+                logger.info("Applied per-frequency normalization")
+            else:
+                logger.info("Skipped per-frequency normalization - preserving absolute scale")
             
             # Mild contrast enhancement preserving magnitude units
             if self.config.apply_contrast_enhancement:
