@@ -15,15 +15,16 @@ def setup_fixed_test_data():
     that was validated in commit 83c959735d2f959240e764a20ba92c1cf64424eb.
     
     Data source characteristics:
-    - X (original): white_noise_original_data_no_edge
-    - Y (box response): white_noise_box_data_no_edge  
+    - X (original): white_noise_original_data_no_edge_sync_vad (synchronized VAD processed)
+    - Y (box response): white_noise_box_data_no_edge_sync_vad (synchronized VAD processed)
     - Files per angle: 3 (clip_000, clip_001, clip_002)
     - Angles available: 90°, 100°, 110° (and others)
-    - Validation: Multi-angle NMF optimization success
+    - Processing: Synchronized VAD with same mask applied to X and Y
+    - Validation: Time-frequency correspondence maintained
     """
-    # Set fixed environment variables for all tests
-    os.environ["REAL_TF_X_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
-    os.environ["REAL_TF_Y_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge"
+    # Set fixed environment variables for all tests - using synchronized VAD processed data
+    os.environ["REAL_TF_X_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad"
+    os.environ["REAL_TF_Y_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad"
     os.environ["REAL_TF_N_FILES"] = "3"
     
     # Verify data sources exist
