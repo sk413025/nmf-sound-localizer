@@ -42,8 +42,84 @@ def learn_W_from_X(X_data, n_components=15):
     return torch.from_numpy(W_x).float(), U_from_X
 
 
+def basic_consistency_test_raw(Y_data, H_raw, W_from_X, U_from_X, config):
+    """基本一致性測試：使用未正規化的 H_raw 驗證數學框架"""
+    print("\n" + "="*80)
+    print("基本一致性測試 (使用真實未正規化 H_raw)")
+    print("="*80)
+    
+    # 建構 A 矩陣：A = diag(H_raw) @ W_from_X
+    # H_raw 是單一方向的傳遞函數，直接與 W_from_X 組合
+    print(f"設定檢查：")
+    print(f"  H_raw shape: {H_raw.shape} (單一方向的真實傳遞函數)")
+    print(f"  W_from_X shape: {W_from_X.shape}")
+    print(f"  U_from_X shape: {U_from_X.shape}")
+    
+    # 轉換為 torch tensor
+    H_raw_tensor = torch.from_numpy(H_raw).float().view(-1, 1)  # [F, 1]
+    W_from_X_tensor = W_from_X  # [F, K]
+    
+    # 建構混合矩陣 A = diag(H_raw) @ W_from_X
+    # diag(H_raw) @ W 等於 H_raw[:, None] * W  (廣播)
+    A = H_raw_tensor * W_from_X_tensor  # [F, K]
+    
+    print(f"  A (mixing matrix) shape: {A.shape}")
+    print(f"  A = diag(H_raw) @ W_from_X")
+    print(f"  A 統計: mean={A.mean():.6f}, std={A.std():.6f}")
+    
+    # 直接使用 U_from_X 作為係數矩陣（無需擴展）
+    U_tensor = U_from_X  # [K, N]
+    
+    print(f"  使用原始 U_from_X (無需擴展到多方向)")
+    print(f"  U_from_X 統計: mean={U_tensor.mean():.6f}, range={U_tensor.min():.3f}-{U_tensor.max():.3f}")
+    
+    # 重建測試：Y_hat = A @ U_from_X
+    print(f"\n重建測試：Y_hat = diag(H_raw) @ W_from_X @ U_from_X")
+    Y_hat_tensor = A @ U_tensor  # [F, N]
+    Y_hat = Y_hat_tensor.detach().cpu().numpy()
+    
+    print(f"  重建形狀: Y_hat={Y_hat.shape}, Y_data={Y_data.shape}")
+    
+    # 計算品質指標
+    epsilon = 1e-12
+    mse = float(np.mean((Y_data - Y_hat) ** 2))
+    scale_ratio = float(np.mean(Y_data) / max(np.mean(Y_hat), epsilon))
+    corr = float(np.corrcoef(Y_data.flatten(), Y_hat.flatten())[0, 1])
+    
+    print(f"\n基本一致性測試結果（真實未正規化 H_raw）：")
+    print(f"  MSE: {mse:.2e}")
+    print(f"  規模比例: {scale_ratio:.4f} (1.0 = 完美)")
+    print(f"  相關性: {corr:.4f}")
+    
+    # 統計對比
+    print(f"\n數據統計對比：")
+    print(f"  Y_data: mean={np.mean(Y_data):.2e}, std={np.std(Y_data):.2e}")
+    print(f"  Y_hat:  mean={np.mean(Y_hat):.2e}, std={np.std(Y_hat):.2e}")
+    print(f"  絕對尺度保留: {np.mean(Y_hat)/np.mean(Y_data):.4f}")
+    
+    if corr > 0.8:
+        print("✓ 高相關性 - 數學框架一致性良好！")
+    elif corr > 0.5:
+        print("⚠ 中等相關性 - 框架部分有效")
+    else:
+        print("✗ 低相關性 - 仍有其他問題")
+    
+    return {
+        'mse': mse,
+        'scale_ratio': scale_ratio,
+        'correlation': corr,
+        'Y_hat': Y_hat,
+        'H_raw_stats': {
+            'mean': float(np.mean(H_raw)),
+            'std': float(np.std(H_raw)),
+            'min': float(np.min(H_raw)),
+            'max': float(np.max(H_raw))
+        }
+    }
+
+
 def basic_consistency_test(Y_data, H, W_from_X, U_from_X, direction_idx, config):
-    """基本一致性測試：使用擴展的 U_from_X 驗證數學框架"""
+    """基本一致性測試：使用擴展的 U_from_X 驗證數學框架（舊版本，保留以備比較）"""
     print("\n" + "="*80)
     print("基本一致性測試")
     print("="*80)
@@ -118,7 +194,8 @@ def main():
     config = NMFConfig(
         sample_rate=16000, n_fft=2048, hop_length=512,
         freq_min=500.0, freq_max=3000.0, n_files_per_angle=1,
-        max_iter=50, beta=0, tolerance=1e-6
+        max_iter=50, beta=0, tolerance=1e-6,
+        apply_contrast_enhancement=False    # 保持 H 的原始絕對尺度
     )
     
     # 數據路徑
@@ -130,86 +207,76 @@ def main():
     x_dir = os.path.join(x_root, test_angle)
     y_dir = os.path.join(y_root, test_angle)
     
-    x_files = [f for f in os.listdir(x_dir) if f.endswith('.npy')]
-    y_files = [f for f in os.listdir(y_dir) if f.endswith('.npy')]
+    # 使用 sorted() 確保與 H 計算時的檔案選擇一致
+    x_files = sorted([f for f in os.listdir(x_dir) if f.endswith('.npy')])
+    y_files = sorted([f for f in os.listdir(y_dir) if f.endswith('.npy')])
     
     x_audio = np.load(os.path.join(x_dir, x_files[0]))
     y_audio = np.load(os.path.join(y_dir, y_files[0]))
     
-    # 處理數據
-    audio_processor = AudioProcessor()
+    # 處理數據 - 保留複數 STFT 用於計算未正規化的 H_raw
+    from scipy import signal
     
-    freqs_x, _, _, magnitude_x = audio_processor.compute_stft_spectrogram(
-        x_audio.astype(np.float32), fs=config.sample_rate,
-        nperseg=config.n_fft, noverlap=config.n_fft - config.hop_length
-    )
+    # 計算複數 STFT（保留相位資訊）
+    stft_params = {
+        'fs': config.sample_rate,
+        'nperseg': config.n_fft,
+        'noverlap': config.n_fft - config.hop_length,
+        'window': 'hann'  # 與 STFT processor 一致
+    }
     
-    freqs_y, _, _, magnitude_y = audio_processor.compute_stft_spectrogram(
-        y_audio.astype(np.float32), fs=config.sample_rate,
-        nperseg=config.n_fft, noverlap=config.n_fft - config.hop_length
-    )
+    freqs_x, times_x, X_stft = signal.stft(x_audio.astype(np.float32), **stft_params)
+    freqs_y, times_y, Y_stft = signal.stft(y_audio.astype(np.float32), **stft_params)
     
-    X_tensor = torch.from_numpy(magnitude_x).float()
-    Y_tensor = torch.from_numpy(magnitude_y).float()
+    # 驗證一致性
+    assert np.allclose(freqs_x, freqs_y), "頻率陣列必須匹配"
+    assert X_stft.shape == Y_stft.shape, f"STFT 形狀必須匹配: {X_stft.shape} vs {Y_stft.shape}"
     
-    X_spec, _ = audio_processor.apply_frequency_filter(
-        X_tensor, freqs_x, config.freq_min, config.freq_max
-    )
-    Y_spec, _ = audio_processor.apply_frequency_filter(
-        Y_tensor, freqs_y, config.freq_min, config.freq_max
-    )
+    print(f"STFT 形狀: X_stft={X_stft.shape}, Y_stft={Y_stft.shape}")
     
-    X_data = X_spec.detach().cpu().numpy()
-    Y_data = Y_spec.detach().cpu().numpy()
+    # 計算未正規化的傳遞函數 H_raw = |Y_stft| / |X_stft|
+    epsilon = 1e-12
+    H_stft_complex = Y_stft / (X_stft + epsilon)
     
-    print(f"數據載入完成: X_data={X_data.shape}, Y_data={Y_data.shape}")
+    # 時間平均取幅度（完全保留絕對尺度）
+    H_raw_full = np.mean(np.abs(H_stft_complex), axis=1)  # [freq]
     
-    # 獲取傳遞函數和角度對應
-    processor = DataProcessor(config)
-    H, angles, angle_folders, metadata = processor.estimate_transfer_functions(Path(x_root), Path(y_root))
+    print(f"H_raw_full 形狀: {H_raw_full.shape}")
+    print(f"H_raw_full 統計: mean={np.mean(H_raw_full):.4f}, min={np.min(H_raw_full):.4f}, max={np.max(H_raw_full):.4f}")
     
-    print(f"傳遞函數: H={H.shape}")
-    print(f"角度數組: {angles}")
-    print(f"角度資料夾: {[f.name for f in angle_folders]}")
+    # 應用相同的頻率濾波
+    freq_mask = (freqs_x >= config.freq_min) & (freqs_x <= config.freq_max)
+    H_raw = H_raw_full[freq_mask]  # 未正規化的傳遞函數
+    freqs_filtered = freqs_x[freq_mask]
     
-    # 詳細檢查角度對應關係
-    print(f"\n角度對應檢查:")
-    for i, (angle, folder) in enumerate(zip(angles, angle_folders)):
-        print(f"  索引 {i}: {angle:.0f}° ← {folder.name}")
-        if folder.name == test_angle:
-            print(f"    ★ 這是我們載入的 y_data 對應的角度！")
+    # 取得對應的 magnitude spectra 並濾波
+    magnitude_x = np.abs(X_stft)
+    magnitude_y = np.abs(Y_stft)
     
-    # 找到對應的方向索引
+    X_data = magnitude_x[freq_mask, :]
+    Y_data = magnitude_y[freq_mask, :]
+    
+    print(f"數據載入完成: X_data={X_data.shape}, Y_data={Y_data.shape}, H_raw={H_raw.shape}")
+    
+    # 直接使用計算出的 H_raw，無需獲取多方向的傳遞函數
+    # H_raw 是當前 (x_audio, y_audio) 對的真實未正規化傳遞函數
+    
+    print(f"\n真實傳遞函數 H_raw:")
+    print(f"  H_raw 統計: mean={np.mean(H_raw):.4f}, std={np.std(H_raw):.4f}, min={np.min(H_raw):.4f}, max={np.max(H_raw):.4f}")
+    print(f"  這是從載入的 (x_audio, y_audio) 直接計算的未正規化傳遞函數")
+    print(f"  保留了絕對尺度: Y_stft / X_stft 的真實比例")
+    
+    # 將 H_raw 擴展為與其他方向一致的矩陣格式（僅用於測試框架相容性）
     test_angle_deg = int(test_angle.replace('angle_', ''))
-    direction_idx = None
-    for i, angle in enumerate(angles):
-        if abs(angle - test_angle_deg) < 1e-6:
-            direction_idx = i
-            break
-    
-    if direction_idx is None:
-        print(f"\n⚠️  找不到角度 {test_angle_deg}°！")
-        direction_idx = 0
-    else:
-        print(f"\n✓ 角度 {test_angle_deg}° → 方向索引 {direction_idx}")
-        
-    # 雙重確認：檢查資料夾名稱是否也匹配
-    if direction_idx < len(angle_folders):
-        corresponding_folder = angle_folders[direction_idx].name
-        if corresponding_folder == test_angle:
-            print(f"✓ 資料夾名稱確認: {corresponding_folder} 匹配!")
-        else:
-            print(f"⚠️  資料夾不匹配: 期望 {test_angle}, 但方向 {direction_idx} 對應 {corresponding_folder}")
-    
-    print(f"\n實際測試:")
+    print(f"\n目標角度: {test_angle_deg}°")
     print(f"  載入的 y_data 來自: {y_dir}")
-    print(f"  使用的 H[:, {direction_idx}] 對應: {angles[direction_idx]:.0f}° ({angle_folders[direction_idx].name})")
+    print(f"  使用就地計算的 H_raw (完全對應的傳遞函數)")
     
     # 從 X_data 學習源特徵
     W_from_X, U_from_X = learn_W_from_X(X_data, n_components=15)
     
-    # 執行基本一致性測試
-    result = basic_consistency_test(Y_data, H, W_from_X, U_from_X, direction_idx, config)
+    # 執行基本一致性測試（使用真實未正規化的 H_raw）
+    result = basic_consistency_test_raw(Y_data, H_raw, W_from_X, U_from_X, config)
     
     print(f"\n✅ 測試完成！")
     print(f"結果：相關性 {result['correlation']:.4f}")
