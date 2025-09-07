@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Any
-from tqdm import tqdm
+# from tqdm import tqdm  # Temporarily disabled for testing
 import logging
 import warnings
 from scipy import signal
@@ -44,9 +44,12 @@ class DataProcessor:
         return data
     
     def estimate_transfer_functions(
-        self, 
+        self,
         original_root: Path,
-        box_root: Optional[Path] = None
+        box_root: Optional[Path] = None,
+        *,
+        method: Optional[str] = None,
+        time_pooling: str = 'linear'
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Path], Dict[str, Any]]:
         """
         Estimate transfer functions using STFT-unified approach.
@@ -75,58 +78,20 @@ class DataProcessor:
         # Use STFT-unified approach (the only correct method)
         logger.info("Using STFT-unified transfer function estimation")
         stft_processor = STFTUnifiedProcessor(self.config)
+        # 'method' is accepted for backward API compatibility but ignored here
+        chosen_method = 'stft_unified'
         return stft_processor.estimate_transfer_functions_stft(
-            Path(original_root), Path(box_root), method='stft_unified'
+            Path(original_root), Path(box_root), method=chosen_method, time_pooling=time_pooling
         )
     
     def _apply_improved_processing(
-        self, 
+        self,
         H_linear: torch.Tensor,
         angle_mapping: Dict[str, int],
         angle_folders: List[Path],
         freqs: np.ndarray
     ) -> torch.Tensor:
-        """Apply improved processing with 90-degree reference and frequency filtering."""
-        
-        # Find 90-degree reference
-        angles_degrees = [angle_mapping[folder.name] for folder in angle_folders]
-        logger.info(f"Available angles: {angles_degrees}")
-        
-        if 90 in angles_degrees:
-            ref_angle_idx = angles_degrees.index(90)
-            reference_spectrum = H_linear[:, ref_angle_idx:ref_angle_idx+1]
-            logger.info(f"Using angle 90° (index {ref_angle_idx}) as reference")
-            
-            # Compute relative transfer functions
-            H_relative = H_linear / (reference_spectrum + 1e-10)
-            
-            # Apply contrast enhancement if enabled
-            if self.config.apply_contrast_enhancement:
-                logger.info("Applying per-frequency contrast enhancement...")
-                H_enhanced = self.audio_processor.enhance_contrast(
-                    H_relative, reference_idx=ref_angle_idx, enhancement_factor=2.0
-                )
-                
-                # Log enhancement effect
-                original_range = torch.mean(torch.max(H_relative, dim=1)[0] - torch.min(H_relative, dim=1)[0])
-                enhanced_range = torch.mean(torch.max(H_enhanced, dim=1)[0] - torch.min(H_enhanced, dim=1)[0])
-                logger.info(f"Contrast enhancement: mean range {original_range:.4f} → {enhanced_range:.4f}")
-                
-                H_linear = H_enhanced
-            else:
-                H_linear = H_relative
-                
-        else:
-            logger.warning("90° angle not found, falling back to per-frequency max normalization")
-            H_linear = self.audio_processor.normalize_spectrogram(H_linear, method='per_freq')
-        
-        # Apply frequency band limit
-        if freqs is not None and self.config.freq_min and self.config.freq_max:
-            H_linear, freqs_limited = self.audio_processor.apply_frequency_filter(
-                H_linear, freqs, self.config.freq_min, self.config.freq_max
-            )
-            logger.info(f"Applied {self.config.freq_min}-{self.config.freq_max}Hz band limit: {H_linear.shape[0]} freq bins")
-        
+        """Deprecated: normalization/contrast removed; return input unchanged."""
         return H_linear
     
     def prepare_speech_data(
@@ -193,15 +158,19 @@ class DataProcessor:
                         waveform, fs=self.config.sample_rate, 
                         nperseg=self.config.n_fft, window=self.config.window
                     )
+                    # Apply frequency band mask consistent with config
+                    if self.config.freq_min is not None and self.config.freq_max is not None:
+                        mask = (freqs_speech >= self.config.freq_min) & (freqs_speech <= self.config.freq_max)
+                        magnitude = magnitude[mask, :]
                     specs.append(magnitude)
                     
                     if len(specs) == 1:  # Log first spectrogram
-                        logger.info(f"First real spectrogram shape: {magnitude.shape}")
+                        logger.info(f"First real spectrogram shape (band-limited): {magnitude.shape}")
                         logger.info(f"Time frames: {len(times)}, duration: {times[-1]:.2f}s")
                 else:
                     if np.iscomplexobj(waveform):
                         waveform = np.abs(waveform)
-                    specs.append(waveform)
+                        specs.append(waveform)
             
             # Concatenate all 90-degree data along time axis
             concatenated = np.concatenate(specs, axis=1)
@@ -217,7 +186,7 @@ class DataProcessor:
             # Original behavior: different folders as different speakers
             logger.info(f"Loading speech data from {len(speaker_folders)} folders...")
             
-            for folder in tqdm(speaker_folders):
+            for folder in speaker_folders:
                 # Load files
                 files = self.load_npy_files(folder, max_files=self.config.n_files_per_speaker)
                 
@@ -232,6 +201,9 @@ class DataProcessor:
                             waveform, fs=self.config.sample_rate, 
                             nperseg=self.config.n_fft, window=self.config.window
                         )
+                        if self.config.freq_min is not None and self.config.freq_max is not None:
+                            mask = (freqs_speech >= self.config.freq_min) & (freqs_speech <= self.config.freq_max)
+                            magnitude = magnitude[mask, :]
                         specs.append(magnitude)
                     else:
                         if np.iscomplexobj(waveform):
@@ -326,28 +298,21 @@ class DataProcessor:
                         # Take first channel if stereo
                         audio_data = audio_data[0]
                     
-                    # Convert to spectrogram using STFT
-                    f, t, Zxx = signal.stft(audio_data, fs=self.config.sample_rate, 
-                                          nperseg=512, noverlap=256)
+                    # Convert to spectrogram using STFT consistent with config
+                    f, t, Zxx = signal.stft(
+                        audio_data,
+                        fs=self.config.sample_rate,
+                        nperseg=self.config.n_fft,
+                        noverlap=self.config.n_fft - self.config.hop_length,
+                        window=self.config.window
+                    )
                     magnitude_spec = np.abs(Zxx)
-                    
+                    # Apply frequency band-limiting using freqs from STFT
+                    mask = (f >= (self.config.freq_min or 0.0)) & (f <= (self.config.freq_max or f.max()))
+                    magnitude_spec = magnitude_spec[mask, :]
+
                     # Convert to torch tensor
                     mixture_tensor = torch.from_numpy(magnitude_spec).float().to(device)
-                    
-                    # Apply frequency filtering to match transfer function dimensions (129 bins for 500-1500Hz)
-                    if mixture_tensor.shape[0] > 129:
-                        freq_start = max(0, int(500 * 512 / self.config.sample_rate))
-                        freq_end = min(mixture_tensor.shape[0], freq_start + 129)
-                        mixture_tensor = mixture_tensor[freq_start:freq_end, :]
-                    
-                    # Ensure we have exactly 129 frequency bins
-                    if mixture_tensor.shape[0] != 129:
-                        if mixture_tensor.shape[0] < 129:
-                            padding = torch.zeros(129 - mixture_tensor.shape[0], 
-                                                mixture_tensor.shape[1], device=device)
-                            mixture_tensor = torch.cat([mixture_tensor, padding], dim=0)
-                        else:
-                            mixture_tensor = mixture_tensor[:129, :]
                     
                     test_data.append({
                         'mixture': mixture_tensor,

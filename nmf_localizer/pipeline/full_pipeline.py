@@ -238,7 +238,7 @@ class NMFLocalizationPipeline:
         data_pack = data_pack or self.data_pack
         
         # Get USM model
-        W = usm_model or self.usm_model
+        W = usm_model if usm_model is not None else self.usm_model
         if W is None:
             raise ValueError("No USM model available. Train USM first.")
         
@@ -391,20 +391,23 @@ class NMFLocalizationPipeline:
                 # Use speech data only for USM training and testing
                 if speech_data_root is None:
                     raise ValueError("speech_data_root is required when using pre-computed transfer functions")
-                
-                # Create minimal data pack for speech processing
+
                 logger.info(f"Using pre-computed transfer functions from: {tf_path}")
                 logger.info(f"Processing speech data from: {speech_data_root}")
-                
-                self.data_pack = self.data_processor.process_full_dataset(
-                    str(speech_data_root),  # Use speech data as main source
-                    output_dir=output_path / "processed_data",
-                    speech_data_root=None  # Don't split since we're already using speech data
+
+                # Build a minimal DataPack without estimating transfer functions
+                self.data_pack = DataPack()
+                self.data_pack.config = self.config
+
+                # Prepare band-limited speech data (W training)
+                speaker_data = self.data_processor.prepare_speech_data(Path(speech_data_root))
+                self.data_pack.speaker_data = speaker_data
+
+                # Load test data using config-consistent STFT and band mask
+                test_data = self.data_processor.load_real_angle_test_data(
+                    str(speech_data_root), self.config.n_test_examples
                 )
-                
-                # Clear the transfer functions - will be loaded separately
-                self.data_pack.transfer_functions = None
-                self.data_pack.angles = None
+                self.data_pack.test_data = test_data
             
             experiment_results['stages']['data_preparation'] = {
                 'duration': time.time() - stage_start,

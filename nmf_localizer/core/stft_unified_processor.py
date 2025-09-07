@@ -36,7 +36,8 @@ class STFTUnifiedProcessor:
         self,
         original_root: Path,
         box_root: Path,
-        method: str = 'stft_unified'
+        method: str = 'stft_unified',
+        time_pooling: str = 'linear'
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Path], Dict[str, Any]]:
         """
         Estimate transfer functions using consistent STFT approach.
@@ -58,6 +59,8 @@ class STFTUnifiedProcessor:
             angle_folders: List of angle folders
             metadata: Processing information
         """
+        if time_pooling not in ('linear', 'geometric'):
+            raise ValueError(f"Unsupported time_pooling: {time_pooling}. Choose 'linear' or 'geometric'.")
         # Get angle folders
         original_angles = sorted([d for d in original_root.iterdir() 
                                  if d.is_dir() and d.name.startswith('angle_')])
@@ -143,9 +146,17 @@ class STFTUnifiedProcessor:
                 epsilon = 1e-12
                 H_stft_complex = Y_stft / (X_stft + epsilon)
                 
-                # Time-average to get stationary transfer function 
+                # Time-average to get stationary transfer function
                 # Use magnitude to ensure physical consistency with Y processing
-                H_magnitude = np.mean(np.abs(H_stft_complex), axis=1)
+                if time_pooling == 'linear':
+                    H_magnitude = np.mean(np.abs(H_stft_complex), axis=1)
+                else:  # geometric mean in log-space (robust to scale)
+                    H_magnitude = np.exp(
+                        np.mean(
+                            np.log(np.abs(H_stft_complex) + 1e-12),
+                            axis=1
+                        )
+                    )
                 
                 # Compute coherence using STFT-based cross-spectral estimates
                 # More accurate than Welch for our processing pipeline
@@ -166,7 +177,16 @@ class STFTUnifiedProcessor:
                 
             # Average transfer functions across files for this angle
             if angle_transfer_functions:
-                avg_tf = np.mean(angle_transfer_functions, axis=0)
+                if time_pooling == 'linear':
+                    avg_tf = np.mean(angle_transfer_functions, axis=0)
+                else:
+                    angle_tf_arr = np.array(angle_transfer_functions)
+                    avg_tf = np.exp(
+                        np.mean(
+                            np.log(np.clip(angle_tf_arr, 1e-12, None)),
+                            axis=0
+                        )
+                    )
                 all_transfer_functions.append(avg_tf)
                 
                 avg_coherence = np.mean(angle_coherences)
@@ -186,26 +206,8 @@ class STFTUnifiedProcessor:
         H_filtered = H[freq_mask, :]
         freqs_filtered = freqs[freq_mask]
         
-        # Apply processing that preserves magnitude spectrum units
-        if method == 'stft_unified':
-            logger.info("Applying STFT-unified processing")
-            
-            # Optional per-frequency normalization
-            if self.config.apply_per_freq_normalization:
-                mean_spectrum = torch.mean(H_filtered, dim=1, keepdim=True)
-                H_filtered = H_filtered / (mean_spectrum + 1e-10)
-                logger.info("Applied per-frequency normalization")
-            else:
-                logger.info("Skipped per-frequency normalization - preserving absolute scale")
-            
-            # Mild contrast enhancement preserving magnitude units
-            if self.config.apply_contrast_enhancement:
-                # Global normalization maintaining relative differences
-                H_min = H_filtered.min()
-                H_max = H_filtered.max()
-                if H_max > H_min:
-                    H_filtered = (H_filtered - H_min) / (H_max - H_min) * 0.8 + 0.1
-                logger.info("Applied magnitude-preserving contrast enhancement")
+        # No normalization or contrast enhancement is applied in this project.
+        # We preserve absolute magnitude scale from estimation end-to-end.
         
         logger.info(f"STFT-unified transfer function estimation complete:")
         logger.info(f"  H shape: {H_filtered.shape} (freq × directions)")
@@ -221,6 +223,7 @@ class STFTUnifiedProcessor:
             'freqs': freqs_filtered,
             'stft_parameters': stft_params,
             'n_files_per_angle': self.config.n_files_per_angle,
+            'time_pooling': time_pooling,
             'units': 'magnitude_spectrum_ratio',
             'coherence_stats': {
                 'mean_coherence': overall_coherence,

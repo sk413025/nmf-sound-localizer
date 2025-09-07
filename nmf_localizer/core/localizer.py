@@ -46,7 +46,7 @@ class NMFSoundLocalizer(nn.Module):
         self.tol = config.tolerance
         self.epsilon = config.epsilon
         self.device = config.device
-        self.normalize_blocks = config.normalize_blocks
+        # Block normalization removed; preserve absolute scale across directions
         
         # IS-divergence safety parameters
         self.transfer_epsilon = config.transfer_epsilon
@@ -164,11 +164,7 @@ class NMFSoundLocalizer(nn.Module):
             if self.freq_weights is not None:
                 A_d = self.freq_weights.view(-1, 1) * A_d
                 
-            if self.normalize_blocks:
-                # Equalize Frobenius norm across direction blocks
-                bn = torch.linalg.norm(A_d, ord='fro') + self.epsilon
-                A_d = A_d / bn
-                block_norms.append(bn.item())
+            # No block normalization: preserve absolute scale differences across directions
                 
             A_blocks.append(A_d)
             
@@ -176,8 +172,7 @@ class NMFSoundLocalizer(nn.Module):
         logger.info(f"Final A matrix shape: {self.A.shape} "
                    f"(expected: {self.n_freq} x {self.n_components * self.n_directions})")
         
-        if self.normalize_blocks and block_norms:
-            logger.info(f"Applied block normalization; sample norms: {block_norms[:5]}")
+        # Block normalization removed by design
 
     def _beta_divergence(self, Y: torch.Tensor, Y_hat: torch.Tensor) -> torch.Tensor:
         """Compute beta divergence between Y and Y_hat."""

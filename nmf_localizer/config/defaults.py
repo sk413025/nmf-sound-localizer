@@ -30,6 +30,7 @@ class NMFConfig:
     max_iter: int = 100
     tolerance: float = 1e-4
     epsilon: float = 1e-8
+    # Deprecated: block normalization removed (ignored)
     normalize_blocks: bool = False
     
     # IS-divergence safety parameters
@@ -45,8 +46,9 @@ class NMFConfig:
     # Transfer function estimation (now uses STFT-unified approach only)
     n_files_per_angle: int = 50
     use_90deg_reference: bool = True
-    apply_contrast_enhancement: bool = True
-    apply_per_freq_normalization: bool = True  # Per-frequency normalization in STFT processor
+    # Deprecated: normalization/contrast removed (ignored)
+    apply_contrast_enhancement: bool = False
+    apply_per_freq_normalization: bool = False
     
     # Data preparation
     n_speakers: int = 10
