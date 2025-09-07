@@ -1,0 +1,39 @@
+============================================================
+NMF LOCALIZATION EVALUATION REPORT
+============================================================
+
+--- OVERALL PERFORMANCE ---
+Accuracy: 94.1%
+Mean Error: 0.0°
+Median Error: 0.0°
+Per-Source Accuracy: 94.1%
+
+--- PROCESSING PERFORMANCE ---
+Mean Processing Time: 590.7ms
+Success Rate: 100.0%
+Examples Evaluated: 51
+
+--- PER-ANGLE ANALYSIS ---
+Angle  30°: 100.0% ( 3/ 3), Error:   0.0°
+Angle  45°: 100.0% ( 3/ 3), Error:   0.0°
+Angle  80°: 100.0% ( 3/ 3), Error:   0.0°
+Angle  85°: 100.0% ( 3/ 3), Error:   0.0°
+Angle  90°:   0.0% ( 0/ 3), Error:  58.3°
+Angle  95°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 100°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 105°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 110°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 115°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 120°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 125°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 130°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 135°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 140°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 145°: 100.0% ( 3/ 3), Error:   0.0°
+Angle 150°: 100.0% ( 3/ 3), Error:   0.0°
+
+--- CONFIGURATION ---
+Tolerance: 10.0°
+Sources: 1
+
+============================================================
