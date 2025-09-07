@@ -199,11 +199,11 @@ def create_summary_report(results, viz_results, output_file='angle_test_summary.
 
 def main():
     """Main batch testing function"""
-    print("🔬 NMF Angle Range Testing: 90-130 degrees")
+    print("🔬 NMF Angle Range Testing: 80-150 degrees")
     print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Define angle range
-    angles = [90, 95, 100, 105, 110, 115, 120, 125, 130]
+    angles = [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
     
     print(f"Testing {len(angles)} angles: {angles}")
     
