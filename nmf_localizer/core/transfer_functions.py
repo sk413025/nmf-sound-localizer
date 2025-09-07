@@ -364,28 +364,8 @@ class TransferFunctionProcessor:
             }
             processing_info['steps_applied'].append('frequency_limiting')
         
-        # 2. Apply reference normalization if reference angle is available
-        try:
-            ref_idx = self.get_direction_index(angles, reference_angle)
-            H_processed = self.normalize_transfer_functions(
-                H_processed, method='reference', reference_idx=ref_idx
-            )
-            processing_info['reference_normalization'] = {
-                'reference_angle': reference_angle,
-                'reference_index': ref_idx
-            }
-            processing_info['steps_applied'].append('reference_normalization')
-        except Exception as e:
-            logger.warning(f"Reference normalization failed: {e}")
-            # Fall back to per-frequency normalization
-            H_processed = self.normalize_transfer_functions(H_processed, method='per_freq')
-            processing_info['steps_applied'].append('per_freq_normalization')
-        
-        # 3. Apply contrast enhancement
-        if self.config.apply_contrast_enhancement:
-            ref_idx = processing_info.get('reference_normalization', {}).get('reference_index')
-            H_processed = self.enhance_contrast(H_processed, reference_idx=ref_idx)
-            processing_info['steps_applied'].append('contrast_enhancement')
+        # 2. No normalization or contrast enhancement: preserve absolute scale end-to-end
+        processing_info['normalization'] = 'none'
         
         # 4. Analyze final separability
         separability = self.analyze_separability(H_processed)

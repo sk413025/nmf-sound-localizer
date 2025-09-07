@@ -41,7 +41,7 @@ def parse_args():
     p.add_argument('--angle-step', type=int, default=5)
     p.add_argument('--n-files', type=int, default=3)
     p.add_argument('--fs', type=int, default=16000)
-    p.add_argument('--apply-contrast', action='store_true', help='Apply contrast enhancement (off by default)')
+    # Normalization/contrast have been removed; no related flags.
     return p.parse_args()
 
 
@@ -132,14 +132,13 @@ def main():
         freq_min=500.0,
         freq_max=1500.0,
         n_files_per_angle=args.n_files,
-        apply_contrast_enhancement=bool(args.apply_contrast),
         device='cpu',
     )
     dp = DataProcessor(cfg)
 
     # Estimate H
     print('Estimating transfer functions...')
-    H, angles, angle_folders, meta = dp.estimate_transfer_functions(x_sub, y_sub, method='xy_correspondence')
+    H, angles, angle_folders, meta = dp.estimate_transfer_functions(x_sub, y_sub, time_pooling='geometric')
 
     print(f'H shape: {tuple(H.shape)}, angles: {angles.tolist()}')
     print(f'H stats: min={H.min().item():.4f} max={H.max().item():.4f} mean={H.mean().item():.4f}')
@@ -170,4 +169,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

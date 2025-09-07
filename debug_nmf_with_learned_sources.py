@@ -220,8 +220,7 @@ def main():
     config = NMFConfig(
         sample_rate=16000, n_fft=2048, hop_length=512,
         freq_min=500.0, freq_max=3000.0, n_files_per_angle=1,
-        max_iter=50, beta=0, tolerance=1e-6,
-        apply_contrast_enhancement=False    # 保持 H 的原始絕對尺度
+        max_iter=50, beta=0, tolerance=1e-6
     )
     
     # 數據路徑

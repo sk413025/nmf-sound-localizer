@@ -39,16 +39,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic usage - estimate from noise dataset
-  python scripts/estimate_transfer_functions.py /path/to/noise_data --output tf_noise.pth
-  
-  # With custom parameters
-  python scripts/estimate_transfer_functions.py /path/to/noise_data \\
-    --output tf_noise.pth \\
-    --method improved \\
-    --freq-min 300 \\
-    --freq-max 2000 \\
-    --files-per-angle 100
+  # Basic usage - estimate from noise dataset (geometric time pooling)
+  python scripts/estimate_transfer_functions.py /path/to/noise_data --output tf_noise.pth \
+    --freq-min 500 --freq-max 1500 --files-per-angle 100 --time-pooling geometric
         """
     )
     
@@ -66,11 +59,11 @@ Examples:
     )
     
     parser.add_argument(
-        '--method',
+        '--time-pooling',
         type=str,
-        choices=['simple', 'improved'],
-        default='improved',
-        help='Transfer function estimation method (default: improved)'
+        choices=['linear', 'geometric'],
+        default='geometric',
+        help='Time pooling mode for TF estimation (default: geometric)'
     )
     
     parser.add_argument(
@@ -94,18 +87,7 @@ Examples:
         help='Maximum frequency (Hz) for analysis (default: 1500.0)'
     )
     
-    parser.add_argument(
-        '--reference-angle',
-        type=float,
-        default=90.0,
-        help='Reference angle for normalization (default: 90.0)'
-    )
-    
-    parser.add_argument(
-        '--no-contrast-enhancement',
-        action='store_true',
-        help='Disable contrast enhancement'
-    )
+    # Normalization and contrast enhancement have been removed from the project.
     
     parser.add_argument(
         '--verbose', '-v',
@@ -133,19 +115,16 @@ Examples:
     logger.info("=" * 60)
     logger.info(f"Input directory: {noise_data_root}")
     logger.info(f"Output path: {output_path}")
-    logger.info(f"Method: {args.method}")
     logger.info(f"Frequency range: {args.freq_min}-{args.freq_max} Hz")
     logger.info(f"Files per angle: {args.files_per_angle}")
-    logger.info(f"Reference angle: {args.reference_angle}°")
+    logger.info(f"Time pooling: {args.time_pooling}")
     
     try:
         # Create configuration
         config = NMFConfig(
-            tf_method=args.method,
             n_files_per_angle=args.files_per_angle,
             freq_min=args.freq_min,
-            freq_max=args.freq_max,
-            apply_contrast_enhancement=not args.no_contrast_enhancement
+            freq_max=args.freq_max
         )
         
         # Initialize processors
@@ -156,8 +135,8 @@ Examples:
         
         # Estimate transfer functions
         H, angles, angle_folders, metadata = data_processor.estimate_transfer_functions(
-            noise_data_root, 
-            method=config.tf_method
+            noise_data_root,
+            time_pooling=args.time_pooling
         )
         
         logger.info(f"Raw transfer functions estimated: {H.shape}")
@@ -169,8 +148,7 @@ Examples:
             H_processed, processing_info = tf_processor.process_transfer_functions(
                 H, 
                 angles, 
-                freqs=metadata['freqs'],
-                reference_angle=args.reference_angle
+                freqs=metadata['freqs']
             )
             
             # Update metadata
@@ -189,12 +167,10 @@ Examples:
                 **metadata,
                 'noise_data_root': str(noise_data_root),
                 'estimation_params': {
-                    'method': args.method,
+                    'time_pooling': args.time_pooling,
                     'files_per_angle': args.files_per_angle,
                     'freq_min': args.freq_min,
-                    'freq_max': args.freq_max,
-                    'reference_angle': args.reference_angle,
-                    'contrast_enhancement': not args.no_contrast_enhancement
+                    'freq_max': args.freq_max
                 }
             }
         )

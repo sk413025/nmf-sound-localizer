@@ -57,11 +57,9 @@ def main():
     # Create configuration optimized for 5-degree intervals
     config = NMFConfig(
         # Transfer function estimation
-        tf_method='improved',
         n_files_per_angle=50,
         freq_min=500.0,
         freq_max=1500.0,
-        apply_contrast_enhancement=True,
         
         # USM parameters
         n_speakers=10,
