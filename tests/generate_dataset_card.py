@@ -208,8 +208,7 @@ class DatasetCardGenerator:
             # Use existing data_processor.estimate_transfer_functions method
             H, angles_tensor, angle_folders, metadata = self.data_processor.estimate_transfer_functions(
                 original_root=self.x_root,
-                box_root=self.y_root,
-                method='xy_correspondence'
+                box_root=self.y_root
             )
             
             print(f"Transfer functions computed successfully:")

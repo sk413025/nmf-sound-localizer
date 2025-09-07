@@ -84,7 +84,6 @@ def test_h_estimation_from_real_xy(test_data_paths):
         freq_min=500.0,
         freq_max=1500.0,
         n_files_per_angle=n_files,
-        apply_contrast_enhancement=False,
         device='cpu',
     )
 
@@ -93,7 +92,7 @@ def test_h_estimation_from_real_xy(test_data_paths):
     # Run estimation with real data
     dp = DataProcessor(cfg)
     H_est, angles_out, angle_folders, metadata = dp.estimate_transfer_functions(
-        x_root, y_root, method='xy_correspondence'
+        x_root, y_root
     )
     
     # Basic shape and format validation
@@ -104,7 +103,7 @@ def test_h_estimation_from_real_xy(test_data_paths):
     # Numerical sanity checks
     assert torch.all(torch.isfinite(H_est)), "H contains non-finite values"
     assert torch.all(H_est >= 0.0), "H contains negative values"
-    assert torch.all(H_est <= 1.0), "H contains values > 1.0 after normalization"
+    # No normalization is applied; only check non-negativity
     
     # Coherence analysis (key feature of Welch method)
     assert 'coherence_stats' in metadata, "Coherence statistics missing from metadata"
@@ -148,49 +147,38 @@ def test_h_estimation_from_real_xy(test_data_paths):
     print(f"  - Welch method validation: PASSED")
 
 
-def test_transfer_processor_frequency_limit_and_reference_norm():
-    """Unit: TransferFunctionProcessor.apply_frequency_limit + reference normalization.
-    Ensures 90° reference yields ~1.0 column and ratios preserved.
-    """
+def test_transfer_processor_frequency_limit_only():
+    """Unit: TransferFunctionProcessor.apply_frequency_limit behavior under band limiting only."""
     cfg = NMFConfig(
         freq_min=500.0,
         freq_max=1500.0,
-        apply_contrast_enhancement=False,
         device='cpu',
     )
     tfp = TransferFunctionProcessor(cfg)
 
-    # Synthetic freqs 0..4000, angles 0,90,180
+    # Synthetic freqs 0..8000, angles 0,90,180
     fs = 16000
     n_fft = 2048
     freqs = np.linspace(0, fs / 2, n_fft // 2 + 1)
     angles = torch.tensor([0.0, 90.0, 180.0], dtype=torch.float32)
     H_full = _make_synthetic_H(freqs, angles)
 
-    # Process
-    H_proc, info = tfp.process_transfer_functions(H_full, angles, freqs=freqs, reference_angle=90.0)
+    # Process (band-limit only)
+    H_proc, info = tfp.apply_frequency_limit(H_full, freqs)
 
     # Shape check within band
-    assert H_proc.shape[0] == np.count_nonzero((freqs >= cfg.freq_min) & (freqs <= cfg.freq_max))
+    mask = (freqs >= cfg.freq_min) & (freqs <= cfg.freq_max)
+    assert H_proc.shape[0] == np.count_nonzero(mask)
     assert H_proc.shape[1] == len(angles)
 
-    # Reference column near 1 per frequency
-    ref_col = H_proc[:, 1]
-    assert torch.allclose(ref_col, torch.ones_like(ref_col), atol=1e-5)
-
-    # Ratio preservation: for any freq, H[:,0]/H[:,1] equals original ratio at that freq
-    # Rebuild band-limited originals
-    mask = (freqs >= cfg.freq_min) & (freqs <= cfg.freq_max)
+    # Values should equal the band-limited slice
     H_bl = H_full[mask, :]
-    ratios_orig = H_bl[:, 0] / (H_bl[:, 1] + 1e-10)
-    ratios_proc = H_proc[:, 0]
-    mae = torch.mean(torch.abs(ratios_proc - ratios_orig)).item()
-    assert mae < 1e-5
+    assert torch.allclose(H_proc, H_bl)
 
 
 def test_mixing_matrix_construction_and_freq_weights():
     """Unit: A = [diag(H_d)W] and frequency weights applied consistently."""
-    cfg = NMFConfig(device='cpu', normalize_blocks=False)
+    cfg = NMFConfig(device='cpu')
     localizer = NMFSoundLocalizer(cfg)
 
     # Small deterministic W,H
@@ -228,7 +216,7 @@ def test_mixing_matrix_construction_and_freq_weights():
 
 def test_separability_metrics_discriminate_cases():
     """Unit: analyze_separability yields higher correlation/condition for collinear H."""
-    cfg = NMFConfig(device='cpu', apply_contrast_enhancement=False)
+    cfg = NMFConfig(device='cpu')
     tfp = TransferFunctionProcessor(cfg)
 
     # Build two H sets with same F,D

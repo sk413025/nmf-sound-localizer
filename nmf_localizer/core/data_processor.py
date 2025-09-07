@@ -84,15 +84,7 @@ class DataProcessor:
             Path(original_root), Path(box_root), method=chosen_method, time_pooling=time_pooling
         )
     
-    def _apply_improved_processing(
-        self,
-        H_linear: torch.Tensor,
-        angle_mapping: Dict[str, int],
-        angle_folders: List[Path],
-        freqs: np.ndarray
-    ) -> torch.Tensor:
-        """Deprecated: normalization/contrast removed; return input unchanged."""
-        return H_linear
+    # Legacy improved-processing function (normalization/contrast) removed.
     
     def prepare_speech_data(
         self, 

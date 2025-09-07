@@ -91,13 +91,12 @@ def test_real_tf_subset_integration(tmp_path):
         freq_min=500.0,
         freq_max=1500.0,
         n_files_per_angle=n_files,
-        apply_contrast_enhancement=False,
         device='cpu',
     )
     dp = DataProcessor(cfg)
 
     # Estimate H
-    H, angles, angle_folders, meta = dp.estimate_transfer_functions(x_sub, y_sub, method='xy_correspondence')
+    H, angles, angle_folders, meta = dp.estimate_transfer_functions(x_sub, y_sub)
 
     # Shape checks
     assert H.shape[1] == len(angles)
@@ -107,9 +106,7 @@ def test_real_tf_subset_integration(tmp_path):
 
     # Numerical sanity
     assert torch.all(torch.isfinite(H))
-    vmin = H.min().item()
-    vmax = H.max().item()
-    assert vmin >= 0.09 and vmax <= 0.91  # scaled to ~[0.1,0.9]
+    assert torch.all(H >= 0.0)
 
     # Separability metrics (conservative thresholds)
     tfp = TransferFunctionProcessor(cfg)
@@ -123,4 +120,3 @@ def test_real_tf_subset_integration(tmp_path):
     assert angle_std >= expected_std, f"Angle response std {angle_std:.4f} < {expected_std:.4f} (coherence: {meta.get('coherence_stats', {}).get('mean_coherence', 'unknown')})"
     # Frequency-wise variation across angles
     assert sep['mean_freq_range'] >= 0.05
-

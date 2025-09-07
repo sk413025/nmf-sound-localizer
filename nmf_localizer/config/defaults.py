@@ -2,7 +2,7 @@
 Default configuration and data structures for NMF localization.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import List, Dict, Optional, Any
 import torch
 from pathlib import Path
@@ -30,9 +30,6 @@ class NMFConfig:
     max_iter: int = 100
     tolerance: float = 1e-4
     epsilon: float = 1e-8
-    # Deprecated: block normalization removed (ignored)
-    normalize_blocks: bool = False
-    
     # IS-divergence safety parameters
     transfer_epsilon: float = 1e-5      # Minimum value for transfer functions (A matrix regularization)
     reconstruction_epsilon: float = 1e-5 # Minimum value for Y_hat reconstruction (safe X updates)
@@ -43,12 +40,9 @@ class NMFConfig:
     usm_sparsity_weight: float = 0.1
     usm_max_iter: int = 200
     
-    # Transfer function estimation (now uses STFT-unified approach only)
+    # Transfer function estimation (uses STFT-unified approach only)
     n_files_per_angle: int = 50
-    use_90deg_reference: bool = True
-    # Deprecated: normalization/contrast removed (ignored)
-    apply_contrast_enhancement: bool = False
-    apply_per_freq_normalization: bool = False
+    
     
     # Data preparation
     n_speakers: int = 10
@@ -71,8 +65,10 @@ class NMFConfig:
     
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> 'NMFConfig':
-        """Create config from dictionary."""
-        return cls(**config_dict)
+        """Create config from dictionary, ignoring unknown/deprecated keys."""
+        valid_keys = {f.name for f in fields(cls)}
+        filtered = {k: v for k, v in (config_dict or {}).items() if k in valid_keys}
+        return cls(**filtered)
 
 
 class DataPack:
