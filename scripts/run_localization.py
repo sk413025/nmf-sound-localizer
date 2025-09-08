@@ -52,6 +52,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument('--freq-min', type=float, default=500.0)
     p.add_argument('--freq-max', type=float, default=1500.0)
 
+    # Angle filtering (optional)
+    p.add_argument('--angle-min', type=float, default=None, help='Minimum angle (deg) to include in evaluation')
+    p.add_argument('--angle-max', type=float, default=None, help='Maximum angle (deg) to include in evaluation')
+
     # Hardware and verbosity
     p.add_argument('--device', type=str, default='cpu', help="'cpu', 'cuda', or 'mps'")
     p.add_argument('-v', '--verbose', action='store_true', help='Verbose logging')
@@ -101,6 +105,8 @@ def main() -> int:
             tf_path=tf_path,
             speech_data_root=speech_root,
             save_models=True,
+            angle_min=args.angle_min,
+            angle_max=args.angle_max,
         )
     except Exception as e:
         logger.exception(f"Experiment failed: {e}")
@@ -115,4 +121,3 @@ def main() -> int:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

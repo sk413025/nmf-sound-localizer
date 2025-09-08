@@ -339,7 +339,9 @@ class NMFLocalizationPipeline:
         force_reprocess: bool = False,
         save_models: bool = True,
         tf_path: Optional[Union[str, Path]] = None,
-        speech_data_root: Optional[Union[str, Path]] = None
+        speech_data_root: Optional[Union[str, Path]] = None,
+        angle_min: Optional[float] = None,
+        angle_max: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Run complete NMF localization experiment.
@@ -407,6 +409,20 @@ class NMFLocalizationPipeline:
                 test_data = self.data_processor.load_real_angle_test_data(
                     str(speech_data_root), self.config.n_test_examples
                 )
+                # Optional: filter test data by angle range
+                if angle_min is not None and angle_max is not None:
+                    filtered = []
+                    for ex in test_data:
+                        dirs = ex.get('directions', [])
+                        if not dirs:
+                            continue
+                        a = float(dirs[0])
+                        if angle_min <= a <= angle_max:
+                            filtered.append(ex)
+                    if not filtered:
+                        raise ValueError(f"No test examples within requested angle range {angle_min}-{angle_max}°")
+                    logger.info(f"Filtered test data by angle: {len(filtered)}/{len(test_data)} within {angle_min}-{angle_max}°")
+                    test_data = filtered
                 self.data_pack.test_data = test_data
             
             experiment_results['stages']['data_preparation'] = {
@@ -443,6 +459,23 @@ class NMFLocalizationPipeline:
             else:
                 # Use transfer functions from data pack
                 self.load_transfer_functions()
+
+            # Optional: filter directions by angle range (H and angles)
+            if angle_min is not None and angle_max is not None:
+                H = self.data_pack.transfer_functions
+                angles = self.data_pack.angles
+                if H is None or angles is None:
+                    raise ValueError("Transfer functions or angles not loaded")
+                ang_cpu = angles.detach().cpu()
+                mask = (ang_cpu >= angle_min) & (ang_cpu <= angle_max)
+                n_keep = int(mask.sum().item())
+                if n_keep == 0:
+                    raise ValueError(f"No directions within requested range {angle_min}-{angle_max}°")
+                H_filt = H[:, mask]
+                angles_filt = angles[mask]
+                self.data_pack.transfer_functions = H_filt
+                self.data_pack.angles = angles_filt
+                logger.info(f"Filtered directions to {n_keep} within {angle_min}-{angle_max}° for localization")
             
             experiment_results['stages']['transfer_function_processing'] = {
                 'duration': time.time() - stage_start,
