@@ -340,6 +340,7 @@ class NMFLocalizationPipeline:
         save_models: bool = True,
         tf_path: Optional[Union[str, Path]] = None,
         speech_data_root: Optional[Union[str, Path]] = None,
+        test_data_root: Optional[Union[str, Path]] = None,
         angle_min: Optional[float] = None,
         angle_max: Optional[float] = None
     ) -> Dict[str, Any]:
@@ -406,8 +407,10 @@ class NMFLocalizationPipeline:
                 self.data_pack.speaker_data = speaker_data
 
                 # Load test data using config-consistent STFT and band mask
+                # Use test_data_root if provided, otherwise fallback to speech_data_root
+                actual_test_root = test_data_root if test_data_root else speech_data_root
                 test_data = self.data_processor.load_real_angle_test_data(
-                    str(speech_data_root), self.config.n_test_examples
+                    str(actual_test_root), self.config.n_test_examples
                 )
                 # Optional: filter test data by angle range
                 if angle_min is not None and angle_max is not None:

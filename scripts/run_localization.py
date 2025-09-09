@@ -37,6 +37,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument('--tf-path', required=True, type=str, help='Path to transfer functions .pth file')
     p.add_argument('--speech-data-root', required=True, type=str, help='Root of speech dataset (angle_*/ subdirs)')
     p.add_argument('--output', required=True, type=str, help='Output directory for experiment results')
+    
+    # Optional separate data sources for USM training vs testing
+    p.add_argument('--usm-data-root', type=str, default=None, help='Root of USM training dataset (if different from speech-data-root)')
+    p.add_argument('--test-data-root', type=str, default=None, help='Root of test dataset (if different from speech-data-root)')
 
     # NMF / evaluation parameters
     p.add_argument('--beta', type=float, default=0.0, help='Beta divergence (0: IS, 1: KL, 2: L2)')
@@ -71,6 +75,10 @@ def main() -> int:
 
     tf_path = Path(args.tf_path)
     speech_root = Path(args.speech_data_root)
+    
+    # For Configuration C: use separate USM and test data sources if provided
+    usm_root = Path(args.usm_data_root) if args.usm_data_root else speech_root
+    test_root = Path(args.test_data_root) if args.test_data_root else speech_root
     out_dir = Path(args.output)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -80,6 +88,15 @@ def main() -> int:
     if not speech_root.exists():
         logger.error(f"Speech data root not found: {speech_root}")
         return 1
+    if not usm_root.exists():
+        logger.error(f"USM data root not found: {usm_root}")
+        return 1
+    if not test_root.exists():
+        logger.error(f"Test data root not found: {test_root}")
+        return 1
+        
+    logger.info(f"USM training data: {usm_root}")
+    logger.info(f"Test data: {test_root}")
 
     # Build configuration
     config = NMFConfig(
@@ -95,15 +112,26 @@ def main() -> int:
         device=args.device,
     )
 
-    # Run pipeline with pre-computed TFs and separate speech data
+    # Run pipeline with pre-computed TFs and separate USM/test data
     pipeline = NMFLocalizationPipeline(config)
+    
+    # Log data source configuration
+    if test_root != usm_root:
+        logger.info("=== CROSS-DOMAIN CONFIGURATION ===")
+        logger.info(f"USM training data: {usm_root}")
+        logger.info(f"Test data: {test_root}")
+    else:
+        logger.info("=== STANDARD CONFIGURATION ===")
+        logger.info(f"USM and test data: {speech_root}")
+    
     try:
         results = pipeline.run_full_experiment(
             data_root="unused_when_tf_path_is_set",
             output_dir=out_dir,
             n_sources=args.n_sources,
             tf_path=tf_path,
-            speech_data_root=speech_root,
+            speech_data_root=usm_root,     # USM training data
+            test_data_root=test_root,      # Test data (may be different)
             save_models=True,
             angle_min=args.angle_min,
             angle_max=args.angle_max,
