@@ -131,15 +131,11 @@ dmypy.json
 
 # Project-specific ignores
 outputs/
-*.pth
-*.pt
-*.pkl
-*.npy
 # *.wav  # Now tracked by Git LFS
-*.png
 *.jpg
 *.pdf
 
+# Generated reconstruction dumps (do not track)
 # IDE
 .vscode/
 .idea/
