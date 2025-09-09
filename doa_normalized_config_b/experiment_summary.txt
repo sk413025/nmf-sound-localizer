@@ -1,0 +1,26 @@
+NMF LOCALIZATION EXPERIMENT SUMMARY
+==================================================
+Timestamp: 2025-09-09T15:50:17.660729
+Total Duration: 33.8s
+Success: True
+
+Configuration:
+  Beta: 0.0
+  Lambda Group: 5.0
+  Gamma Sparse: 0.1
+  Max Iterations: 100
+  Device: cpu
+
+Stage Durations:
+  data_preparation: 0.1s
+  usm_training: 8.0s
+  transfer_function_processing: 0.0s
+  localizer_training: 0.0s
+  evaluation: 25.6s
+
+Evaluation Results:
+  Accuracy: 94.1%
+  Mean Error: 0.0°
+  Processing Time: 502.2ms
+
+==================================================
