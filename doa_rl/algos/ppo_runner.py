@@ -43,6 +43,7 @@ class PPORunner:
         for epoch in range(epochs):
             t0 = time.time()
             buf.clear()
+            adv_action_raw_vals = []
             for i, (sample, extra) in enumerate(zip(ds, exs)):
                 ids = vocab.encode(_extract_tokens(sample["prompt"]))
                 input_ids, attn = pad_sequences([ids], vocab.pad_id)
@@ -54,17 +55,48 @@ class PPORunner:
                     Y_t = Y
                 out = adv(Y_t) if adv is not None else {"A": torch.zeros(len(dir_vocab))}
                 A = out["A"]
+                if logger.isEnabledFor(logging.DEBUG) and i == 0:
+                    try:
+                        y_np = Y if isinstance(Y, np.ndarray) else Y.detach().cpu().numpy()
+                        logger.debug(
+                            "PPORunner[epoch %d]: first-sample Y stats: shape=%s min=%.4g max=%.4g mean=%.4g std=%.4g",
+                            epoch, tuple(y_np.shape), float(np.min(y_np)), float(np.max(y_np)), float(np.mean(y_np)), float(np.std(y_np))
+                        )
+                        a_np = A.detach().cpu().numpy()
+                        logger.debug(
+                            "PPORunner[epoch %d]: first A stats: D=%d min=%.4g max=%.4g mean=%.4g std=%.4g neg_frac=%.3f",
+                            epoch, a_np.size, float(a_np.min()), float(a_np.max()), float(a_np.mean()), float(a_np.std()), float((a_np < 0).mean())
+                        )
+                    except Exception:
+                        pass
                 with torch.no_grad():
                     logits = policy(input_ids, attn)
                     dist = torch.distributions.Categorical(logits=logits)
                     action = dist.sample()
                     logp = dist.log_prob(action)
                     adv_val = A[action.item()].view(1)
+                    adv_action_raw_vals.append(float(adv_val.item()))
                 buf.add(logits=logits.squeeze(0), action=action.squeeze(0), logp=logp.squeeze(0),
                         advantage=adv_val.squeeze(0), input_ids=input_ids.squeeze(0), attention_mask=attn.squeeze(0))
                 if (i + 1) % 10 == 0:
                     logger.debug("PPORunner: buffered %d samples", i + 1)
             batch = buf.to_tensors()
+            if logger.isEnabledFor(logging.DEBUG):
+                try:
+                    arr = np.asarray(adv_action_raw_vals, dtype=np.float32)
+                    logger.debug(
+                        "PPORunner[epoch %d]: raw advantage(action) stats before norm: n=%d min=%.4g max=%.4g mean=%.4g std=%.4g",
+                        epoch, arr.size, float(arr.min()) if arr.size else float('nan'), float(arr.max()) if arr.size else float('nan'), float(arr.mean()) if arr.size else float('nan'), float(arr.std()) if arr.size else float('nan')
+                    )
+                    adv_std = batch.get("adv")
+                    if adv_std is not None:
+                        adv_np = adv_std.detach().cpu().numpy()
+                        logger.debug(
+                            "PPORunner[epoch %d]: standardized advantage stats: n=%d min=%.4g max=%.4g mean=%.4g std=%.4g",
+                            epoch, adv_np.size, float(adv_np.min()), float(adv_np.max()), float(adv_np.mean()), float(adv_np.std())
+                        )
+                except Exception:
+                    pass
             last_info = trainer.update(batch, epochs=epochs)
             logger.info("PPORunner: epoch=%d policy_loss=%.6f kl=%.6f elapsed=%.2fs",
                         epoch, float(last_info.get("policy_loss", 0.0)), float(last_info.get("kl", 0.0)), time.time() - t0)

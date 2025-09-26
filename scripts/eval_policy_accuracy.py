@@ -10,6 +10,8 @@ from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.model.transformer import TransformerPolicy
 from doa_rl.text import Vocab, pad_sequences
 from features.tokenizers import PatchTokenizer, NMFTokenizer, direction_projection_tokens
+from doa_rl.assets import load_H
+from doa_rl.eval.metrics import angular_error
 
 
 def main():
@@ -54,6 +56,7 @@ def main():
 
     correct = 0
     n = 0
+    correct_10deg = 0
     with torch.no_grad():
         for item in dl:
             Y = item['Y'].squeeze(0).numpy()
@@ -67,11 +70,36 @@ def main():
             input_ids, attn = pad_sequences([ids], vocab.pad_id)
             logits = policy(input_ids, attn)
             pred = int(torch.argmax(logits, dim=-1).item())
-            gt = int(item['angle_index'])
-            correct += int(pred == gt)
+            gt_idx = int(item['angle_index'])
+            correct += int(pred == gt_idx)
             n += 1
+            # 10-degree tolerance
+            # Map indices to degrees via loaded angles
+            # (angles tensor already loaded in H loader step)
+        
+    # Re-iterate to compute 10° tolerance using angles
+    angles = load_H(args.tf_path)[1].numpy().tolist()
+    with torch.no_grad():
+        for item in dl:
+            Y = item['Y'].squeeze(0).numpy()
+            toks = (fea(Y, H=H_np)[0] if args.feature == 'nmf' else fea(Y))
+            if args.add_dir_tokens:
+                toks = toks + direction_projection_tokens(Y.mean(axis=1), H_np)
+            ids = vocab.encode(toks, add_cls=True)
+            input_ids, attn = pad_sequences([ids], vocab.pad_id)
+            logits = policy(input_ids, attn)
+            pred_idx = int(torch.argmax(logits, dim=-1).item())
+            gt_idx = int(item['angle_index'])
+            pred_deg = angles[pred_idx]
+            gt_deg = angles[gt_idx]
+            # reuse angular_error with D bins to compute deg diff
+            diff = angular_error([gt_idx], [pred_idx], D=len(angles))
+            if diff <= 10.0:
+                correct_10deg += 1
+
     acc = 100.0 * correct / max(n, 1)
-    print({"n": n, "acc_top1": acc})
+    acc10 = 100.0 * correct_10deg / max(n, 1)
+    print({"n": n, "acc_top1": acc, "acc_top1_10deg": acc10})
 
 
 if __name__ == '__main__':

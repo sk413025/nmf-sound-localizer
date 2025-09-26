@@ -1,4 +1,6 @@
 import argparse
+import os
+import logging
 import numpy as np
 import torch
 from transformers import set_seed
@@ -24,7 +26,11 @@ def main():
     ap.add_argument("--s_mode", type=str, choices=["S1", "S2"], default="S1")
     ap.add_argument("--nmf_iter", type=int, default=50)
     ap.add_argument("--nmf_l1", type=float, default=0.0)
+    ap.add_argument("--debug", action="store_true", help="Enable DEBUG logging")
     args = ap.parse_args(); set_seed(args.seed)
+
+    log_level = logging.DEBUG if args.debug or os.environ.get("RL_DEBUG") == "1" else logging.INFO
+    logging.basicConfig(level=log_level, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
 
     H_store = np.load(args.H)
     H_np = H_store["H"]

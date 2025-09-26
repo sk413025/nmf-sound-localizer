@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
@@ -6,6 +7,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 
 from nmf_localizer.utils.audio_utils import AudioProcessor
+
+
+logger = logging.getLogger(__name__)
 
 
 class DoADataset(Dataset):
@@ -38,11 +42,14 @@ class DoADataset(Dataset):
                 self.index.append((f, angle_deg, int(angle_deg)))
 
     def __len__(self) -> int:
-        return len(self.index)
+        size = len(self.index)
+        logger.info("DoADataset.__len__: %d samples in %s", size, self.root)
+        return size
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         path, angle_deg, _ = self.index[idx]
         wav = np.load(path)
+        logger.info("DoADataset.__getitem__: idx=%d wav_path=%s wav_shape=%s", idx, path, wav.shape)
         assert wav.ndim == 1, "Expected mono waveform"
         freqs, times, stft, magnitude = AudioProcessor.compute_stft_spectrogram(
             wav, fs=self.fs, nperseg=self.n_fft, window=self.window
@@ -50,6 +57,8 @@ class DoADataset(Dataset):
         mask = (freqs >= self.freq_min) & (freqs <= self.freq_max)
         mag_band = magnitude[mask, :].astype(np.float32)
         Y = torch.from_numpy(mag_band)
+        logger.info("DoADataset.__getitem__: spectrogram shape=%s (masked from %s)",
+                     Y.shape, magnitude.shape)
         return {
             "Y": Y,
             "angle_deg": float(angle_deg),
@@ -60,4 +69,3 @@ class DoADataset(Dataset):
 
 def create_dataloader(dataset: DoADataset, batch_size: int = 1, shuffle: bool = True) -> DataLoader:
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
-
