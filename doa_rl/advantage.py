@@ -47,13 +47,16 @@ class AdvantageComputer:
         self.nmf_l1 = nmf_l1
         self.add_phys_feature = add_phys_feature
 
-    def __call__(self, Y: torch.Tensor, pi: Optional[torch.Tensor] = None,
+    def __call__(self, Y: torch.Tensor, pi: torch.Tensor,
                  s_hat: Optional[torch.Tensor] = None) -> Dict[str, Any]:
         device = self.localizer.device
         Y = Y.to(device)
         info: Dict[str, Any] = {}
         D = self.localizer.n_directions
         K = self.localizer.n_components
+        Y_cpu = Y.detach().cpu()
+        if pi is None:
+            raise ValueError("AdvantageComputer requires policy distribution 'pi'")
 
         if logger.isEnabledFor(logging.DEBUG):
             try:
@@ -85,80 +88,43 @@ class AdvantageComputer:
                 pass
 
         eps = 1e-8
-        if pi is None:
-            # Legacy surrogate: factorization-based reconstruction
-            X, info = self.localizer.factorize(Y)
-            Y_hat = self.localizer.A @ X  # (F,N)
-            group_norms = torch.zeros(D, device=device)
-            for d in range(D):
-                sidx = d * K
-                eidx = (d + 1) * K
-                X_d = X[sidx:eidx, :]
-                group_norms[d] = torch.sum(torch.abs(X_d))
-            Y_hat_safe = torch.clamp(Y_hat, min=eps)
-            base = (Y / (Y_hat_safe ** 2)) - (1.0 / Y_hat_safe)
-            base_sum = torch.sum(base, dim=1).detach().cpu()  # (F,)
+        # MD-consistent: policy-mixture reconstruction with cached ŝ
+        pi_cpu = pi.detach().cpu().float().view(-1)
+        H_cpu = self.H  # (F,D)
+        s_cpu = s_hat_cpu.view(-1)  # (F,)
+        Hs = H_cpu * s_cpu.view(-1, 1)  # (F,D)
+        Y_mix = torch.matmul(Hs, pi_cpu)  # (F,)
+        Y_mix = torch.clamp(Y_mix, min=eps)
+        Fdim, N = Y.shape
+        Y_hat_safe = Y_mix.view(-1, 1).expand(Fdim, N)
+        base = (Y / (Y_hat_safe ** 2)) - (1.0 / Y_hat_safe)
+        base_sum = torch.sum(base, dim=1).detach().cpu()
+        # No group norms from factorization in this path
+        group_norms = torch.zeros(D, device=device)
+        Y_hat_cpu = Y_hat_safe.detach().cpu()
+        logger.info(
+            "Advantage: policy-mixture reconstruction shapes — pi=%s, Y_mix=%s, Y_hat=%s, base_sum=%s",
+            tuple(pi_cpu.shape), tuple(Y_mix.shape), tuple(Y_hat_safe.shape), tuple(base_sum.shape)
+        )
+        try:
             logger.info(
-                "Advantage: factorized reconstruction shapes — X=%s, Y_hat=%s, group_norms=%s, base_sum=%s",
-                tuple(X.shape), tuple(Y_hat.shape), tuple(group_norms.shape), tuple(base_sum.shape)
+                "Advantage: policy-mixture base_sum stats min=%.4g max=%.4g mean=%.4g",
+                float(base_sum.min()), float(base_sum.max()), float(base_sum.mean())
             )
+        except Exception:
+            pass
+        if logger.isEnabledFor(logging.DEBUG):
             try:
-                logger.info(
-                    "Advantage: factorized base_sum stats min=%.4g max=%.4g mean=%.4g",
-                    float(base_sum.min()), float(base_sum.max()), float(base_sum.mean())
+                logger.debug("Advantage: pi %s", _tensor_stats(pi_cpu, "pi(D)"))
+                logger.debug("Advantage: Y_mix %s", _tensor_stats(Y_mix, "Y_mix(F)"))
+                logger.debug("Advantage: base %s", _tensor_stats(base, "base(FxN)"))
+                logger.debug(
+                    "Advantage: base_sum(F) %s neg_frac=%.3f",
+                    _tensor_stats(base_sum, "base_sum(F)"),
+                    float((base_sum < 0).float().mean()),
                 )
             except Exception:
                 pass
-            if logger.isEnabledFor(logging.DEBUG):
-                try:
-                    logger.debug("Advantage: factorize() X %s", _tensor_stats(X, "X(KD x N)"))
-                    logger.debug("Advantage: Y_hat %s", _tensor_stats(Y_hat, "Y_hat(FxN)"))
-                    logger.debug("Advantage: base %s", _tensor_stats(base, "base(FxN)"))
-                    logger.debug(
-                        "Advantage: base_sum(F) %s neg_frac=%.3f",
-                        _tensor_stats(base_sum, "base_sum(F)"),
-                        float((base_sum < 0).float().mean()),
-                    )
-                except Exception:
-                    pass
-        else:
-            # MD-consistent: policy-mixture reconstruction
-            # Ŷ_mix = Σ_d π_d (H_d ⊙ ŝ)  (ρ absorbed into π scale)
-            pi_cpu = pi.detach().cpu().float().view(-1)
-            H_cpu = self.H  # (F,D)
-            s_cpu = s_hat_cpu.view(-1)  # (F,)
-            Hs = H_cpu * s_cpu.view(-1, 1)  # (F,D)
-            Y_mix = torch.matmul(Hs, pi_cpu)  # (F,)
-            Y_mix = torch.clamp(Y_mix, min=eps)
-            Fdim, N = Y.shape
-            Y_hat_safe = Y_mix.view(-1, 1).expand(Fdim, N)
-            base = (Y / (Y_hat_safe ** 2)) - (1.0 / Y_hat_safe)
-            base_sum = torch.sum(base, dim=1).detach().cpu()
-            # No group norms from factorization in this path
-            group_norms = torch.zeros(D, device=device)
-            logger.info(
-                "Advantage: policy-mixture reconstruction shapes — pi=%s, Y_mix=%s, Y_hat=%s, base_sum=%s",
-                tuple(pi_cpu.shape), tuple(Y_mix.shape), tuple(Y_hat_safe.shape), tuple(base_sum.shape)
-            )
-            try:
-                logger.info(
-                    "Advantage: policy-mixture base_sum stats min=%.4g max=%.4g mean=%.4g",
-                    float(base_sum.min()), float(base_sum.max()), float(base_sum.mean())
-                )
-            except Exception:
-                pass
-            if logger.isEnabledFor(logging.DEBUG):
-                try:
-                    logger.debug("Advantage: pi %s", _tensor_stats(pi_cpu, "pi(D)"))
-                    logger.debug("Advantage: Y_mix %s", _tensor_stats(Y_mix, "Y_mix(F)"))
-                    logger.debug("Advantage: base %s", _tensor_stats(base, "base(FxN)"))
-                    logger.debug(
-                        "Advantage: base_sum(F) %s neg_frac=%.3f",
-                        _tensor_stats(base_sum, "base_sum(F)"),
-                        float((base_sum < 0).float().mean()),
-                    )
-                except Exception:
-                    pass
 
         H_cpu = self.H
         s_cpu = s_hat_cpu
@@ -204,4 +170,12 @@ class AdvantageComputer:
             gp = (g - g.mean()) / (g.std() + 1e-8)
             phi = gp + p
 
-        return {"phi": phi, "A": A, "r_is": r_is, "info": info, "s_hat": s_cpu.clone()}
+        return {
+            "phi": phi,
+            "A": A,
+            "r_is": r_is,
+            "info": info,
+            "s_hat": s_cpu.clone(),
+            "Y_hat": Y_hat_cpu.clone(),
+            "Y_orig": Y_cpu.clone(),
+        }

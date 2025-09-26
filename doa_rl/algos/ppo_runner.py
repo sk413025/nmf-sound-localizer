@@ -53,7 +53,11 @@ class PPORunner:
                     Y_t = torch.from_numpy(Y.astype("float32"))
                 else:
                     Y_t = Y
-                out = adv(Y_t) if adv is not None else {"A": torch.zeros(len(dir_vocab))}
+                with torch.no_grad():
+                    logits = policy(input_ids, attn)
+                    dist = torch.distributions.Categorical(logits=logits)
+                    pi_vec = torch.softmax(logits, dim=-1).squeeze(0).cpu()
+                out = adv(Y_t, pi=pi_vec) if adv is not None else {"A": torch.zeros(len(dir_vocab))}
                 A = out["A"]
                 if logger.isEnabledFor(logging.DEBUG) and i == 0:
                     try:
@@ -70,8 +74,6 @@ class PPORunner:
                     except Exception:
                         pass
                 with torch.no_grad():
-                    logits = policy(input_ids, attn)
-                    dist = torch.distributions.Categorical(logits=logits)
                     action = dist.sample()
                     logp = dist.log_prob(action)
                     adv_val = A[action.item()].view(1)

@@ -9,6 +9,24 @@ import logging
 import time
 
 
+def _compute_reconstruction_metrics(Y_np: np.ndarray, Y_hat_np: np.ndarray,
+                                    eps: float = 1e-12) -> Dict[str, float]:
+    Y_mean = np.maximum(Y_np.mean(axis=1), eps)
+    Y_hat_mean = np.maximum(Y_hat_np.mean(axis=1), eps)
+    diff = Y_mean - Y_hat_mean
+    mse = float(np.mean(diff ** 2))
+    mae = float(np.mean(np.abs(diff)))
+    ratio = np.maximum(Y_mean, eps) / np.maximum(Y_hat_mean, eps)
+    is_div = float(np.sum(ratio - np.log(ratio) - 1.0))
+    return {
+        "mse": mse,
+        "mae": mae,
+        "is_div": is_div,
+        "ratio_min": float(ratio.min()),
+        "ratio_max": float(ratio.max()),
+    }
+
+
 def _compute_patch_reconstruction(Y_np: np.ndarray, s_hat: np.ndarray,
                                   H_np: np.ndarray, dir_idx: int,
                                   eps: float = 1e-12) -> Dict[str, Any]:
@@ -23,23 +41,13 @@ def _compute_patch_reconstruction(Y_np: np.ndarray, s_hat: np.ndarray,
     Y_mix = np.maximum(Y_mix, eps)
 
     Y_mean = np.maximum(Y_np.mean(axis=1), eps)
-    mse = float(np.mean((Y_mean - Y_mix) ** 2))
-    mae = float(np.mean(np.abs(Y_mean - Y_mix)))
-    ratio = np.maximum(Y_mean, eps) / Y_mix
-    is_div = float(np.sum(ratio - np.log(ratio) - 1.0))
-
-    metrics = {
-        "mse": mse,
-        "mae": mae,
-        "is_div": is_div,
-        "ratio_min": float(ratio.min()),
-        "ratio_max": float(ratio.max()),
-    }
+    metrics = _compute_reconstruction_metrics(Y_np, np.tile(Y_mix[:, None], (1, Y_np.shape[1])), eps=eps)
     return {"Y_mix": Y_mix, "metrics": metrics}
 
 
 def _visualize_reconstructions(samples: List[Dict[str, Any]], output_dir: Path,
-                               logger: logging.Logger, eps: float = 1e-12) -> None:
+                               logger: logging.Logger, eps: float = 1e-12,
+                               prefix: str = "recon") -> None:
     if not samples:
         return
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -60,9 +68,12 @@ def _visualize_reconstructions(samples: List[Dict[str, Any]], output_dir: Path,
 
         freq_axis = np.arange(Y.shape[0])
         Y_mean = np.maximum(Y.mean(axis=1), eps)
-        Y_mix = np.maximum(Y_mix, eps)
+        if Y_mix.ndim == 2:
+            Y_mix_curve = np.maximum(Y_mix.mean(axis=1), eps)
+        else:
+            Y_mix_curve = np.maximum(Y_mix, eps)
         log_Y = np.log10(Y_mean)
-        log_Ymix = np.log10(Y_mix)
+        log_Ymix = np.log10(Y_mix_curve)
         diff = log_Y - log_Ymix
 
         fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
@@ -83,9 +94,9 @@ def _visualize_reconstructions(samples: List[Dict[str, Any]], output_dir: Path,
                      fontsize=8, color='black', verticalalignment='top',
                      bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', pad=3))
 
-        fig.suptitle(f'Patch Reconstruction — sample {idx}')
+        fig.suptitle(f'Reconstruction — sample {idx}')
         fig.tight_layout()
-        out_path = output_dir / f"patch_recon_{idx:02d}_{Path(path).stem}.png"
+        out_path = output_dir / f"{prefix}_recon_{idx:02d}_{Path(path).stem}.png"
         fig.savefig(out_path, dpi=150)
         plt.close(fig)
         logger.info("Saved patch reconstruction visualization: %s", out_path)
@@ -129,6 +140,8 @@ def main():
     ap.add_argument("--device", type=str, default="auto", help="auto|cpu|cuda|mps")
     ap.add_argument("--viz-samples", type=int, default=3,
                     help="Number of reconstruction visualizations to save (patch mode)")
+    ap.add_argument("--adv-viz-samples", type=int, default=3,
+                    help="Number of advantage-phase recon visualizations to save")
     args = ap.parse_args()
     # Log to console and file under logs/
     logs_dir = Path("logs"); logs_dir.mkdir(parents=True, exist_ok=True)
@@ -192,6 +205,8 @@ def main():
         if args.feature == 'patch':
             nmf_aux = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode,
                                    l1=args.nmf_l1, topk=args.nmf_topk)
+        adv_recon_samples: List[Dict[str, Any]] = []
+        adv_recon_metrics: List[Dict[str, float]] = []
 
         for idx, item in enumerate(dl):
             Y_t = item['Y'].squeeze(0)
@@ -258,7 +273,7 @@ def main():
                 float(mae_vals.mean()), float(is_vals.mean()))
         if args.feature == 'patch' and recon_samples:
             viz_dir = Path("outputs") / "patch_recon"
-            _visualize_reconstructions(recon_samples, viz_dir, logger)
+            _visualize_reconstructions(recon_samples, viz_dir, logger, prefix="patch")
 
         vocab = Vocab(); vocab.build(token_lists)
         logger.info("train_single: vocab size=%d pad_id=%d cls_id=%d", len(vocab.itos), vocab.pad_id, vocab.cls_id)
@@ -295,6 +310,26 @@ def main():
                     outA = adv(rec['Y'], pi=pi[j], s_hat=rec.get('s_hat'))
                     A = outA['A']
                     logger.info("train_single: rec advantage shape=%s", A.shape)
+                    Y_hat_t = outA.get('Y_hat')
+                    Y_orig_t = outA.get('Y_orig')
+                    if Y_hat_t is not None and Y_orig_t is not None:
+                        Y_hat_np = np.asarray(Y_hat_t.numpy())
+                        Y_orig_np = np.asarray(Y_orig_t.numpy())
+                        adv_metrics = _compute_reconstruction_metrics(Y_orig_np, Y_hat_np)
+                        adv_recon_metrics.append(adv_metrics.copy())
+                        sample_idx = i0 + j
+                        logger.info(
+                            "Advantage reconstruction sample %d: mse=%.3e mae=%.3e IS=%.3e ratio[min=%.3g max=%.3g]",
+                            sample_idx, adv_metrics["mse"], adv_metrics["mae"], adv_metrics["is_div"],
+                            adv_metrics["ratio_min"], adv_metrics["ratio_max"])
+                        if len(adv_recon_samples) < max(0, args.adv_viz_samples):
+                            adv_recon_samples.append({
+                                "index": sample_idx,
+                                "Y": Y_orig_np.copy(),
+                                "Y_mix": Y_hat_np.copy(),
+                                "path": rec.get("path", f"sample_{sample_idx:04d}"),
+                                "metrics": adv_metrics,
+                            })
                     adv_val = A[actions[j].item()].view(1)
                     buf.add(logits=logits[j].cpu(), action=actions[j].cpu(), logp=logps[j].cpu(),
                             advantage=adv_val.squeeze(0), input_ids=input_ids[j].cpu(), attention_mask=attn[j].cpu())
@@ -338,6 +373,42 @@ def main():
             logs.append(row)
             print(row)
             logger.info("Epoch %d summary: %s", ep, row)
+        if adv_recon_metrics:
+            mse_vals = np.array([m["mse"] for m in adv_recon_metrics], dtype=np.float64)
+            mae_vals = np.array([m["mae"] for m in adv_recon_metrics], dtype=np.float64)
+            is_vals = np.array([m["is_div"] for m in adv_recon_metrics], dtype=np.float64)
+            ratio_min_vals = np.array([m["ratio_min"] for m in adv_recon_metrics], dtype=np.float64)
+            ratio_max_vals = np.array([m["ratio_max"] for m in adv_recon_metrics], dtype=np.float64)
+            summary = {
+                "count": int(len(adv_recon_metrics)),
+                "mse_mean": float(mse_vals.mean()),
+                "mse_std": float(mse_vals.std()),
+                "mae_mean": float(mae_vals.mean()),
+                "is_mean": float(is_vals.mean()),
+                "ratio_min_global": float(ratio_min_vals.min()),
+                "ratio_max_global": float(ratio_max_vals.max()),
+                "sample_metrics": [
+                    {
+                        "index": s["index"],
+                        "path": s.get("path"),
+                        **s.get("metrics", {}),
+                    }
+                    for s in adv_recon_samples
+                ],
+            }
+            logger.info(
+                "Advantage reconstruction summary: count=%d mse_mean=%.3e mse_std=%.3e is_mean=%.3e ratio[min,max]=(%.3g, %.3g)",
+                summary["count"], summary["mse_mean"], summary["mse_std"], summary["is_mean"],
+                summary["ratio_min_global"], summary["ratio_max_global"],
+            )
+            metrics_path = Path("outputs") / "advantage_recon_metrics.json"
+            metrics_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(metrics_path, "w") as f:
+                json.dump(summary, f, indent=2)
+        if adv_recon_samples:
+            viz_dir = Path("outputs") / "advantage_recon"
+            _visualize_reconstructions(adv_recon_samples, viz_dir, logger, prefix="advantage")
+
         out_dir = Path("rl_runs"); out_dir.mkdir(parents=True, exist_ok=True)
         with open(out_dir / "vocab.json", "w") as f:
             json.dump(vocab.itos, f)
