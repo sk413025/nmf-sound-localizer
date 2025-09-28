@@ -38,7 +38,7 @@ def _is_z_update(Ybar: torch.Tensor, W: torch.Tensor, n_iter: int = 50, l1: floa
 class AdvantageComputer:
     def __init__(self, localizer: NMFSoundLocalizer, W: torch.Tensor, H: torch.Tensor,
                  s_mode: str = "S1", nmf_iter: int = 50, nmf_l1: float = 0.0,
-                 add_phys_feature: bool = True):
+                 add_phys_feature: bool = True, require_s_hat: bool = False):
         self.localizer = localizer
         self.W = W.detach().cpu()
         self.H = H.detach().cpu()  # (F,D)
@@ -46,6 +46,7 @@ class AdvantageComputer:
         self.nmf_iter = nmf_iter
         self.nmf_l1 = nmf_l1
         self.add_phys_feature = add_phys_feature
+        self.require_s_hat = require_s_hat
 
     def __call__(self, Y: torch.Tensor, pi: torch.Tensor,
                  s_hat: Optional[torch.Tensor] = None) -> Dict[str, Any]:
@@ -68,6 +69,8 @@ class AdvantageComputer:
         if s_hat is not None:
             s_hat_cpu = s_hat.detach().cpu().float().view(-1)
         else:
+            if self.require_s_hat:
+                raise ValueError("AdvantageComputer: s_hat is required but was not provided")
             Ybar = torch.mean(Y, dim=1).detach().cpu()
             if self.s_mode == "S2":
                 Hbar = torch.clamp(self.H.mean(dim=1), min=1e-8)

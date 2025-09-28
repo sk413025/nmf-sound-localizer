@@ -19,6 +19,9 @@ from nmf_localizer.config.defaults import NMFConfig
 
 
 def main():
+    import sys
+    print("[DEPRECATED] scripts/train_ppo.py is deprecated. Use doa_rl/scripts/train_single.py with --content-root.")
+    sys.exit(1)
     parser = argparse.ArgumentParser()
     parser.add_argument('--tf-path', type=str, default=RLConfig.tf_path)
     parser.add_argument('--w-path', type=str, default=RLConfig.w_path)

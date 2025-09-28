@@ -51,7 +51,8 @@ def main():
         loc = NMFSoundLocalizer(ncfg)
         loc.load_source_dictionary(W_t)
         loc.load_transfer_functions(H_t)
-        adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter, nmf_l1=args.nmf_l1)
+        adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter,
+                                nmf_l1=args.nmf_l1, require_s_hat=True)
     else:
         adv = None
 

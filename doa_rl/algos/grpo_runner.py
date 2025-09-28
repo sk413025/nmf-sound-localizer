@@ -55,7 +55,13 @@ class GRPORunner:
                     logits = policy(input_ids, attn)
                     dist = torch.distributions.Categorical(logits=logits)
                     pi_vec = torch.softmax(logits, dim=-1).squeeze(0).cpu()
-                out = adv(Y_t, pi=pi_vec) if adv is not None else {"A": torch.zeros(len(dir_vocab))}
+                # Ensure s_hat is provided to AdvantageComputer
+                extra_s = extra.get("s_hat")
+                if isinstance(extra_s, np.ndarray):
+                    s_t = torch.from_numpy(extra_s.astype(np.float32))
+                else:
+                    s_t = extra_s
+                out = adv(Y_t, pi=pi_vec, s_hat=s_t) if adv is not None else {"A": torch.zeros(len(dir_vocab))}
                 A = out["A"]
                 if logger.isEnabledFor(logging.DEBUG) and j == 0:
                     try:

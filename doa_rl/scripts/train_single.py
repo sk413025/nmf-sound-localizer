@@ -121,6 +121,8 @@ def main():
     ap.add_argument("--tf-path", type=str, default=None)
     ap.add_argument("--w-path", type=str, default=None)
     ap.add_argument("--test-root", type=str, default=None)
+    ap.add_argument("--content-root", type=str, default=None,
+                    help="Optional: compute s_hat from a parallel Original dataset root (same angle_/clip_ structure) instead of test-root")
     ap.add_argument("--algo", type=str, choices=["ppo", "grpo"], default="ppo")
     ap.add_argument("--feature", type=str, choices=["patch", "leaf", "scatter", "nmf"], default="patch")
     # Tokenizer controls (increase sequence)
@@ -172,6 +174,7 @@ def main():
         H_t, angles_t = load_H(args.tf_path)
         W_t = load_W(args.w_path)
         logger.info("Assets loaded: H=%s, W=%s, test_root=%s", tuple(H_t.shape), tuple(W_t.shape), args.test_root)
+        logger.info("Content root for s_hat: %s", args.content_root if args.content_root else "[None: estimate from test Y]")
         logger.info("Angles shape=%s values=%s", angles_t.shape, angles_t.tolist())
         # For stability, keep localizer on CPU if device is MPS
         loc_device = "cpu" if str(device) == "mps" else str(device)
@@ -179,8 +182,11 @@ def main():
         loc = NMFSoundLocalizer(ncfg)
         loc.load_source_dictionary(W_t)
         loc.load_transfer_functions(H_t, angles_t)
-        adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter, nmf_l1=args.nmf_l1)
+        adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter, nmf_l1=args.nmf_l1,
+                                require_s_hat=True)
 
+        if not args.content_root:
+            raise RuntimeError("--content-root is required: s_hat must be computed from Original dataset, not test-root")
         ds_real = DoADataset(args.test_root, angles_t.tolist())
         dl = create_dataloader(ds_real, batch_size=1, shuffle=True)
         logger.info("Dataset size: %d clips; device=%s (localizer on %s)", len(ds_real), device, loc_device)
@@ -208,18 +214,54 @@ def main():
         adv_recon_samples: List[Dict[str, Any]] = []
         adv_recon_metrics: List[Dict[str, float]] = []
 
+        # Helper to compute spectrogram from an external content root matching current test clip
+        from nmf_localizer.utils.audio_utils import AudioProcessor
+
+        def _compute_content_spectrogram_like(test_path: str) -> np.ndarray:
+            if not args.content_root:
+                return None  # Signal to fallback
+            try:
+                # Derive relative path under test root and mirror into content-root
+                test_path_p = Path(test_path)
+                rel = test_path_p.relative_to(Path(args.test_root))
+                src_path = Path(args.content_root) / rel
+                wav = np.load(src_path)
+                freqs, times, stft, magnitude = AudioProcessor.compute_stft_spectrogram(
+                    wav, fs=16000, nperseg=2048, window='hann'
+                )
+                mask = (freqs >= 300.0) & (freqs <= 3000.0)
+                return magnitude[mask, :].astype(np.float32)
+            except Exception as e:
+                logger.warning("content-root spectrogram fallback: %s", str(e))
+                return None
+
         for idx, item in enumerate(dl):
             Y_t = item['Y'].squeeze(0)
             Y = Y_t.numpy()
             logger.info("train_single: sample %d Y shape=%s", idx, Y.shape)
 
+            # Build content tokens from chosen feature on test Y (policy input)
             if args.feature == 'nmf':
-                toks, s_hat_np = fea(Y, H=H_np)
+                toks, _ = fea(Y, H=H_np)
             else:
                 toks = fea(Y)
-                # Auxiliary NMF for reconstruction/advantage
-                assert nmf_aux is not None
-                _, s_hat_np = nmf_aux(Y, H=H_np)
+
+            # Compute s_hat for physics/advantage. If content-root provided, compute from that root.
+            # Otherwise: use NMF on current test Y (legacy behavior).
+            s_hat_np: np.ndarray
+            # Collate path (DataLoader wraps str into list)
+            pfield = item['path']
+            path_str = pfield[0] if isinstance(pfield, (list, tuple)) and len(pfield) > 0 else pfield
+            Y_content = _compute_content_spectrogram_like(path_str)
+            if Y_content is None:
+                raise RuntimeError(f"content-root provided but matching source not found for {path_str}")
+            # Content-root path successfully loaded; estimate s_hat from Original dataset
+            logger.info("train_single: sample %d using content-root for s_hat: %s", idx, args.content_root)
+            # Use auxiliary NMF estimator to get s_hat from content spectrogram
+            if nmf_aux is None:
+                nmf_aux = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode,
+                                       l1=args.nmf_l1, topk=args.nmf_topk)
+            _, s_hat_np = nmf_aux(Y_content, H=H_np)
 
             logger.info("train_single: sample %d content tokens=%d", idx, len(toks))
             if args.add_dir_tokens:
@@ -486,7 +528,8 @@ def main():
             loc = NMFSoundLocalizer(ncfg)
             loc.load_source_dictionary(W_t)
             loc.load_transfer_functions(H_t)
-            adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter, nmf_l1=args.nmf_l1)
+            adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter,
+                                    nmf_l1=args.nmf_l1, require_s_hat=True)
         else:
             adv = None
         if args.algo == "ppo":

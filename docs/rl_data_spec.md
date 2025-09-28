@@ -52,7 +52,16 @@ Environment overrides (optional):
   - `angle_deg (float)`: ground-truth degree in `[30,150]`
   - `angle_index (int)`: index into `angles` array (0..16)
   - `path (str)`: filesystem path for traceability
-  - Optional caches (if using nmf_localizer for advantages): `Y_hat (F,N)`, `y_over_yhat2 (F,N)`, `inv_yhat (F,N)`
+- Optional caches (if using nmf_localizer for advantages): `Y_hat (F,N)`, `y_over_yhat2 (F,N)`, `inv_yhat (F,N)`
+
+### Required content-root for s_hat (Configuration C exactness)
+- You must supply `--content-root` to RL scripts (e.g., `train_single`) to compute `s_hat` from a parallel Original dataset; using the test-root (Box) for `s_hat` is disallowed.
+- Assumptions:
+  - The directory structure under `content-root` mirrors `test-root` (`angle_XX/clip_YYY.npy`).
+  - `s_hat` is estimated by IS‑NMF on the content clip (Original), then mapped to Box via `H(Original→Box)` during advantage.
+- Behavior:
+  - Per-clip `s_hat` is computed from `content-root/angle_XX/clip_YYY.npy`.
+  - If a matching content file is missing, the run errors out instead of falling back to the test clip.
 
 Batching and groups:
 - PPO: any batch size; samples are iid across angles
@@ -100,4 +109,3 @@ Batching and groups:
 - Build A: `nmf_localizer/core/localizer.py:131`
 - IS updates/caches: `nmf_localizer/core/localizer.py:296`, `nmf_localizer/core/localizer.py:326`
 - Group norms (features): `nmf_localizer/core/localizer.py:450`
-
