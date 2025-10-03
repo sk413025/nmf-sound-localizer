@@ -8,7 +8,7 @@ from rl.assets import load_H, load_W
 from rl.data import DoADataset, create_dataloader
 from rl.transformer_policy import TransformerPolicy
 from rl.text import Vocab, pad_sequences
-from features.tokenizers import PatchTokenizer, NMFTokenizer, direction_projection_tokens
+from doa_rl.features import PatchTokenizer, direction_projection_tokens
 from rl.advantage import AdvantageComputer
 from rl.buffer import GroupOnPolicyBuffer
 from rl.grpo_trainer import GRPOTrainer
@@ -35,7 +35,7 @@ def main():
     parser.add_argument('--nmf-iter', type=int, default=RLConfig.nmf_iter)
     parser.add_argument('--nmf-l1', type=float, default=RLConfig.nmf_l1)
     parser.add_argument('--phys', action='store_true')
-    parser.add_argument('--feature', type=str, choices=['patch','nmf'], default='patch')
+    parser.add_argument('--feature', type=str, choices=['patch'], default='patch')
     parser.add_argument('--add-dir-tokens', action='store_true')
     parser.add_argument('--d-model', type=int, default=256)
     parser.add_argument('--nhead', type=int, default=8)
@@ -66,18 +66,12 @@ def main():
     import numpy as np
     H_np = H.numpy()
     W_np = W.numpy()
-    if args.feature == 'nmf':
-        fea = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode, l1=args.nmf_l1)
-    else:
-        fea = PatchTokenizer()
+    fea = PatchTokenizer()
     token_lists = []
     precomputed = []  # list of dict per sample: {tokens, path, Y}
     for item in dl:
         Y = item['Y'].squeeze(0).numpy()  # (F,N)
-        if args.feature == 'nmf':
-            toks, _ = fea(Y, H=H_np)
-        else:
-            toks = fea(Y)
+        toks = fea(Y)
         if args.add_dir_tokens:
             toks_dir = direction_projection_tokens(Y.mean(axis=1), H_np)
             toks = toks + toks_dir

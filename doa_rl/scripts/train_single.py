@@ -109,9 +109,10 @@ from doa_rl.assets import load_H, load_W
 from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.model.transformer import TransformerPolicy
 from doa_rl.text import Vocab, pad_sequences
-from features.tokenizers import PatchTokenizer, NMFTokenizer, direction_projection_tokens
+from doa_rl.features import PatchTokenizer, direction_projection_tokens
 from nmf_localizer.core.localizer import NMFSoundLocalizer
 from nmf_localizer.config.defaults import NMFConfig
+from nmf_localizer.core.usm_trainer import USMTrainer
 
 
 def main():
@@ -124,11 +125,11 @@ def main():
     ap.add_argument("--content-root", type=str, default=None,
                     help="Optional: compute s_hat from a parallel Original dataset root (same angle_/clip_ structure) instead of test-root")
     ap.add_argument("--algo", type=str, choices=["ppo", "grpo"], default="ppo")
-    ap.add_argument("--feature", type=str, choices=["patch", "leaf", "scatter", "nmf"], default="patch")
+    # In doa_rl, we do not use NMF tokenizer anymore; restrict to patch tokens for content.
+    ap.add_argument("--feature", type=str, choices=["patch"], default="patch")
     # Tokenizer controls (increase sequence)
     ap.add_argument("--patch-fp", type=int, default=16, help="PatchTokenizer: freq patch size")
     ap.add_argument("--patch-np", type=int, default=10, help="PatchTokenizer: time patch size")
-    ap.add_argument("--nmf-topk", type=int, default=12, help="NMFTokenizer: top-k atoms (larger → longer sequence)")
     ap.add_argument("--dir-topm", type=int, default=None, help="Direction tokens: keep top-M (default all)")
     ap.add_argument("--dir-alphas", type=str, default="", help="Comma list of extra alpha values to add more direction tokens, e.g., '0.5,2.0'")
     ap.add_argument("--add_dir_tokens", type=int, default=1)
@@ -192,11 +193,8 @@ def main():
         logger.info("Dataset size: %d clips; device=%s (localizer on %s)", len(ds_real), device, loc_device)
 
         H_np = H_t.numpy(); W_np = W_t.numpy()
-        # Build tokenizer with requested sequence controls
-        if args.feature == 'nmf':
-            fea = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode, l1=args.nmf_l1, topk=args.nmf_topk)
-        else:
-            fea = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
+        # Build tokenizer (content): patch only inside doa_rl
+        fea = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
         token_lists = []; precomputed = []
         # Parse extra alphas for more direction tokens
         extra_alphas = []
@@ -207,10 +205,6 @@ def main():
                 extra_alphas = []
         recon_samples: List[Dict[str, Any]] = []
         recon_metrics: List[Dict[str, float]] = []
-        nmf_aux = None
-        if args.feature == 'patch':
-            nmf_aux = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode,
-                                   l1=args.nmf_l1, topk=args.nmf_topk)
         adv_recon_samples: List[Dict[str, Any]] = []
         adv_recon_metrics: List[Dict[str, float]] = []
 
@@ -240,11 +234,8 @@ def main():
             Y = Y_t.numpy()
             logger.info("train_single: sample %d Y shape=%s", idx, Y.shape)
 
-            # Build content tokens from chosen feature on test Y (policy input)
-            if args.feature == 'nmf':
-                toks, _ = fea(Y, H=H_np)
-            else:
-                toks = fea(Y)
+            # Build content tokens (patch only)
+            toks = fea(Y)
 
             # Compute s_hat for physics/advantage. If content-root provided, compute from that root.
             # Otherwise: use NMF on current test Y (legacy behavior).
@@ -257,11 +248,10 @@ def main():
                 raise RuntimeError(f"content-root provided but matching source not found for {path_str}")
             # Content-root path successfully loaded; estimate s_hat from Original dataset
             logger.info("train_single: sample %d using content-root for s_hat: %s", idx, args.content_root)
-            # Use auxiliary NMF estimator to get s_hat from content spectrogram
-            if nmf_aux is None:
-                nmf_aux = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode,
-                                       l1=args.nmf_l1, topk=args.nmf_topk)
-            _, s_hat_np = nmf_aux(Y_content, H=H_np)
+            # Compute ŝ from precomputed W via nmf_localizer (USMTrainer helper)
+            s_hat_np = USMTrainer.compute_content_s_hat(
+                Y_content, W_np, mode=args.s_mode, H=H_np, n_iter=args.nmf_iter, l1=args.nmf_l1
+            )
 
             logger.info("train_single: sample %d content tokens=%d", idx, len(toks))
             if args.add_dir_tokens:
@@ -305,7 +295,7 @@ def main():
                         "path": item['path'][0],
                         "metrics": metrics,
                     })
-        if args.feature == 'patch' and recon_metrics:
+        if recon_metrics:
             mse_vals = np.array([m["mse"] for m in recon_metrics], dtype=np.float32)
             mae_vals = np.array([m["mae"] for m in recon_metrics], dtype=np.float32)
             is_vals = np.array([m["is_div"] for m in recon_metrics], dtype=np.float32)
@@ -313,7 +303,7 @@ def main():
                 "Patch reconstruction summary: MSE mean=%.3e std=%.3e | MAE mean=%.3e | IS mean=%.3e",
                 float(mse_vals.mean()), float(mse_vals.std()),
                 float(mae_vals.mean()), float(is_vals.mean()))
-        if args.feature == 'patch' and recon_samples:
+        if recon_samples:
             viz_dir = Path("outputs") / "patch_recon"
             _visualize_reconstructions(recon_samples, viz_dir, logger, prefix="patch")
 
@@ -518,20 +508,19 @@ def main():
             H_np_FD = H_np.T.astype(np.float32)
         else:
             H_np_FD = H_np.astype(np.float32)
-        W_np = np.load(args.W)["W"].astype(np.float32) if args.W else None
+        if not args.W:
+            raise RuntimeError("--W is required in this mode: s_hat must be computed via USMTrainer (no fallback)")
+        W_np = np.load(args.W)["W"].astype(np.float32)
         ds, exs, dir_vocab = build_dataset(H_np, [None] * args.num_wavs, feature=args.feature,
                                            add_dir_tokens=bool(args.add_dir_tokens), J=1,
                                            W=W_np, s_mode=args.s_mode, nmf_iter=args.nmf_iter, nmf_l1=args.nmf_l1)
-        if W_np is not None:
-            H_t = torch.from_numpy(H_np_FD); W_t = torch.from_numpy(W_np)
-            ncfg = NMFConfig(beta=0.0, lambda_group=5.0, gamma_sparse=0.1, max_iter=100, device=str(device))
-            loc = NMFSoundLocalizer(ncfg)
-            loc.load_source_dictionary(W_t)
-            loc.load_transfer_functions(H_t)
-            adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter,
-                                    nmf_l1=args.nmf_l1, require_s_hat=True)
-        else:
-            adv = None
+        H_t = torch.from_numpy(H_np_FD); W_t = torch.from_numpy(W_np)
+        ncfg = NMFConfig(beta=0.0, lambda_group=5.0, gamma_sparse=0.1, max_iter=100, device=str(device))
+        loc = NMFSoundLocalizer(ncfg)
+        loc.load_source_dictionary(W_t)
+        loc.load_transfer_functions(H_t)
+        adv = AdvantageComputer(loc, W_t, H_t, s_mode=args.s_mode, nmf_iter=args.nmf_iter,
+                                nmf_l1=args.nmf_l1, require_s_hat=True)
         if args.algo == "ppo":
             PPORunner(dir_vocab=dir_vocab).train(ds, exs, dir_vocab, J=1, adv=adv)
         else:

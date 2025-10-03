@@ -9,7 +9,7 @@ from rl.buffer import OnPolicyBuffer
 from rl.ppo_trainer import PPOTrainer
 from rl.transformer_policy import TransformerPolicy
 from rl.text import Vocab, pad_sequences
-from features.tokenizers import PatchTokenizer, NMFTokenizer, direction_projection_tokens
+from doa_rl.features import PatchTokenizer, direction_projection_tokens
 
 from nmf_localizer.core.localizer import NMFSoundLocalizer
 from nmf_localizer.config.defaults import NMFConfig
@@ -21,7 +21,7 @@ def main():
     ap.add_argument("--w-path", type=str, default=RLConfig.w_path)
     ap.add_argument("--test-root", type=str, default=RLConfig.test_root)
     ap.add_argument("--epochs", type=int, default=RLConfig.ppo_epochs)
-    ap.add_argument("--feature", type=str, choices=["patch", "nmf"], default="patch")
+    ap.add_argument("--feature", type=str, choices=["patch"], default="patch")
     ap.add_argument("--add-dir-tokens", action="store_true")
     ap.add_argument("--s-mode", type=str, choices=["S1", "S2"], default=RLConfig.s_mode)
     ap.add_argument("--nmf-iter", type=int, default=RLConfig.nmf_iter)
@@ -48,16 +48,20 @@ def main():
     # Build tokens
     import numpy as np
     H_np = H.numpy(); W_np = W.numpy()
-    fea = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode, l1=args.nmf_l1) if args.feature == 'nmf' else PatchTokenizer()
+    fea = PatchTokenizer()
     token_lists = []
     precomputed = []
     for item in dl:
         Y = item['Y'].squeeze(0).numpy()
-        toks = fea(Y)[0] if args.feature == 'nmf' else fea(Y)
+        toks = fea(Y)
+        s_hat_np = None
         if args.add_dir_tokens:
             toks = toks + direction_projection_tokens(Y.mean(axis=1), H_np)
         token_lists.append(toks)
-        precomputed.append({"tokens": toks, "Y": item['Y'].squeeze(0)})
+        rec = {"tokens": toks, "Y": item['Y'].squeeze(0)}
+        if s_hat_np is not None:
+            rec["s_hat"] = torch.from_numpy(s_hat_np.astype(np.float32))
+        precomputed.append(rec)
     vocab = Vocab(); vocab.build(token_lists)
 
     policy = TransformerPolicy(vocab_size=len(vocab.itos), n_dirs=H.shape[1])
@@ -71,7 +75,9 @@ def main():
         for rec in precomputed:
             ids = vocab.encode(rec["tokens"], add_cls=True)
             input_ids, attn = pad_sequences([ids], vocab.pad_id)
-            out = advcomp(rec['Y'])
+            # If we already computed ŝ with W, provide it to AdvantageComputer
+            s_in = rec.get('s_hat')
+            out = advcomp(rec['Y'], s_hat=s_in)
             A = out['A']
             with torch.no_grad():
                 logits = policy(input_ids, attn)
@@ -88,4 +94,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

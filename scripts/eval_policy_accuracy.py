@@ -9,7 +9,7 @@ from doa_rl.assets import load_H, load_W
 from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.model.transformer import TransformerPolicy
 from doa_rl.text import Vocab, pad_sequences
-from features.tokenizers import PatchTokenizer, NMFTokenizer, direction_projection_tokens
+from doa_rl.features import PatchTokenizer, direction_projection_tokens
 from doa_rl.assets import load_H
 from doa_rl.eval.metrics import angular_error
 
@@ -21,7 +21,7 @@ def main():
     ap.add_argument('--tf-path', type=str, required=True)
     ap.add_argument('--w-path', type=str, required=True)
     ap.add_argument('--test-root', type=str, required=True)
-    ap.add_argument('--feature', type=str, choices=['patch','nmf'], default='patch')
+    ap.add_argument('--feature', type=str, choices=['patch'], default='patch')
     ap.add_argument('--add-dir-tokens', action='store_true')
     ap.add_argument('--s-mode', type=str, choices=['S1','S2'], default='S1')
     ap.add_argument('--nmf-iter', type=int, default=50)
@@ -37,10 +37,7 @@ def main():
 
     # Tokenization
     H_np = H.numpy(); W_np = W.numpy()
-    if args.feature == 'nmf':
-        fea = NMFTokenizer(W=W_np, n_iter=args.nmf_iter, mode=args.s_mode, l1=args.nmf_l1)
-    else:
-        fea = PatchTokenizer()
+    fea = PatchTokenizer()
 
     with open(args.vocab, 'r') as f:
         itos = json.load(f)
@@ -60,10 +57,7 @@ def main():
     with torch.no_grad():
         for item in dl:
             Y = item['Y'].squeeze(0).numpy()
-            if args.feature == 'nmf':
-                toks, _ = fea(Y, H=H_np)
-            else:
-                toks = fea(Y)
+            toks = fea(Y)
             if args.add_dir_tokens:
                 toks = toks + direction_projection_tokens(Y.mean(axis=1), H_np)
             ids = vocab.encode(toks, add_cls=True)
@@ -82,7 +76,7 @@ def main():
     with torch.no_grad():
         for item in dl:
             Y = item['Y'].squeeze(0).numpy()
-            toks = (fea(Y, H=H_np)[0] if args.feature == 'nmf' else fea(Y))
+            toks = fea(Y)
             if args.add_dir_tokens:
                 toks = toks + direction_projection_tokens(Y.mean(axis=1), H_np)
             ids = vocab.encode(toks, add_cls=True)

@@ -38,7 +38,7 @@ def _is_z_update(Ybar: torch.Tensor, W: torch.Tensor, n_iter: int = 50, l1: floa
 class AdvantageComputer:
     def __init__(self, localizer: NMFSoundLocalizer, W: torch.Tensor, H: torch.Tensor,
                  s_mode: str = "S1", nmf_iter: int = 50, nmf_l1: float = 0.0,
-                 add_phys_feature: bool = True, require_s_hat: bool = False):
+                 add_phys_feature: bool = True, require_s_hat: bool = True):
         self.localizer = localizer
         self.W = W.detach().cpu()
         self.H = H.detach().cpu()  # (F,D)
@@ -65,27 +65,15 @@ class AdvantageComputer:
             except Exception:
                 pass
 
-        z_hat: Optional[torch.Tensor] = None
-        if s_hat is not None:
-            s_hat_cpu = s_hat.detach().cpu().float().view(-1)
-        else:
-            if self.require_s_hat:
-                raise ValueError("AdvantageComputer: s_hat is required but was not provided")
-            Ybar = torch.mean(Y, dim=1).detach().cpu()
-            if self.s_mode == "S2":
-                Hbar = torch.clamp(self.H.mean(dim=1), min=1e-8)
-                Ybar = torch.clamp(Ybar / Hbar, min=1e-8)
-            z_hat = _is_z_update(Ybar, self.W, n_iter=self.nmf_iter, l1=self.nmf_l1)
-            s_hat_cpu = (self.W @ z_hat).detach().cpu()
+        # Enforce external ŝ usage (USMTrainer). No internal fallback allowed.
+        if s_hat is None:
+            raise ValueError("AdvantageComputer requires s_hat computed externally (USMTrainer.compute_content_s_hat)")
+        s_hat_cpu = s_hat.detach().cpu().float().view(-1)
 
         if logger.isEnabledFor(logging.DEBUG):
             try:
-                if s_hat is None:
-                    logger.debug("Advantage: Ybar %s", _tensor_stats(Ybar, "Ybar(F)"))
                 logger.debug("Advantage: W %s", _tensor_stats(self.W, "W(FxK)"))
                 logger.debug("Advantage: H %s", _tensor_stats(self.H, "H(FxD)"))
-                if z_hat is not None:
-                    logger.debug("Advantage: z_hat %s", _tensor_stats(z_hat, "z_hat(K)"))
                 logger.debug("Advantage: s_hat %s", _tensor_stats(s_hat_cpu, "s_hat(F)"))
             except Exception:
                 pass
