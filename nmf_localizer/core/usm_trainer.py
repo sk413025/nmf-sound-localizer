@@ -328,6 +328,64 @@ class USMTrainer(nn.Module):
         logger.info(f"Model shape: {self.W.shape}, beta: {self.beta}")
         
         return self.W
+
+    # === Content spectrum estimation (ŝ) from precomputed W ===
+    @staticmethod
+    def compute_content_s_hat(
+        Y: "np.ndarray",
+        W: "np.ndarray",
+        mode: str = "S1",
+        H: Optional["np.ndarray"] = None,
+        n_iter: int = 50,
+        l1: float = 0.0,
+        eps: float = 1e-12,
+    ) -> "np.ndarray":
+        """
+        Estimate content spectrum ŝ(F,) from a precomputed dictionary W(F,K) and a spectrogram Y(F,N).
+
+        Geometry: IS (β=0) multiplicative updates for z with global normalization; ŝ = W z.
+        Modes:
+          - S1: Ybar = mean_t(Y)
+          - S2: Ybar = mean_t(Y) / mean_d(H_d)  (requires H (F,D) or (D,F))
+        """
+        import numpy as np
+
+        W_np = np.asarray(W)
+        Y_np = np.asarray(Y)
+        if W_np.ndim != 2:
+            raise ValueError(f"W must be 2D (F,K), got shape {W_np.shape}")
+        if Y_np.ndim != 2:
+            raise ValueError(f"Y must be 2D (F,N), got shape {Y_np.shape}")
+        if W_np.shape[0] != Y_np.shape[0]:
+            raise ValueError(f"W and Y must have same F, got W {W_np.shape}, Y {Y_np.shape}")
+
+        def _safe(x: "np.ndarray") -> "np.ndarray":
+            return np.maximum(x, eps)
+
+        Ybar = _safe(Y_np.mean(axis=1))
+        if (mode or "S1").upper() == "S2":
+            if H is None:
+                raise ValueError("S2 mode requires H (transfer functions)")
+            Hm = np.asarray(H)
+            if Hm.ndim != 2:
+                raise ValueError(f"H must be 2D, got {Hm.shape}")
+            if Hm.shape[0] < Hm.shape[1]:  # (D,F) -> (F,D)
+                Hm = Hm.T
+            Hbar = _safe(Hm.mean(axis=1))
+            Ybar = _safe(Ybar / Hbar)
+
+        # IS-MU for z
+        F, K = W_np.shape
+        z = np.ones(K, dtype=W_np.dtype) / max(K, 1)
+        Wp = _safe(W_np)
+        for _ in range(max(int(n_iter), 0)):
+            Yhat = _safe(Wp @ z)
+            num = (Wp.T @ (Ybar / (Yhat ** 2)))
+            den = (Wp.T @ (1.0 / Yhat)) + float(l1)
+            z *= _safe(num / _safe(den))
+            z /= _safe(z.sum())
+        s_hat = _safe(Wp @ z)
+        return s_hat.astype(np.float32)
     
     def get_reconstruction_quality(
         self, 
