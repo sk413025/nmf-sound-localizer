@@ -99,20 +99,114 @@ token = "<P_{i}_{j}_{level}>"
 長度 = 127 (包含 [CLS] token)
 ```
 
-### 3.2 Embedding 階段
+### 3.2 Embedding 階段（詳細解釋）
 
-每個 token 獲得兩種 embedding：
+#### 3.2.1 Embedding 層的創建和初始化
+
+**模型初始化時創建兩個 Embedding 層：**
 
 ```python
-# Token Embedding: 學習每個 patch 的語義
-token_emb[P_3_8_12] → 256維向量 (高能量中頻 patch 的特徵)
+class TransformerPolicy(nn.Module):
+    def __init__(self, vocab_size=129, n_dirs=24, d_model=256):
+        super().__init__()
+        # 創建 Token Embedding 層（可學習的查找表）
+        self.tok_embed = nn.Embedding(vocab_size, d_model)
+        # 矩陣大小: 129 × 256 = 33,024 個參數
+        # 初始化: N(0,1) 隨機正態分布
 
-# Position Embedding: 編碼 patch 在網格中的位置
-pos_emb[position_62] → 256維向量 (第3行第8列的位置信息)
-
-# 組合
-final_emb = token_emb + pos_emb
+        # 創建 Position Embedding 層
+        self.pos_embed = nn.Embedding(max_len=512, d_model)
+        # 矩陣大小: 512 × 256 = 131,072 個參數
+        # 初始化: N(0,1) 隨機正態分布
 ```
+
+**Embedding 矩陣結構：**
+- `tok_embed.weight[0]`: `[PAD]` token 的 256 維表示
+- `tok_embed.weight[1]`: `[CLS]` token 的 256 維表示
+- `tok_embed.weight[10]`: `<P_0_0_4>` 的 256 維表示
+- `tok_embed.weight[125]`: `<P_6_17_8>` 的 256 維表示
+
+#### 3.2.2 Forward Pass 中的計算過程
+
+```python
+def forward(self, input_ids, attention_mask):
+    B, L = input_ids.shape  # B=1 (batch), L=127 (序列長度)
+
+    # Step 1: Token Embedding 查找
+    # input_ids = [1, 10, 11, 25, 48, ...] (token IDs)
+    tok_embeddings = self.tok_embed(input_ids)
+    # 過程: 對每個 ID，從 129×256 矩陣中查找對應行
+    # tok_embeddings[0,0,:] = tok_embed.weight[1,:]  # [CLS]
+    # tok_embeddings[0,1,:] = tok_embed.weight[10,:] # P_0_0_4
+    # 輸出: (1, 127, 256)
+
+    # Step 2: Position Embedding 查找
+    pos_idx = torch.arange(L)  # [0, 1, 2, ..., 126]
+    pos = pos_idx.unsqueeze(0).expand(B, L)  # (1, 127)
+    pos_embeddings = self.pos_embed(pos)
+    # 過程: 對每個位置，從 512×256 矩陣中查找對應行
+    # pos_embeddings[0,0,:] = pos_embed.weight[0,:]  # 位置 0
+    # pos_embeddings[0,63,:] = pos_embed.weight[63,:] # 位置 63
+    # 輸出: (1, 127, 256)
+
+    # Step 3: Element-wise 相加
+    x = tok_embeddings + pos_embeddings
+    # 每個位置的最終表示 = token 語義 + 位置信息
+    # x[0,i,:] = tok_embeddings[0,i,:] + pos_embeddings[0,i,:]
+    # 輸出: (1, 127, 256) → 進入 Transformer
+```
+
+#### 3.2.3 Embedding 的物理意義和學習目標
+
+**Token Embedding 學習什麼：**
+```python
+# 初始（隨機）
+embedding(<P_0_0_4>) ≈ random_vector_1
+embedding(<P_3_8_12>) ≈ random_vector_2
+
+# 訓練後（學習到的語義）
+embedding(<P_0_0_4>) → 編碼 "低頻低能量" 的特徵向量
+embedding(<P_3_8_12>) → 編碼 "中頻高能量" 的特徵向量
+
+# 相似的 patches 會有相似的 embeddings
+similarity(P_3_8_12, P_3_8_11) > similarity(P_3_8_12, P_0_0_1)
+```
+
+**Position Embedding 學習什麼：**
+```python
+# 編碼序列中的絕對位置
+embedding(pos_0) → "序列開始，對應 patch P_0_0"
+embedding(pos_63) → "序列中間，對應 patch P_3_9"
+embedding(pos_126) → "序列末尾，對應 patch P_6_17"
+
+# 使 Transformer 能夠理解時間順序
+# 例如：早期 patches (0-40) vs 後期 patches (80-126)
+```
+
+#### 3.2.4 訓練過程中的更新
+
+```python
+# 梯度回傳路徑
+Loss ← Direction_Logits ← Pooled ← Transformer ← Embeddings
+                                                      ↑
+                                              梯度更新這裡
+
+# 更新規則（簡化）
+if prediction_error:
+    # 如果 P_3_8_12 應該指向 0° 但預測錯誤
+    # 則調整 tok_embed.weight[token_id_of_P_3_8_12]
+    # 使其更能表達 "指向 0°" 的特徵
+
+    # 同時調整相關位置的 position embeddings
+    # 使位置信息更好地輔助方向預測
+```
+
+#### 3.2.5 為什麼需要 Embedding？
+
+1. **離散到連續的橋樑**: Transformer 需要連續向量，不能處理離散 IDs
+2. **降維表示**: 129 個 tokens → 256 維連續空間（更豐富的表達）
+3. **可學習性**: 通過訓練自動優化表示
+4. **組合性**: Token + Position 信息同時編碼
 
 ### 3.3 Self-Attention 機制
 
