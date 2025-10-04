@@ -17,18 +17,21 @@
 ### Core Principles
 1. **Simplification First**: Before adding features, consider if existing code can be simplified
 2. **Remove Before Add**: Look for opportunities to remove redundant code before adding new functionality
-3. **Complexity Assessment**: Each commit should justify any complexity it introduces
-4. **Refactor Aggressively**: If a modification reveals unnecessary complexity, refactor it immediately
-5. **Minimize Dependencies**: Reduce external dependencies and coupling between modules
-6. **Clear Over Clever**: Choose readable, maintainable solutions over clever optimizations
-7. **Single Responsibility**: Each function/class should have one clear purpose
+3. **File Cleanup**: Regularly audit and remove unused files, deprecated scripts, and obsolete experiments
+4. **Complexity Assessment**: Each commit should justify any complexity it introduces
+5. **Refactor Aggressively**: If a modification reveals unnecessary complexity, refactor it immediately
+6. **Minimize Dependencies**: Reduce external dependencies and coupling between modules
+7. **Clear Over Clever**: Choose readable, maintainable solutions over clever optimizations
+8. **Single Responsibility**: Each function/class should have one clear purpose
 
 ### Before Modifying Code, Ask:
+- Are there unused files, deprecated scripts, or obsolete experiments to remove?
 - Can this be achieved by removing code instead of adding?
 - Will this change make the codebase simpler or more complex?
 - Can existing functionality be reused or generalized?
 - Are there redundant abstractions that can be eliminated?
 - Is there a simpler solution that achieves 90% of the goal?
+- Do all existing files serve a clear, current purpose?
 
 ### During Code Review, Evaluate:
 - **Lines of Code Delta**: Aim for negative or minimal positive
@@ -48,10 +51,32 @@
 
 ### Complexity Metrics to Track:
 - Total lines of code (track trend over time)
+- Number of files in the repository
+- Number of unused/deprecated files
 - Number of dependencies
 - Average function length
 - Maximum nesting depth
 - Number of abstractions/layers
+
+### File Cleanup Guidelines:
+1. **Regular Audits**: Periodically scan for unused files
+   ```bash
+   # Find Python files not imported anywhere
+   # Find experiment outputs older than 30 days
+   # Find duplicate implementations
+   ```
+2. **Deprecation Process**:
+   - Mark deprecated files clearly in code
+   - Document replacement in commit message
+   - Remove after verifying no dependencies
+3. **Experiment Artifacts**:
+   - Keep only final results and models
+   - Remove intermediate checkpoints
+   - Archive old experiments to separate storage
+4. **Temporary Files**:
+   - Never commit temporary or cache files
+   - Add to .gitignore if patterns emerge
+   - Clean up test artifacts after tests pass
 
 ### Example Commit Messages for Simplification:
 ```
@@ -64,6 +89,12 @@ Refactor: Consolidate duplicate angle processing logic
 - Before: 5 similar functions across 3 files
 - After: 1 reusable function with clear parameters
 - Complexity reduction: -400 lines, -3 dependencies
+
+Cleanup: Remove obsolete experiment artifacts and deprecated scripts
+- Removed files: 15 old experiment outputs, 3 deprecated scripts
+- Disk space freed: 2.3GB
+- Repository file count: 142 → 124 files
+- Verified: No remaining dependencies on removed files
 ```
 
 ## Language Policy
@@ -357,6 +388,7 @@ Before committing results, verify:
 ## Quality Checklist for Code Modifications
 
 Before committing code changes, verify:
+- [ ] ✅ Unused or obsolete files have been identified and removed
 - [ ] ✅ Code complexity has decreased or remained stable
 - [ ] ✅ No unnecessary abstractions were added
 - [ ] ✅ Existing code was simplified where possible
@@ -366,7 +398,8 @@ Before committing code changes, verify:
 - [ ] ✅ Functions follow single responsibility principle
 - [ ] ✅ Code duplication was eliminated
 - [ ] ✅ Standard library was preferred over external packages
-- [ ] ✅ Commit message includes complexity metrics if relevant
+- [ ] ✅ Temporary files and experiment artifacts were cleaned up
+- [ ] ✅ Commit message includes complexity metrics and file count changes if relevant
 
 ## Examples: Good vs Bad Commits
 
