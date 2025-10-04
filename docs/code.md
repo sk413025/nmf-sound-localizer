@@ -515,104 +515,6 @@ from .grpo_runner import GRPORunner
 
 ---
 
-### 12) `doa_rl/algos/ppo_runner.py`
-
-```python
-import torch
-from transformers import AutoTokenizer
-from trl import PPOConfig, PPOTrainer, AutoModelForCausalLMWithValueHead
-from typing import List, Dict
-from ..env.doa_math import reward_is
-
-class PPORunner:
-    def __init__(self, model_name="gpt2", dir_vocab: List[str]=None):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        if dir_vocab:
-            self.tokenizer.add_special_tokens({"additional_special_tokens": dir_vocab})
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLMWithValueHead.from_pretrained(
-            model_name, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-        )
-        self.model.pretrained_model.resize_token_embeddings(len(self.tokenizer))
-
-    def _mask_used(self, logits, used, dir_ids):
-        if not used: return logits
-        for u in used: logits[0, dir_ids[u]] = -1e9
-        return logits
-
-    def _sample_dirs(self, prompt: str, J: int, dir_vocab: List[str]) -> List[int]:
-        dir_ids = [self.tokenizer.convert_tokens_to_ids(t) for t in dir_vocab]
-        inp = self.tokenizer(prompt, return_tensors="pt").to(self.model.pretrained_model.device)
-        last = inp["input_ids"]; used=[]
-        with torch.no_grad():
-            sel=[]
-            for _ in range(J):
-                out = self.model.pretrained_model(input_ids=last)
-                logits = out.logits[:, -1, :]
-                logits = self._mask_used(logits, used, dir_ids)
-                probs  = torch.softmax(logits, dim=-1)
-                tok    = torch.multinomial(probs, num_samples=1)  # (1,1)
-                tk     = self.tokenizer.decode(tok[0,0].item(), skip_special_tokens=False)
-                if tk.startswith("<D_") and tk.endswith(">"):
-                    i=int(tk[3:-1]); used.append(i); sel.append(i)
-                else:
-                    pdir = probs[0, dir_ids]; i=int(torch.argmax(pdir)); used.append(i); sel.append(i)
-                last = tok
-        return sel
-
-    def train(self, ds, raw_exs: List[Dict], dir_vocab: List[str], J: int=1, lr=1e-5, batch=8):
-        cfg = PPOConfig(batch_size=min(batch,len(ds)), mini_batch_size=min(4,batch),
-                        learning_rate=lr, optimize_cuda_cache=True)
-        trainer = PPOTrainer(cfg, self.model, self.tokenizer, dataset=ds)
-        for step,e in enumerate(raw_exs):
-            prompt=e["prompt"]
-            sel = self._sample_dirs(prompt, J=J, dir_vocab=dir_vocab)
-            r = reward_is(e["Y"], e["s_hat"], e["H"], sel)
-            q = self.tokenizer(prompt, return_tensors="pt").input_ids.to(self.model.pretrained_model.device)
-            resp_txt=" ".join([f"<D_{i}>" for i in sel])
-            a = self.tokenizer(resp_txt, return_tensors="pt").input_ids.to(self.model.pretrained_model.device)
-            trainer.step([q[0]], [a[0]], torch.tensor([r], dtype=torch.float32))
-            if (step+1)%10==0: print(f"[PPO] {step+1}/{len(raw_exs)} r={r:.4f}")
-```
-
----
-
-### 13) `doa_rl/algos/grpo_runner.py`
-
-```python
-from trl import GRPOTrainer, GRPOConfig
-from transformers import AutoTokenizer
-from typing import List, Dict
-from ..env.doa_math import reward_is
-
-class GRPORunner:
-    def __init__(self, model_name="gpt2", dir_vocab: List[str]=None):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        if dir_vocab:
-            self.tokenizer.add_special_tokens({"additional_special_tokens": dir_vocab})
-        self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def train(self, ds, raw_exs: List[Dict], dir_vocab: List[str], J: int=1, G: int=4, lr=5e-6):
-        cfg = GRPOConfig(output_dir="grpo-doa", per_device_train_batch_size=1,
-                         learning_rate=lr, num_generations=G, max_completion_length=J, beta=0.01)
-        trainer = GRPOTrainer(model="gpt2", processing_class=self.tokenizer, args=cfg, train_dataset=ds)
-
-        def reward_fn(completions, idx, **kwargs):
-            e=raw_exs[idx]; outs=[]
-            for comp in completions:
-                text=comp[0]["content"]; dirs=[]
-                for tok in text.strip().split():
-                    if tok.startswith("<D_") and tok.endswith(">"): dirs.append(int(tok[3:-1]))
-                if len(dirs)==0: dirs=[0]
-                outs.append(float(reward_is(e["Y"], e["s_hat"], e["H"], dirs)))
-            return outs
-
-        trainer.add_reward_function(reward_fn)
-        trainer.train()
-```
-
----
-
 ### 14) `doa_rl/scripts/__init__.py`
 
 ```python
@@ -890,6 +792,9 @@ python -m doa_rl.scripts.train_single --H data/H.npz --W data/W_usm_is.npz \
 # 多源 + GRPO（J=2）
 python -m doa_rl.scripts.train_multi --H data/H.npz --W data/W_usm_is.npz \
        --J 2 --feature patch --add_dir_tokens 1 --algo grpo
+
+# Hugging Face + TRL（簡化版 patch→方向 1-token）
+python scripts/train_trl_policy.py --data-root path/to/angle_dataset --algo ppo
 ```
 
 ---
