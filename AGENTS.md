@@ -10,6 +10,62 @@
 
 **NO hypothetical experiments. NO untested code. NO incomplete results.**
 
+## 🎯 Code Simplification Philosophy
+
+**CRITICAL: Every code modification must prioritize simplicity and reduce complexity**
+
+### Core Principles
+1. **Simplification First**: Before adding features, consider if existing code can be simplified
+2. **Remove Before Add**: Look for opportunities to remove redundant code before adding new functionality
+3. **Complexity Assessment**: Each commit should justify any complexity it introduces
+4. **Refactor Aggressively**: If a modification reveals unnecessary complexity, refactor it immediately
+5. **Minimize Dependencies**: Reduce external dependencies and coupling between modules
+6. **Clear Over Clever**: Choose readable, maintainable solutions over clever optimizations
+7. **Single Responsibility**: Each function/class should have one clear purpose
+
+### Before Modifying Code, Ask:
+- Can this be achieved by removing code instead of adding?
+- Will this change make the codebase simpler or more complex?
+- Can existing functionality be reused or generalized?
+- Are there redundant abstractions that can be eliminated?
+- Is there a simpler solution that achieves 90% of the goal?
+
+### During Code Review, Evaluate:
+- **Lines of Code Delta**: Aim for negative or minimal positive
+- **Cyclomatic Complexity**: Should decrease or remain stable
+- **Dependencies**: Fewer is better
+- **Clarity**: Is the solution obvious to understand?
+- **Testability**: Simple code is easier to test
+
+### Prefer:
+- Direct solutions over indirect abstractions
+- Composition over inheritance
+- Functions over classes when state isn't needed
+- Standard library over external packages
+- Explicit over implicit behavior
+- Flat structures over deeply nested ones
+- Small, focused modules over monolithic files
+
+### Complexity Metrics to Track:
+- Total lines of code (track trend over time)
+- Number of dependencies
+- Average function length
+- Maximum nesting depth
+- Number of abstractions/layers
+
+### Example Commit Messages for Simplification:
+```
+Simplify: Remove redundant data preprocessing pipeline
+- Removed: 3 unnecessary abstraction layers (500 lines)
+- Replaced with: Direct numpy operations (50 lines)
+- Result: 10x faster, 90% less code, same functionality
+
+Refactor: Consolidate duplicate angle processing logic
+- Before: 5 similar functions across 3 files
+- After: 1 reusable function with clear parameters
+- Complexity reduction: -400 lines, -3 dependencies
+```
+
 ## Language Policy
 **All project content must be written in English**, including:
 - Code comments and documentation
@@ -298,6 +354,20 @@ Before committing results, verify:
 - [ ] ✅ Both successes AND failures documented
 - [ ] ✅ Logical connections using "BECAUSE", "DUE TO", "THEREFORE"
 
+## Quality Checklist for Code Modifications
+
+Before committing code changes, verify:
+- [ ] ✅ Code complexity has decreased or remained stable
+- [ ] ✅ No unnecessary abstractions were added
+- [ ] ✅ Existing code was simplified where possible
+- [ ] ✅ Dependencies were minimized or reduced
+- [ ] ✅ Solution is clear and maintainable over clever
+- [ ] ✅ Lines of code delta is negative or minimally positive
+- [ ] ✅ Functions follow single responsibility principle
+- [ ] ✅ Code duplication was eliminated
+- [ ] ✅ Standard library was preferred over external packages
+- [ ] ✅ Commit message includes complexity metrics if relevant
+
 ## Examples: Good vs Bad Commits
 
 ### ❌ Bad Planning Commit
@@ -357,4 +427,4 @@ root/
 ```
 
 ## Last Updated
-2025-10-03 (Streamlined for clarity and emphasis on executability)
+2025-10-04 (Added code simplification philosophy and complexity reduction requirements)
