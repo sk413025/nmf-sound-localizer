@@ -146,37 +146,14 @@ python scripts/training/train_byol_ldv.py --accelerator mps --use_angle_pairs [o
 
 ## Core Experiment Workflow
 
-### Phase 1: Planning Commit (BEFORE Execution)
-**Write hypothesis and commit code changes BEFORE running the experiment:**
-
-```bash
-git add scripts/ src/
-git commit -m "Experiment: [Short descriptive title]
-
-- Background: [What's the current state/problem?]
-- Motivation: [Why is this change needed?]
-- Purpose: [What specific question does this test?]
-- Expected: [What results do you predict and why?]"
-```
-
-**Example:**
-```
-Experiment: Test impact of removing RMS normalization on angle discrimination
-
-- Background: Current preprocessing includes RMS normalization which may remove amplitude information
-- Motivation: Amplitude variations could be important for distinguishing between angles
-- Purpose: Train model without waveform_rms_normalization to test if raw amplitudes improve angle separation
-- Expected: Higher validation loss but better angle discrimination in embeddings (10-15% improvement in separation metrics)
-```
-
-### Phase 2: Execute Experiment
+### Phase 1: Execute Experiment
 1. **Run the experiment/test** with exact commands documented
 2. **Record all outputs**: metrics, logs, visualizations
 3. **Verify results**: Check outputs match expectations or note differences
 4. **Test reproducibility**: Can you reproduce the same results?
 
-### Phase 3: Results Commit (AFTER Execution)
-**Commit results with comprehensive analysis:**
+### Phase 2: Results Commit (AFTER Execution)
+**Commit results with comprehensive analysis (Results‑only; planning‑only commits are disallowed). Include experiment context (Background/Motivation/Purpose/Expected).**
 
 ### Phase 3: Results Commit (AFTER Execution)
 **Commit results with comprehensive analysis:**
@@ -185,11 +162,11 @@ Experiment: Test impact of removing RMS normalization on angle discrimination
 git add metric.json checkpoints/best_model.ckpt [other result files]
 git commit -m "Results: [experiment name] - model checkpoint and metrics
 
-Previous experiment hypothesis (from commit [hash]):
-- Background: [what was stated]
-- Motivation: [what was stated]
-- Purpose: [what was stated]
-- Expected: [what was predicted]
+Experiment context (REQUIRED):
+- Background: [current state/problem]
+- Motivation: [why this change is needed]
+- Purpose: [what specific question this tests]
+- Expected: [predicted outcome and rationale]
 
 Actual training results:
 - Final validation loss: [value] (expected: [value])
@@ -422,57 +399,33 @@ Before committing code changes, verify:
 
 ## Component‑Level Specs and Tests
 
-Every experiment/test commit must clearly identify the component(s) it affects and prove that each component operates in its normal state.
+Every Results commit must clearly identify the component(s) it affects and prove that each component operates in its normal state.
 
 - Components: treat each major unit as a component (examples: `reward_fn (ΔIS/proxyA)`, angle→H mapping, tokenizer, STFT/band mask, `ŝ` estimation via USM, H/W loaders, GRPO/PPO trainer wrapper, logits processors, data loader).
-- For each component, maintain a short spec containing:
+- For the affected component(s), include in the commit message or attached doc:
   - Purpose and boundaries (what it does; what it does NOT do).
   - Inputs/outputs with shapes, dtypes, units, and invariants.
-  - Normal state definition: qualitative behavior + quantitative thresholds (ranges, monotonicity, correlation, variance, error bounds, no-NaN, uniqueness, etc.).
-  - Determinism/tolerances (seeds, numeric tolerances) when applicable.
-- For every commit:
-  - Name the modified component(s) explicitly in the commit message.
-  - Re-state the normal state acceptance criteria for those components.
-  - Provide tests that validate the normal state: include at least one positive path and, when useful, a guardrail/negative case.
-  - Include quick checks for RL audio pipeline where applicable:
+  - Normal state acceptance: quantitative thresholds/ranges; no‑NaN; uniqueness; determinism/tolerances where applicable.
+- Validation in the same commit:
+  - Provide tests that validate the normal state: include at least one positive path and, when useful, a guardrail case.
+  - Quick checks for RL pipeline where applicable:
     - Angle mapping: dataset angles must exactly match TF angles; no duplicates.
     - STFT grid: `Y.F == H.F == W.F` (e.g., 346) and band mask in [300, 3000] Hz.
     - ŝ estimation: `ŝ.shape == (F,)`, non‑negative, finite.
-    - Reward variability: reward range is non‑zero across different valid selections; no constant rewards.
-  - Document results (metrics/logs/artifacts) and indicate pass/fail against acceptance criteria.
+    - Reward variability: reward range is non‑zero across valid selections; not constant.
+  - Document results (metrics/logs/artifacts) and indicate pass/fail vs acceptance.
 
-Commit message template (component‑oriented):
+## Commit Hygiene and Guardrails (Results‑Only)
 
-```
-Experiment/Test: [ComponentName] — [Short title]
-
-- Component: [name]
-- Spec reference: [file:line or doc section]
-- Normal state (acceptance): [bullet list of thresholds/invariants]
-- Change summary: [what changed and why]
-- Tests executed: [commands, seeds, datasets]
-- Results: [metrics vs thresholds, pass/fail, artifact paths]
-- Impact on other components: [none/describe]
-```
-
-## Planning and Design (Apply the Same Principles)
-
-During planning and implementation, apply both the No‑Fallback policy and Component‑Level Specs rigorously:
-
-- Identify component(s) up front: name the exact unit(s) being modified or added.
-- Update or author the component spec before coding: inputs/outputs, shapes, units, invariants, and acceptance criteria (normal state).
-- Design tests alongside the spec: plan positive and guardrail cases that can be executed in the same commit.
-- Enforce No‑Fallback in design: do not add implicit fallbacks, silent coercions, or auto‑resampling; specify explicit validation and clear error messages for unmet preconditions.
-- Integration impact: list any interacting components and confirm their specs remain valid; if not, update their specs and tests too.
-- Planning artifacts: include spec deltas, acceptance criteria, and test plan in the planning commit message.
-
-Planning checklist (pre‑implementation):
-- [ ] Component(s) named and scoped
-- [ ] Spec drafted/updated (I/O, shapes, invariants)
-- [ ] Normal state acceptance criteria defined (metrics/thresholds)
-- [ ] No‑Fallback preconditions and error messages specified
-- [ ] Tests designed (positive + guardrail) with seeds/data
-- [ ] Integration impact reviewed and documented
+- Results‑only commits: Planning‑only commits are disallowed. Commit only after experiments/tests are executed.
+- Scope whitelist: Results commits must only include files exercised in the run. Changed paths must match the declared component(s).
+- Evidence per file: For each changed file, include reproduction commands (env, data roots), dataset subset manifest, and real‑data fingerprint; otherwise exclude the file.
+- Artifacts/logs: Store under a tracked `results/` path (LFS for large) or paste structured metrics in the commit message. Do not reference ignored paths without including artifacts.
+- Device handling: Expose `--device` (auto/mps/cuda/cpu); print the chosen device; move model/tensors explicitly. Ensure index tensors match device (MPS quirk).
+- Subset manifest + fingerprint: Commit a JSON manifest of selected files/angles/seeds and the MD5 fingerprint for the exact subset used.
+- Cross‑component isolation: Do not modify multiple components in one results commit unless all are tested. Otherwise split into separate results commits.
+- Infra/config changes: If required to run (e.g., increase `n_positions`), document rationale and acceptance in the results commit and verify with targeted checks.
+- History correction: If a wrong‑scope commit was made and not pushed, reset immediately. If pushed, clean via interactive rebase or a single corrective revert.
 
 ## Real‑Data Testing Requirement
 
@@ -492,19 +445,9 @@ All experiments and tests MUST use real data. Synthetic data is not allowed for 
 
 ## Examples: Good vs Bad Commits
 
-### ❌ Bad Planning Commit
+### ❌ Bad Commit (no executed results)
 ```
 Fix: Update inference.py
-```
-
-### ✅ Good Planning Commit
-```
-Experiment: Implement angle-based BYOL pairing strategy
-
-- Background: Current frame-based approach uses different temporal segments from same audio file
-- Motivation: Test if angle information can be learned from same-angle pairs across different files
-- Purpose: Train BYOL on different files from same angle instead of different frames
-- Expected: Model should learn to cluster same-angle samples in embedding space with 40-60% better separation than frame-based approach
 ```
 
 ### ❌ Bad Results Commit
@@ -549,4 +492,4 @@ root/
 ```
 
 ## Last Updated
-2025-10-05 (Added no‑fallback policy and component‑level specs/tests)
+2025-10-06 (Results‑only commits; removed planning‑only commit allowance)
