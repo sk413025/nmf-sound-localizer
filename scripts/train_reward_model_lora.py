@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Train Reward Model with LoRA - Efficient compromise between frozen and full fine-tuning.
 
+Reward path (current): deltaIS_localizer with per‑bin target
+- Reconstruction: Y_hat via localizer‑style A·X using selected [diag(H_d)W] blocks with IS updates.
+- Target: reward = − IS(Y||Y_hat) / (F·N) (single scalar per sample; pred shape [B], tgt shape [B]).
+- Diagnostics: also print Absolute IS (sum over F·N) for fail‑fast visibility.
+- IS updates: default 100 with adaptive early stopping (tol, min_iters, patience).
+
 This addresses the cold-start problem (docs/reward_model_cold_start_analysis.md)
 while being much more efficient than full fine-tuning.
 
@@ -214,6 +220,7 @@ def main():
     ap.add_argument("--max-samples", type=int, default=0)
     
     ap.add_argument("--out", type=str, default="rm_ckpt_lora")
+    ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
     args = ap.parse_args()
 
     if not HAS_PEFT:
@@ -357,13 +364,15 @@ def main():
         texts.append(text)
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
-        # Localizer-style: A·X with IS updates on selected blocks; single-shot reward = -IS(Y, Yhat)
+        # Localizer-style: A·X with IS updates on selected blocks; use per-bin reward = -IS(Y, Yhat)/(F*N)
         Yhat_sel, is_val = _is_factorize_with_selected_blocks(
             Y=Y, W=W_t, H=H, selected=dirs,
             n_iter=args.is_iters, tol=args.is_tol,
             min_iters=args.is_min_iters, patience=args.is_patience
         )
-        rewards.append(float(-is_val))
+        F, N = Y.shape
+        is_per_bin_val = float(is_val) / float(F * N)
+        rewards.append(float(-is_per_bin_val))
         is_final_list.append(float(is_val))
 
         # Numeric diagnostics per sample
@@ -373,15 +382,21 @@ def main():
         Yhat_diag = Yhat_sel
         Y_cl = torch.clamp(Y, min=eps)
         # Ratio stats (final only)
-        ratio_final = (Y_cl / torch.clamp(Yhat_diag, min=eps)).flatten()
+        ratio_map = Y_cl / torch.clamp(Yhat_diag, min=eps)
+        ratio_final = ratio_map.flatten()
         is_final_val = float(is_val)
         def tnp(a):
             return a.detach().cpu().numpy()
         rf = np.percentile(tnp(ratio_final), [50, 95, 99])
+        ratio_min = float(ratio_final.min().item())
+        ratio_mean = float(ratio_final.mean().item())
+        ratio_max = float(ratio_final.max().item())
         # Y_hat statistics
         yhat_min = float(Yhat_diag.min().item())
         yhat_mean = float(Yhat_diag.mean().item())
         yhat_max = float(Yhat_diag.max().item())
+        # Per-bin IS average to gauge scale
+        is_per_bin = float(is_final_val / (F * N))
         log_row = {
             "path": cache[p].get("path", ""),
             "F": int(F),
@@ -396,6 +411,10 @@ def main():
             "ratio_final_p50": float(rf[0]),
             "ratio_final_p95": float(rf[1]),
             "ratio_final_p99": float(rf[2]),
+            "ratio_final_min": ratio_min,
+            "ratio_final_mean": ratio_mean,
+            "ratio_final_max": ratio_max,
+            "is_per_bin": is_per_bin,
         }
         sample_logs.append(log_row)
         # Persist as JSONL incrementally to avoid data loss on interruption
@@ -413,6 +432,10 @@ def main():
     input_ids = enc["input_ids"].to(device)
     attn = enc["attention_mask"].to(device)
     tgt = torch.tensor(rewards, dtype=torch.float32, device=device)
+    if args.debug_info:
+        print("Debug — batch tensors:")
+        print(f"  input_ids: {tuple(input_ids.shape)}  attention: {tuple(attn.shape)}  tgt: {tuple(tgt.shape)}")
+        print(f"  tgt stats: min={float(tgt.min().item()):.4f} max={float(tgt.max().item()):.4f} mean={float(tgt.mean().item()):.4f}")
     
     print(f"Training data:")
     print(f"  - Samples: {len(texts)}")
@@ -429,8 +452,14 @@ def main():
                 "p99": float(np.percentile(x, 99)),
                 "max": float(np.max(x)),
             }
-        print("IS divergence (final) stats:")
-        print("  - final (after K selections):", stats(final))
+        print("IS divergence (diagnostics):")
+        print("  - Absolute IS (sum over F×N):", stats(final))
+        # Per-bin IS stats across samples (diagnostic on the same scale as the training target)
+        if sample_logs:
+            per_bin = np.array([row.get("is_per_bin", float('nan')) for row in sample_logs], dtype=float)
+            per_bin = per_bin[~np.isnan(per_bin)]
+            if per_bin.size > 0:
+                print("  - Per-bin IS (mean over F×N) — Training target:", stats(per_bin))
         # Print concise per-sample diagnostics (first 5 for brevity)
         print("\nNumeric diagnostics (first 5 samples):")
         for row in sample_logs[:5]:
@@ -498,6 +527,12 @@ def main():
         
         # MSE loss
         loss = loss_fn(pred, tgt)
+        if args.debug_info and epoch == 0:
+            # Show a few sample predictions vs targets
+            k = min(5, pred.numel())
+            print("  sample pred[:k] vs tgt[:k] (per-bin IS target):")
+            print("  pred:", [float(x) for x in pred[:k].detach().cpu()])
+            print("  tgt :", [float(x) for x in tgt[:k].detach().cpu()])
         
         # Backward with gradient clipping
         loss.backward()
