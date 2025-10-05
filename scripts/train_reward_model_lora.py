@@ -91,7 +91,13 @@ def _parse_completion(text: str, K: int, direction_angles: List[int]) -> List[in
     return dirs
 
 
-def _compute_deltaIS_reward(Y: torch.Tensor, s_hat: torch.Tensor, H: torch.Tensor, selected: List[int]) -> float:
+def _compute_deltaIS_reward(
+    Y: torch.Tensor,
+    s_hat: torch.Tensor,
+    H: torch.Tensor,
+    selected: List[int],
+    trace: List[Dict[str, float]],
+) -> float:
     eps = 1e-12
     Y = Y.clone().float()
     F, N = Y.shape
@@ -115,9 +121,15 @@ def _compute_deltaIS_reward(Y: torch.Tensor, s_hat: torch.Tensor, H: torch.Tenso
     for d in selected:
         Y_mix = torch.clamp(Y_mix + Hs[:, d], min=eps)
         cur = is_div(Y, Y_mix)
-        # Relative improvement per step (scale‑invariant)
-        rel = (prev - cur) / torch.clamp(prev, min=eps)
-        total += float(rel.item())
+        # Absolute improvement (exposes magnitude issues if present)
+        step_val = (prev - cur)
+        total += float(step_val.item())
+        trace.append({
+            "prev": float(prev.item()),
+            "cur": float(cur.item()),
+            "delta_abs": float((prev - cur).item()),
+            "delta_rel": float(((prev - cur) / torch.clamp(prev, min=eps)).item()),
+        })
         prev = cur
     return total
 
@@ -129,7 +141,6 @@ def main():
     ap.add_argument("--data-root", type=str, required=True)
     ap.add_argument("--tf-path", type=str, required=True)
     ap.add_argument("--w-path", type=str, required=True)
-    ap.add_argument("--reward-mode", type=str, choices=["deltaIS"], default="deltaIS")
     ap.add_argument("--K", type=int, default=3)
     
     # LoRA hyperparameters
@@ -293,6 +304,10 @@ def main():
     dir_tokens = list(tokenizer.direction_tokens)
     texts: List[str] = []
     rewards: List[float] = []
+    is_prev_list: List[float] = []
+    is_final_list: List[float] = []
+    is_step_delta_abs: List[float] = []
+    is_step_delta_rel: List[float] = []
     for p in prompts:
         idxs = np.random.choice(len(dir_tokens), size=args.K, replace=False)
         comp = " ".join(dir_tokens[i] for i in idxs)
@@ -301,8 +316,16 @@ def main():
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
         s_hat = cache[p]["s_hat"]
-        R = _compute_deltaIS_reward(Y, s_hat, H, dirs)
+        trace_steps: List[Dict[str, float]] = []
+        R = _compute_deltaIS_reward(
+            Y, s_hat, H, dirs,
+            trace=trace_steps,
+        )
         rewards.append(float(R))
+        is_prev_list.append(trace_steps[0]["prev"])  # before first selection
+        is_final_list.append(trace_steps[-1]["cur"])  # after last selection
+        is_step_delta_abs.extend([t["delta_abs"] for t in trace_steps])
+        is_step_delta_rel.extend([t["delta_rel"] for t in trace_steps])
 
     # Tokenize
     enc = tokenizer(
@@ -320,6 +343,25 @@ def main():
     print(f"  - Samples: {len(texts)}")
     print(f"  - Reward range: [{min(rewards):.2f}, {max(rewards):.2f}]")
     print(f"  - Reward mean±std: {np.mean(rewards):.2f} ± {np.std(rewards):.2f}\n")
+    if is_prev_list:
+        prev = np.array(is_prev_list, dtype=float)
+        final = np.array(is_final_list, dtype=float)
+        step_abs = np.array(is_step_delta_abs, dtype=float)
+        step_rel = np.array(is_step_delta_rel, dtype=float)
+        def stats(x):
+            return {
+                "min": float(np.min(x)),
+                "median": float(np.median(x)),
+                "mean": float(np.mean(x)),
+                "p95": float(np.percentile(x, 95)),
+                "p99": float(np.percentile(x, 99)),
+                "max": float(np.max(x)),
+            }
+        print("IS divergence (absolute) stats:")
+        print("  - prev (before any selection):", stats(prev))
+        print("  - final (after K selections):", stats(final))
+        print("  - per-step ΔIS abs:", stats(step_abs))
+        print("  - per-step ΔIS rel:", stats(step_rel), "(clipped by eps when prev≈0)")
 
     # Optimizer with differential learning rates
     # Group 1: LoRA adapters (medium LR)
