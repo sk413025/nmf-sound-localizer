@@ -83,8 +83,20 @@ def main():
     rm_model.v_head.load_state_dict(state["v_head"])  # restore value head
     rm_model.score = rm_model.v_head  # expose score for TRL
 
-    # Dataset for PPO: prompts only
-    ds = Dataset.from_dict({"prompt": prompts})
+    # Dataset for PPO: pre-encode prompts to input_ids/attention_mask to satisfy collator
+    enc = tokenizer(
+        prompts,
+        padding=True,
+        truncation=True,
+        max_length=tokenizer.model_max_length,
+        return_tensors="pt",
+    )
+    ds = Dataset.from_dict(
+        {
+            "input_ids": [ids.tolist() for ids in enc["input_ids"]],
+            "attention_mask": [m.tolist() for m in enc["attention_mask"]],
+        }
+    )
 
     # PPO config
     bs = max(1, min(args.batch_size, len(ds)))
@@ -117,6 +129,7 @@ def main():
         ref_model=reference,
         reward_model=rm_model,
         train_dataset=ds,
+        value_model=policy,  # share value head with policy for PPO baseline
         eval_dataset=ds,
     )
 
@@ -138,4 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

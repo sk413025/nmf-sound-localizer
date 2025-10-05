@@ -58,6 +58,10 @@ def build_patch_tokenizer(
         pad_token=_PAD_TOKEN,
         unk_token=_UNK_TOKEN,
     )
+    # Set a sane finite max length to avoid OverflowError in fast tokenizers
+    # when downstream code uses max_length=tokenizer.model_max_length.
+    # Patch/dir prompts are well below this bound.
+    hf_tokenizer.model_max_length = 8192
     hf_tokenizer.padding_side = "left"
 
     # Attach angle metadata for downstream helpers
