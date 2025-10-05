@@ -232,6 +232,26 @@ Next experiments:
 
 **CRITICAL**: Use causal phrases like "BECAUSE of", "DUE TO", "THEREFORE", "THIS IMPLIES" to show logical connections between sections.
 
+## Testing Requirements (Mandatory)
+- Smoke Test (startup/run check)
+  - Purpose: Quickly confirm the system can start and run end‑to‑end on real data with a minimal subset.
+  - Scope: End‑to‑end invocation for the affected script/component using a very small real subset; completes in minutes.
+  - Artifacts: Save stdout/stderr to a log under `results/<name>/run.log` and record env info + subset manifest + dataset fingerprint.
+  - Acceptance: Process starts, prints device, loads assets (H/W), performs at least one forward/training step, and finishes without errors.
+  - Repro: Provide exact command using `conda run -n trl-training` and `PYTHONPATH` set to the project root.
+
+- Functional Test (requirements validation)
+  - Purpose: Validate that the system/component behavior meets the specification and acceptance criteria.
+  - Scope: For each affected component, include at least one positive path and one guardrail case (real data only).
+  - Requirements: Declare inputs/outputs (shapes/dtypes/units), invariants, and normal ranges; assert them in code/tests.
+  - Artifacts: Include test logs or outputs under `results/` and describe acceptance in the commit message.
+  - Determinism: Fix seeds where applicable; document any tolerances.
+
+Enforcement
+- Every results commit must include both a Smoke Test and Functional Test for the affected components, with reproduction commands and artifacts.
+- Smoke tests do not replace functional tests; both are required.
+- Synthetic data is prohibited for both test types; use documented real subsets and include fingerprints.
+
 ## 🔴 Mandatory Reflection Requirements
 
 **Every results commit MUST include ALL sections below. Commits without proper reflection will be rejected.**
@@ -377,6 +397,8 @@ Before committing results, verify:
 - [ ] ✅ Complete reproduction instructions (step-by-step)
 - [ ] ✅ Data fingerprint and lineage documented
 - [ ] ✅ Real data used (no synthetic); dataset roots and subset selection documented
+- [ ] ✅ Smoke test executed and logged (path in commit)
+- [ ] ✅ Functional tests executed and passed for affected components (with reproduction info)
 - [ ] ✅ Both successes AND failures documented
 - [ ] ✅ Logical connections using "BECAUSE", "DUE TO", "THEREFORE"
 
@@ -394,6 +416,8 @@ Before committing code changes, verify:
 - [ ] ✅ Code duplication was eliminated
 - [ ] ✅ Standard library was preferred over external packages
 - [ ] ✅ Temporary files and experiment artifacts were cleaned up
+- [ ] ✅ Smoke test added/executed for modified paths (real subset)
+- [ ] ✅ Functional test(s) added/updated; acceptance criteria asserted and passing
 - [ ] ✅ Commit message includes complexity metrics and file count changes if relevant
 - [ ] ✅ Tests run on real data (or a documented real subset) with dataset fingerprint and selection procedure recorded
 
