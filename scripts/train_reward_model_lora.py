@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -40,34 +39,8 @@ from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.features import PatchTokenizer
 from doa_rl.hf import build_patch_tokenizer, build_value_head_model
 from doa_rl.assets import load_H, load_W
-from nmf_localizer.core.usm_trainer import USMTrainer
+# USMTrainer not needed after switching to localizer-style reward
 
-
-def _nmf_reconstruct_is(Y: torch.Tensor, W: torch.Tensor, n_iter: int = 50, eps: float = 1e-12) -> torch.Tensor:
-    """Reconstruct Y_hat ≈ W @ A using IS-divergence multiplicative updates for A (diagnostic only).
-
-    Args:
-        Y: (F,N) non-negative target
-        W: (F,K) dictionary (non-negative)
-        n_iter: iterations for the update
-        eps: small clamp to avoid division by zero
-
-    Returns:
-        Y_hat: (F,N) = W @ A
-    """
-    Yc = torch.clamp(Y.detach().cpu(), min=eps)
-    Wc = torch.clamp(W.detach().cpu(), min=eps)
-    F, N = Yc.shape
-    K = Wc.shape[1]
-    A = torch.full((K, N), 1.0 / max(K, 1), dtype=Yc.dtype)
-    for _ in range(max(int(n_iter), 0)):
-        Yhat = torch.clamp(Wc @ A, min=eps)
-        num = (Wc.t() @ (Yc / (Yhat ** 2)))
-        den = (Wc.t() @ (1.0 / Yhat))
-        A = A * torch.clamp(num / torch.clamp(den, min=eps), min=eps)
-        A = A / torch.clamp(A.sum(dim=0, keepdim=True), min=eps)
-    Yhat = torch.clamp(Wc @ A, min=eps)
-    return Yhat
 
 
 def _is_factorize_with_selected_blocks(
@@ -162,66 +135,9 @@ def _prepare_samples(args, direction_angles: List[int]) -> Tuple[List[str], Dict
 
 
 
-def _parse_completion(text: str, K: int, direction_angles: List[int]) -> List[int]:
-    dirs: List[int] = []
-    for m in re.finditer(r"<D_(\d{3})>", text):
-        angle = int(m.group(1))
-        if angle in direction_angles:
-            dirs.append(direction_angles.index(angle))
-        if len(dirs) >= K:
-            break
-    return dirs
-
-
-def _compute_deltaIS_reward(
-    Y: torch.Tensor,
-    s_hat: torch.Tensor,
-    H: torch.Tensor,
-    selected: List[int],
-    trace: List[Dict[str, float]],
-    *,
-    baseline_k: int = 2,
-) -> float:
-    eps = 1e-12
-    Y = Y.clone().float()
-    F, N = Y.shape
-    # Enforce exact frequency grid match; no resampling allowed
-    if H.shape[0] != F:
-        raise ValueError(
-            f"H and Y must have the same number of frequency bins (F). "
-            f"Got H.F={int(H.shape[0])} vs Y.F={int(F)}. "
-            f"Align STFT config (fs/n_fft/band) to match assets."
-        )
-    Hs = (H.float() * s_hat.view(-1, 1).float())
-    
-    def is_div(Ytrue: torch.Tensor, Ymix: torch.Tensor) -> torch.Tensor:
-        Yhat = torch.clamp(Ymix.view(-1, 1).expand(F, N), min=eps)
-        ratio = torch.clamp(Ytrue, min=eps) / Yhat
-        return torch.sum(ratio - torch.log(ratio) - 1.0)
-    
-    if baseline_k < 1 or baseline_k > H.shape[1]:
-        raise ValueError(f"baseline_k must be in [1, D]; got {baseline_k} for D={H.shape[1]}")
-    # Physically meaningful baseline: per‑frequency sum of k smallest H·ŝ contributions
-    vals, _ = torch.topk(Hs, k=baseline_k, dim=1, largest=False)
-    baseline = torch.clamp(vals.sum(dim=1), min=eps)
-
-    Y_mix = baseline.clone()
-    prev = is_div(Y, Y_mix)
-    total = 0.0
-    for d in selected:
-        Y_mix = torch.clamp(Y_mix + Hs[:, d], min=eps)
-        cur = is_div(Y, Y_mix)
-        # Absolute improvement (exposes magnitude issues if present)
-        step_val = (prev - cur)
-        total += float(step_val.item())
-        trace.append({
-            "prev": float(prev.item()),
-            "cur": float(cur.item()),
-            "delta_abs": float((prev - cur).item()),
-            "delta_rel": float(((prev - cur) / torch.clamp(prev, min=eps)).item()),
-        })
-        prev = cur
-    return total
+def _parse_completion(*args, **kwargs):
+    # No longer used (we sample directions directly); kept as stub to preserve namespace stability if imported
+    return []
 
 
 def main():
@@ -232,12 +148,8 @@ def main():
     ap.add_argument("--tf-path", type=str, required=True)
     ap.add_argument("--w-path", type=str, required=True)
     ap.add_argument("--K", type=int, default=3)
-    ap.add_argument("--reward-mode", type=str, choices=["deltaIS_localizer", "deltaIS_abs"],
-                    default="deltaIS_localizer",
-                    help="Reward path: localizer-style time-varying reconstruction (A·X, IS updates) or prior absolute ΔIS (time-constant mix)")
+    # Reward path fixed to localizer-style A·X reconstruction (deltaIS_localizer)
     ap.add_argument("--is-iters", type=int, default=20, help="Iterations for IS updates in localizer reward")
-    ap.add_argument("--baseline-k", type=int, default=2,
-                    help="Initialize Ŷ with the per-frequency sum of the k smallest H·ŝ contributions (physically meaningful baseline)")
     
     # LoRA hyperparameters
     ap.add_argument("--lora-r", type=int, default=8, help="LoRA rank (4, 8, 16)")
@@ -323,10 +235,6 @@ def main():
     else:
         W_t = load_W(args.w_path)
         W_np = W_t.cpu().numpy()
-    for p in prompts:
-        Y_t = cache[p]["Y"]
-        s_hat_np = USMTrainer.compute_content_s_hat(Y=Y_t.numpy(), W=W_np, mode="S1", n_iter=50, l1=0.0)
-        cache[p]["s_hat"] = torch.from_numpy(s_hat_np.astype(np.float32))
 
     # Build base RM model
     rm_model, _ = build_value_head_model(tokenizer)
@@ -401,10 +309,7 @@ def main():
     dir_tokens = list(tokenizer.direction_tokens)
     texts: List[str] = []
     rewards: List[float] = []
-    is_prev_list: List[float] = []
     is_final_list: List[float] = []
-    is_step_delta_abs: List[float] = []
-    is_step_delta_rel: List[float] = []
     sample_logs: List[Dict[str, float]] = []
     results_dir = os.path.join("results", f"{args.out}")
     os.makedirs(results_dir, exist_ok=True)
@@ -416,131 +321,36 @@ def main():
         texts.append(text)
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
-        s_hat = cache[p]["s_hat"]
-        if args.reward_mode == "deltaIS_localizer":
-            # Localizer-style: A·X with IS updates on selected blocks; single-shot reward = -IS(Y, Yhat)
-            Yhat_sel, is_val = _is_factorize_with_selected_blocks(
-                Y=Y, W=W_t, H=H, selected=dirs, n_iter=args.is_iters
-            )
-            rewards.append(float(-is_val))
-            # For diagnostics compatibility
-            is_prev_list.append(float('nan'))
-            is_final_list.append(float(is_val))
-        else:
-            trace_steps: List[Dict[str, float]] = []
-            R = _compute_deltaIS_reward(
-                Y, s_hat, H, dirs,
-                trace=trace_steps,
-                baseline_k=args.baseline_k,
-            )
-            rewards.append(float(R))
-            is_prev_list.append(trace_steps[0]["prev"])  # before first selection
-            is_final_list.append(trace_steps[-1]["cur"])  # after last selection
-            is_step_delta_abs.extend([t["delta_abs"] for t in trace_steps])
-            is_step_delta_rel.extend([t["delta_rel"] for t in trace_steps])
+        # Localizer-style: A·X with IS updates on selected blocks; single-shot reward = -IS(Y, Yhat)
+        Yhat_sel, is_val = _is_factorize_with_selected_blocks(
+            Y=Y, W=W_t, H=H, selected=dirs, n_iter=args.is_iters
+        )
+        rewards.append(float(-is_val))
+        is_final_list.append(float(is_val))
 
         # Numeric diagnostics per sample
         eps = 1e-12
         F, N = Y.shape
-        # Diagnostics: baseline always computed; final depends on reward path
-        Hs = (H.float() * s_hat.view(-1, 1).float())
-        vals, _ = torch.topk(Hs, k=max(1, min(args.baseline_k, Hs.shape[1])), dim=1, largest=False)
-        mix_base = torch.clamp(vals.sum(dim=1), min=eps)
-        if args.reward_mode == "deltaIS_localizer":
-            # Use localizer Yhat as final
-            Yhat_diag, is_final_val = _is_factorize_with_selected_blocks(Y, W_t, H, dirs, n_iter=args.is_iters)
-            mix_final = torch.clamp(Yhat_diag.mean(dim=1), min=eps)  # collapse to F for summary only
-        else:
-            mix_raw = torch.zeros((F,), dtype=torch.float32)
-            for d in dirs:
-                mix_raw = mix_raw + Hs[:, d]
-            mix_final = torch.clamp(mix_raw + eps, min=eps)
+        # Diagnostics: use localizer Yhat as final
+        Yhat_diag = Yhat_sel
         Y_cl = torch.clamp(Y, min=eps)
-        # Ratio stats (baseline and final)
-        ratio_base = (Y_cl / mix_base.view(-1, 1).expand(F, N)).flatten()
-        if args.reward_mode == "deltaIS_localizer":
-            ratio_final = (Y_cl / torch.clamp(Yhat_diag, min=eps)).flatten()
-            # IS values for baseline and final
-            is_prev_val = torch.sum((Y_cl / mix_base.view(-1, 1)) - torch.log(torch.clamp(Y_cl / mix_base.view(-1, 1), min=eps)) - 1.0).item()
-            is_final_val = torch.sum((Y_cl / torch.clamp(Yhat_diag, min=eps)) - torch.log(torch.clamp(Y_cl / torch.clamp(Yhat_diag, min=eps), min=eps)) - 1.0).item()
-        else:
-            ratio_final = (Y_cl / mix_final.view(-1, 1).expand(F, N)).flatten()
-            # IS values from time-constant path
-            is_prev_val = float(is_prev_list[-1]) if is_prev_list else float('nan')
-            is_final_val = float(is_final_list[-1]) if is_final_list else float('nan')
+        # Ratio stats (final only)
+        ratio_final = (Y_cl / torch.clamp(Yhat_diag, min=eps)).flatten()
+        is_final_val = float(is_val)
         def tnp(a):
             return a.detach().cpu().numpy()
-        rb = np.percentile(tnp(ratio_base), [50, 95, 99])
         rf = np.percentile(tnp(ratio_final), [50, 95, 99])
-
-        # NMF-style reconstruction using W (diagnostic: does W explain Y?)
-        # Use pseudo-inverse (not enforcing nonnegativity) as a fast check: Y_hat_nmf = W @ pinv(W) @ Y
-        try:
-            W_mat = W_t.float().cpu()  # from load_W path
-        except NameError:
-            W_mat = torch.from_numpy(W_np).float()
-        W_pinv = torch.linalg.pinv(torch.clamp(W_mat, min=eps))
-        Y_hat_nmf = torch.clamp(W_mat @ (W_pinv @ Y_cl.cpu()), min=eps)
-        ratio_nmf = (Y_cl.cpu() / Y_hat_nmf).flatten()
-        rn = np.percentile(tnp(ratio_nmf), [50, 95, 99])
-        # IS divergence and MSE for NMF reconstruction
-        is_nmf = torch.sum(ratio_nmf - torch.log(torch.clamp(ratio_nmf, min=eps)) - 1.0).item()
-        mse_nmf = torch.mean((Y_cl.cpu() - Y_hat_nmf) ** 2).item()
-        sig_pow = torch.mean(Y_cl.cpu() ** 2).item()
-        snr_db_nmf = float(10.0 * np.log10(max(sig_pow, eps) / max(mse_nmf, eps)))
-        # Spectral shape correlation (mean over time per frequency)
-        Y_mean_f = Y_cl.mean(dim=1).cpu()
-        Yhat_mean_f = Y_hat_nmf.mean(dim=1).cpu()
-        corr = torch.corrcoef(torch.stack([Y_mean_f, Yhat_mean_f]))[0, 1].item()
-
-        # IS-MU diagnostics: Y_hat_nmfA = W @ A via multiplicative updates for IS (closer to original NMF)
-        Y_hat_nmfA = _nmf_reconstruct_is(Y_cl, W_mat, n_iter=50, eps=eps)
-        ratio_nmfA = (Y_cl.cpu() / Y_hat_nmfA).flatten()
-        rnA = np.percentile(tnp(ratio_nmfA), [50, 95, 99])
-        is_nmfA = torch.sum(ratio_nmfA - torch.log(torch.clamp(ratio_nmfA, min=eps)) - 1.0).item()
-        mse_nmfA = torch.mean((Y_cl.cpu() - Y_hat_nmfA) ** 2).item()
-        snr_db_nmfA = float(10.0 * np.log10(max(sig_pow, eps) / max(mse_nmfA, eps)))
-        YhatA_mean_f = Y_hat_nmfA.mean(dim=1).cpu()
-        corrA = torch.corrcoef(torch.stack([Y_mean_f, YhatA_mean_f]))[0, 1].item()
         log_row = {
             "path": cache[p].get("path", ""),
             "F": int(F),
             "N": int(N),
-            "is_prev": float(is_prev_val),
             "is_final": float(is_final_val),
             "y_min": float(Y.min().item()),
             "y_mean": float(Y.mean().item()),
             "y_max": float(Y.max().item()),
-            "baseline_k": int(args.baseline_k),
-            "mix_base_min": float(mix_base.min().item()),
-            "mix_base_mean": float(mix_base.mean().item()),
-            "mix_base_max": float(mix_base.max().item()),
-            "mix_final_min": float(mix_final.min().item()),
-            "mix_final_mean": float(mix_final.mean().item()),
-            "mix_final_max": float(mix_final.max().item()),
-            "ratio_base_p50": float(rb[0]),
-            "ratio_base_p95": float(rb[1]),
-            "ratio_base_p99": float(rb[2]),
             "ratio_final_p50": float(rf[0]),
             "ratio_final_p95": float(rf[1]),
             "ratio_final_p99": float(rf[2]),
-            "s_hat_min": float(s_hat.min().item()),
-            "s_hat_mean": float(s_hat.mean().item()),
-            "s_hat_max": float(s_hat.max().item()),
-            "nmf_is": float(is_nmf),
-            "nmf_mse": float(mse_nmf),
-            "nmf_snr_db": float(snr_db_nmf),
-            "ratio_nmf_p50": float(rn[0]),
-            "ratio_nmf_p95": float(rn[1]),
-            "ratio_nmf_p99": float(rn[2]),
-            "corr_Ymean_YhatNMF": float(corr),
-            "nmfA_is": float(is_nmfA),
-            "nmfA_mse": float(mse_nmfA),
-            "nmfA_snr_db": float(snr_db_nmfA),
-            "ratio_nmfA_p50": float(rnA[0]),
-            "ratio_nmfA_p95": float(rnA[1]),
-            "ratio_nmfA_p99": float(rnA[2]),
-            "corr_Ymean_YhatNMFA": float(corrA),
         }
         sample_logs.append(log_row)
         # Persist as JSONL incrementally to avoid data loss on interruption
@@ -563,11 +373,8 @@ def main():
     print(f"  - Samples: {len(texts)}")
     print(f"  - Reward range: [{min(rewards):.2f}, {max(rewards):.2f}]")
     print(f"  - Reward mean±std: {np.mean(rewards):.2f} ± {np.std(rewards):.2f}\n")
-    if is_prev_list:
-        prev = np.array(is_prev_list, dtype=float)
+    if is_final_list:
         final = np.array(is_final_list, dtype=float)
-        step_abs = np.array(is_step_delta_abs, dtype=float)
-        step_rel = np.array(is_step_delta_rel, dtype=float)
         def stats(x):
             return {
                 "min": float(np.min(x)),
@@ -577,22 +384,15 @@ def main():
                 "p99": float(np.percentile(x, 99)),
                 "max": float(np.max(x)),
             }
-        print("IS divergence (absolute) stats:")
-        print("  - prev (before any selection):", stats(prev))
+        print("IS divergence (final) stats:")
         print("  - final (after K selections):", stats(final))
-        if len(is_step_delta_abs) > 0:
-            print("  - per-step ΔIS abs:", stats(step_abs))
-            print("  - per-step ΔIS rel:", stats(step_rel), "(clipped by eps when prev≈0)")
         # Print concise per-sample diagnostics (first 5 for brevity)
         print("\nNumeric diagnostics (first 5 samples):")
         for row in sample_logs[:5]:
             print({
                 "path": os.path.basename(row.get("path", "")) or "(n/a)",
                 "F": row["F"], "N": row["N"],
-                "is_prev": round(row["is_prev"], 2),
                 "is_final": round(row["is_final"], 2),
-                "baseline_k": row["baseline_k"],
-                "ratio_base_p99": round(row["ratio_base_p99"], 2),
                 "ratio_final_p99": round(row["ratio_final_p99"], 2),
             })
         print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
