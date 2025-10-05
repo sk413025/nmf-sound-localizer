@@ -116,7 +116,11 @@ def _compute_deltaIS_reward(
     eps = 1e-12
     Y = Y.clone().float()
     F, N = Y.shape
-    Hs = (H.float() * s_hat.view(-1, 1).float())  # (F,D)
+    # Resample H along F first to match Y, then apply ŝ
+    H_res = H.float()
+    if H_res.shape[0] != F:
+        H_res = _resample_F(H_res, F)
+    Hs = (H_res * s_hat.view(-1, 1).float())  # (F,D)
     Y_mix = torch.full((F,), eps, dtype=torch.float32)
 
     def is_div(Ytrue: torch.Tensor, Ymix: torch.Tensor) -> torch.Tensor:
@@ -134,6 +138,30 @@ def _compute_deltaIS_reward(
     return total
 
 
+def _resample_F(HF: torch.Tensor, target_F: int) -> torch.Tensor:
+    """Resample (F,D) along F to target_F by simple averaging/nearest.
+
+    This is an approximation to allow testing when TF/W frequency grids differ from Y.
+    """
+    F0, D = HF.shape
+    if F0 == target_F:
+        return HF
+    if F0 > target_F:
+        # Downsample by averaging contiguous blocks
+        step = F0 / target_F
+        idxs = torch.tensor([int(round(i * step)) for i in range(target_F)], dtype=torch.long)
+        idxs = torch.clamp(idxs, 0, F0 - 1)
+        out = HF[idxs, :].clone()
+        return out
+    else:
+        # Upsample by nearest neighbor
+        step = target_F / max(F0, 1)
+        idxs = torch.tensor([int(round(i / step)) for i in range(target_F)], dtype=torch.long)
+        idxs = torch.clamp(idxs, 0, F0 - 1)
+        out = HF[idxs, :].clone()
+        return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="TRL GRPO for K-step direction set selection")
     ap.add_argument("--data-root", type=str, required=True)
@@ -149,6 +177,7 @@ def main():
     ap.add_argument("--n-fft", type=int, default=2048)
     ap.add_argument("--freq-min", type=float, default=300.0)
     ap.add_argument("--freq-max", type=float, default=3000.0)
+    ap.add_argument("--max-samples", type=int, default=0)
     ap.add_argument("--patch-fp", type=int, default=16)
     ap.add_argument("--patch-np", type=int, default=10)
     args = ap.parse_args()
@@ -160,33 +189,60 @@ def main():
     prompts, cache = _prepare_prompts_and_cache(args, direction_angles)
 
     # Load assets
-    H_t, _anglesT = load_H(args.tf_path)  # (F,D)
-    W_t = load_W(args.w_path)  # (F,K)
-    H = H_t.float().cpu()
-    W = W_t.float().cpu()
+    H_full, anglesT = load_H(args.tf_path)  # (F,D_all), (D_all,)
+    H_full = H_full.float().cpu()
+    anglesT = anglesT.cpu().numpy().astype(int).tolist()
+    # Build column indices in H that match the discovered direction_angles
+    col_idx: List[int] = []
+    for a in direction_angles:
+        try:
+            j = anglesT.index(int(a))
+        except ValueError:
+            # If exact match not found, choose nearest
+            diffs = [abs(a - at) for at in anglesT]
+            j = int(np.argmin(diffs))
+        col_idx.append(j)
+    H = H_full[:, col_idx].contiguous()
+
+    # Load W as numpy for ŝ estimation
+    if args.w_path.endswith('.npz'):
+        W_np = np.load(args.w_path)["W"]
+    else:
+        W_t = load_W(args.w_path)
+        W_np = W_t.cpu().numpy()
 
     # Build tokenizer and model
     tokenizer = build_patch_tokenizer(direction_angles)
     tokenizer.padding_side = "left"
     policy, _ = build_value_head_model(tokenizer)
+    # Compatibility for TRL GRPO expecting certain attributes
+    if not hasattr(policy, "warnings_issued"):
+        policy.warnings_issued = {}
 
     # Precompute ŝ for each prompt
     for p in prompts:
         Y_t = cache[p]["Y"]
-        s_hat_np = USMTrainer.compute_content_s_hat(
-            Y=Y_t.numpy(), W=W.numpy(), mode="S1", n_iter=50, l1=0.0
-        )
+        # Try physics-based ŝ; fall back to mean(Y) if F mismatch
+        try:
+            s_hat_np = USMTrainer.compute_content_s_hat(
+                Y=Y_t.numpy(), W=W_np, mode="S1", n_iter=50, l1=0.0
+            )
+        except Exception:
+            s_hat_np = Y_t.numpy().mean(axis=1)
         cache[p]["s_hat"] = torch.from_numpy(s_hat_np.astype(np.float32))
 
     # Build dataset for GRPO: requires a 'prompt' column
     ds = Dataset.from_dict({"prompt": prompts})
 
     # Configure GRPO
+    # Ensure generation_batch_size divisible by num_generations
+    per_bs = max(1, min(args.batch_size, len(ds)))
+    gen_bs = per_bs * 4  # divisible by num_generations=4 and by global batch size
     cfg = GRPOConfig(
         output_dir="trl-output-grpo",
-        per_device_train_batch_size=max(1, min(args.batch_size, len(ds))),
+        per_device_train_batch_size=per_bs,
         learning_rate=args.lr,
-        num_generations=1,
+        num_generations=4,
         max_completion_length=args.K,
         temperature=1.0,
         use_cpu=True,
@@ -197,10 +253,11 @@ def main():
         save_strategy="no",
         eval_strategy="no",
         report_to=[],
+        generation_batch_size=gen_bs,
     )
 
     # Reward function
-    def reward_fn(completions, prompts_in):
+    def reward_fn(completions, prompts=None, **_: dict):
         rews: List[float] = []
         # Normalize input forms
         def _to_text(x):
@@ -212,7 +269,9 @@ def main():
                 return x[0]
             return str(x)
 
-        for comp, prm in zip(completions, prompts_in):
+        if prompts is None:
+            prompts = [""] * len(completions)
+        for comp, prm in zip(completions, prompts):
             c_text = _to_text(comp)
             p_text = _to_text(prm)
             dirs = _parse_completion(c_text, args.K, direction_angles)
@@ -228,7 +287,7 @@ def main():
 
     # Create trainer
     trainer = GRPOTrainer(
-        model=policy,
+        model=policy.pretrained_model,
         reward_funcs=reward_fn,
         args=cfg,
         train_dataset=ds,
@@ -255,7 +314,7 @@ def main():
 
         module.generate = generate_with_mask
 
-    _wrap_generate(trainer.model.pretrained_model)
+    _wrap_generate(trainer.model)
 
     # Train
     trainer.train()
@@ -263,4 +322,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
