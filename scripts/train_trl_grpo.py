@@ -116,11 +116,14 @@ def _compute_deltaIS_reward(
     eps = 1e-12
     Y = Y.clone().float()
     F, N = Y.shape
-    # Resample H along F first to match Y, then apply ŝ
-    H_res = H.float()
-    if H_res.shape[0] != F:
-        H_res = _resample_F(H_res, F)
-    Hs = (H_res * s_hat.view(-1, 1).float())  # (F,D)
+    # Enforce exact frequency grid match; no resampling allowed
+    if H.shape[0] != F:
+        raise ValueError(
+            f"H and Y must have the same number of frequency bins (F). "
+            f"Got H.F={int(H.shape[0])} vs Y.F={int(F)}. "
+            f"Align STFT config (fs/n_fft/band) to match assets."
+        )
+    Hs = (H.float() * s_hat.view(-1, 1).float())  # (F,D)
     Y_mix = torch.full((F,), eps, dtype=torch.float32)
 
     def is_div(Ytrue: torch.Tensor, Ymix: torch.Tensor) -> torch.Tensor:
@@ -133,33 +136,14 @@ def _compute_deltaIS_reward(
     for d in selected:
         Y_mix = torch.clamp(Y_mix + Hs[:, d], min=eps)
         cur = is_div(Y, Y_mix)
-        total += float(-(cur - prev).item())
+        # Relative improvement per step (scale-invariant)
+        rel = (prev - cur) / torch.clamp(prev, min=eps)
+        total += float(rel.item())
         prev = cur
     return total
 
 
-def _resample_F(HF: torch.Tensor, target_F: int) -> torch.Tensor:
-    """Resample (F,D) along F to target_F by simple averaging/nearest.
-
-    This is an approximation to allow testing when TF/W frequency grids differ from Y.
-    """
-    F0, D = HF.shape
-    if F0 == target_F:
-        return HF
-    if F0 > target_F:
-        # Downsample by averaging contiguous blocks
-        step = F0 / target_F
-        idxs = torch.tensor([int(round(i * step)) for i in range(target_F)], dtype=torch.long)
-        idxs = torch.clamp(idxs, 0, F0 - 1)
-        out = HF[idxs, :].clone()
-        return out
-    else:
-        # Upsample by nearest neighbor
-        step = target_F / max(F0, 1)
-        idxs = torch.tensor([int(round(i / step)) for i in range(target_F)], dtype=torch.long)
-        idxs = torch.clamp(idxs, 0, F0 - 1)
-        out = HF[idxs, :].clone()
-        return out
+    
 
 
 def main():
@@ -173,16 +157,30 @@ def main():
     ap.add_argument("--batch-size", type=int, default=2)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--sample-rate", type=int, default=48000)
+    ap.add_argument("--sample-rate", type=int, default=16000)
     ap.add_argument("--n-fft", type=int, default=2048)
     ap.add_argument("--freq-min", type=float, default=300.0)
     ap.add_argument("--freq-max", type=float, default=3000.0)
     ap.add_argument("--max-samples", type=int, default=0)
     ap.add_argument("--patch-fp", type=int, default=16)
     ap.add_argument("--patch-np", type=int, default=10)
+    ap.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "mps", "cuda"],
+                    help="Compute device for training/inference (auto→mps>cuda>cpu)")
     args = ap.parse_args()
 
     set_seed(args.seed)
+
+    # Select device
+    dev = args.device
+    if dev == "auto":
+        if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+            dev = "mps"
+        elif torch.cuda.is_available():
+            dev = "cuda"
+        else:
+            dev = "cpu"
+    device = torch.device(dev)
+    print(f"Device: {device}")
 
     # Discover angles and prepare prompts/cache
     direction_angles = _discover_angles(args.data_root)
@@ -195,13 +193,20 @@ def main():
     # Build column indices in H that match the discovered direction_angles
     col_idx: List[int] = []
     for a in direction_angles:
-        try:
-            j = anglesT.index(int(a))
-        except ValueError:
-            # If exact match not found, choose nearest
-            diffs = [abs(a - at) for at in anglesT]
-            j = int(np.argmin(diffs))
+        # Require exact angle match; no nearest fallback
+        if int(a) not in anglesT:
+            raise RuntimeError(
+                f"Angle {int(a)}° not found in TF angles {anglesT}. "
+                f"Ensure dataset angles exactly match TF asset."
+            )
+        j = anglesT.index(int(a))
         col_idx.append(j)
+    # Disallow duplicate mappings which would collapse columns
+    if len(set(col_idx)) != len(col_idx):
+        raise RuntimeError(
+            f"Duplicate TF column mappings detected: {col_idx}. "
+            f"This indicates repeated/ambiguous angles; fix assets or dataset."
+        )
     H = H_full[:, col_idx].contiguous()
 
     # Load W as numpy for ŝ estimation
@@ -219,16 +224,12 @@ def main():
     if not hasattr(policy, "warnings_issued"):
         policy.warnings_issued = {}
 
-    # Precompute ŝ for each prompt
+    # Precompute ŝ for each prompt (strict: no fallback)
     for p in prompts:
         Y_t = cache[p]["Y"]
-        # Try physics-based ŝ; fall back to mean(Y) if F mismatch
-        try:
-            s_hat_np = USMTrainer.compute_content_s_hat(
-                Y=Y_t.numpy(), W=W_np, mode="S1", n_iter=50, l1=0.0
-            )
-        except Exception:
-            s_hat_np = Y_t.numpy().mean(axis=1)
+        s_hat_np = USMTrainer.compute_content_s_hat(
+            Y=Y_t.numpy(), W=W_np, mode="S1", n_iter=50, l1=0.0
+        )
         cache[p]["s_hat"] = torch.from_numpy(s_hat_np.astype(np.float32))
 
     # Build dataset for GRPO: requires a 'prompt' column
@@ -245,7 +246,7 @@ def main():
         num_generations=4,
         max_completion_length=args.K,
         temperature=1.0,
-        use_cpu=True,
+        use_cpu=(device.type == "cpu"),
         fp16=False,
         bf16=False,
         logging_strategy="steps",
@@ -286,6 +287,8 @@ def main():
         return rews
 
     # Create trainer
+    # Move model to device before handing to trainer (accelerate will manage further)
+    policy.pretrained_model.to(device)
     trainer = GRPOTrainer(
         model=policy.pretrained_model,
         reward_funcs=reward_fn,
