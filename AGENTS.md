@@ -124,7 +124,7 @@ Agent guidance:
 - Error messages and logging
 
 ## Environment Requirements
-- **Conda Environment**: `trl_training`
+- **Conda Environment**: `trl-training`
 - **Accelerator**: MPS (Metal Performance Shaders) for Apple Silicon GPU
 - **Python Path**: Must be set to the project root when running scripts
 
@@ -132,7 +132,7 @@ Agent guidance:
 ```bash
 # Activate conda environment
 source ~/.zshrc
-conda activate trl_training
+conda activate trl-training
 
 # Set PYTHONPATH (required for imports)
 export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/angle-based-byol:$PYTHONPATH
@@ -173,7 +173,7 @@ Actual training results:
 - Final train loss: [value]
 - Training epochs: [value] (expected: [value])
 - Training time: [value]
-- Hardware: MPS GPU, conda env: trl_training
+- Hardware: MPS GPU, conda env: trl-training
 
 Key findings:
 - [Main discoveries]
@@ -283,7 +283,7 @@ Success amplification: Use FRF framework when conditioning matters more than phy
 ```bash
 # 1. Environment setup
 source ~/.zshrc
-conda activate trl_training
+conda activate trl-training
 export PYTHONPATH=/path/to/project:$PYTHONPATH
 
 # 2. Data preparation
