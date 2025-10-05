@@ -18,6 +18,8 @@ Based on:
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import re
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -73,7 +75,11 @@ def _prepare_samples(args, direction_angles: List[int]) -> Tuple[List[str], Dict
         Y_np = Y_t.numpy()
         prompt = " ".join(tok(Y_np))
         prompts.append(prompt)
-        cache[prompt] = {"Y": Y_t.clone()}
+        # Track source path for diagnostics
+        src_path = batch.get("path", None)
+        if isinstance(src_path, (list, tuple)):
+            src_path = src_path[0] if src_path else None
+        cache[prompt] = {"Y": Y_t.clone(), "path": str(src_path) if src_path is not None else ""}
         if args.max_samples and len(prompts) >= args.max_samples:
             break
     return prompts, cache
@@ -308,6 +314,10 @@ def main():
     is_final_list: List[float] = []
     is_step_delta_abs: List[float] = []
     is_step_delta_rel: List[float] = []
+    sample_logs: List[Dict[str, float]] = []
+    results_dir = os.path.join("results", f"{args.out}")
+    os.makedirs(results_dir, exist_ok=True)
+    jsonl_path = os.path.join(results_dir, "numeric_diagnostics.jsonl")
     for p in prompts:
         idxs = np.random.choice(len(dir_tokens), size=args.K, replace=False)
         comp = " ".join(dir_tokens[i] for i in idxs)
@@ -326,6 +336,50 @@ def main():
         is_final_list.append(trace_steps[-1]["cur"])  # after last selection
         is_step_delta_abs.extend([t["delta_abs"] for t in trace_steps])
         is_step_delta_rel.extend([t["delta_rel"] for t in trace_steps])
+
+        # Numeric diagnostics per sample
+        eps = 1e-12
+        F, N = Y.shape
+        # Build final mixture without stepwise clamp for diagnostics
+        Hs = (H.float() * s_hat.view(-1, 1).float())
+        mix_raw = torch.zeros((F,), dtype=torch.float32)
+        for d in dirs:
+            mix_raw = mix_raw + Hs[:, d]
+        mix_final = torch.clamp(mix_raw + eps, min=eps)
+        Y_cl = torch.clamp(Y, min=eps)
+        # Ratio stats (initial eps baseline and final mix)
+        ratio_init = (Y_cl / eps).flatten()
+        ratio_final = (Y_cl / mix_final.view(-1, 1).expand(F, N)).flatten()
+        def tnp(a):
+            return a.detach().cpu().numpy()
+        ri = np.percentile(tnp(ratio_init), [50, 95, 99])
+        rf = np.percentile(tnp(ratio_final), [50, 95, 99])
+        log_row = {
+            "path": cache[p].get("path", ""),
+            "F": int(F),
+            "N": int(N),
+            "is_prev": float(trace_steps[0]["prev"]),
+            "is_final": float(trace_steps[-1]["cur"]),
+            "y_min": float(Y.min().item()),
+            "y_mean": float(Y.mean().item()),
+            "y_max": float(Y.max().item()),
+            "mix_final_min": float(mix_final.min().item()),
+            "mix_final_mean": float(mix_final.mean().item()),
+            "mix_final_max": float(mix_final.max().item()),
+            "ratio_init_p50": float(ri[0]),
+            "ratio_init_p95": float(ri[1]),
+            "ratio_init_p99": float(ri[2]),
+            "ratio_final_p50": float(rf[0]),
+            "ratio_final_p95": float(rf[1]),
+            "ratio_final_p99": float(rf[2]),
+            "s_hat_min": float(s_hat.min().item()),
+            "s_hat_mean": float(s_hat.mean().item()),
+            "s_hat_max": float(s_hat.max().item()),
+        }
+        sample_logs.append(log_row)
+        # Persist as JSONL incrementally to avoid data loss on interruption
+        with open(jsonl_path, "a") as jf:
+            jf.write(json.dumps(log_row) + "\n")
 
     # Tokenize
     enc = tokenizer(
@@ -362,6 +416,18 @@ def main():
         print("  - final (after K selections):", stats(final))
         print("  - per-step ΔIS abs:", stats(step_abs))
         print("  - per-step ΔIS rel:", stats(step_rel), "(clipped by eps when prev≈0)")
+        # Print concise per-sample diagnostics (first 5 for brevity)
+        print("\nNumeric diagnostics (first 5 samples):")
+        for row in sample_logs[:5]:
+            print({
+                "path": os.path.basename(row.get("path", "")) or "(n/a)",
+                "F": row["F"], "N": row["N"],
+                "is_prev": round(row["is_prev"], 2),
+                "is_final": round(row["is_final"], 2),
+                "ratio_init_p99": round(row["ratio_init_p99"], 2),
+                "ratio_final_p99": round(row["ratio_final_p99"], 2),
+            })
+        print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
 
     # Optimizer with differential learning rates
     # Group 1: LoRA adapters (medium LR)

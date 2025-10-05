@@ -247,6 +247,19 @@ Next experiments:
   - Artifacts: Include test logs or outputs under `results/` and describe acceptance in the commit message.
   - Determinism: Fix seeds where applicable; document any tolerances.
 
+### Numeric Diagnostics Logging (Required)
+- Purpose: Make hidden scale issues visible (e.g., IS divergence explosions) to support root‑cause analysis.
+- For reward/GRPO/RM components using IS divergence or spectrogram operations, log at minimum:
+  - STFT grid: `F` (freq bins), `N` (frames), `fs`, `n_fft`, band `[freq_min, freq_max]`, and `eps` used for clamping.
+  - IS divergence: `is_prev` (before any selection), `is_final` (after K selections), and per‑step `ΔIS_abs`/`ΔIS_rel` summary (min/median/mean/p95/p99/max).
+  - Mixture stats (Ŷ): `mix_final_min/mean/max` and ratio quantiles `ratio_init_p50/p95/p99` (Y/eps) and `ratio_final_p50/p95/p99` (Y/Ŷ_final).
+  - Signal stats: `Y_min/mean/max`, `ŝ_min/mean/max`.
+- Persistence:
+  - Print a concise summary to stdout and write per‑sample JSONL under `results/<run_name>/numeric_diagnostics.jsonl`.
+  - Include the JSONL and the run log in results commits for reproducibility.
+- Enforcement:
+  - Results commits that modify reward/GRPO/RM paths must include numeric diagnostics artifacts and reference them in the analysis.
+
 Enforcement
 - Every results commit must include both a Smoke Test and Functional Test for the affected components, with reproduction commands and artifacts.
 - Smoke tests do not replace functional tests; both are required.
