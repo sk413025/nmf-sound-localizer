@@ -57,7 +57,7 @@ def build_value_head_model(
     d_model: int = 256,
     n_layer: int = 2,
     n_head: int = 8,
-    n_positions: int = 512,
+    n_positions: int = 8192,
 ) -> Tuple[AutoModelForCausalLMWithValueHead, AutoModelForCausalLMWithValueHead]:
     """Create policy and frozen reference models sharing initial weights."""
 
