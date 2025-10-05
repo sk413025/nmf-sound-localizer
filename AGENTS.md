@@ -252,7 +252,9 @@ Next experiments:
 - For reward/GRPO/RM components using IS divergence or spectrogram operations, log at minimum:
   - STFT grid: `F` (freq bins), `N` (frames), `fs`, `n_fft`, band `[freq_min, freq_max]`, and `eps` used for clamping.
   - IS divergence: `is_prev` (before any selection), `is_final` (after K selections), and per‑step `ΔIS_abs`/`ΔIS_rel` summary (min/median/mean/p95/p99/max).
-  - Mixture stats (Ŷ): `mix_final_min/mean/max` and ratio quantiles `ratio_init_p50/p95/p99` (Y/eps) and `ratio_final_p50/p95/p99` (Y/Ŷ_final).
+  - Mixture stats (Ŷ):
+    - Baseline initialization: Declare method and parameter(s). Default policy: per‑frequency sum of the `k` smallest `H·ŝ` contributions with `k=2` (physically meaningful baseline). Log `baseline_k`.
+    - Log `mix_base_min/mean/max` and ratio quantiles `ratio_base_p50/p95/p99` (Y/Ŷ_base) and `mix_final_min/mean/max` with `ratio_final_p50/p95/p99` (Y/Ŷ_final).
   - Signal stats: `Y_min/mean/max`, `ŝ_min/mean/max`.
 - Persistence:
   - Print a concise summary to stdout and write per‑sample JSONL under `results/<run_name>/numeric_diagnostics.jsonl`.

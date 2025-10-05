@@ -103,6 +103,8 @@ def _compute_deltaIS_reward(
     H: torch.Tensor,
     selected: List[int],
     trace: List[Dict[str, float]],
+    *,
+    baseline_k: int = 2,
 ) -> float:
     eps = 1e-12
     Y = Y.clone().float()
@@ -121,7 +123,13 @@ def _compute_deltaIS_reward(
         ratio = torch.clamp(Ytrue, min=eps) / Yhat
         return torch.sum(ratio - torch.log(ratio) - 1.0)
     
-    Y_mix = torch.full((F,), eps, dtype=torch.float32)
+    if baseline_k < 1 or baseline_k > H.shape[1]:
+        raise ValueError(f"baseline_k must be in [1, D]; got {baseline_k} for D={H.shape[1]}")
+    # Physically meaningful baseline: per‑frequency sum of k smallest H·ŝ contributions
+    vals, _ = torch.topk(Hs, k=baseline_k, dim=1, largest=False)
+    baseline = torch.clamp(vals.sum(dim=1), min=eps)
+
+    Y_mix = baseline.clone()
     prev = is_div(Y, Y_mix)
     total = 0.0
     for d in selected:
@@ -148,6 +156,8 @@ def main():
     ap.add_argument("--tf-path", type=str, required=True)
     ap.add_argument("--w-path", type=str, required=True)
     ap.add_argument("--K", type=int, default=3)
+    ap.add_argument("--baseline-k", type=int, default=2,
+                    help="Initialize Ŷ with the per-frequency sum of the k smallest H·ŝ contributions (physically meaningful baseline)")
     
     # LoRA hyperparameters
     ap.add_argument("--lora-r", type=int, default=8, help="LoRA rank (4, 8, 16)")
@@ -330,6 +340,7 @@ def main():
         R = _compute_deltaIS_reward(
             Y, s_hat, H, dirs,
             trace=trace_steps,
+            baseline_k=args.baseline_k,
         )
         rewards.append(float(R))
         is_prev_list.append(trace_steps[0]["prev"])  # before first selection
@@ -340,19 +351,22 @@ def main():
         # Numeric diagnostics per sample
         eps = 1e-12
         F, N = Y.shape
-        # Build final mixture without stepwise clamp for diagnostics
+        # Build baseline and final mixtures (diagnostics)
         Hs = (H.float() * s_hat.view(-1, 1).float())
+        # Baseline: k-smallest per frequency
+        vals, _ = torch.topk(Hs, k=max(1, min(args.baseline_k, Hs.shape[1])), dim=1, largest=False)
+        mix_base = torch.clamp(vals.sum(dim=1), min=eps)
         mix_raw = torch.zeros((F,), dtype=torch.float32)
         for d in dirs:
             mix_raw = mix_raw + Hs[:, d]
         mix_final = torch.clamp(mix_raw + eps, min=eps)
         Y_cl = torch.clamp(Y, min=eps)
-        # Ratio stats (initial eps baseline and final mix)
-        ratio_init = (Y_cl / eps).flatten()
+        # Ratio stats (baseline and final mix)
+        ratio_base = (Y_cl / mix_base.view(-1, 1).expand(F, N)).flatten()
         ratio_final = (Y_cl / mix_final.view(-1, 1).expand(F, N)).flatten()
         def tnp(a):
             return a.detach().cpu().numpy()
-        ri = np.percentile(tnp(ratio_init), [50, 95, 99])
+        rb = np.percentile(tnp(ratio_base), [50, 95, 99])
         rf = np.percentile(tnp(ratio_final), [50, 95, 99])
         log_row = {
             "path": cache[p].get("path", ""),
@@ -363,12 +377,16 @@ def main():
             "y_min": float(Y.min().item()),
             "y_mean": float(Y.mean().item()),
             "y_max": float(Y.max().item()),
+            "baseline_k": int(args.baseline_k),
+            "mix_base_min": float(mix_base.min().item()),
+            "mix_base_mean": float(mix_base.mean().item()),
+            "mix_base_max": float(mix_base.max().item()),
             "mix_final_min": float(mix_final.min().item()),
             "mix_final_mean": float(mix_final.mean().item()),
             "mix_final_max": float(mix_final.max().item()),
-            "ratio_init_p50": float(ri[0]),
-            "ratio_init_p95": float(ri[1]),
-            "ratio_init_p99": float(ri[2]),
+            "ratio_base_p50": float(rb[0]),
+            "ratio_base_p95": float(rb[1]),
+            "ratio_base_p99": float(rb[2]),
             "ratio_final_p50": float(rf[0]),
             "ratio_final_p95": float(rf[1]),
             "ratio_final_p99": float(rf[2]),
@@ -424,7 +442,8 @@ def main():
                 "F": row["F"], "N": row["N"],
                 "is_prev": round(row["is_prev"], 2),
                 "is_final": round(row["is_final"], 2),
-                "ratio_init_p99": round(row["ratio_init_p99"], 2),
+                "baseline_k": row["baseline_k"],
+                "ratio_base_p99": round(row["ratio_base_p99"], 2),
                 "ratio_final_p99": round(row["ratio_final_p99"], 2),
             })
         print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
