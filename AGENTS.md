@@ -97,6 +97,23 @@ Cleanup: Remove obsolete experiment artifacts and deprecated scripts
 - Verified: No remaining dependencies on removed files
 ```
 
+## ❗ No‑Fallback Execution Policy (Fail‑Fast)
+
+Effective immediately, all RL reward/GRPO/RM scripts run with ZERO fallbacks:
+- No resampling H to match Y. If STFT grids differ, raise and stop.
+- No “nearest angle” mapping. Angles in data must exactly match TF angles; duplicates are an error.
+- No ŝ fallback to mean(Y). If USM‑based ŝ estimation fails or shapes mismatch, raise and stop.
+- Defaults aligned to RL spec: fs=16000 for reward/GRPO/RM scripts.
+
+Rationale:
+- Ensures reproducibility and surfaces configuration/data errors early.
+- Prevents silent invariances (e.g., duplicated H columns) that break learning.
+
+Agent guidance:
+- Do not add implicit fallbacks or silent coercions.
+- Prefer explicit validation + clear error messages over “best‑effort” behavior.
+- If a failure is expected in some environments, document prerequisites instead of adding a fallback.
+
 ## Language Policy
 **All project content must be written in English**, including:
 - Code comments and documentation
@@ -382,6 +399,7 @@ Before committing results, verify:
 - [ ] ✅ Meta-reflection on experimental methodology
 - [ ] ✅ Complete reproduction instructions (step-by-step)
 - [ ] ✅ Data fingerprint and lineage documented
+- [ ] ✅ Real data used (no synthetic); dataset roots and subset selection documented
 - [ ] ✅ Both successes AND failures documented
 - [ ] ✅ Logical connections using "BECAUSE", "DUE TO", "THEREFORE"
 
@@ -400,6 +418,77 @@ Before committing code changes, verify:
 - [ ] ✅ Standard library was preferred over external packages
 - [ ] ✅ Temporary files and experiment artifacts were cleaned up
 - [ ] ✅ Commit message includes complexity metrics and file count changes if relevant
+- [ ] ✅ Tests run on real data (or a documented real subset) with dataset fingerprint and selection procedure recorded
+
+## Component‑Level Specs and Tests
+
+Every experiment/test commit must clearly identify the component(s) it affects and prove that each component operates in its normal state.
+
+- Components: treat each major unit as a component (examples: `reward_fn (ΔIS/proxyA)`, angle→H mapping, tokenizer, STFT/band mask, `ŝ` estimation via USM, H/W loaders, GRPO/PPO trainer wrapper, logits processors, data loader).
+- For each component, maintain a short spec containing:
+  - Purpose and boundaries (what it does; what it does NOT do).
+  - Inputs/outputs with shapes, dtypes, units, and invariants.
+  - Normal state definition: qualitative behavior + quantitative thresholds (ranges, monotonicity, correlation, variance, error bounds, no-NaN, uniqueness, etc.).
+  - Determinism/tolerances (seeds, numeric tolerances) when applicable.
+- For every commit:
+  - Name the modified component(s) explicitly in the commit message.
+  - Re-state the normal state acceptance criteria for those components.
+  - Provide tests that validate the normal state: include at least one positive path and, when useful, a guardrail/negative case.
+  - Include quick checks for RL audio pipeline where applicable:
+    - Angle mapping: dataset angles must exactly match TF angles; no duplicates.
+    - STFT grid: `Y.F == H.F == W.F` (e.g., 346) and band mask in [300, 3000] Hz.
+    - ŝ estimation: `ŝ.shape == (F,)`, non‑negative, finite.
+    - Reward variability: reward range is non‑zero across different valid selections; no constant rewards.
+  - Document results (metrics/logs/artifacts) and indicate pass/fail against acceptance criteria.
+
+Commit message template (component‑oriented):
+
+```
+Experiment/Test: [ComponentName] — [Short title]
+
+- Component: [name]
+- Spec reference: [file:line or doc section]
+- Normal state (acceptance): [bullet list of thresholds/invariants]
+- Change summary: [what changed and why]
+- Tests executed: [commands, seeds, datasets]
+- Results: [metrics vs thresholds, pass/fail, artifact paths]
+- Impact on other components: [none/describe]
+```
+
+## Planning and Design (Apply the Same Principles)
+
+During planning and implementation, apply both the No‑Fallback policy and Component‑Level Specs rigorously:
+
+- Identify component(s) up front: name the exact unit(s) being modified or added.
+- Update or author the component spec before coding: inputs/outputs, shapes, units, invariants, and acceptance criteria (normal state).
+- Design tests alongside the spec: plan positive and guardrail cases that can be executed in the same commit.
+- Enforce No‑Fallback in design: do not add implicit fallbacks, silent coercions, or auto‑resampling; specify explicit validation and clear error messages for unmet preconditions.
+- Integration impact: list any interacting components and confirm their specs remain valid; if not, update their specs and tests too.
+- Planning artifacts: include spec deltas, acceptance criteria, and test plan in the planning commit message.
+
+Planning checklist (pre‑implementation):
+- [ ] Component(s) named and scoped
+- [ ] Spec drafted/updated (I/O, shapes, invariants)
+- [ ] Normal state acceptance criteria defined (metrics/thresholds)
+- [ ] No‑Fallback preconditions and error messages specified
+- [ ] Tests designed (positive + guardrail) with seeds/data
+- [ ] Integration impact reviewed and documented
+
+## Real‑Data Testing Requirement
+
+All experiments and tests MUST use real data. Synthetic data is not allowed for validation.
+
+- Use the real datasets defined in commit c96860bff90f442996bf5fa87fe5f4e41774723c (short: c96860b):
+  - USM training root (Original, normalized):
+    - `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized`
+  - Test root (Box, normalized):
+    - `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
+- You may subsample from the real datasets for speed (e.g., select a small set of angles/clips), but MUST document:
+  - Exact selection procedure (angles, clip ids, counts) and random seed(s) if applicable
+  - Data fingerprint checksum of all files used (see Data lineage)
+  - STFT/grid parameters used to produce `Y`
+- Never replace real datasets with synthetic stand‑ins for “quick tests”. If environment constraints prevent accessing the real datasets, the run should fail fast and document the missing prerequisite.
+- Results and acceptance criteria must be computed on real data (or a documented real subset), not on synthetic inputs.
 
 ## Examples: Good vs Bad Commits
 
@@ -460,4 +549,4 @@ root/
 ```
 
 ## Last Updated
-2025-10-04 (Added code simplification philosophy and complexity reduction requirements)
+2025-10-05 (Added no‑fallback policy and component‑level specs/tests)
