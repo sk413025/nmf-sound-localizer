@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Train Reward Model with LoRA - Efficient compromise between frozen and full fine-tuning.
+# Code snapshot aligned with results commit c7b3d41 (per‑patch IS targets)
 
 Reward path (current): deltaIS_localizer with per‑bin target
 - Reconstruction: Y_hat via localizer‑style A·X using selected [diag(H_d)W] blocks with IS updates.
@@ -351,9 +352,10 @@ def main():
     # Construct RM training dataset
     dir_tokens = list(tokenizer.direction_tokens)
     texts: List[str] = []
-    rewards: List[float] = []
+    rewards: List[float] = []  # per-sample scalar (mean over patches) for logging only
     is_final_list: List[float] = []
     sample_logs: List[Dict[str, float]] = []
+    patch_targets_all: List[torch.Tensor] = []  # per-sample per-patch targets (training)
     results_dir = os.path.join("results", f"{args.out}")
     os.makedirs(results_dir, exist_ok=True)
     jsonl_path = os.path.join(results_dir, "numeric_diagnostics.jsonl")
@@ -364,57 +366,43 @@ def main():
         texts.append(text)
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
-        # Localizer-style: A·X with IS updates on selected blocks; use per-bin reward = -IS(Y, Yhat)/(F*N)
+        # Localizer-style: A·X with IS updates on selected blocks; use per-patch reward
         Yhat_sel, is_val = _is_factorize_with_selected_blocks(
             Y=Y, W=W_t, H=H, selected=dirs,
             n_iter=args.is_iters, tol=args.is_tol,
             min_iters=args.is_min_iters, patience=args.is_patience
         )
         F, N = Y.shape
-        is_per_bin_val = float(is_val) / float(F * N)
-        rewards.append(float(-is_per_bin_val))
+        # Per-patch IS: average g(r) over bins in each patch; negate for reward convention
+        eps = 1e-12
+        Y_cl = torch.clamp(Y, min=eps)
+        ratio_map = Y_cl / torch.clamp(Yhat_sel, min=eps)
+        g_map = ratio_map - torch.log(torch.clamp(ratio_map, min=eps)) - 1.0
+        Fp, Np = int(args.patch_fp), int(args.patch_np)
+        Lf, Lt = F // Fp, N // Np
+        patch_vals: List[float] = []
+        for i in range(Lf):
+            for j in range(Lt):
+                patch = g_map[i*Fp:(i+1)*Fp, j*Np:(j+1)*Np]
+                patch_vals.append(float(patch.mean().item()))
+        patch_targets = -torch.tensor(patch_vals, dtype=torch.float32)  # reward per patch
+        patch_targets_all.append(patch_targets)
+        # Per-sample scalar (mean over patches) for logging
+        rewards.append(float(patch_targets.mean().item()))
         is_final_list.append(float(is_val))
 
-        # Numeric diagnostics per sample
-        eps = 1e-12
-        F, N = Y.shape
-        # Diagnostics: use localizer Yhat as final
-        Yhat_diag = Yhat_sel
-        Y_cl = torch.clamp(Y, min=eps)
-        # Ratio stats (final only)
-        ratio_map = Y_cl / torch.clamp(Yhat_diag, min=eps)
-        ratio_final = ratio_map.flatten()
-        is_final_val = float(is_val)
-        def tnp(a):
-            return a.detach().cpu().numpy()
-        rf = np.percentile(tnp(ratio_final), [50, 95, 99])
-        ratio_min = float(ratio_final.min().item())
-        ratio_mean = float(ratio_final.mean().item())
-        ratio_max = float(ratio_final.max().item())
-        # Y_hat statistics
-        yhat_min = float(Yhat_diag.min().item())
-        yhat_mean = float(Yhat_diag.mean().item())
-        yhat_max = float(Yhat_diag.max().item())
-        # Per-bin IS average to gauge scale
-        is_per_bin = float(is_final_val / (F * N))
+        # Numeric diagnostics per sample: per‑patch IS only
+        patch_is = np.array(patch_vals, dtype=float)
+        def stat(v):
+            return float(v)
         log_row = {
             "path": cache[p].get("path", ""),
             "F": int(F),
             "N": int(N),
-            "is_final": float(is_final_val),
-            "y_min": float(Y.min().item()),
-            "y_mean": float(Y.mean().item()),
-            "y_max": float(Y.max().item()),
-            "yhat_min": yhat_min,
-            "yhat_mean": yhat_mean,
-            "yhat_max": yhat_max,
-            "ratio_final_p50": float(rf[0]),
-            "ratio_final_p95": float(rf[1]),
-            "ratio_final_p99": float(rf[2]),
-            "ratio_final_min": ratio_min,
-            "ratio_final_mean": ratio_mean,
-            "ratio_final_max": ratio_max,
-            "is_per_bin": is_per_bin,
+            "patch_is_mean": stat(patch_is.mean()),
+            "patch_is_p95": stat(np.percentile(patch_is, 95)),
+            "patch_is_p99": stat(np.percentile(patch_is, 99)),
+            "patch_is_max": stat(patch_is.max()),
         }
         sample_logs.append(log_row)
         # Persist as JSONL incrementally to avoid data loss on interruption
@@ -431,18 +419,18 @@ def main():
     )
     input_ids = enc["input_ids"].to(device)
     attn = enc["attention_mask"].to(device)
-    tgt = torch.tensor(rewards, dtype=torch.float32, device=device)
     if args.debug_info:
+        tgt_dbg = torch.tensor(rewards, dtype=torch.float32)
         print("Debug — batch tensors:")
-        print(f"  input_ids: {tuple(input_ids.shape)}  attention: {tuple(attn.shape)}  tgt: {tuple(tgt.shape)}")
-        print(f"  tgt stats: min={float(tgt.min().item()):.4f} max={float(tgt.max().item()):.4f} mean={float(tgt.mean().item()):.4f}")
+        print(f"  input_ids: {tuple(input_ids.shape)}  attention: {tuple(attn.shape)}  per-sample scalar tgt (logging): {tuple(tgt_dbg.shape)}")
+        print(f"  tgt (scalar, log) stats: min={float(tgt_dbg.min().item()):.4f} max={float(tgt_dbg.max().item()):.4f} mean={float(tgt_dbg.mean().item()):.4f}")
     
     print(f"Training data:")
     print(f"  - Samples: {len(texts)}")
     print(f"  - Reward range: [{min(rewards):.2f}, {max(rewards):.2f}]")
     print(f"  - Reward mean±std: {np.mean(rewards):.2f} ± {np.std(rewards):.2f}\n")
-    if is_final_list:
-        final = np.array(is_final_list, dtype=float)
+    if sample_logs:
+        # Per‑patch IS stats across samples (diagnostics)
         def stats(x):
             return {
                 "min": float(np.min(x)),
@@ -452,22 +440,18 @@ def main():
                 "p99": float(np.percentile(x, 99)),
                 "max": float(np.max(x)),
             }
-        print("IS divergence (diagnostics):")
-        print("  - Absolute IS (sum over F×N):", stats(final))
-        # Per-bin IS stats across samples (diagnostic on the same scale as the training target)
-        if sample_logs:
-            per_bin = np.array([row.get("is_per_bin", float('nan')) for row in sample_logs], dtype=float)
-            per_bin = per_bin[~np.isnan(per_bin)]
-            if per_bin.size > 0:
-                print("  - Per-bin IS (mean over F×N) — Training target:", stats(per_bin))
+        patch_means = np.array([row.get("patch_is_mean", float('nan')) for row in sample_logs], dtype=float)
+        patch_means = patch_means[~np.isnan(patch_means)]
+        if patch_means.size > 0:
+            print("Per‑patch IS (diagnostics) — mean over patches per sample:", stats(patch_means))
         # Print concise per-sample diagnostics (first 5 for brevity)
         print("\nNumeric diagnostics (first 5 samples):")
         for row in sample_logs[:5]:
             print({
                 "path": os.path.basename(row.get("path", "")) or "(n/a)",
                 "F": row["F"], "N": row["N"],
-                "is_final": round(row["is_final"], 2),
-                "ratio_final_p99": round(row["ratio_final_p99"], 2),
+                "patch_is_mean": round(row["patch_is_mean"], 4),
+                "patch_is_p99": round(row["patch_is_p99"], 4),
             })
         print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
 
@@ -519,20 +503,44 @@ def main():
             return_dict=True
         )
         last_hidden = out.hidden_states[-1]
-        value = rm_model.v_head(last_hidden).squeeze(-1)
-        
-        # Take last token's value as scalar reward
-        lengths = attn.sum(dim=1) - 1
-        pred = value[torch.arange(value.size(0)), lengths]
-        
-        # MSE loss
-        loss = loss_fn(pred, tgt)
+        value = rm_model.v_head(last_hidden).squeeze(-1)  # [B, S]
+        # Build patch token mask per sample and gather predictions/targets
+        pred_list: List[torch.Tensor] = []
+        tgt_list: List[torch.Tensor] = []
+        bos_tok = tokenizer.bos_token or "<BOS>"
+        eos_tok = tokenizer.eos_token or "<EOS>"
+        pad_tok = tokenizer.pad_token or "<PAD>"
+        for b in range(input_ids.size(0)):
+            toks = tokenizer.convert_ids_to_tokens(input_ids[b].tolist())
+            # Take the first P tokens (excluding specials) as patch tokens, where P = number of patch targets
+            P = patch_targets_all[b].numel()
+            # Count usable tokens before the first direction token
+            first_dir = next((i for i,t in enumerate(toks) if t.startswith("<D_")), len(toks))
+            usable = [i for i,t in enumerate(toks[:first_dir]) if t not in (bos_tok, eos_tok, pad_tok)]
+            if len(usable) < P:
+                raise RuntimeError(
+                    f"Patch token alignment failed: found {len(usable)} usable tokens before first <D_>, "
+                    f"but need {P}. Ensure tokenizer patch vocab aligns with PatchTokenizer (Fp={args.patch_fp}, Np={args.patch_np}) "
+                    f"and that prompts list all patch tokens before direction tokens."
+                )
+            patch_pos = usable[:P]
+            pred_b = value[b, torch.tensor(patch_pos, device=value.device)]
+            tgt_b = patch_targets_all[b].to(value.device)
+            if pred_b.numel() != tgt_b.numel():
+                raise RuntimeError(
+                    f"Patch length mismatch: pred={pred_b.numel()} vs tgt={tgt_b.numel()}. "
+                    f"Ensure tokenizer patch grid matches PatchTokenizer (Fp={args.patch_fp}, Np={args.patch_np})."
+                )
+            pred_list.append(pred_b)
+            tgt_list.append(tgt_b)
+        pred_all = torch.cat(pred_list, dim=0)
+        tgt_all = torch.cat(tgt_list, dim=0)
+        loss = loss_fn(pred_all, tgt_all)
         if args.debug_info and epoch == 0:
-            # Show a few sample predictions vs targets
-            k = min(5, pred.numel())
-            print("  sample pred[:k] vs tgt[:k] (per-bin IS target):")
-            print("  pred:", [float(x) for x in pred[:k].detach().cpu()])
-            print("  tgt :", [float(x) for x in tgt[:k].detach().cpu()])
+            k = min(5, pred_all.numel())
+            print("  sample pred_patch[:k] vs tgt_patch[:k] (per-patch IS target):")
+            print("  pred:", [float(x) for x in pred_all[:k].detach().cpu()])
+            print("  tgt :", [float(x) for x in tgt_all[:k].detach().cpu()])
         
         # Backward with gradient clipping
         loss.backward()
@@ -541,8 +549,8 @@ def main():
         
         # Metrics
         with torch.no_grad():
-            mae = torch.mean(torch.abs(pred - tgt))
-            correlation = torch.corrcoef(torch.stack([pred, tgt]))[0, 1]
+            mae = torch.mean(torch.abs(pred_all - tgt_all))
+            correlation = torch.corrcoef(torch.stack([pred_all, tgt_all]))[0, 1]
             if torch.isnan(correlation):
                 correlation = torch.tensor(0.0)
         
