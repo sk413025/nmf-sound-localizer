@@ -39,7 +39,9 @@ This document records the concrete, staged plan to implement a physically ground
     - `compute_stepwise_rewards_A(Y, s_hat, H, selected_dirs)`:
       - Initialize `π_0 = 0`; for step t, call `AdvantageComputer(Y, pi=π_{t-1}, s_hat)`; `r_t = zscore(A[d_t])`; update `π_t[d_t]`.
       - Return scalar `R = sum_t r_t` (keep per‑step `r_t` in logs).
-  - Training: Parse the K generated direction tokens; compute `R` and pass to PPO (TRL expects a scalar).
+- Training (TRL‑safe):
+  - For K>1, prefer GRPO (no TRL changes): use `scripts/train_trl_grpo.py` with a `reward_fn` that returns `R = Σ_t zscore(A[d_t])`.
+  - PPO path remains the K=1 baseline (classification) without physics reward changes.
 - Test (smoke): With `--K 3`, confirm finite rewards; inspect logs.
 - Commit message:
   - "Experiment: physics V1 rewards (sum of standardized A[d_t]) — K‑step set selection"
@@ -53,7 +55,10 @@ This document records the concrete, staged plan to implement a physically ground
     - Maintain `Ŷ_0 = eps`, `Ŷ_t = Ŷ_{t-1} + Hs[:, d_t]` (or averaged if `weighting='avg'`).
     - IS divergence: `IS(Y, Ŷ) = Σ (Y/Ŷ − log(Y/Ŷ) − 1)`, with eps clamps.
     - `r_t = −(IS_t − IS_{t-1})`, `R = Σ r_t` (log per‑step contributions).
-  - CLI: `--reward-mode {proxyA,deltaIS}`; default to `deltaIS` after validation.
+- CLI: `--reward-mode {proxyA,deltaIS}`; default to `deltaIS` after validation.
+- Training (TRL‑safe):
+  - Use GRPO with `reward_fn = Σ_t ΔIS(Y, Ŷ_t)` (implemented in `scripts/train_trl_grpo.py`).
+  - Keep PPO for K=1 baselines; if PPO is required for K>1 without modifying TRL, consider a learned Reward Model trained offline to approximate ΔIS and plug that RM into PPOTrainer.
 - Test (smoke): With `--K 3`, confirm `r_t ≤ 0`, `R ≤ 0` (normalize for PPO stability).
 - Commit message:
   - "Experiment: physics V2 rewards (sum of ΔIS per selected direction) — K‑step mixture construction"
@@ -88,9 +93,9 @@ This document records the concrete, staged plan to implement a physically ground
   - `compute_stepwise_rewards_A` (Stage 2)
   - `compute_stepwise_rewards_delta_IS` (Stage 3)
 - `scripts/train_trl_policy.py`
-  - CLI: `--K`, `--reward-mode {proxyA,deltaIS}`, `--mask-no-repeat`, `--epsilon-stop`, `--algo {ppo,grpo}`, `--G`.
-  - Data prep: ŝ precompute.
-  - Training: set `response_length=K`, attach logits processor, compute scalar `R` from selected dirs.
+  - PPO baseline: K=1 classification sanity (no physics reward modification).
+- `scripts/train_trl_grpo.py` (new)
+  - GRPO with `reward_fn` implementing Option A physics (proxyA/ΔIS) for K>1 episodes.
 - (Optional) switch to in‑repo PPO/GRPO to accept per‑step rewards explicitly; otherwise continue with summed scalar `R` for TRL.
 
 ## Risks & Mitigations
@@ -124,4 +129,3 @@ python scripts/train_trl_policy.py \
 
 - Each stage is a single “Experiment:” commit with background, motivation, purpose, expected outcome, and reproduction steps.
 - Follow with a “Results:” commit capturing metrics, ΔIS traces, and findings.
-
