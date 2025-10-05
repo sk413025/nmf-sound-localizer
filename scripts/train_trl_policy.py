@@ -13,7 +13,8 @@ from trl.models import create_reference_model
 
 from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.features import PatchTokenizer
-from doa_rl.hf import build_patch_tokenizer, build_value_head_model
+from doa_rl.hf import build_patch_tokenizer, build_value_head_model, direction_token_ids
+from doa_rl.hf.logits_mask import NoRepeatDirectionLogitsProcessor
 
 
 def _discover_angles(root: str) -> List[int]:
@@ -78,7 +79,7 @@ def _tokenize_prompts(samples: List[Dict], tokenizer, max_len: int) -> Dataset:
     return ds
 
 
-def _build_trainer(args, tokenizer, train_dataset: Dataset) -> PPOTrainer:
+def _build_trainer(args, tokenizer, train_dataset: Dataset, direction_ids: List[int]) -> PPOTrainer:
     policy, _ = build_value_head_model(
         tokenizer,
         d_model=args.d_model,
@@ -97,6 +98,9 @@ def _build_trainer(args, tokenizer, train_dataset: Dataset) -> PPOTrainer:
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         learning_rate=args.lr,
+        use_cpu=True,
+        fp16=False,
+        bf16=False,
     )
     config.batch_size = batch_size
     config.mini_batch_size = batch_size
@@ -125,6 +129,27 @@ def _build_trainer(args, tokenizer, train_dataset: Dataset) -> PPOTrainer:
         train_dataset=train_dataset,
         eval_dataset=train_dataset,
     )
+
+    logits_processor = NoRepeatDirectionLogitsProcessor(direction_ids)
+
+    def _wrap_generate(module):
+        original_generate = module.generate
+
+        def generate_with_mask(*args, **kwargs):
+            existing = kwargs.get("logits_processor")
+            if existing is None:
+                kwargs["logits_processor"] = [logits_processor]
+            else:
+                processors = list(existing)
+                if logits_processor not in processors:
+                    processors.append(logits_processor)
+                kwargs["logits_processor"] = processors
+            return original_generate(*args, **kwargs)
+
+        module.generate = generate_with_mask
+
+    _wrap_generate(trainer.policy_model.pretrained_model)
+    _wrap_generate(trainer.model.policy)
     return trainer
 
 
@@ -140,7 +165,7 @@ def main():
     ap.add_argument("--nhead", type=int, default=8)
     ap.add_argument("--layers", type=int, default=2)
     ap.add_argument("--max-seq-len", type=int, default=512)
-    ap.add_argument("--response-length", type=int, default=1)
+    ap.add_argument("--K", type=int, default=3, help="Number of direction tokens to generate per sample")
     ap.add_argument("--temperature", type=float, default=1.0)
     ap.add_argument("--patch-fp", type=int, default=16)
     ap.add_argument("--patch-np", type=int, default=10)
@@ -157,9 +182,12 @@ def main():
     if not samples:
         raise RuntimeError("No samples available for training; check data-root path")
 
+    args.response_length = args.K
+
     tokenizer = build_patch_tokenizer(direction_angles)
     train_dataset = _tokenize_prompts(samples, tokenizer, args.max_seq_len)
-    trainer = _build_trainer(args, tokenizer, train_dataset)
+    direction_ids = direction_token_ids(tokenizer)
+    trainer = _build_trainer(args, tokenizer, train_dataset, direction_ids)
 
     trainer.train()
     trainer.generate_completions(sampling=True)

@@ -58,6 +58,7 @@ def build_patch_tokenizer(
         pad_token=_PAD_TOKEN,
         unk_token=_UNK_TOKEN,
     )
+    hf_tokenizer.padding_side = "left"
 
     # Attach angle metadata for downstream helpers
     hf_tokenizer.direction_tokens = direction_tokens
