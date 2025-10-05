@@ -1,0 +1,66 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 8
+  - Reward range: [-28194.54, -14650.47]
+  - Reward mean±std: -21167.24 ± 5114.49
+
+IS divergence (absolute) stats:
+  - prev (before any selection): {'min': nan, 'median': nan, 'mean': nan, 'p95': nan, 'p99': nan, 'max': nan}
+  - final (after K selections): {'min': 14650.470703125, 'median': 22905.96875, 'mean': 21167.242065429688, 'p95': 27509.7373046875, 'p99': 28057.5802734375, 'max': 28194.541015625}
+
+Numeric diagnostics (first 5 samples):
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'is_prev': 46871.37, 'is_final': 22172.8, 'baseline_k': 2, 'ratio_base_p99': 3.53, 'ratio_final_p99': 2.91}
+{'path': 'clip_001.npy', 'F': 346, 'N': 286, 'is_prev': 46902.93, 'is_final': 26237.96, 'baseline_k': 2, 'ratio_base_p99': 3.57, 'ratio_final_p99': 3.46}
+{'path': 'clip_002.npy', 'F': 346, 'N': 286, 'is_prev': 47313.02, 'is_final': 28194.54, 'baseline_k': 2, 'ratio_base_p99': 3.53, 'ratio_final_p99': 3.42}
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'is_prev': 40379.18, 'is_final': 14945.79, 'baseline_k': 2, 'ratio_base_p99': 4.2, 'ratio_final_p99': 2.21}
+{'path': 'clip_001.npy', 'F': 346, 'N': 286, 'is_prev': 39932.36, 'is_final': 24322.87, 'baseline_k': 2, 'ratio_base_p99': 4.42, 'ratio_final_p99': 3.27}
+Saved numeric diagnostics JSONL: results/rm_lora_mps_localizer_smoke/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'loss': 474203136.0, 'mae': 21167.107421875, 'correlation': 0.4207349121570587}
+
+Training completed!
+  - Best loss: 474203136.0000
+  - Best correlation: 0.4207
+
+Saved:
+  - LoRA adapters: rm_lora_mps_localizer_smoke_adapters/
+  - Embeddings + V-head: rm_lora_mps_localizer_smoke_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.154, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================
+

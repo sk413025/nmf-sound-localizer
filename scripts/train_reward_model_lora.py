@@ -43,6 +43,82 @@ from doa_rl.assets import load_H, load_W
 from nmf_localizer.core.usm_trainer import USMTrainer
 
 
+def _nmf_reconstruct_is(Y: torch.Tensor, W: torch.Tensor, n_iter: int = 50, eps: float = 1e-12) -> torch.Tensor:
+    """Reconstruct Y_hat ≈ W @ A using IS-divergence multiplicative updates for A (diagnostic only).
+
+    Args:
+        Y: (F,N) non-negative target
+        W: (F,K) dictionary (non-negative)
+        n_iter: iterations for the update
+        eps: small clamp to avoid division by zero
+
+    Returns:
+        Y_hat: (F,N) = W @ A
+    """
+    Yc = torch.clamp(Y.detach().cpu(), min=eps)
+    Wc = torch.clamp(W.detach().cpu(), min=eps)
+    F, N = Yc.shape
+    K = Wc.shape[1]
+    A = torch.full((K, N), 1.0 / max(K, 1), dtype=Yc.dtype)
+    for _ in range(max(int(n_iter), 0)):
+        Yhat = torch.clamp(Wc @ A, min=eps)
+        num = (Wc.t() @ (Yc / (Yhat ** 2)))
+        den = (Wc.t() @ (1.0 / Yhat))
+        A = A * torch.clamp(num / torch.clamp(den, min=eps), min=eps)
+        A = A / torch.clamp(A.sum(dim=0, keepdim=True), min=eps)
+    Yhat = torch.clamp(Wc @ A, min=eps)
+    return Yhat
+
+
+def _is_factorize_with_selected_blocks(
+    Y: torch.Tensor,  # (F,N)
+    W: torch.Tensor,  # (F,K)
+    H: torch.Tensor,  # (F,D)
+    selected: List[int],
+    n_iter: int = 20,
+    eps: float = 1e-12,
+    clip: float = 1e3,
+) -> Tuple[torch.Tensor, float]:
+    """Localizer-style reconstruction: build A from selected directions and solve X via IS updates.
+
+    Returns Y_hat (F,N) and IS(Y||Y_hat).
+    """
+    Yc = torch.clamp(Y.detach().cpu().float(), min=eps)
+    Wc = torch.clamp(W.detach().cpu().float(), min=eps)
+    Hc = torch.clamp(H.detach().cpu().float(), min=eps)
+    F, N = Yc.shape
+    K = Wc.shape[1]
+    # Build A_sel = [diag(H_d) W] for selected directions
+    blocks: List[torch.Tensor] = []
+    for d in selected:
+        Hd = Hc[:, d:d+1]  # (F,1)
+        A_d = Wc * Hd      # broadcast diag(H_d) @ W
+        blocks.append(A_d)
+    A_sel = torch.cat(blocks, dim=1) if blocks else torch.zeros((F, 0), dtype=Yc.dtype)
+    if A_sel.numel() == 0:
+        # No directions selected: fall back to tiny baseline to avoid div-by-zero
+        Yhat = torch.full_like(Yc, eps)
+        ratio = Yc / Yhat
+        is_val = torch.sum(ratio - torch.log(ratio) - 1.0).item()
+        return Yhat, is_val
+    P = A_sel.shape[1]
+    X = torch.full((P, N), 1.0 / max(P, 1), dtype=Yc.dtype)
+    Yhat = torch.clamp(A_sel @ X, min=eps)
+    for _ in range(max(int(n_iter), 0)):
+        Yhat = torch.clamp(Yhat, min=eps)
+        invYhat = 1.0 / Yhat
+        y_over_yhat2 = Yc / (Yhat * Yhat)
+        num = A_sel.t() @ y_over_yhat2
+        den = A_sel.t() @ invYhat
+        ratio = num / torch.clamp(den, min=eps)
+        ratio = torch.clamp(ratio, min=eps, max=clip)
+        X = X * torch.sqrt(ratio)
+        Yhat = A_sel @ X
+    Yhat = torch.clamp(Yhat, min=eps)
+    r = Yc / Yhat
+    is_val = torch.sum(r - torch.log(torch.clamp(r, min=eps)) - 1.0).item()
+    return Yhat, is_val
+
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
     angles = sorted(
@@ -156,6 +232,10 @@ def main():
     ap.add_argument("--tf-path", type=str, required=True)
     ap.add_argument("--w-path", type=str, required=True)
     ap.add_argument("--K", type=int, default=3)
+    ap.add_argument("--reward-mode", type=str, choices=["deltaIS_localizer", "deltaIS_abs"],
+                    default="deltaIS_localizer",
+                    help="Reward path: localizer-style time-varying reconstruction (A·X, IS updates) or prior absolute ΔIS (time-constant mix)")
+    ap.add_argument("--is-iters", type=int, default=20, help="Iterations for IS updates in localizer reward")
     ap.add_argument("--baseline-k", type=int, default=2,
                     help="Initialize Ŷ with the per-frequency sum of the k smallest H·ŝ contributions (physically meaningful baseline)")
     
@@ -239,6 +319,7 @@ def main():
     # Precompute ŝ
     if args.w_path.endswith('.npz'):
         W_np = np.load(args.w_path)["W"]
+        W_t = torch.from_numpy(W_np).float()
     else:
         W_t = load_W(args.w_path)
         W_np = W_t.cpu().numpy()
@@ -336,44 +417,97 @@ def main():
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
         s_hat = cache[p]["s_hat"]
-        trace_steps: List[Dict[str, float]] = []
-        R = _compute_deltaIS_reward(
-            Y, s_hat, H, dirs,
-            trace=trace_steps,
-            baseline_k=args.baseline_k,
-        )
-        rewards.append(float(R))
-        is_prev_list.append(trace_steps[0]["prev"])  # before first selection
-        is_final_list.append(trace_steps[-1]["cur"])  # after last selection
-        is_step_delta_abs.extend([t["delta_abs"] for t in trace_steps])
-        is_step_delta_rel.extend([t["delta_rel"] for t in trace_steps])
+        if args.reward_mode == "deltaIS_localizer":
+            # Localizer-style: A·X with IS updates on selected blocks; single-shot reward = -IS(Y, Yhat)
+            Yhat_sel, is_val = _is_factorize_with_selected_blocks(
+                Y=Y, W=W_t, H=H, selected=dirs, n_iter=args.is_iters
+            )
+            rewards.append(float(-is_val))
+            # For diagnostics compatibility
+            is_prev_list.append(float('nan'))
+            is_final_list.append(float(is_val))
+        else:
+            trace_steps: List[Dict[str, float]] = []
+            R = _compute_deltaIS_reward(
+                Y, s_hat, H, dirs,
+                trace=trace_steps,
+                baseline_k=args.baseline_k,
+            )
+            rewards.append(float(R))
+            is_prev_list.append(trace_steps[0]["prev"])  # before first selection
+            is_final_list.append(trace_steps[-1]["cur"])  # after last selection
+            is_step_delta_abs.extend([t["delta_abs"] for t in trace_steps])
+            is_step_delta_rel.extend([t["delta_rel"] for t in trace_steps])
 
         # Numeric diagnostics per sample
         eps = 1e-12
         F, N = Y.shape
-        # Build baseline and final mixtures (diagnostics)
+        # Diagnostics: baseline always computed; final depends on reward path
         Hs = (H.float() * s_hat.view(-1, 1).float())
-        # Baseline: k-smallest per frequency
         vals, _ = torch.topk(Hs, k=max(1, min(args.baseline_k, Hs.shape[1])), dim=1, largest=False)
         mix_base = torch.clamp(vals.sum(dim=1), min=eps)
-        mix_raw = torch.zeros((F,), dtype=torch.float32)
-        for d in dirs:
-            mix_raw = mix_raw + Hs[:, d]
-        mix_final = torch.clamp(mix_raw + eps, min=eps)
+        if args.reward_mode == "deltaIS_localizer":
+            # Use localizer Yhat as final
+            Yhat_diag, is_final_val = _is_factorize_with_selected_blocks(Y, W_t, H, dirs, n_iter=args.is_iters)
+            mix_final = torch.clamp(Yhat_diag.mean(dim=1), min=eps)  # collapse to F for summary only
+        else:
+            mix_raw = torch.zeros((F,), dtype=torch.float32)
+            for d in dirs:
+                mix_raw = mix_raw + Hs[:, d]
+            mix_final = torch.clamp(mix_raw + eps, min=eps)
         Y_cl = torch.clamp(Y, min=eps)
-        # Ratio stats (baseline and final mix)
+        # Ratio stats (baseline and final)
         ratio_base = (Y_cl / mix_base.view(-1, 1).expand(F, N)).flatten()
-        ratio_final = (Y_cl / mix_final.view(-1, 1).expand(F, N)).flatten()
+        if args.reward_mode == "deltaIS_localizer":
+            ratio_final = (Y_cl / torch.clamp(Yhat_diag, min=eps)).flatten()
+            # IS values for baseline and final
+            is_prev_val = torch.sum((Y_cl / mix_base.view(-1, 1)) - torch.log(torch.clamp(Y_cl / mix_base.view(-1, 1), min=eps)) - 1.0).item()
+            is_final_val = torch.sum((Y_cl / torch.clamp(Yhat_diag, min=eps)) - torch.log(torch.clamp(Y_cl / torch.clamp(Yhat_diag, min=eps), min=eps)) - 1.0).item()
+        else:
+            ratio_final = (Y_cl / mix_final.view(-1, 1).expand(F, N)).flatten()
+            # IS values from time-constant path
+            is_prev_val = float(is_prev_list[-1]) if is_prev_list else float('nan')
+            is_final_val = float(is_final_list[-1]) if is_final_list else float('nan')
         def tnp(a):
             return a.detach().cpu().numpy()
         rb = np.percentile(tnp(ratio_base), [50, 95, 99])
         rf = np.percentile(tnp(ratio_final), [50, 95, 99])
+
+        # NMF-style reconstruction using W (diagnostic: does W explain Y?)
+        # Use pseudo-inverse (not enforcing nonnegativity) as a fast check: Y_hat_nmf = W @ pinv(W) @ Y
+        try:
+            W_mat = W_t.float().cpu()  # from load_W path
+        except NameError:
+            W_mat = torch.from_numpy(W_np).float()
+        W_pinv = torch.linalg.pinv(torch.clamp(W_mat, min=eps))
+        Y_hat_nmf = torch.clamp(W_mat @ (W_pinv @ Y_cl.cpu()), min=eps)
+        ratio_nmf = (Y_cl.cpu() / Y_hat_nmf).flatten()
+        rn = np.percentile(tnp(ratio_nmf), [50, 95, 99])
+        # IS divergence and MSE for NMF reconstruction
+        is_nmf = torch.sum(ratio_nmf - torch.log(torch.clamp(ratio_nmf, min=eps)) - 1.0).item()
+        mse_nmf = torch.mean((Y_cl.cpu() - Y_hat_nmf) ** 2).item()
+        sig_pow = torch.mean(Y_cl.cpu() ** 2).item()
+        snr_db_nmf = float(10.0 * np.log10(max(sig_pow, eps) / max(mse_nmf, eps)))
+        # Spectral shape correlation (mean over time per frequency)
+        Y_mean_f = Y_cl.mean(dim=1).cpu()
+        Yhat_mean_f = Y_hat_nmf.mean(dim=1).cpu()
+        corr = torch.corrcoef(torch.stack([Y_mean_f, Yhat_mean_f]))[0, 1].item()
+
+        # IS-MU diagnostics: Y_hat_nmfA = W @ A via multiplicative updates for IS (closer to original NMF)
+        Y_hat_nmfA = _nmf_reconstruct_is(Y_cl, W_mat, n_iter=50, eps=eps)
+        ratio_nmfA = (Y_cl.cpu() / Y_hat_nmfA).flatten()
+        rnA = np.percentile(tnp(ratio_nmfA), [50, 95, 99])
+        is_nmfA = torch.sum(ratio_nmfA - torch.log(torch.clamp(ratio_nmfA, min=eps)) - 1.0).item()
+        mse_nmfA = torch.mean((Y_cl.cpu() - Y_hat_nmfA) ** 2).item()
+        snr_db_nmfA = float(10.0 * np.log10(max(sig_pow, eps) / max(mse_nmfA, eps)))
+        YhatA_mean_f = Y_hat_nmfA.mean(dim=1).cpu()
+        corrA = torch.corrcoef(torch.stack([Y_mean_f, YhatA_mean_f]))[0, 1].item()
         log_row = {
             "path": cache[p].get("path", ""),
             "F": int(F),
             "N": int(N),
-            "is_prev": float(trace_steps[0]["prev"]),
-            "is_final": float(trace_steps[-1]["cur"]),
+            "is_prev": float(is_prev_val),
+            "is_final": float(is_final_val),
             "y_min": float(Y.min().item()),
             "y_mean": float(Y.mean().item()),
             "y_max": float(Y.max().item()),
@@ -393,6 +527,20 @@ def main():
             "s_hat_min": float(s_hat.min().item()),
             "s_hat_mean": float(s_hat.mean().item()),
             "s_hat_max": float(s_hat.max().item()),
+            "nmf_is": float(is_nmf),
+            "nmf_mse": float(mse_nmf),
+            "nmf_snr_db": float(snr_db_nmf),
+            "ratio_nmf_p50": float(rn[0]),
+            "ratio_nmf_p95": float(rn[1]),
+            "ratio_nmf_p99": float(rn[2]),
+            "corr_Ymean_YhatNMF": float(corr),
+            "nmfA_is": float(is_nmfA),
+            "nmfA_mse": float(mse_nmfA),
+            "nmfA_snr_db": float(snr_db_nmfA),
+            "ratio_nmfA_p50": float(rnA[0]),
+            "ratio_nmfA_p95": float(rnA[1]),
+            "ratio_nmfA_p99": float(rnA[2]),
+            "corr_Ymean_YhatNMFA": float(corrA),
         }
         sample_logs.append(log_row)
         # Persist as JSONL incrementally to avoid data loss on interruption
@@ -432,8 +580,9 @@ def main():
         print("IS divergence (absolute) stats:")
         print("  - prev (before any selection):", stats(prev))
         print("  - final (after K selections):", stats(final))
-        print("  - per-step ΔIS abs:", stats(step_abs))
-        print("  - per-step ΔIS rel:", stats(step_rel), "(clipped by eps when prev≈0)")
+        if len(is_step_delta_abs) > 0:
+            print("  - per-step ΔIS abs:", stats(step_abs))
+            print("  - per-step ΔIS rel:", stats(step_rel), "(clipped by eps when prev≈0)")
         # Print concise per-sample diagnostics (first 5 for brevity)
         print("\nNumeric diagnostics (first 5 samples):")
         for row in sample_logs[:5]:
