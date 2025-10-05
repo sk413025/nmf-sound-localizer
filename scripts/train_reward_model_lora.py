@@ -49,6 +49,9 @@ def _is_factorize_with_selected_blocks(
     H: torch.Tensor,  # (F,D)
     selected: List[int],
     n_iter: int = 20,
+    tol: float = 1e-4,
+    min_iters: int = 5,
+    patience: int = 3,
     eps: float = 1e-12,
     clip: float = 1e3,
 ) -> Tuple[torch.Tensor, float]:
@@ -56,28 +59,45 @@ def _is_factorize_with_selected_blocks(
 
     Returns Y_hat (F,N) and IS(Y||Y_hat).
     """
+    # Fail-fast validations (no fallbacks allowed)
+    if not selected:
+        raise RuntimeError(
+            "No directions selected (selected is empty). Set K>=1 and ensure selection produces valid indices."
+        )
     Yc = torch.clamp(Y.detach().cpu().float(), min=eps)
     Wc = torch.clamp(W.detach().cpu().float(), min=eps)
     Hc = torch.clamp(H.detach().cpu().float(), min=eps)
     F, N = Yc.shape
-    K = Wc.shape[1]
+    Fw, K = Wc.shape
+    Fh, D = Hc.shape
+    if Fw != F or Fh != F:
+        raise RuntimeError(
+            f"Shape mismatch: Y.F={F}, W.F={Fw}, H.F={Fh}. Align STFT config (fs/n_fft/band) and assets."
+        )
+    if any((d < 0 or d >= D) for d in selected):
+        raise RuntimeError(
+            f"Selected direction indices out of range: {selected}; valid range is [0,{D-1}]"
+        )
+    if len(set(selected)) != len(selected):
+        raise RuntimeError(
+            f"Duplicate directions in selection: {selected}. Duplicates are disallowed (fail-fast)."
+        )
     # Build A_sel = [diag(H_d) W] for selected directions
     blocks: List[torch.Tensor] = []
     for d in selected:
         Hd = Hc[:, d:d+1]  # (F,1)
         A_d = Wc * Hd      # broadcast diag(H_d) @ W
         blocks.append(A_d)
-    A_sel = torch.cat(blocks, dim=1) if blocks else torch.zeros((F, 0), dtype=Yc.dtype)
-    if A_sel.numel() == 0:
-        # No directions selected: fall back to tiny baseline to avoid div-by-zero
-        Yhat = torch.full_like(Yc, eps)
-        ratio = Yc / Yhat
-        is_val = torch.sum(ratio - torch.log(ratio) - 1.0).item()
-        return Yhat, is_val
+    A_sel = torch.cat(blocks, dim=1)
     P = A_sel.shape[1]
     X = torch.full((P, N), 1.0 / max(P, 1), dtype=Yc.dtype)
     Yhat = torch.clamp(A_sel @ X, min=eps)
-    for _ in range(max(int(n_iter), 0)):
+    # Initial IS
+    r0 = Yc / Yhat
+    is_prev = torch.sum(r0 - torch.log(torch.clamp(r0, min=eps)) - 1.0).item()
+    stable_steps = 0
+    iters_run = 0
+    for it in range(max(int(n_iter), 0)):
         Yhat = torch.clamp(Yhat, min=eps)
         invYhat = 1.0 / Yhat
         y_over_yhat2 = Yc / (Yhat * Yhat)
@@ -87,6 +107,19 @@ def _is_factorize_with_selected_blocks(
         ratio = torch.clamp(ratio, min=eps, max=clip)
         X = X * torch.sqrt(ratio)
         Yhat = A_sel @ X
+        # Convergence check on IS relative change
+        r = Yc / torch.clamp(Yhat, min=eps)
+        is_cur = torch.sum(r - torch.log(torch.clamp(r, min=eps)) - 1.0).item()
+        rel_change = abs(is_prev - is_cur) / max(abs(is_prev), eps)
+        iters_run = it + 1
+        if iters_run >= min_iters:
+            if rel_change < tol:
+                stable_steps += 1
+                if stable_steps >= patience:
+                    break
+            else:
+                stable_steps = 0
+        is_prev = is_cur
     Yhat = torch.clamp(Yhat, min=eps)
     r = Yc / Yhat
     is_val = torch.sum(r - torch.log(torch.clamp(r, min=eps)) - 1.0).item()
@@ -149,7 +182,10 @@ def main():
     ap.add_argument("--w-path", type=str, required=True)
     ap.add_argument("--K", type=int, default=3)
     # Reward path fixed to localizer-style A·X reconstruction (deltaIS_localizer)
-    ap.add_argument("--is-iters", type=int, default=20, help="Iterations for IS updates in localizer reward")
+    ap.add_argument("--is-iters", type=int, default=100, help="Max iterations for IS updates in localizer reward")
+    ap.add_argument("--is-tol", type=float, default=1e-4, help="Relative IS convergence tolerance")
+    ap.add_argument("--is-min-iters", type=int, default=5, help="Minimum iterations before checking convergence")
+    ap.add_argument("--is-patience", type=int, default=3, help="Consecutive convergence steps required to stop early")
     
     # LoRA hyperparameters
     ap.add_argument("--lora-r", type=int, default=8, help="LoRA rank (4, 8, 16)")
@@ -323,7 +359,9 @@ def main():
         Y = cache[p]["Y"]
         # Localizer-style: A·X with IS updates on selected blocks; single-shot reward = -IS(Y, Yhat)
         Yhat_sel, is_val = _is_factorize_with_selected_blocks(
-            Y=Y, W=W_t, H=H, selected=dirs, n_iter=args.is_iters
+            Y=Y, W=W_t, H=H, selected=dirs,
+            n_iter=args.is_iters, tol=args.is_tol,
+            min_iters=args.is_min_iters, patience=args.is_patience
         )
         rewards.append(float(-is_val))
         is_final_list.append(float(is_val))
@@ -340,6 +378,10 @@ def main():
         def tnp(a):
             return a.detach().cpu().numpy()
         rf = np.percentile(tnp(ratio_final), [50, 95, 99])
+        # Y_hat statistics
+        yhat_min = float(Yhat_diag.min().item())
+        yhat_mean = float(Yhat_diag.mean().item())
+        yhat_max = float(Yhat_diag.max().item())
         log_row = {
             "path": cache[p].get("path", ""),
             "F": int(F),
@@ -348,6 +390,9 @@ def main():
             "y_min": float(Y.min().item()),
             "y_mean": float(Y.mean().item()),
             "y_max": float(Y.max().item()),
+            "yhat_min": yhat_min,
+            "yhat_mean": yhat_mean,
+            "yhat_max": yhat_max,
             "ratio_final_p50": float(rf[0]),
             "ratio_final_p95": float(rf[1]),
             "ratio_final_p99": float(rf[2]),
