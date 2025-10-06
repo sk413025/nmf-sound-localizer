@@ -362,7 +362,8 @@ def main():
     for p in prompts:
         idxs = np.random.choice(len(dir_tokens), size=args.K, replace=False)
         comp = " ".join(dir_tokens[i] for i in idxs)
-        text = p + " " + comp
+        # Directions-first so patch tokens can attend to selected directions (fixes causal visibility)
+        text = comp + " " + p
         texts.append(text)
         dirs = [tokenizer.direction_tokens.index(dir_tokens[i]) for i in idxs]
         Y = cache[p]["Y"]
@@ -512,18 +513,16 @@ def main():
         pad_tok = tokenizer.pad_token or "<PAD>"
         for b in range(input_ids.size(0)):
             toks = tokenizer.convert_ids_to_tokens(input_ids[b].tolist())
-            # Take the first P tokens (excluding specials) as patch tokens, where P = number of patch targets
+            # Directions-first: take first P non-special tokens AFTER the last <D_> token
             P = patch_targets_all[b].numel()
-            # Count usable tokens before the first direction token
-            first_dir = next((i for i,t in enumerate(toks) if t.startswith("<D_")), len(toks))
-            usable = [i for i,t in enumerate(toks[:first_dir]) if t not in (bos_tok, eos_tok, pad_tok)]
+            last_dir = max([i for i, t in enumerate(toks) if t.startswith("<D_")], default=-1)
+            usable = [i for i, t in enumerate(toks[last_dir+1:]) if t not in (bos_tok, eos_tok, pad_tok)]
             if len(usable) < P:
                 raise RuntimeError(
-                    f"Patch token alignment failed: found {len(usable)} usable tokens before first <D_>, "
-                    f"but need {P}. Ensure tokenizer patch vocab aligns with PatchTokenizer (Fp={args.patch_fp}, Np={args.patch_np}) "
-                    f"and that prompts list all patch tokens before direction tokens."
+                    f"Patch token alignment failed: found {len(usable)} usable tokens after direction prefix, "
+                    f"but need {P}. Ensure prompts contain all patch tokens and lengths align with PatchTokenizer (Fp={args.patch_fp}, Np={args.patch_np})."
                 )
-            patch_pos = usable[:P]
+            patch_pos = [last_dir + 1 + i for i in usable[:P]]
             pred_b = value[b, torch.tensor(patch_pos, device=value.device)]
             tgt_b = patch_targets_all[b].to(value.device)
             if pred_b.numel() != tgt_b.numel():
