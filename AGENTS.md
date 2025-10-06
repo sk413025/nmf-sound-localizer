@@ -153,7 +153,7 @@ python scripts/training/train_byol_ldv.py --accelerator mps --use_angle_pairs [o
 4. **Test reproducibility**: Can you reproduce the same results?
 
 ### Phase 2: Results Commit (AFTER Execution)
-**Commit results with comprehensive analysis (Results‑only; planning‑only commits are disallowed). Include experiment context (Background/Motivation/Purpose/Expected).**
+**Commit results with comprehensive analysis AND the exact executed code (Atomic; planning‑only commits are disallowed). Include experiment context (Background/Motivation/Purpose/Expected).**
 
 ### Phase 3: Results Commit (AFTER Execution)
 **Commit results with comprehensive analysis:**
@@ -454,17 +454,26 @@ Every Results commit must clearly identify the component(s) it affects and prove
     - Reward variability: reward range is non‑zero across valid selections; not constant.
   - Document results (metrics/logs/artifacts) and indicate pass/fail vs acceptance.
 
-## Commit Hygiene and Guardrails (Results‑Only)
+## Commit Hygiene and Guardrails (Atomic Results + Code)
 
-- Results‑only commits: Planning‑only commits are disallowed. Commit only after experiments/tests are executed.
-- Scope whitelist: Results commits must only include files exercised in the run. Changed paths must match the declared component(s).
-- Evidence per file: For each changed file, include reproduction commands (env, data roots), dataset subset manifest, and real‑data fingerprint; otherwise exclude the file.
-- Artifacts/logs: Store under a tracked `results/` path (LFS for large) or paste structured metrics in the commit message. Do not reference ignored paths without including artifacts.
-- Device handling: Expose `--device` (auto/mps/cuda/cpu); print the chosen device; move model/tensors explicitly. Ensure index tensors match device (MPS quirk).
-- Subset manifest + fingerprint: Commit a JSON manifest of selected files/angles/seeds and the MD5 fingerprint for the exact subset used.
-- Cross‑component isolation: Do not modify multiple components in one results commit unless all are tested. Otherwise split into separate results commits.
-- Infra/config changes: If required to run (e.g., increase `n_positions`), document rationale and acceptance in the results commit and verify with targeted checks.
-- History correction: If a wrong‑scope commit was made and not pushed, reset immediately. If pushed, clean via interactive rebase or a single corrective revert.
+- Atomic results+code: The exact executed code MUST be committed together with results. Results‑only commits are prohibited.
+- Scope whitelist: Include all code files exercised in the run (scripts + libraries). Changed paths must match the declared component(s).
+- Code snapshot requirement: If no code lines changed, still include a code snapshot by staging the executed script(s)/configs, or add a `results/<run>/code_state.json` recording `git_head`, `dirty`, and SHA256 for executed files.
+- Evidence per file: For each changed file, include reproduction commands (env, data roots), subset manifest, and real‑data fingerprint.
+- Artifacts/logs: Store under tracked `results/` (use `git add -f` if ignored). LFS for large files.
+- Device handling: Expose `--device` and print device; ensure index tensors match device (MPS quirk).
+- Subset manifest + fingerprint: Commit a JSON manifest and dataset fingerprint for the exact subset used.
+- Cross‑component isolation: Don’t modify multiple components in one results commit unless all are tested. Otherwise split into separate atomic commits.
+- Infra/config changes: If required to run, document rationale and verify with targeted checks in the same commit.
+- History correction: If a results‑only commit slipped in, amend immediately (`git add <code> && git commit --amend`). If already pushed, add a corrective follow‑up commit that snapshots the code and binds it to the results.
+
+Recommended atomic workflow
+```bash
+# Stage code first, then results
+git add scripts/ doa_rl/ nmf_localizer/ configs/  # adjust to touched paths
+git add -f results/<run_name>/
+git commit -m "Results: <name> — code + artifacts (atomic)\n...context/metrics..."
+```
 
 ## Real‑Data Testing Requirement
 
