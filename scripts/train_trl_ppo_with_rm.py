@@ -56,6 +56,9 @@ def main():
     ap.add_argument("--data-root", type=str, required=True)
     ap.add_argument("--rm-adapters", type=str, required=True, help="Path to RM LoRA adapters dir (save_pretrained)")
     ap.add_argument("--rm-heads", type=str, required=True, help="Path to RM heads checkpoint (embeddings + v_head)")
+    # Optional SFT warm start for policy
+    ap.add_argument("--sft-policy-adapters", type=str, default=None, help="Optional: path to SFT policy adapters")
+    ap.add_argument("--sft-policy-heads", type=str, default=None, help="Optional: path to SFT policy embeddings heads .pt")
     ap.add_argument("--K", type=int, default=3)
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--batch-size", type=int, default=2)
@@ -92,9 +95,22 @@ def main():
     device = torch.device(dev)
     print(f"Device: {device}")
 
-    # Policy and reference
+    # Policy and (optional) SFT warm start before reference snapshot
     policy, _ = build_value_head_model(tokenizer)
     policy.to(device)
+    if args.sft_policy_adapters:
+        if not HAS_PEFT:
+            raise RuntimeError("peft is required to load SFT policy adapters. Install with: pip install peft")
+        policy.pretrained_model = PeftModel.from_pretrained(policy.pretrained_model, args.sft_policy_adapters)
+        if args.sft_policy_heads:
+            heads = torch.load(args.sft_policy_heads, map_location="cpu")
+            emb_layer = policy.pretrained_model.get_input_embeddings()
+            sd = heads.get("embeddings")
+            if hasattr(emb_layer, "base_layer"):
+                emb_layer.base_layer.load_state_dict(sd)
+            else:
+                emb_layer.load_state_dict(sd)
+        print("Loaded SFT policy warm start before reference snapshot")
     reference = create_reference_model(policy)
     reference.to(device)
 
