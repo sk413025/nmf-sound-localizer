@@ -114,6 +114,15 @@ Agent guidance:
 - Prefer explicit validation + clear error messages over “best‑effort” behavior.
 - If a failure is expected in some environments, document prerequisites instead of adding a fallback.
 
+## RL Framing (Concise)
+
+- Response: We are a contextual combinatorial bandit / slate‑MDP; decision time ≠ physical time. Precedents include contextual bandits for news recommendation and slate RL (e.g., YouTube).
+- K = greedy selection budget / subset size, not solver iterations.
+- Keep physics in the RM: train RM with directions‑first inputs; during PPO, use the frozen RM to produce per‑step Δ rewards (directions‑first scoring). TRL API remains unchanged (generate K tokens → PPOTrainer.step with a length‑K reward vector).
+- Guardrails: exact angle match; `Y.F == W.F == H.F`; no duplicate selections; separate LoRA for RM and policy (RM frozen in PPO).
+- Default: use K‑step by directions for static sources; consider time‑step rollouts only if angles change over physical time and provide non‑trivial per‑window reward variance.
+- Guidance, not a hard rule: deviations are allowed when justified and tested.
+
 ## Language Policy
 **All project content must be written in English**, including:
 - Code comments and documentation
