@@ -54,6 +54,85 @@ def _prepare_prompts(args, direction_angles: List[int]) -> List[str]:
     return prompts
 
 
+def rm_score_for_prefix(
+    rm_model,
+    tokenizer,
+    dir_prefix_ids: Sequence[int],
+    patch_ids: Sequence[int],
+    device: torch.device,
+):
+    """Score a sequence where directions come first then patches using the frozen RM.
+
+    Returns the mean value over patch token positions (scalar float).
+    """
+    bos = tokenizer.bos_token_id
+    ids = [bos] + list(dir_prefix_ids) + list(patch_ids)
+    inp = torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0)
+    attn = torch.ones_like(inp, device=device)
+    with torch.no_grad():
+        out = rm_model.pretrained_model(
+            input_ids=inp, attention_mask=attn, output_hidden_states=True, return_dict=True
+        )
+        last_hidden = out.hidden_states[-1]
+        vals = rm_model.v_head(last_hidden).squeeze(-1)[0]
+    start = 1 + len(dir_prefix_ids)
+    end = start + len(patch_ids)
+    patch_vals = vals[start:end]
+    return float(patch_vals.mean().item())
+
+
+def get_patch_ids(tokenizer, ids_row: torch.Tensor) -> List[int]:
+    """Extract non-special patch token ids from a tokenized prompt row.
+
+    This is independent of teacher logic and thus easy to unit test.
+    """
+    toks = tokenizer.convert_ids_to_tokens(ids_row.tolist())
+    return [tid for tid, tok in zip(ids_row.tolist(), toks) if tok not in (tokenizer.bos_token, tokenizer.eos_token, tokenizer.pad_token)]
+
+
+def compute_rm_greedy_teacher(
+    rm_model,
+    tokenizer,
+    input_ids_prompt: torch.Tensor,
+    K: int,
+    device: torch.device,
+) -> List[List[int]]:
+    """Build teacher sequences by greedy selection using the frozen RM.
+
+    For each sample, iteratively append the direction token (from the allowed
+    set, without duplicates) that maximizes the RM score for the prefix.
+    """
+    allowed = set(direction_token_ids(tokenizer))
+    teacher_dir_ids: List[List[int]] = []
+    for i in range(input_ids_prompt.size(0)):
+        patch_ids = get_patch_ids(tokenizer, input_ids_prompt[i])
+        chosen: List[int] = []
+        for _ in range(K):
+            best_token = None
+            best_score = -1e9
+            for cand in allowed:
+                if cand in chosen:
+                    continue
+                score = rm_score_for_prefix(rm_model, tokenizer, chosen + [cand], patch_ids, device)
+                if score > best_score:
+                    best_score = score
+                    best_token = cand
+            if best_token is None:
+                raise RuntimeError("RM-greedy teacher failed to select a direction token (empty allowed set)")
+            chosen.append(best_token)
+        teacher_dir_ids.append(chosen)
+    return teacher_dir_ids
+
+
+def pad_to_batch(rows: List[torch.Tensor], pad_id: int) -> torch.Tensor:
+    """Left-pad variable-length rows into a batch tensor (B, S)."""
+    m = max(r.numel() for r in rows)
+    out = torch.full((len(rows), m), pad_id, dtype=torch.long)
+    for i, r in enumerate(rows):
+        out[i, -r.numel():] = r
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="SFT policy with RM-greedy teacher (directions-first eval)")
     # Data and RM
@@ -135,52 +214,20 @@ def main():
     rm_model.v_head.load_state_dict(heads["v_head"])  # reward head
     for p in rm_model.parameters():
         p.requires_grad = False
-    allowed = set(direction_token_ids(tokenizer))
 
     # Tokenize prompts once for efficiency
     enc_prompt = tokenizer(prompts, padding=True, truncation=True, max_length=tokenizer.model_max_length, return_tensors="pt")
     input_ids_prompt = enc_prompt["input_ids"].to(device)
     attn_prompt = enc_prompt["attention_mask"].to(device)
 
-    # Helper to extract patch ids from a prompt row (non-special tokens)
-    def get_patch_ids(ids_row: torch.Tensor) -> List[int]:
-        toks = tokenizer.convert_ids_to_tokens(ids_row.tolist())
-        return [tid for tid, tok in zip(ids_row.tolist(), toks) if tok not in (tokenizer.bos_token, tokenizer.eos_token, tokenizer.pad_token)]
-
-    # RM scoring for a prefix of directions (directions-first)
-    def rm_score_for_prefix(dir_prefix_ids: Sequence[int], patch_ids: Sequence[int]) -> float:
-        bos = tokenizer.bos_token_id
-        ids = [bos] + list(dir_prefix_ids) + list(patch_ids)
-        inp = torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0)
-        attn = torch.ones_like(inp, device=device)
-        with torch.no_grad():
-            out = rm_model.pretrained_model(input_ids=inp, attention_mask=attn, output_hidden_states=True, return_dict=True)
-            last_hidden = out.hidden_states[-1]
-            vals = rm_model.v_head(last_hidden).squeeze(-1)[0]
-        start = 1 + len(dir_prefix_ids)
-        end = start + len(patch_ids)
-        patch_vals = vals[start:end]
-        return float(patch_vals.mean().item())
-
-    # Build teacher sequences (RM-greedy)
-    teacher_dir_ids: List[List[int]] = []
-    for i in range(input_ids_prompt.size(0)):
-        patch_ids = get_patch_ids(input_ids_prompt[i])
-        chosen: List[int] = []
-        for j in range(args.K):
-            best_token = None
-            best_score = -1e9
-            for cand in allowed:
-                if cand in chosen:
-                    continue
-                score = rm_score_for_prefix(chosen + [cand], patch_ids)
-                if score > best_score:
-                    best_score = score
-                    best_token = cand
-            if best_token is None:
-                raise RuntimeError("RM-greedy teacher failed to select a direction token (empty allowed set)")
-            chosen.append(best_token)
-        teacher_dir_ids.append(chosen)
+    # Build teacher sequences (RM-greedy) using testable utility
+    teacher_dir_ids = compute_rm_greedy_teacher(
+        rm_model=rm_model,
+        tokenizer=tokenizer,
+        input_ids_prompt=input_ids_prompt,
+        K=args.K,
+        device=device,
+    )
     print("Built teacher sequences via RM-greedy for", len(teacher_dir_ids), "samples")
 
     # Construct SFT sequences: prompt + teacher tokens; labels mask to only teacher positions
@@ -198,14 +245,6 @@ def main():
         labels = [-100] * len(prefix_ids) + teacher_dir_ids[i]
         seq_input_ids.append(torch.tensor(full_ids, dtype=torch.long))
         seq_labels.append(torch.tensor(labels, dtype=torch.long))
-
-    # Pad into a batch
-    def pad_to_batch(rows: List[torch.Tensor], pad_id: int) -> torch.Tensor:
-        m = max(r.numel() for r in rows)
-        out = torch.full((len(rows), m), pad_id, dtype=torch.long)
-        for i, r in enumerate(rows):
-            out[i, -r.numel():] = r  # left pad
-        return out
 
     input_ids = pad_to_batch(seq_input_ids, tokenizer.pad_token_id).to(device)
     labels = pad_to_batch(seq_labels, -100).to(device)
@@ -256,4 +295,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
