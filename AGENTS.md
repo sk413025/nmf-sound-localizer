@@ -10,6 +10,26 @@
 
 **NO hypothetical experiments. NO untested code. NO incomplete results.**
 
+## Commit Units — Experiments/Tests Only
+
+- Granularity: Each commit must correspond to a single, self‑contained experiment or test (or a tightly coupled pair such as SFT warm‑start + immediate PPO smoke). Do not batch unrelated changes; split into multiple commits.
+- Atomicity: Commit the exact executed code together with its artifacts (logs, manifests, fingerprints, metrics). Results‑only or code‑only commits are prohibited.
+- Content requirements (must be explicit in the commit message body):
+  - Background: What state/problem existed?
+  - Motivation: Why was this change/run needed now?
+  - Purpose: What specific question did this experiment/test answer?
+  - Setup: Environment (device, conda env), data subset + fingerprint, seeds, key hyperparameters.
+  - Exact commands: Full command lines to reproduce.
+  - Artifacts: Paths to run logs, numeric outputs, model checkpoints (if any), and code_state.json.
+  - Results: Key numbers (losses, correlations, accuracies, KL/entropy/value losses, etc.).
+  - Log interpretation: Read the log values and explain what they imply (e.g., why KL/entropy moved, whether value loss stabilized, whether rewards were non‑degenerate).
+  - Analysis: Explain successes AND failures with causal language (BECAUSE/THEREFORE/DUE TO). Include unexpected behavior and hypothesis.
+  - Next steps: Concrete follow‑ups based on the analysis.
+
+Notes
+- If a run fails, commit the failure with the same rigor (artifacts + analysis). Explain the cause and how to fix it.
+- For multi‑phase work, land separate commits per phase, each with its own executed artifacts and interpretation.
+
 ## 🎯 Code Simplification Philosophy
 
 **CRITICAL: Every code modification must prioritize simplicity and reduce complexity**
@@ -425,6 +445,9 @@ Before committing results, verify:
 - [ ] ✅ Functional tests executed and passed for affected components (with reproduction info)
 - [ ] ✅ Both successes AND failures documented
 - [ ] ✅ Logical connections using "BECAUSE", "DUE TO", "THEREFORE"
+- [ ] ✅ Commit is one experiment/test unit (or justified tightly coupled pair)
+- [ ] ✅ Log interpretation included (what key fields mean and whether they meet expectations)
+- [ ] ✅ code_state.json records git_head and file SHA256 for executed paths
 
 ## Quality Checklist for Code Modifications
 
