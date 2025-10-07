@@ -44,8 +44,14 @@ except ImportError:
 
 from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.features import PatchTokenizer
-from doa_rl.hf import build_patch_tokenizer, build_value_head_model
+from doa_rl.hf import build_patch_tokenizer, build_value_head_model, direction_token_ids
 from doa_rl.assets import load_H, load_W
+# Reuse scoring helpers to ensure identical semantics with SFT/eval
+from scripts.train_sft_policy_with_rm import (
+    rm_score_for_prefix,
+    get_patch_ids,
+    compute_rm_greedy_teacher,
+)
 # USMTrainer not needed after switching to localizer-style reward
 
 
@@ -203,6 +209,7 @@ def main():
     
     # Training hyperparameters
     ap.add_argument("--rm-epochs", type=int, default=20, help="RM training epochs")
+    ap.add_argument("--eval-every", type=int, default=1, help="Evaluate Top-1/Top-K every N epochs (directions-first)")
     ap.add_argument("--lr-lora", type=float, default=1e-4, help="Learning rate for LoRA adapters")
     ap.add_argument("--lr-embed", type=float, default=1e-4, help="Learning rate for embeddings")
     ap.add_argument("--lr-vhead", type=float, default=1e-3, help="Learning rate for v_head")
@@ -564,6 +571,86 @@ def main():
             best_loss = loss.item()
         if correlation.item() > best_corr:
             best_corr = correlation.item()
+
+        # Periodic directions-first evaluation (Top-1 and recall@K)
+        do_eval = (args.eval_every > 0) and (((epoch + 1) % args.eval_every == 0) or (epoch == args.rm_epochs - 1))
+        if do_eval:
+            rm_model.eval()
+            try:
+                # Build patch-only prompts and ground-truth angles in dataset order
+                direction_angles = [int(a) for a in _discover_angles(args.data_root)]
+                ds_eval = DoADataset(
+                    args.data_root,
+                    direction_angles,
+                    fs=args.sample_rate,
+                    n_fft=args.n_fft,
+                    freq_min=args.freq_min,
+                    freq_max=args.freq_max,
+                )
+                dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=False)
+                tok_patch = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
+                eval_prompts: List[str] = []
+                gt_angles: List[int] = []
+                for batch in dl_eval:
+                    Y_np = batch["Y"].squeeze(0).numpy()
+                    eval_prompts.append(" ".join(tok_patch(Y_np)))
+                    gt_angles.append(int(batch["angle_deg"]))
+                    if args.max_samples and len(eval_prompts) >= args.max_samples:
+                        break
+                enc_eval = tokenizer(
+                    eval_prompts,
+                    padding=True,
+                    truncation=True,
+                    max_length=tokenizer.model_max_length,
+                    return_tensors="pt",
+                )
+                input_ids_prompt = enc_eval["input_ids"].to(device)
+                allowed = set(direction_token_ids(tokenizer))
+                if args.K < 1 or args.K > len(allowed):
+                    raise RuntimeError(f"Invalid K={args.K}; valid range is [1, {len(allowed)}]")
+
+                # Teacher sequences for recall@K
+                teacher_dir_ids = compute_rm_greedy_teacher(
+                    rm_model=rm_model,
+                    tokenizer=tokenizer,
+                    input_ids_prompt=input_ids_prompt,
+                    K=args.K,
+                    device=device,
+                )
+
+                # Top-1 scoring at t=0
+                top1_hits = 0
+                teacher_hits = 0
+                for i in range(input_ids_prompt.size(0)):
+                    row = input_ids_prompt[i]
+                    patch_ids = get_patch_ids(tokenizer, row)
+                    if not patch_ids:
+                        raise RuntimeError("Eval prompt row has no patch tokens; cannot score")
+                    cand_scores = {}
+                    for cand in allowed:
+                        cand_scores[cand] = float(rm_score_for_prefix(rm_model, tokenizer, [cand], patch_ids, device))
+                    gt_angle = int(gt_angles[i])
+                    gt_token = f"<D_{gt_angle:03d}>"
+                    gt_id = tokenizer.convert_tokens_to_ids(gt_token)
+                    if gt_id not in allowed:
+                        raise RuntimeError(f"Ground-truth token '{gt_token}' not in allowed direction tokens")
+                    best_id = max(cand_scores, key=cand_scores.get)
+                    if best_id == gt_id:
+                        top1_hits += 1
+                    if gt_id in teacher_dir_ids[i]:
+                        teacher_hits += 1
+                total = input_ids_prompt.size(0)
+                top1_acc = top1_hits / total
+                recall_k = teacher_hits / total
+                print({
+                    "epoch": epoch,
+                    "eval_top1_acc": float(top1_acc),
+                    "eval_recall_at_K": float(recall_k),
+                    "eval_samples": int(total),
+                    "K": int(args.K),
+                })
+            finally:
+                rm_model.train()
 
     print(f"\nTraining completed!")
     print(f"  - Best loss: {best_loss:.4f}")
