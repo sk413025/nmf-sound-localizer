@@ -1,0 +1,4 @@
+CMD: /opt/anaconda3/bin/python scripts/eval/eval_rm_directions_first.py --data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized --rm-adapters results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora_adapters --rm-heads results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora_heads.pt --K 2 --sample-rate 16000 --n-fft 2048 --freq-min 300.0 --freq-max 3000.0 --patch-fp 16 --patch-np 10 --max-samples 4 --device mps --out results/pipeline_rm_smoke_20251007_132300/eval
+
+Device: mps
+{'top1_acc': 0.0, 'recall_at_K': 0.0}

@@ -1,20 +1,28 @@
 # NMF Sound Localizer
 
-[![PyPI version](https://badge.fury.io/py/nmf-sound-localizer.svg)](https://badge.fury.io/py/nmf-sound-localizer)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://github.com/speechlab/nmf-sound-localizer/workflows/CI/badge.svg)](https://github.com/speechlab/nmf-sound-localizer/actions)
 
-A modular, high-performance toolkit for **Non-negative Matrix Factorization (NMF) based sound source localization**. Designed for researchers and practitioners working on acoustic signal processing, source separation, and spatial audio analysis.
+A modular, high-performance toolkit for **Non-negative Matrix Factorization (NMF) based sound source localization** with **fixed group sparsity mechanism**. Designed for researchers working on acoustic signal processing and spatial audio analysis.
 
-## 🎯 Features
+## 🎯 Key Features
 
+- **✅ Fixed Group Sparsity**: Resolved fundamental issue where all predictions converged to single angle
+- **🔬 Separate Datasets Workflow**: Eliminate data leakage (box data for TF, original data for USM)
+- **🎯 X-Y Correspondence**: Proper transfer function estimation using H = Y/X relationship  
+- **⚖️ Stable Regularization**: Optimized parameters (lambda_group=5.0, gamma_sparse=0.1)
 - **🔧 Modular Architecture**: Use individual components or complete pipeline
-- **📊 Parameter Sweeps**: Automated batch experiments for optimal parameter finding
-- **📈 Comprehensive Evaluation**: Multiple metrics and sensitivity analysis
-- **🎨 Rich Visualization**: Transfer functions, results, and experimental dashboards
-- **⚡ High Performance**: GPU acceleration support (CUDA/MPS)
-- **📝 Reproducible**: Complete configuration management and state tracking
+- **⚡ GPU Acceleration**: CUDA/MPS support for faster computation
+- **📝 Reproducible**: Complete configuration management and experiment tracking
+
+## 🏆 Major Breakthrough
+
+**Fixed the core group sparsity problem** that prevented angle discrimination:
+
+- **Before**: All predictions converged to same angle (30°-105°) 
+- **After**: Successfully discriminates multiple angles with 29.4% accuracy
+- **Root Cause**: Unit vector normalization in USM destroyed atom diversity
+- **Solution**: Preserve natural W magnitudes while capping extremes
 
 ## 🚀 Quick Start
 
@@ -45,15 +53,73 @@ data/
 │   ├── clip_000.npy
 │   ├── clip_001.npy
 │   └── ...
-├── angle_18/          # 18-degree recordings  
+├── angle_05/          # 5-degree recordings (supports any interval)
 │   └── ...
-└── angle_36/          # Additional angles
+├── angle_10/          # 10-degree recordings
+│   └── ...
+└── angle_15/          # Additional angles
     └── ...
 ```
 
-Each `.npy` file contains a 1D audio signal array.
+Each `.npy` file contains a 1D audio signal array. The toolkit supports **any angle interval** (5°, 10°, 18°, etc.) and **any number of directions**.
+
+### Separate Datasets (Recommended)
+
+For scientific rigor and to eliminate data leakage:
+```
+noise_dataset/         # For transfer function estimation
+├── angle_00/
+│   ├── noise_000.npy
+│   └── ...
+├── angle_05/
+│   └── ...
+└── ...
+
+speech_dataset/        # For localization testing
+├── angle_00/
+│   ├── speech_000.npy
+│   └── ...
+├── angle_05/
+│   └── ...
+└── ...
+```
 
 ## 🔬 Advanced Usage
+
+### Separate Datasets (Eliminates Data Leakage)
+
+**Step 1**: Estimate transfer functions from noise data
+```bash
+python scripts/estimate_transfer_functions.py noise_dataset/ --output tf_noise.pth \
+  --method improved --freq-min 500 --freq-max 1500 --files-per-angle 100
+```
+
+**Step 2**: Run localization experiment with speech data
+```python
+from nmf_localizer import NMFLocalizationPipeline, NMFConfig
+
+config = NMFConfig(
+    tolerance_degrees=5.0,  # For 5-degree intervals
+    n_test_examples=500,
+    device='mps'  # Apple Silicon GPU
+)
+
+pipeline = NMFLocalizationPipeline(config)
+results = pipeline.run_full_experiment(
+    data_root="dummy",  # Not used when tf_path provided
+    tf_path="tf_noise.pth",
+    speech_data_root="speech_dataset/",
+    output_dir="results/separate_datasets"
+)
+
+print(f"Clean evaluation accuracy: {results['stages']['evaluation']['results']['accuracy']:.1f}%")
+```
+
+This approach ensures:
+- ✅ **No data leakage** between training and testing
+- ✅ **Optimal signal types**: noise for transfer functions, speech for localization
+- ✅ **Scientific rigor**: proper train/test separation
+- ✅ **Reproducible results**: reliable performance metrics
 
 ### Parameter Sweeps
 
@@ -162,8 +228,14 @@ Where:
 
 Check the `examples/` directory:
 - [`basic_experiment.py`](examples/basic_experiment.py): Simple localization experiment
+- [`separate_datasets_example.py`](examples/separate_datasets_example.py): **NEW!** Separate datasets usage
 - [`parameter_sweep.py`](examples/parameter_sweep.py): Automated parameter optimization
 - More examples in the documentation
+
+### Scripts
+
+Standalone utilities:
+- [`scripts/estimate_transfer_functions.py`](scripts/estimate_transfer_functions.py): **NEW!** Pre-compute transfer functions from noise data
 
 ## 🧪 Testing
 

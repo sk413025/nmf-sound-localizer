@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: 'Run integration tests (requires data on runner)'
+        required: false
+        default: 'false'
+      real_tf_x_root:
+        description: 'Path to X root (angle_* folders) on runner'
+        required: false
+        default: ''
+      real_tf_y_root:
+        description: 'Path to Y root (angle_* folders) on runner'
+        required: false
+        default: ''
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run unit tests (exclude integration)
+        run: |
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -c tests/pytest_no_cov.ini -m "not integration" -q
+
+  integration-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && inputs.run_integration == 'true'
+    env:
+      REAL_TF_X_ROOT: ${{ inputs.real_tf_x_root }}
+      REAL_TF_Y_ROOT: ${{ inputs.real_tf_y_root }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run integration tests (will skip if data missing)
+        run: |
+          echo "REAL_TF_X_ROOT=$REAL_TF_X_ROOT"
+          echo "REAL_TF_Y_ROOT=$REAL_TF_Y_ROOT"
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -c tests/pytest_no_cov.ini -m "integration" -q
+

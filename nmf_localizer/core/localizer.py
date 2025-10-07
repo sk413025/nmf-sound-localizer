@@ -46,7 +46,12 @@ class NMFSoundLocalizer(nn.Module):
         self.tol = config.tolerance
         self.epsilon = config.epsilon
         self.device = config.device
-        self.normalize_blocks = config.normalize_blocks
+        # Block normalization removed; preserve absolute scale across directions
+        
+        # IS-divergence safety parameters
+        self.transfer_epsilon = config.transfer_epsilon
+        self.reconstruction_epsilon = config.reconstruction_epsilon
+        self.gradient_clip_max = config.gradient_clip_max
         
         # Components (will be loaded)
         self.W = None  # Source dictionary
@@ -124,20 +129,31 @@ class NMFSoundLocalizer(nn.Module):
             self._construct_mixing_matrix()
             
     def _construct_mixing_matrix(self):
-        """Construct mixing matrix A = [diag(H_1)W, ..., diag(H_D)W]."""
+        """Construct mixing matrix A = [diag(H_1)W, ..., diag(H_D)W] with A matrix regularization."""
         if self.W is None or self.H is None:
             return
             
-        logger.info("=== Constructing Mixing Matrix A ===")
+        logger.info("Constructing mixing matrix A with regularization")
         logger.info(f"W shape: {self.W.shape}, H shape: {self.H.shape}")
+        
+        # Apply A matrix regularization: clamp H values to prevent numerical issues
+        if self.beta == 0:  # IS-divergence requires special handling
+            H_regularized = torch.clamp(self.H, min=self.transfer_epsilon)
+            h_clamped_count = (self.H < self.transfer_epsilon).sum().item()
+            if h_clamped_count > 0:
+                logger.info(f"A matrix regularization: clamped {h_clamped_count} H values below {self.transfer_epsilon}")
+                logger.info(f"H original range: [{self.H.min():.6f}, {self.H.max():.6f}]")
+                logger.info(f"H regularized range: [{H_regularized.min():.6f}, {H_regularized.max():.6f}]")
+        else:
+            H_regularized = self.H
         
         # A will be F x KD
         A_blocks = []
         block_norms = []
         
         for d in range(self.n_directions):
-            # diag(H_d) @ W
-            H_d_diag = torch.diag(self.H[:, d])
+            # diag(H_d) @ W using regularized H
+            H_d_diag = torch.diag(H_regularized[:, d])
             A_d = H_d_diag @ self.W
             
             if d == 0:  # Log first block
@@ -148,11 +164,7 @@ class NMFSoundLocalizer(nn.Module):
             if self.freq_weights is not None:
                 A_d = self.freq_weights.view(-1, 1) * A_d
                 
-            if self.normalize_blocks:
-                # Equalize Frobenius norm across direction blocks
-                bn = torch.linalg.norm(A_d, ord='fro') + self.epsilon
-                A_d = A_d / bn
-                block_norms.append(bn.item())
+            # No block normalization: preserve absolute scale differences across directions
                 
             A_blocks.append(A_d)
             
@@ -160,8 +172,7 @@ class NMFSoundLocalizer(nn.Module):
         logger.info(f"Final A matrix shape: {self.A.shape} "
                    f"(expected: {self.n_freq} x {self.n_components * self.n_directions})")
         
-        if self.normalize_blocks and block_norms:
-            logger.info(f"Applied block normalization; sample norms: {block_norms[:5]}")
+        # Block normalization removed by design
 
     def _beta_divergence(self, Y: torch.Tensor, Y_hat: torch.Tensor) -> torch.Tensor:
         """Compute beta divergence between Y and Y_hat."""
@@ -194,6 +205,8 @@ class NMFSoundLocalizer(nn.Module):
         Compute group penalty matrix P where P_d = 1/(ε + ||vec(X_d)||_1).
         X shape: (KD x N)
         Returns P shape: (KD x N)
+        
+        Improved version with better numerical stability.
         """
         K = self.n_components
         D = self.n_directions
@@ -201,54 +214,108 @@ class NMFSoundLocalizer(nn.Module):
         
         P = torch.zeros_like(X)
         
+        # Use larger epsilon for group penalty to avoid extreme values
+        group_epsilon = max(self.epsilon, 1e-4)
+        
         for d in range(D):
             # Extract group X_d (K x N)
             start_idx = d * K
             end_idx = (d + 1) * K
             X_d = X[start_idx:end_idx, :]
             
-            # Compute group norm
-            group_norm = torch.sum(torch.abs(X_d)) + self.epsilon
+            # Compute group norm with better stability
+            group_norm = torch.sum(torch.abs(X_d)) + group_epsilon
             
-            # Set penalty for this group
-            P[start_idx:end_idx, :] = 1.0 / group_norm
+            # Set penalty for this group with reasonable upper bound
+            penalty = 1.0 / group_norm
+            max_penalty = 1000.0  # Prevent extreme penalty values
+            penalty = min(penalty, max_penalty)
+            
+            P[start_idx:end_idx, :] = penalty
             
         return P
         
     def _multiplicative_update(self, Y: torch.Tensor, X: torch.Tensor) -> torch.Tensor:
         """
-        Multiplicative update for X with sparse-group sparsity.
-        Implements Algorithm 2 from the paper.
+        Improved multiplicative update for X with proper group sparsity.
+        Uses a simpler, more stable approach for Euclidean distance (beta=2).
         """
         Y_hat = self.A @ X
         
-        # Compute group penalty matrix
-        P = self._compute_group_penalty_matrix(X)
-        
-        if self.beta == 0:  # Itakura-Saito
-            y_over_yhat2 = Y / (Y_hat ** 2 + self.epsilon)
-            inv_yhat = 1.0 / (Y_hat + self.epsilon)
+        if self.beta == 2:  # Euclidean distance - use improved group sparsity
+            # Standard multiplicative update
+            numerator = self.A.T @ Y
+            denominator = self.A.T @ Y_hat + self.gamma_sparse  # Small sparsity term
             
-            numerator = self.A.T @ y_over_yhat2
-            denominator = self.A.T @ inv_yhat + self.lambda_group * P + self.gamma_sparse
+            # Compute proper competitive group sparsity penalty
+            group_norms = torch.zeros(self.n_directions, device=self.device)
+            for d in range(self.n_directions):
+                start_idx = d * self.n_components
+                end_idx = (d + 1) * self.n_components
+                X_d = X[start_idx:end_idx, :]
+                group_norms[d] = torch.sum(torch.abs(X_d))
             
-            ratio = numerator / (denominator + self.epsilon)
+            # Winner-takes-all: encourage the strongest group, suppress others
+            max_group_norm = torch.max(group_norms)
+            group_penalty_matrix = torch.zeros_like(X)
             
-            # Ensure ratio is non-negative before taking square root
-            ratio = torch.clamp(ratio, min=self.epsilon)
-            X_new = X * torch.sqrt(ratio)
+            for d in range(self.n_directions):
+                start_idx = d * self.n_components
+                end_idx = (d + 1) * self.n_components
+                
+                # Competitive penalty: encourage winner, suppress losers
+                if group_norms[d] >= max_group_norm * 0.8:  # Top groups
+                    penalty = -self.lambda_group * 0.5  # Strong encouragement
+                elif group_norms[d] >= max_group_norm * 0.3:  # Medium groups
+                    penalty = self.lambda_group * 0.8   # Strong suppression
+                else:  # Weak groups
+                    penalty = self.lambda_group * 0.2   # Mild suppression
+                
+                group_penalty_matrix[start_idx:end_idx, :] = penalty
             
-        elif self.beta == 2:  # Euclidean
-            numerator = self.A.T @ Y - self.lambda_group * P - self.gamma_sparse
-            denominator = self.A.T @ Y_hat
-            X_new = X * torch.clamp(numerator / (denominator + self.epsilon), min=self.epsilon)
+            # Apply update with competitive penalty
+            ratio = numerator / (denominator + torch.abs(group_penalty_matrix) + self.epsilon)
+            # Apply penalty direction (encourage/suppress)
+            penalty_factor = torch.where(group_penalty_matrix < 0, 1.2, 0.8)
+            X_new = X * ratio * penalty_factor
             
-        else:  # General beta (including KL for beta=1)
-            numerator = self.A.T @ (Y * Y_hat.pow(self.beta - 2))
-            denominator = self.A.T @ Y_hat.pow(self.beta - 1) + \
-                          self.lambda_group * P + self.gamma_sparse
-            exponent = 1.0 if self.beta == 1 else 0.5
-            X_new = X * (numerator / (denominator + self.epsilon)) ** exponent
+        else:  # Original complex updates for other beta values
+            # Compute group penalty matrix
+            P = self._compute_group_penalty_matrix(X)
+            
+            if self.beta == 0:  # Itakura-Saito with safe X updates
+                # Apply reconstruction regularization to prevent division by zero
+                Y_hat_safe = torch.clamp(Y_hat, min=self.reconstruction_epsilon)
+                
+                # Check how many values were clamped for monitoring
+                clamped_count = (Y_hat < self.reconstruction_epsilon).sum().item()
+                if clamped_count > 0:
+                    logger.debug(f"Safe X updates: clamped {clamped_count} Y_hat values below {self.reconstruction_epsilon}")
+                
+                # Safe IS-divergence gradient computation
+                y_over_yhat2 = Y / (Y_hat_safe ** 2)
+                inv_yhat = 1.0 / Y_hat_safe
+                
+                numerator = self.A.T @ y_over_yhat2
+                denominator = self.A.T @ inv_yhat + self.lambda_group * P + self.gamma_sparse
+                
+                # Additional numerical stability: limit gradient ratio range
+                ratio = numerator / (denominator + self.epsilon)
+                ratio = torch.clamp(ratio, min=self.epsilon, max=self.gradient_clip_max)
+                
+                # Monitor extreme ratios
+                max_ratio = ratio.max().item()
+                if max_ratio > self.gradient_clip_max * 0.8:
+                    logger.debug(f"Safe X updates: gradient ratio approaching clip limit: {max_ratio:.2f}")
+                
+                X_new = X * torch.sqrt(ratio)
+                
+            else:  # General beta (including KL for beta=1)
+                numerator = self.A.T @ (Y * Y_hat.pow(self.beta - 2))
+                denominator = self.A.T @ Y_hat.pow(self.beta - 1) + \
+                              self.lambda_group * P + self.gamma_sparse
+                exponent = 1.0 if self.beta == 1 else 0.5
+                X_new = X * (numerator / (denominator + self.epsilon)) ** exponent
         
         # Replace nan and inf values with epsilon
         X_new = torch.where(torch.isnan(X_new) | torch.isinf(X_new), self.epsilon, X_new)
@@ -274,7 +341,7 @@ class NMFSoundLocalizer(nn.Module):
         if F != self.n_freq:
             raise ValueError(f"Expected {self.n_freq} frequency bins, got {F}")
         
-        logger.info(f"=== NMF Factorization ===")
+        logger.info("Starting NMF factorization")
         logger.info(f"Input Y shape: {Y.shape}")
         logger.info(f"A shape: {self.A.shape}")
 
@@ -282,20 +349,33 @@ class NMFSoundLocalizer(nn.Module):
         if self.freq_weights is not None:
             Y = self.freq_weights.view(-1, 1) * Y
         
-        # Initialize X = A^T @ Y
-        X = self.A.T @ Y
+        # Improved competitive initialization strategy
+        # Use randomized sparse initialization to encourage group competition
+        logger.info("Using competitive sparse initialization")
+        Y_mean = Y.mean()
+        X = torch.zeros(self.A.shape[1], N, device=self.device)
         
-        # Better initialization: use random positive values if too small
+        # Initialize each group independently with different random seeds
+        for d in range(self.n_directions):
+            start_idx = d * self.n_components
+            end_idx = (d + 1) * self.n_components
+            
+            # Each group gets different initialization strength
+            group_strength = torch.rand(1, device=self.device) * 0.5 + 0.1  # 0.1 to 0.6
+            X[start_idx:end_idx, :] = torch.rand(
+                self.n_components, N, device=self.device
+            ) * Y_mean * group_strength
+        
+        X = torch.clamp(X, min=self.epsilon)
+        
+        # Better initialization check
         if X.mean() < 1e-6:
-            logger.info("X too small, using random initialization")
-            X = torch.rand_like(X) * Y.mean() * 0.1 + self.epsilon
-        else:
+            logger.info("X still too small, using scaled random initialization")
+            Y_mean = Y.mean()
+            X = torch.rand(self.A.shape[1], N, device=self.device) * Y_mean * 0.5
             X = torch.clamp(X, min=self.epsilon)
         
-        # Add small random noise to avoid getting stuck
-        noise = torch.rand_like(X) * X.mean() * 0.01
-        X = X + noise
-        logger.info(f"X initialized: shape={X.shape}, min={X.min():.6f}, max={X.max():.6f}")
+        logger.info(f"X initialized: shape={X.shape}, min={X.min():.6f}, max={X.max():.6f}, mean={X.mean():.6f}")
         
         losses = []
         
@@ -307,19 +387,22 @@ class NMFSoundLocalizer(nn.Module):
             Y_hat = self.A @ X
             data_fit = self._beta_divergence(Y, Y_hat)
             
-            # Group sparsity penalty (log/l1)
-            group_penalty = 0
+            # Group sparsity penalty: count number of active groups
+            active_groups = 0
+            group_norms = []
             for d in range(self.n_directions):
                 start_idx = d * self.n_components
                 end_idx = (d + 1) * self.n_components
                 X_d = X[start_idx:end_idx, :]
                 group_norm = torch.sum(torch.abs(X_d))
-                group_penalty += torch.log(self.epsilon + group_norm)
+                group_norms.append(group_norm)
+                if group_norm > 0.1:  # Threshold for "active" group
+                    active_groups += 1
                 
             # Sparsity penalty (l1)
             sparse_penalty = torch.sum(torch.abs(X))
             
-            total_loss = data_fit + self.lambda_group * group_penalty + \
+            total_loss = data_fit + self.lambda_group * active_groups + \
                         self.gamma_sparse * sparse_penalty
             losses.append(total_loss.item())
             
@@ -366,7 +449,7 @@ class NMFSoundLocalizer(nn.Module):
         
         # Calculate group norms
         group_norms = torch.zeros(self.n_directions, device=self.device)
-        logger.info("=== Computing Group Norms ===")
+        logger.info("Computing group norms for localization")
         
         for d in range(self.n_directions):
             start_idx = d * self.n_components
@@ -374,11 +457,6 @@ class NMFSoundLocalizer(nn.Module):
             X_d = X[start_idx:end_idx, :]
             group_norm = torch.sum(torch.abs(X_d))
             group_norms[d] = group_norm
-            
-            if d < 3:  # Log first few groups
-                logger.info(f"Group {d}: indices [{start_idx}:{end_idx}], "
-                           f"norm: {group_norm:.6f}")
-            
         # Select top n_sources directions
         _, source_indices = torch.topk(group_norms, n_sources)
         
