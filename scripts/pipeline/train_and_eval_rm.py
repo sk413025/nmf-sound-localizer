@@ -51,6 +51,7 @@ def main():
     ap.add_argument("--data-root", type=str, required=True)
     ap.add_argument("--tf-path", type=str, required=True)
     ap.add_argument("--w-path", type=str, required=True)
+    ap.add_argument("--s-root", type=str, required=True)
     ap.add_argument("--device", type=str, default="auto", choices=["auto","cpu","mps","cuda"]) 
     ap.add_argument("--K", type=int, default=3)
     ap.add_argument("--max-samples", type=int, default=0)
@@ -88,7 +89,12 @@ def main():
         "--data-root", args.data_root,
         "--tf-path", args.tf_path,
         "--w-path", args.w_path,
+        "--s-root", args.s_root,
         "--K", str(args.K),
+        "--teacher", os.environ.get("RM_TEACHER", "fit"),
+        "--bt-beta", os.environ.get("RM_BT_BETA", "1.0"),
+        "--directions-per-sample", os.environ.get("RM_DIRS_PER_SAMPLE", "0"),
+        "--pairs-per-sample", os.environ.get("RM_PAIRS_PER_SAMPLE", "64"),
         "--rm-epochs", str(args.rm_epochs),
         "--lr-lora", str(args.lr_lora),
         "--lr-embed", str(args.lr_embed),
@@ -145,4 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
