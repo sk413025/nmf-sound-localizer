@@ -1,0 +1,42 @@
+
+  0%|          | 0/5 [00:00<?, ?it/s]huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+To disable this warning, you can either:
+	- Avoid using `tokenizers` before the fork if possible
+	- Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+`generation_config` default values have been modified to match model-specific defaults: {'pad_token_id': 0, 'bos_token_id': 1}. If this is not desired, please set these values explicitly.
+/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/trl/trainer/ppo_trainer.py:553: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/python_variable_indexing.cpp:312.)
+  rewards[[actual_start, actual_end]] += scores
+
+                                     
+
+  0%|          | 0/5 [00:00<?, ?it/s]
+ 20%|██        | 1/5 [00:00<00:01,  2.14it/s]
+                                             
+
+ 20%|██        | 1/5 [00:00<00:01,  2.14it/s]
+ 40%|████      | 2/5 [00:00<00:00,  3.04it/s]
+                                             
+
+ 40%|████      | 2/5 [00:00<00:00,  3.04it/s]
+ 60%|██████    | 3/5 [00:00<00:00,  3.57it/s]
+                                             
+
+ 60%|██████    | 3/5 [00:01<00:00,  3.57it/s]
+ 80%|████████  | 4/5 [00:01<00:00,  3.85it/s]
+                                             
+
+ 80%|████████  | 4/5 [00:01<00:00,  3.85it/s]
+100%|██████████| 5/5 [00:01<00:00,  4.02it/s]
+100%|██████████| 5/5 [00:01<00:00,  3.39it/s]
+
+Device: mps
+Loaded SFT policy warm start before reference snapshot
+Info: PPOTrainer.step() not available in this TRL version; running trainer.train() for smoke test.
+===training policy===
+{'eps': 4, 'objective/kl': 9.407059669494629, 'objective/entropy': 6.1096673011779785, 'objective/non_score_reward': -0.47035297751426697, 'objective/rlhf_reward': 0.5558613538742065, 'objective/scores': 1.026214361190796, 'policy/approxkl_avg': 11.06224250793457, 'policy/clipfrac_avg': 0.5, 'loss/policy_avg': 0.31267887353897095, 'loss/value_avg': 0.09317242354154587, 'val/clipfrac_avg': 0.0, 'policy/entropy_avg': 7.569757461547852, 'val/ratio': 0.009069064632058144, 'val/ratio_var': nan, 'val/num_eos_tokens': 0, 'lr': 0.0001, 'episode': 2, 'epoch': 0.33}
+{'eps': 5, 'objective/kl': 9.407100677490234, 'objective/entropy': 5.4972615242004395, 'objective/non_score_reward': -0.4703550636768341, 'objective/rlhf_reward': 0.1035986840724945, 'objective/scores': 0.5739537477493286, 'policy/approxkl_avg': 11.062278747558594, 'policy/clipfrac_avg': 0.5, 'loss/policy_avg': 0.2953891158103943, 'loss/value_avg': 0.045935943722724915, 'val/clipfrac_avg': 0.0, 'policy/entropy_avg': 7.570034027099609, 'val/ratio': 0.009068340063095093, 'val/ratio_var': nan, 'val/num_eos_tokens': 0, 'lr': 8e-05, 'episode': 4, 'epoch': 0.67}
+{'eps': 6, 'objective/kl': 9.412532806396484, 'objective/entropy': 5.250102996826172, 'objective/non_score_reward': -0.47062668204307556, 'objective/rlhf_reward': 0.41554751992225647, 'objective/scores': 0.886174201965332, 'policy/approxkl_avg': 11.07518482208252, 'policy/clipfrac_avg': 0.5, 'loss/policy_avg': 0.3099941909313202, 'loss/value_avg': 0.05560128018260002, 'val/clipfrac_avg': 0.0, 'policy/entropy_avg': 7.570137023925781, 'val/ratio': 0.00904487818479538, 'val/ratio_var': nan, 'val/num_eos_tokens': 0, 'lr': 6e-05, 'episode': 6, 'epoch': 1.0}
+{'eps': 6, 'objective/kl': 9.421768188476562, 'objective/entropy': 5.0339813232421875, 'objective/non_score_reward': -0.4710884094238281, 'objective/rlhf_reward': 0.33724313974380493, 'objective/scores': 0.8083315491676331, 'policy/approxkl_avg': 11.097110748291016, 'policy/clipfrac_avg': 0.5, 'loss/policy_avg': 0.29546040296554565, 'loss/value_avg': 0.0689568743109703, 'val/clipfrac_avg': 0.0, 'policy/entropy_avg': 7.569831371307373, 'val/ratio': 0.009004862047731876, 'val/ratio_var': nan, 'val/num_eos_tokens': 0, 'lr': 4e-05, 'episode': 8, 'epoch': 1.33}
+{'eps': 7, 'objective/kl': 9.374061584472656, 'objective/entropy': 5.597162246704102, 'objective/non_score_reward': -0.4687030613422394, 'objective/rlhf_reward': 0.4033072292804718, 'objective/scores': 0.8720102906227112, 'policy/approxkl_avg': 10.984718322753906, 'policy/clipfrac_avg': 0.5, 'loss/policy_avg': 0.34161025285720825, 'loss/value_avg': 0.05570125952363014, 'val/clipfrac_avg': 0.0, 'policy/entropy_avg': 7.569925308227539, 'val/ratio': 0.009219372645020485, 'val/ratio_var': nan, 'val/num_eos_tokens': 0, 'lr': 2e-05, 'episode': 10, 'epoch': 1.67}
+Training run completed (trainer.train path).
+

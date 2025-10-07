@@ -9,6 +9,7 @@ This package provides a complete pipeline for NMF-based sound source localizatio
 - **Experimental**: Built for parameter sweeps and batch experiments  
 - **Reproducible**: Complete configuration management and result tracking
 - **Efficient**: Optimized for large-scale testing
+- **Scientific**: Supports separate datasets to eliminate data leakage
 
 ## Quick Start
 
@@ -29,6 +30,33 @@ results = pipeline.run_full_experiment(
 )
 
 print(f"Accuracy: {results['stages']['evaluation']['results']['accuracy']:.1f}%")
+```
+
+### Separate Datasets (Eliminates Data Leakage)
+
+**Recommended for scientific rigor**:
+
+```python
+from nmf_localizer import NMFLocalizationPipeline, NMFConfig
+
+# Step 1: Pre-compute transfer functions from noise data (run once)
+# python scripts/estimate_transfer_functions.py noise_data/ --output tf_noise.pth
+
+# Step 2: Run localization with speech data
+config = NMFConfig(
+    tolerance_degrees=5.0,  # For fine-grained 5-degree intervals
+    n_test_examples=500
+)
+
+pipeline = NMFLocalizationPipeline(config)
+results = pipeline.run_full_experiment(
+    data_root="dummy",  # Not used when tf_path provided
+    tf_path="tf_noise.pth",
+    speech_data_root="speech_dataset/",
+    output_dir="results/clean_experiment"
+)
+
+print(f"Clean accuracy: {results['stages']['evaluation']['results']['accuracy']:.1f}%")
 ```
 
 ### Batch Parameter Sweeps
@@ -131,16 +159,37 @@ config = NMFConfig(
 ## Data Format
 
 ### Input Data Structure
+
+**Single Dataset (Traditional)**:
 ```
 root/
 ├─ angle_00/
 │    ├─ clip_000.npy
 │    ├─ clip_001.npy
 │    └─ ...
-├─ angle_18/
+├─ angle_05/          # Supports any angle interval (5°, 10°, 18°, etc.)
 │    └─ ...
-└─ angle_36/
+└─ angle_10/
      └─ ...
+```
+
+**Separate Datasets (Recommended)**:
+```
+noise_dataset/        # For transfer function estimation
+├─ angle_00/
+│    ├─ noise_000.npy
+│    └─ ...
+├─ angle_05/
+│    └─ ...
+└─ ...
+
+speech_dataset/       # For USM training and localization testing  
+├─ angle_00/
+│    ├─ speech_000.npy
+│    └─ ...
+├─ angle_05/
+│    └─ ...
+└─ ...
 ```
 
 ### Output Structure
@@ -342,9 +391,16 @@ See individual class documentation for detailed API information.
 Check the `examples/` directory for complete example scripts:
 
 - `basic_experiment.py`: Simple single experiment
+- `separate_datasets_example.py`: **NEW!** Separate datasets usage and comparison
 - `parameter_sweep.py`: Comprehensive parameter sweep
 - `custom_evaluation.py`: Custom evaluation metrics
 - `visualization_demo.py`: Visualization examples
+
+### Scripts
+
+Standalone utilities in `scripts/`:
+
+- `estimate_transfer_functions.py`: **NEW!** Pre-compute transfer functions from noise data
 
 ## Citation
 

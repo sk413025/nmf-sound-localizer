@@ -6,7 +6,7 @@ Extracted and refactored from src/models/usm_trainer.py.
 import torch
 import torch.nn as nn
 from typing import List, Tuple, Dict, Any, Optional
-from tqdm import tqdm
+# from tqdm import tqdm  # Temporarily disabled for testing
 import logging
 
 from ..config.defaults import NMFConfig
@@ -57,7 +57,7 @@ class USMTrainer(nn.Module):
         
     def _nmf_fit(self, V: torch.Tensor, n_components: int) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
         """
-        Standard NMF: V ≈ W @ H
+        Stable NMF using sklearn implementation (matches debug_nmf_with_learned_sources.py success).
         
         Args:
             V: Input matrix (n_freq x n_samples)
@@ -71,73 +71,75 @@ class USMTrainer(nn.Module):
         n_freq, n_samples = V.shape
         logger.info(f"NMF fitting: V shape {V.shape}, n_components {n_components}")
         
-        # Initialize W and H randomly
-        avg = V.mean()
-        W = torch.rand(n_freq, n_components, device=self.device) * avg
-        H = torch.rand(n_components, n_samples, device=self.device) * avg
+        # Convert to numpy for sklearn - NO SCALING (debug script doesn't scale either)
+        V_np = V.detach().cpu().numpy()
         
-        W = torch.clamp(W, min=self.epsilon)
-        H = torch.clamp(H, min=self.epsilon)
+        logger.info(f"Input data statistics: mean={V_np.mean():.2e}, std={V_np.std():.2e}, max={V_np.max():.2e}")
         
-        losses = []
+        # Use sklearn NMF with exact same parameters as successful debug script
+        from sklearn.decomposition import NMF as sklearn_NMF
         
-        for iteration in range(self.max_iter):
-            # Update W
-            V_hat = W @ H
+        nmf = sklearn_NMF(
+            n_components=n_components,
+            init='nndsvd',              # Stable initialization
+            max_iter=1000,              # Sufficient iterations
+            random_state=42,            # Reproducible results
+            beta_loss='frobenius',      # Stable loss (equivalent to beta=2)
+            alpha_W=0.0,               # No L1 regularization on W
+            alpha_H=0.0,  # NO L1 regularization on H (causes zero matrices!)
+            l1_ratio=1.0               # Pure L1 regularization
+        )
+        
+        try:
+            # Fit NMF: V.T ≈ H_sklearn @ W_sklearn.T (same as debug script)
+            H_sklearn = nmf.fit_transform(V_np.T)      # (n_samples, n_components)
+            W_sklearn = nmf.components_                # (n_components, n_freq)
             
-            if self.beta == 0:  # IS divergence
-                W = W * ((V / (V_hat ** 2 + self.epsilon)) @ H.T) / \
-                    ((1.0 / (V_hat + self.epsilon)) @ H.T + self.epsilon)
-            elif self.beta == 2:  # Euclidean
-                numerator = V @ H.T
-                denominator = W @ H @ H.T + self.epsilon
-                W = W * numerator / denominator
-            else:  # General beta
-                W = W * ((V * V_hat.pow(self.beta - 2)) @ H.T) / \
-                    (V_hat.pow(self.beta - 1) @ H.T + self.epsilon)
-                    
+            # Convert back to our convention: V ≈ W @ H
+            W = torch.from_numpy(W_sklearn.T).float().to(self.device)  # (n_freq, n_components)
+            H = torch.from_numpy(H_sklearn.T).float().to(self.device)  # (n_components, n_samples)
+            
+            # Ensure non-negative and non-zero
             W = torch.clamp(W, min=self.epsilon)
-            
-            # Update H
-            V_hat = W @ H
-            
-            if self.beta == 0:  # IS divergence
-                H = H * (W.T @ (V / (V_hat ** 2 + self.epsilon))) / \
-                    (W.T @ (1.0 / (V_hat + self.epsilon)) + self.sparsity_weight + self.epsilon)
-            elif self.beta == 2:  # Euclidean
-                numerator = W.T @ V
-                denominator = W.T @ W @ H + self.sparsity_weight + self.epsilon
-                H = H * numerator / denominator
-            else:  # General beta
-                H = H * (W.T @ (V * V_hat.pow(self.beta - 2))) / \
-                    (W.T @ V_hat.pow(self.beta - 1) + self.sparsity_weight + self.epsilon)
-                    
             H = torch.clamp(H, min=self.epsilon)
             
-            # Compute loss
-            V_hat = W @ H
-            div_loss = self._beta_divergence(V, V_hat)
-            sparse_loss = self.sparsity_weight * H.sum()
-            total_loss = div_loss + sparse_loss
-            losses.append(total_loss.item())
+            info = {
+                'final_loss': float(nmf.reconstruction_err_),
+                'n_iterations': nmf.n_iter_,
+                'converged': nmf.n_iter_ < 1000,
+                'sklearn_method': True,
+                'losses': [float(nmf.reconstruction_err_)],  # Single final loss
+                'input_data_mean': float(V_np.mean())  # Record input data characteristics
+            }
             
-            # Check convergence
-            if iteration > 0 and abs(losses[-1] - losses[-2]) < self.tol:
-                logger.info(f"NMF converged at iteration {iteration}")
-                break
-                
-        # Normalize W columns
-        W_norms = W.norm(p=2, dim=0, keepdim=True)
-        W = W / (W_norms + self.epsilon)
-        
-        info = {
-            'final_loss': losses[-1] if losses else float('inf'),
-            'n_iterations': len(losses),
-            'converged': len(losses) > 0 and len(losses) < self.max_iter,
-            'losses': losses
-        }
-        
-        logger.info(f"NMF completed: {info['n_iterations']} iterations, final loss: {info['final_loss']:.6f}")
+            # Verification
+            nonzero_W = (W > self.epsilon).sum().item()
+            total_W = W.numel()
+            logger.info(f"NMF completed: {info['n_iterations']} iterations, final loss: {info['final_loss']:.6f}")
+            logger.info(f"W non-zero elements: {nonzero_W}/{total_W} ({100*nonzero_W/total_W:.1f}%)")
+            logger.info(f"W statistics: min={W.min():.6f}, max={W.max():.6f}, mean={W.mean():.6f}")
+            
+            if nonzero_W == 0:
+                raise ValueError("sklearn NMF produced zero W matrix - check input data")
+            
+        except Exception as e:
+            logger.error(f"sklearn NMF failed: {e}")
+            # Fallback to simple random initialization if sklearn fails
+            logger.warning("Falling back to random initialization")
+            avg = V.mean()
+            W = torch.rand(n_freq, n_components, device=self.device) * avg * 0.1
+            H = torch.rand(n_components, n_samples, device=self.device) * avg * 0.1
+            W = torch.clamp(W, min=self.epsilon)
+            H = torch.clamp(H, min=self.epsilon)
+            
+            info = {
+                'final_loss': float('inf'),
+                'n_iterations': 0,
+                'converged': False,
+                'sklearn_method': False,
+                'fallback': True,
+                'losses': []
+            }
         
         return W, H, info
         
@@ -186,7 +188,7 @@ class USMTrainer(nn.Module):
         logger.info(f"Frequency dimension: {self.n_freq}")
         logger.info(f"Atoms per speaker: {self.n_atoms_per_speaker}")
         
-        for i, speaker_data in enumerate(tqdm(speaker_data_list, desc="Training speakers")):
+        for i, speaker_data in enumerate(speaker_data_list):
             # Move to device
             speaker_data = speaker_data.to(self.device)
             
@@ -326,6 +328,64 @@ class USMTrainer(nn.Module):
         logger.info(f"Model shape: {self.W.shape}, beta: {self.beta}")
         
         return self.W
+
+    # === Content spectrum estimation (ŝ) from precomputed W ===
+    @staticmethod
+    def compute_content_s_hat(
+        Y: "np.ndarray",
+        W: "np.ndarray",
+        mode: str = "S1",
+        H: Optional["np.ndarray"] = None,
+        n_iter: int = 50,
+        l1: float = 0.0,
+        eps: float = 1e-12,
+    ) -> "np.ndarray":
+        """
+        Estimate content spectrum ŝ(F,) from a precomputed dictionary W(F,K) and a spectrogram Y(F,N).
+
+        Geometry: IS (β=0) multiplicative updates for z with global normalization; ŝ = W z.
+        Modes:
+          - S1: Ybar = mean_t(Y)
+          - S2: Ybar = mean_t(Y) / mean_d(H_d)  (requires H (F,D) or (D,F))
+        """
+        import numpy as np
+
+        W_np = np.asarray(W)
+        Y_np = np.asarray(Y)
+        if W_np.ndim != 2:
+            raise ValueError(f"W must be 2D (F,K), got shape {W_np.shape}")
+        if Y_np.ndim != 2:
+            raise ValueError(f"Y must be 2D (F,N), got shape {Y_np.shape}")
+        if W_np.shape[0] != Y_np.shape[0]:
+            raise ValueError(f"W and Y must have same F, got W {W_np.shape}, Y {Y_np.shape}")
+
+        def _safe(x: "np.ndarray") -> "np.ndarray":
+            return np.maximum(x, eps)
+
+        Ybar = _safe(Y_np.mean(axis=1))
+        if (mode or "S1").upper() == "S2":
+            if H is None:
+                raise ValueError("S2 mode requires H (transfer functions)")
+            Hm = np.asarray(H)
+            if Hm.ndim != 2:
+                raise ValueError(f"H must be 2D, got {Hm.shape}")
+            if Hm.shape[0] < Hm.shape[1]:  # (D,F) -> (F,D)
+                Hm = Hm.T
+            Hbar = _safe(Hm.mean(axis=1))
+            Ybar = _safe(Ybar / Hbar)
+
+        # IS-MU for z
+        F, K = W_np.shape
+        z = np.ones(K, dtype=W_np.dtype) / max(K, 1)
+        Wp = _safe(W_np)
+        for _ in range(max(int(n_iter), 0)):
+            Yhat = _safe(Wp @ z)
+            num = (Wp.T @ (Ybar / (Yhat ** 2)))
+            den = (Wp.T @ (1.0 / Yhat)) + float(l1)
+            z *= _safe(num / _safe(den))
+            z /= _safe(z.sum())
+        s_hat = _safe(Wp @ z)
+        return s_hat.astype(np.float32)
     
     def get_reconstruction_quality(
         self, 

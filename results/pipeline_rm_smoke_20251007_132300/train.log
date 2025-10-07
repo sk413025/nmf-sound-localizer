@@ -1,0 +1,69 @@
+CMD: /opt/anaconda3/bin/python scripts/train_reward_model_lora.py --data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized --tf-path h_matrix_normalized_original_to_box.pth --w-path doa_normalized_config_c_corrected/models/usm.pth --K 2 --rm-epochs 1 --lr-lora 0.0001 --lr-embed 0.0001 --lr-vhead 0.001 --lora-r 8 --lora-alpha 16 --lora-dropout 0.1 --lora-target-modules c_attn,c_proj --sample-rate 16000 --n-fft 2048 --freq-min 300.0 --freq-max 3000.0 --patch-fp 16 --patch-np 10 --max-samples 4 --device mps --out results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora
+
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 4
+  - Reward range: [-0.27, -0.23]
+  - Reward mean±std: -0.25 ± 0.01
+
+Per‑patch IS (diagnostics) — mean over patches per sample: {'min': 0.22849974513915525, 'median': 0.24540198272486935, 'mean': 0.24646907040633922, 'p95': 0.26341259650391885, 'p99': 0.2659405761299541, 'max': 0.26657257103646287}
+
+Numeric diagnostics (first 5 samples):
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.2285, 'patch_is_p99': 0.5575}
+{'path': 'clip_001.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.2453, 'patch_is_p99': 0.644}
+{'path': 'clip_002.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.2666, 'patch_is_p99': 0.4564}
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.2455, 'patch_is_p99': 0.5181}
+Saved numeric diagnostics JSONL: results/results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'loss': 0.2320951670408249, 'mae': 0.39243441820144653, 'correlation': -0.0012948306975886226}
+{'epoch': 0, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.0, 'eval_samples': 4, 'K': 2}
+
+Training completed!
+  - Best loss: 0.2321
+  - Best correlation: -0.0013
+
+Saved:
+  - LoRA adapters: results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora_adapters/
+  - Embeddings + V-head: results/pipeline_rm_smoke_20251007_132300/rm_ckpt_lora_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.154, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================

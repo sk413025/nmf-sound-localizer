@@ -1,0 +1,63 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 4
+  - Reward range: [-0.32, -0.28]
+  - Reward mean±std: -0.30 ± 0.01
+
+Per‑patch IS (diagnostics) — mean over patches per sample: {'min': 0.2842113508329708, 'median': 0.3009089626257821, 'mean': 0.30147731103966025, 'p95': 0.31708955617216067, 'p99': 0.31932188569371694, 'max': 0.319879968074106}
+
+Numeric diagnostics (first 5 samples):
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.2842, 'patch_is_p99': 0.7503}
+{'path': 'clip_001.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.3013, 'patch_is_p99': 0.8722}
+{'path': 'clip_002.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.3199, 'patch_is_p99': 0.5405}
+{'path': 'clip_000.npy', 'F': 346, 'N': 286, 'patch_is_mean': 0.3005, 'patch_is_p99': 0.6067}
+Saved numeric diagnostics JSONL: results/rm_smoke/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'loss': 0.2738572955131531, 'mae': 0.4293351471424103, 'correlation': 0.0043375068344175816}
+{'epoch': 0, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.0, 'eval_samples': 4, 'K': 2}
+
+Training completed!
+  - Best loss: 0.2739
+  - Best correlation: 0.0043
+
+Saved:
+  - LoRA adapters: rm_smoke_adapters/
+  - Embeddings + V-head: rm_smoke_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.154, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================

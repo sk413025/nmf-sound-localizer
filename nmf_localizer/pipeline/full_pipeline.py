@@ -57,15 +57,17 @@ class NMFLocalizationPipeline:
         self, 
         data_root: Union[str, Path],
         output_dir: Optional[Union[str, Path]] = None,
-        force_reprocess: bool = False
+        force_reprocess: bool = False,
+        speech_data_root: Optional[Union[str, Path]] = None
     ) -> DataPack:
         """
         Prepare complete dataset for NMF localization.
         
         Args:
-            data_root: Root directory containing angle folders
+            data_root: Root directory containing angle folders (for TF estimation)
             output_dir: Optional output directory to save processed data
             force_reprocess: Whether to force reprocessing even if data exists
+            speech_data_root: Optional separate path for speech data
             
         Returns:
             Processed data pack
@@ -90,7 +92,9 @@ class NMFLocalizationPipeline:
         
         # Process complete dataset
         self.data_pack = self.data_processor.process_full_dataset(
-            str(data_root), output_dir=output_dir
+            str(data_root), 
+            output_dir=output_dir,
+            speech_data_root=str(speech_data_root) if speech_data_root else None
         )
         
         processing_time = time.time() - start_time
@@ -234,7 +238,7 @@ class NMFLocalizationPipeline:
         data_pack = data_pack or self.data_pack
         
         # Get USM model
-        W = usm_model or self.usm_model
+        W = usm_model if usm_model is not None else self.usm_model
         if W is None:
             raise ValueError("No USM model available. Train USM first.")
         
@@ -333,14 +337,21 @@ class NMFLocalizationPipeline:
         n_sources: int = 1,
         test_multiple_betas: bool = False,
         force_reprocess: bool = False,
-        save_models: bool = True
+        save_models: bool = True,
+        tf_path: Optional[Union[str, Path]] = None,
+        speech_data_root: Optional[Union[str, Path]] = None,
+        test_data_root: Optional[Union[str, Path]] = None,
+        angle_min: Optional[float] = None,
+        angle_max: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Run complete NMF localization experiment.
         
         Args:
-            data_root: Root directory containing data
+            data_root: Root directory containing data (for TF estimation if tf_path not provided)
             output_dir: Output directory for results
+            tf_path: Optional path to pre-computed transfer functions
+            speech_data_root: Optional separate path for speech data (USM training and testing)
             n_sources: Number of sources to localize
             test_multiple_betas: Whether to test multiple beta values for USM
             force_reprocess: Whether to force data reprocessing
@@ -371,11 +382,51 @@ class NMFLocalizationPipeline:
             logger.info("\n--- STAGE 1: DATA PREPARATION ---")
             stage_start = time.time()
             
-            self.prepare_data(
-                data_root, 
-                output_dir=output_path / "processed_data",
-                force_reprocess=force_reprocess
-            )
+            # Prepare data (skip if using pre-computed transfer functions)
+            if tf_path is None:
+                self.prepare_data(
+                    data_root, 
+                    output_dir=output_path / "processed_data",
+                    force_reprocess=force_reprocess,
+                    speech_data_root=speech_data_root
+                )
+            else:
+                # Use speech data only for USM training and testing
+                if speech_data_root is None:
+                    raise ValueError("speech_data_root is required when using pre-computed transfer functions")
+
+                logger.info(f"Using pre-computed transfer functions from: {tf_path}")
+                logger.info(f"Processing speech data from: {speech_data_root}")
+
+                # Build a minimal DataPack without estimating transfer functions
+                self.data_pack = DataPack()
+                self.data_pack.config = self.config
+
+                # Prepare band-limited speech data (W training)
+                speaker_data = self.data_processor.prepare_speech_data(Path(speech_data_root))
+                self.data_pack.speaker_data = speaker_data
+
+                # Load test data using config-consistent STFT and band mask
+                # Use test_data_root if provided, otherwise fallback to speech_data_root
+                actual_test_root = test_data_root if test_data_root else speech_data_root
+                test_data = self.data_processor.load_real_angle_test_data(
+                    str(actual_test_root), self.config.n_test_examples
+                )
+                # Optional: filter test data by angle range
+                if angle_min is not None and angle_max is not None:
+                    filtered = []
+                    for ex in test_data:
+                        dirs = ex.get('directions', [])
+                        if not dirs:
+                            continue
+                        a = float(dirs[0])
+                        if angle_min <= a <= angle_max:
+                            filtered.append(ex)
+                    if not filtered:
+                        raise ValueError(f"No test examples within requested angle range {angle_min}-{angle_max}°")
+                    logger.info(f"Filtered test data by angle: {len(filtered)}/{len(test_data)} within {angle_min}-{angle_max}°")
+                    test_data = filtered
+                self.data_pack.test_data = test_data
             
             experiment_results['stages']['data_preparation'] = {
                 'duration': time.time() - stage_start,
@@ -405,7 +456,29 @@ class NMFLocalizationPipeline:
             logger.info("\n--- STAGE 3: TRANSFER FUNCTION PROCESSING ---")
             stage_start = time.time()
             
-            self.load_transfer_functions()
+            if tf_path is not None:
+                # Load pre-computed transfer functions
+                self.load_transfer_functions(tf_path=tf_path)
+            else:
+                # Use transfer functions from data pack
+                self.load_transfer_functions()
+
+            # Optional: filter directions by angle range (H and angles)
+            if angle_min is not None and angle_max is not None:
+                H = self.data_pack.transfer_functions
+                angles = self.data_pack.angles
+                if H is None or angles is None:
+                    raise ValueError("Transfer functions or angles not loaded")
+                ang_cpu = angles.detach().cpu()
+                mask = (ang_cpu >= angle_min) & (ang_cpu <= angle_max)
+                n_keep = int(mask.sum().item())
+                if n_keep == 0:
+                    raise ValueError(f"No directions within requested range {angle_min}-{angle_max}°")
+                H_filt = H[:, mask]
+                angles_filt = angles[mask]
+                self.data_pack.transfer_functions = H_filt
+                self.data_pack.angles = angles_filt
+                logger.info(f"Filtered directions to {n_keep} within {angle_min}-{angle_max}° for localization")
             
             experiment_results['stages']['transfer_function_processing'] = {
                 'duration': time.time() - stage_start,

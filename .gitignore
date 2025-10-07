@@ -131,15 +131,11 @@ dmypy.json
 
 # Project-specific ignores
 outputs/
-*.pth
-*.pt
-*.pkl
-*.npy
-*.wav
-*.png
+# *.wav  # Now tracked by Git LFS
 *.jpg
 *.pdf
 
+# Generated reconstruction dumps (do not track)
 # IDE
 .vscode/
 .idea/
@@ -155,6 +151,8 @@ datasets/
 root/
 experiments/
 results/
+# Allow tests/data/ for test audio files
+!tests/data/
 
 # Temporary files
 tmp/

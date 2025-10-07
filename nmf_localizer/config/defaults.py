@@ -2,7 +2,7 @@
 Default configuration and data structures for NMF localization.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import List, Dict, Optional, Any
 import torch
 from pathlib import Path
@@ -25,28 +25,32 @@ class NMFConfig:
     
     # NMF parameters
     beta: float = 0.0  # 0: IS divergence, 1: KL, 2: Euclidean
-    lambda_group: float = 20.0  # Group sparsity weight
-    gamma_sparse: float = 1.0   # Sparsity weight
+    lambda_group: float = 5.0   # Group sparsity weight (reduced for stability)
+    gamma_sparse: float = 0.1   # Sparsity weight (reduced for stability)
     max_iter: int = 100
     tolerance: float = 1e-4
     epsilon: float = 1e-8
-    normalize_blocks: bool = False
+    # IS-divergence safety parameters
+    transfer_epsilon: float = 1e-5      # Minimum value for transfer functions (A matrix regularization)
+    reconstruction_epsilon: float = 1e-5 # Minimum value for Y_hat reconstruction (safe X updates)
+    gradient_clip_max: float = 1e3      # Maximum gradient ratio for numerical stability
     
     # USM parameters
     n_atoms_per_speaker: int = 50
     usm_sparsity_weight: float = 0.1
     usm_max_iter: int = 200
     
-    # Transfer function estimation
-    tf_method: str = 'improved'  # 'simple' or 'improved'
+    # Transfer function estimation (uses STFT-unified approach only)
     n_files_per_angle: int = 50
-    use_90deg_reference: bool = True
-    apply_contrast_enhancement: bool = True
+    
     
     # Data preparation
     n_speakers: int = 10
     n_files_per_speaker: int = 20
     use_90deg_only: bool = True  # For USM training consistency
+    
+    # Separate dataset support
+    speech_data_root: Optional[str] = None  # Path to speech dataset for USM training and testing
     
     # Evaluation parameters
     tolerance_degrees: float = 10.0
@@ -61,8 +65,10 @@ class NMFConfig:
     
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> 'NMFConfig':
-        """Create config from dictionary."""
-        return cls(**config_dict)
+        """Create config from dictionary, ignoring unknown/deprecated keys."""
+        valid_keys = {f.name for f in fields(cls)}
+        filtered = {k: v for k, v in (config_dict or {}).items() if k in valid_keys}
+        return cls(**filtered)
 
 
 class DataPack:

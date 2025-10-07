@@ -56,7 +56,6 @@ def main():
     
     # Fixed parameters (applied to all experiments)
     runner.set_fixed_parameter("gamma_sparse", 1.0)
-    runner.set_fixed_parameter("normalize_blocks", False)
     
     print(f"Total experiments: {len(runner.generate_experiment_configs())}")
     

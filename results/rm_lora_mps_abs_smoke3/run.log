@@ -1,0 +1,60 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 8
+  - Reward range: [66221789606012.39, 93819643035382.20]
+  - Reward mean±std: 80411161460514.86 ± 8296467799629.76
+
+IS divergence (absolute) stats:
+  - prev (before any selection): {'min': 66221789675520.0, 'median': 78071688331264.0, 'mean': 80411161526272.0, 'p95': 92185082567065.6, 'p99': 93492730994360.31, 'max': 93819643101184.0}
+  - final (after K selections): {'min': 108300.6875, 'median': 126118.46484375, 'mean': 122737.6591796875, 'p95': 132976.7625, 'p99': 133718.9025, 'max': 133904.4375}
+  - per-step ΔIS abs: {'min': -45046.953125, 'median': -28757.3359375, 'mean': 26803720486838.28, 'p95': 88716454395904.0, 'p99': 92745503321620.48, 'max': 93819643101184.0}
+  - per-step ΔIS rel: {'min': -0.7955178618431091, 'median': -0.32713721692562103, 'mean': 0.013160095860560736, 'p95': 1.0, 'p99': 1.0, 'max': 1.0} (clipped by eps when prev≈0)
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'loss': 6.53478594657098e+27, 'mae': 80411166244864.0, 'correlation': -0.0037725213915109634}
+
+Training completed!
+  - Best loss: 6534785946570979981075152896.0000
+  - Best correlation: -0.0038
+
+Saved:
+  - LoRA adapters: rm_ckpt_lora_adapters/
+  - Embeddings + V-head: rm_ckpt_lora_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.154, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================
+

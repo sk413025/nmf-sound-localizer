@@ -204,58 +204,7 @@ class TransferFunctionProcessor:
         else:
             raise ValueError(f"Unknown normalization method: {method}")
     
-    def enhance_contrast(
-        self,
-        H: torch.Tensor,
-        reference_idx: Optional[int] = None,
-        enhancement_factor: float = 2.0
-    ) -> torch.Tensor:
-        """
-        Apply per-frequency contrast enhancement.
-        
-        Args:
-            H: Input transfer functions (F, D)
-            reference_idx: Reference direction index
-            enhancement_factor: Enhancement factor
-            
-        Returns:
-            Enhanced transfer functions
-        """
-        if not self.config.apply_contrast_enhancement:
-            logger.info("Contrast enhancement disabled in config")
-            return H
-        
-        H_enhanced = H.clone()
-        
-        for f_idx in range(H_enhanced.shape[0]):
-            freq_values = H_enhanced[f_idx, :]
-            min_val = freq_values.min()
-            max_val = freq_values.max()
-            range_val = max_val - min_val
-            
-            if range_val > 1e-6:  # Only enhance if there's meaningful variation
-                if reference_idx is not None:
-                    # Enhanced around reference
-                    ref_val = H_enhanced[f_idx, reference_idx]
-                    centered = freq_values - ref_val
-                    enhanced_centered = centered * enhancement_factor
-                    H_enhanced[f_idx, :] = enhanced_centered + ref_val
-                    # Ensure non-negative
-                    H_enhanced[f_idx, :] = torch.clamp(H_enhanced[f_idx, :], min=0.01)
-                else:
-                    # Global enhancement
-                    normalized = (freq_values - min_val) / range_val
-                    enhanced = normalized * enhancement_factor
-                    H_enhanced[f_idx, :] = enhanced * range_val + min_val
-        
-        # Log enhancement effect
-        original_range = torch.mean(torch.max(H, dim=1)[0] - torch.min(H, dim=1)[0])
-        enhanced_range = torch.mean(torch.max(H_enhanced, dim=1)[0] - torch.min(H_enhanced, dim=1)[0])
-        
-        logger.info(f"Contrast enhancement: mean range {original_range:.4f} → {enhanced_range:.4f} "
-                   f"(factor: {enhanced_range/original_range:.2f})")
-        
-        return H_enhanced
+    # Contrast enhancement API removed.
     
     def analyze_separability(self, H: torch.Tensor) -> Dict[str, float]:
         """
@@ -364,28 +313,8 @@ class TransferFunctionProcessor:
             }
             processing_info['steps_applied'].append('frequency_limiting')
         
-        # 2. Apply reference normalization if reference angle is available
-        try:
-            ref_idx = self.get_direction_index(angles, reference_angle)
-            H_processed = self.normalize_transfer_functions(
-                H_processed, method='reference', reference_idx=ref_idx
-            )
-            processing_info['reference_normalization'] = {
-                'reference_angle': reference_angle,
-                'reference_index': ref_idx
-            }
-            processing_info['steps_applied'].append('reference_normalization')
-        except Exception as e:
-            logger.warning(f"Reference normalization failed: {e}")
-            # Fall back to per-frequency normalization
-            H_processed = self.normalize_transfer_functions(H_processed, method='per_freq')
-            processing_info['steps_applied'].append('per_freq_normalization')
-        
-        # 3. Apply contrast enhancement
-        if self.config.apply_contrast_enhancement:
-            ref_idx = processing_info.get('reference_normalization', {}).get('reference_index')
-            H_processed = self.enhance_contrast(H_processed, reference_idx=ref_idx)
-            processing_info['steps_applied'].append('contrast_enhancement')
+        # 2. No normalization or contrast enhancement: preserve absolute scale end-to-end
+        processing_info['normalization'] = 'none'
         
         # 4. Analyze final separability
         separability = self.analyze_separability(H_processed)

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Separate Datasets Support**: Major feature to eliminate data leakage
+  - Standalone script `scripts/estimate_transfer_functions.py` for pre-computing transfer functions from noise data
+  - New `speech_data_root` parameter in NMFConfig for separate speech data path
+  - Enhanced DataProcessor to support separate datasets for TF estimation vs. localization testing
+  - Updated Pipeline to accept pre-computed transfer functions via `tf_path` parameter
+  - Complete example in `examples/separate_datasets_example.py`
+- **Flexible Angle Interval Support**: Full support for any angle intervals (5°, 10°, 18°, etc.)
+- **Scientific Methodology**: Proper train/test separation for reliable performance evaluation
+
+### Changed
+- Enhanced `run_full_experiment()` method with new parameters:
+  - `tf_path`: Optional path to pre-computed transfer functions
+  - `speech_data_root`: Optional separate speech data directory
+- Updated documentation to reflect separate datasets workflow
+- Improved examples showcasing both traditional and separate dataset approaches
+
+### Fixed
+- Data leakage issues in evaluation methodology
+- Hardcoded angle interval assumptions
+
 ## [1.0.0] - 2024-08-12
 
 ### Added

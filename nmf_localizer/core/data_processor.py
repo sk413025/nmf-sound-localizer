@@ -7,12 +7,14 @@ import numpy as np
 import torch
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Any
-from tqdm import tqdm
+# from tqdm import tqdm  # Temporarily disabled for testing
 import logging
+import warnings
 from scipy import signal
 
 from ..config.defaults import NMFConfig, DataPack
 from ..utils.audio_utils import AudioProcessor
+from .stft_unified_processor import STFTUnifiedProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -42,191 +44,47 @@ class DataProcessor:
         return data
     
     def estimate_transfer_functions(
-        self, 
-        root_path: Path,
-        method: str = 'improved'
+        self,
+        original_root: Path,
+        box_root: Optional[Path] = None,
+        *,
+        method: Optional[str] = None,
+        time_pooling: str = 'linear'
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Path], Dict[str, Any]]:
         """
-        Estimate transfer functions from angle folders.
+        Estimate transfer functions using STFT-unified approach.
+        
+        This method uses consistent STFT processing to fix the previous
+        Welch vs STFT scale/units mismatch issue.
         
         Args:
-            root_path: Path to root directory
-            method: 'simple' (original) or 'improved' (Welch method)
+            original_root: Path to original data (X), or unified data root
+            box_root: Optional path to box recordings (Y). If None, assumes
+                     original_root contains both X and Y data (unified structure)
         
         Returns:
-            H: Transfer functions (linear or normalized)
+            H: Transfer functions [freq × directions] (magnitude-based units)
             angles: Angle array
             angle_folders: List of angle folders
-            metadata: Additional information (freqs, etc.)
+            metadata: Additional information (freqs, coherence stats, etc.)
         """
-        # Get all angle folders
-        angle_folders = sorted([d for d in root_path.iterdir() 
-                               if d.is_dir() and d.name.startswith('angle_')])
-        logger.info(f"Found {len(angle_folders)} angle folders")
-        
-        # Map angle names to degrees
-        angle_mapping = {}
-        for folder in angle_folders:
-            angle_str = folder.name.replace('angle_', '')
-            angle_mapping[folder.name] = int(angle_str)
-        
-        # Sort by angle value
-        angle_folders = sorted(angle_folders, key=lambda x: angle_mapping[x.name])
-        n_directions = len(angle_folders)
-        
-        # Load sample file to get dimensions
-        sample_files = list(angle_folders[0].glob('*.npy'))
-        if not sample_files:
-            raise ValueError(f"No .npy files found in {angle_folders[0]}")
-        
-        sample_data = np.load(sample_files[0])
-        logger.info(f"Sample data shape: {sample_data.shape}")
-        logger.info(f"Number of angle folders: {n_directions}")
-        
-        # Check if data is waveform or spectrogram
-        if sample_data.ndim == 1:
-            is_waveform = True
-            if method == 'improved':
-                n_freq = 1025  # Default for Welch with nperseg=2048
-            else:
-                n_freq = 513   # Default for STFT with n_fft=1024
+        # Handle optional box_root parameter
+        if box_root is None:
+            box_root = original_root
+            logger.info(f"Using unified data root for both X and Y: {original_root}")
         else:
-            # Assume data is already spectrograms (F x T)
-            n_freq = sample_data.shape[0]
-            is_waveform = False
-            method = 'simple'  # Force simple method for pre-computed spectrograms
+            logger.info(f"Using separate paths - X: {original_root}, Y: {box_root}")
         
-        # Initialize transfer functions
-        all_magnitudes_linear = []
-        freqs = None
-        
-        logger.info(f"Estimating transfer functions using {method} method...")
-        logger.info(f"Expected freq bins: {n_freq}")
-        
-        for i, folder in enumerate(tqdm(angle_folders)):
-            # Load files from this angle
-            data = self.load_npy_files(folder, max_files=self.config.n_files_per_angle)
-            
-            if not data:
-                logger.warning(f"No data found for {folder.name}")
-                continue
-                
-            # Compute magnitude response for each file
-            angle_magnitudes_linear = []
-            
-            for waveform in data:
-                if is_waveform:
-                    if method == 'improved':
-                        # Use STFT method to preserve temporal information
-                        f, times, stft, magnitude = self.audio_processor.compute_stft_spectrogram(
-                            waveform, fs=self.config.sample_rate, 
-                            nperseg=self.config.n_fft, window=self.config.window
-                        )
-                        # Average over time to get transfer function estimate
-                        avg_magnitude = np.mean(magnitude, axis=1)
-                    else:
-                        # Original method
-                        f, avg_magnitude = self.audio_processor.compute_magnitude_response(
-                            waveform, fs=self.config.sample_rate, method='spectrogram'
-                        )
-                        
-                    if freqs is None:
-                        freqs = f
-                        logger.info(f"Frequency array shape: {len(freqs)}, range: {freqs[0]:.1f} - {freqs[-1]:.1f} Hz")
-                        
-                    if i == 0 and len(angle_magnitudes_linear) == 0:
-                        logger.info(f"Magnitude response shape for angle {i}: {len(avg_magnitude)}")
-                        
-                    angle_magnitudes_linear.append(avg_magnitude)
-                else:
-                    # Already a spectrogram - use simple averaging
-                    if np.iscomplexobj(waveform):
-                        waveform = np.abs(waveform)
-                    if waveform.ndim > 1:
-                        avg_spec = np.mean(waveform, axis=1)
-                    else:
-                        avg_spec = waveform
-                    angle_magnitudes_linear.append(avg_spec)
-            
-            # Average in linear domain
-            avg_linear = np.mean(angle_magnitudes_linear, axis=0)
-            all_magnitudes_linear.append(avg_linear)
-        
-        # Convert to tensors
-        H_linear = torch.tensor(np.array(all_magnitudes_linear).T, dtype=torch.float32)
-        logger.info(f"Raw H shape - linear: {H_linear.shape}")
-        
-        # Apply processing based on method
-        if method == 'improved':
-            H_linear = self._apply_improved_processing(H_linear, angle_mapping, angle_folders, freqs)
-        else:
-            # Simple normalization: global normalization
-            H_max = H_linear.max()
-            H_linear = H_linear / H_max
-            logger.info(f"H max value before normalization: {H_max:.4f}")
-        
-        # Create angle array (in degrees)
-        angles = torch.tensor([angle_mapping[f.name] for f in angle_folders], dtype=torch.float32)
-        logger.info(f"Angles array: {angles.tolist()}")
-        
-        # Create metadata
-        metadata = {
-            'method': method,
-            'freqs': freqs,
-            'n_files_per_angle': self.config.n_files_per_angle
-        }
-        
-        return H_linear, angles, angle_folders, metadata
+        # Use STFT-unified approach (the only correct method)
+        logger.info("Using STFT-unified transfer function estimation")
+        stft_processor = STFTUnifiedProcessor(self.config)
+        # 'method' is accepted for backward API compatibility but ignored here
+        chosen_method = 'stft_unified'
+        return stft_processor.estimate_transfer_functions_stft(
+            Path(original_root), Path(box_root), method=chosen_method, time_pooling=time_pooling
+        )
     
-    def _apply_improved_processing(
-        self, 
-        H_linear: torch.Tensor,
-        angle_mapping: Dict[str, int],
-        angle_folders: List[Path],
-        freqs: np.ndarray
-    ) -> torch.Tensor:
-        """Apply improved processing with 90-degree reference and frequency filtering."""
-        
-        # Find 90-degree reference
-        angles_degrees = [angle_mapping[folder.name] for folder in angle_folders]
-        logger.info(f"Available angles: {angles_degrees}")
-        
-        if 90 in angles_degrees:
-            ref_angle_idx = angles_degrees.index(90)
-            reference_spectrum = H_linear[:, ref_angle_idx:ref_angle_idx+1]
-            logger.info(f"Using angle 90° (index {ref_angle_idx}) as reference")
-            
-            # Compute relative transfer functions
-            H_relative = H_linear / (reference_spectrum + 1e-10)
-            
-            # Apply contrast enhancement if enabled
-            if self.config.apply_contrast_enhancement:
-                logger.info("Applying per-frequency contrast enhancement...")
-                H_enhanced = self.audio_processor.enhance_contrast(
-                    H_relative, reference_idx=ref_angle_idx, enhancement_factor=2.0
-                )
-                
-                # Log enhancement effect
-                original_range = torch.mean(torch.max(H_relative, dim=1)[0] - torch.min(H_relative, dim=1)[0])
-                enhanced_range = torch.mean(torch.max(H_enhanced, dim=1)[0] - torch.min(H_enhanced, dim=1)[0])
-                logger.info(f"Contrast enhancement: mean range {original_range:.4f} → {enhanced_range:.4f}")
-                
-                H_linear = H_enhanced
-            else:
-                H_linear = H_relative
-                
-        else:
-            logger.warning("90° angle not found, falling back to per-frequency max normalization")
-            H_linear = self.audio_processor.normalize_spectrogram(H_linear, method='per_freq')
-        
-        # Apply frequency band limit
-        if freqs is not None and self.config.freq_min and self.config.freq_max:
-            H_linear, freqs_limited = self.audio_processor.apply_frequency_filter(
-                H_linear, freqs, self.config.freq_min, self.config.freq_max
-            )
-            logger.info(f"Applied {self.config.freq_min}-{self.config.freq_max}Hz band limit: {H_linear.shape[0]} freq bins")
-        
-        return H_linear
+    # Legacy improved-processing function (normalization/contrast) removed.
     
     def prepare_speech_data(
         self, 
@@ -292,15 +150,19 @@ class DataProcessor:
                         waveform, fs=self.config.sample_rate, 
                         nperseg=self.config.n_fft, window=self.config.window
                     )
+                    # Apply frequency band mask consistent with config
+                    if self.config.freq_min is not None and self.config.freq_max is not None:
+                        mask = (freqs_speech >= self.config.freq_min) & (freqs_speech <= self.config.freq_max)
+                        magnitude = magnitude[mask, :]
                     specs.append(magnitude)
                     
                     if len(specs) == 1:  # Log first spectrogram
-                        logger.info(f"First real spectrogram shape: {magnitude.shape}")
+                        logger.info(f"First real spectrogram shape (band-limited): {magnitude.shape}")
                         logger.info(f"Time frames: {len(times)}, duration: {times[-1]:.2f}s")
                 else:
                     if np.iscomplexobj(waveform):
                         waveform = np.abs(waveform)
-                    specs.append(waveform)
+                        specs.append(waveform)
             
             # Concatenate all 90-degree data along time axis
             concatenated = np.concatenate(specs, axis=1)
@@ -316,7 +178,7 @@ class DataProcessor:
             # Original behavior: different folders as different speakers
             logger.info(f"Loading speech data from {len(speaker_folders)} folders...")
             
-            for folder in tqdm(speaker_folders):
+            for folder in speaker_folders:
                 # Load files
                 files = self.load_npy_files(folder, max_files=self.config.n_files_per_speaker)
                 
@@ -331,6 +193,9 @@ class DataProcessor:
                             waveform, fs=self.config.sample_rate, 
                             nperseg=self.config.n_fft, window=self.config.window
                         )
+                        if self.config.freq_min is not None and self.config.freq_max is not None:
+                            mask = (freqs_speech >= self.config.freq_min) & (freqs_speech <= self.config.freq_max)
+                            magnitude = magnitude[mask, :]
                         specs.append(magnitude)
                     else:
                         if np.iscomplexobj(waveform):
@@ -425,28 +290,21 @@ class DataProcessor:
                         # Take first channel if stereo
                         audio_data = audio_data[0]
                     
-                    # Convert to spectrogram using STFT
-                    f, t, Zxx = signal.stft(audio_data, fs=self.config.sample_rate, 
-                                          nperseg=512, noverlap=256)
+                    # Convert to spectrogram using STFT consistent with config
+                    f, t, Zxx = signal.stft(
+                        audio_data,
+                        fs=self.config.sample_rate,
+                        nperseg=self.config.n_fft,
+                        noverlap=self.config.n_fft - self.config.hop_length,
+                        window=self.config.window
+                    )
                     magnitude_spec = np.abs(Zxx)
-                    
+                    # Apply frequency band-limiting using freqs from STFT
+                    mask = (f >= (self.config.freq_min or 0.0)) & (f <= (self.config.freq_max or f.max()))
+                    magnitude_spec = magnitude_spec[mask, :]
+
                     # Convert to torch tensor
                     mixture_tensor = torch.from_numpy(magnitude_spec).float().to(device)
-                    
-                    # Apply frequency filtering to match transfer function dimensions (129 bins for 500-1500Hz)
-                    if mixture_tensor.shape[0] > 129:
-                        freq_start = max(0, int(500 * 512 / self.config.sample_rate))
-                        freq_end = min(mixture_tensor.shape[0], freq_start + 129)
-                        mixture_tensor = mixture_tensor[freq_start:freq_end, :]
-                    
-                    # Ensure we have exactly 129 frequency bins
-                    if mixture_tensor.shape[0] != 129:
-                        if mixture_tensor.shape[0] < 129:
-                            padding = torch.zeros(129 - mixture_tensor.shape[0], 
-                                                mixture_tensor.shape[1], device=device)
-                            mixture_tensor = torch.cat([mixture_tensor, padding], dim=0)
-                        else:
-                            mixture_tensor = mixture_tensor[:129, :]
                     
                     test_data.append({
                         'mixture': mixture_tensor,
@@ -478,14 +336,16 @@ class DataProcessor:
     def process_full_dataset(
         self, 
         data_root: str,
-        output_dir: Optional[str] = None
+        output_dir: Optional[str] = None,
+        speech_data_root: Optional[str] = None
     ) -> DataPack:
         """
         Process complete dataset for NMF localization.
         
         Args:
-            data_root: Root data directory
+            data_root: Root data directory (for transfer function estimation)
             output_dir: Optional output directory to save results
+            speech_data_root: Optional separate path for speech data (USM training and testing)
             
         Returns:
             Complete DataPack with all processed data
@@ -497,6 +357,16 @@ class DataProcessor:
         
         logger.info(f"Processing dataset from: {root_path}")
         
+        # Determine speech data path
+        if speech_data_root is not None:
+            speech_path = Path(speech_data_root)
+            if not speech_path.exists():
+                raise FileNotFoundError(f"Speech data root not found: {speech_path}")
+            logger.info(f"Using separate speech data from: {speech_path}")
+        else:
+            speech_path = root_path
+            logger.info("Using same path for transfer functions and speech data")
+        
         # Create data pack
         data_pack = DataPack()
         data_pack.config = self.config
@@ -504,7 +374,7 @@ class DataProcessor:
         # Estimate transfer functions
         logger.info("Estimating transfer functions...")
         H, angles, angle_folders, tf_metadata = self.estimate_transfer_functions(
-            root_path, method=self.config.tf_method
+            root_path
         )
         
         data_pack.transfer_functions = H
@@ -515,23 +385,33 @@ class DataProcessor:
         # Prepare speech data
         logger.info("Preparing speech data...")
         freq_limit = H.shape[0] if H is not None else None
-        speaker_data = self.prepare_speech_data(root_path, freq_limit=freq_limit)
+        speaker_data = self.prepare_speech_data(speech_path, freq_limit=freq_limit)
         data_pack.speaker_data = speaker_data
         
         # Load test data if available
-        test_data_path = root_path.parent / "root_split" / "test"
-        if test_data_path.exists():
-            logger.info("Loading test data from root_split/test...")
+        # First try speech data split, then fall back to root data split
+        speech_test_path = speech_path.parent / "root_split" / "test" if speech_data_root else None
+        root_test_path = root_path.parent / "root_split" / "test"
+        
+        if speech_test_path and speech_test_path.exists():
+            logger.info(f"Loading test data from speech data split: {speech_test_path}")
             test_data = self.load_real_angle_test_data(
-                str(test_data_path), 
+                str(speech_test_path), 
+                self.config.n_test_examples
+            )
+            data_pack.test_data = test_data
+        elif root_test_path.exists():
+            logger.info(f"Loading test data from root data split: {root_test_path}")
+            test_data = self.load_real_angle_test_data(
+                str(root_test_path), 
                 self.config.n_test_examples
             )
             data_pack.test_data = test_data
         else:
-            # If no separate test data, create test data from main root directory
-            logger.info("No separate test data found. Creating test data from root directory...")
+            # If no separate test data, create test data from speech directory
+            logger.info("No separate test data found. Creating test data from speech data directory...")
             test_data = self.load_real_angle_test_data(
-                str(root_path), 
+                str(speech_path), 
                 min(self.config.n_test_examples, 20)  # Use fewer samples from training data
             )
             data_pack.test_data = test_data
