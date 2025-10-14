@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List, Sequence
 
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
-from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.pre_tokenizers import WhitespaceSplit
 from transformers import PreTrainedTokenizerFast
 
 # Patch grid configuration matches PatchTokenizer defaults (Fp=16, Np=10 on 116x189 spectrogram)
@@ -29,27 +29,95 @@ def _generate_patch_tokens() -> Iterable[str]:
                 yield f"<P_{i}_{j}_{level}>"
 
 
-def _build_vocab(direction_tokens: Sequence[str]) -> List[str]:
+def _generate_nmf_atom_tokens(n_atoms: int = 64) -> Iterable[str]:
+    """Generate NMF atom tokens in format <AT_atom_id:level>."""
+    for atom_id in range(n_atoms):
+        for level in range(_PATCH_LEVELS):
+            yield f"<AT_{atom_id}:{level}>"
+
+
+def _generate_direction_projection_tokens() -> Iterable[str]:
+    """Generate direction projection tokens in format <R_angle:level>.
+    
+    Covers angles 0-180 in 5-degree increments (37 angles total).
+    """
+    for angle in range(0, 181, 5):
+        for level in range(_PATCH_LEVELS):
+            yield f"<R_{angle:03d}:{level}>"
+
+
+def _build_vocab(
+    direction_tokens: Sequence[str],
+    enable_extended: bool = False,
+    n_atoms: int = 64,
+) -> List[str]:
+    """Build vocabulary with optional multi-modal tokens.
+    
+    Args:
+        direction_tokens: Direction tokens <D_angle> from training angles
+        enable_extended: If True, include NMF atom and direction projection tokens
+        n_atoms: Number of NMF atoms (only used if enable_extended=True)
+    
+    Returns:
+        List of all vocabulary tokens
+    """
     vocab: List[str] = []
+    
+    # Special tokens
     vocab.extend([_PAD_TOKEN, _BOS_TOKEN, _EOS_TOKEN, _UNK_TOKEN])
+    
+    # Patch tokens (always included)
     vocab.extend(_generate_patch_tokens())
+    
+    # Extended multi-modal tokens (optional)
+    if enable_extended:
+        # NMF Atom tokens: <AT_atom_id:level>
+        vocab.extend(_generate_nmf_atom_tokens(n_atoms))
+        
+        # Direction Projection tokens: <R_angle:level>
+        vocab.extend(_generate_direction_projection_tokens())
+    
+    # Direction tokens: <D_angle>
     vocab.extend(direction_tokens)
+    
     return vocab
 
 
 def build_patch_tokenizer(
     direction_angles: Sequence[float],
     save_dir: Path | None = None,
+    enable_extended_vocab: bool = False,
+    n_atoms: int = 64,
 ) -> PreTrainedTokenizerFast:
-    """Create (and optionally persist) a WordLevel tokenizer for patch + direction tokens."""
+    """Create (and optionally persist) a WordLevel tokenizer for patch + direction tokens.
+    
+    Args:
+        direction_angles: Sequence of direction angles for <D_angle> tokens
+        save_dir: Optional directory to save tokenizer files
+        enable_extended_vocab: If True, include multi-modal tokens (NMF atoms, direction projections)
+        n_atoms: Number of NMF atoms (only used if enable_extended_vocab=True)
+    
+    Returns:
+        PreTrainedTokenizerFast tokenizer with configured vocabulary
+        
+    Notes:
+        Extended vocabulary adds:
+        - NMF Atom tokens: <AT_atom_id:level> (n_atoms × 16 levels)
+        - Direction Projection tokens: <R_angle:level> (37 angles × 16 levels)
+        Total expansion: ~1,600 tokens (64 atoms × 16 + 37 angles × 16)
+    """
 
     direction_angles = sorted({int(round(angle)) for angle in direction_angles})
     direction_tokens = tuple(f"<D_{angle:03d}>" for angle in direction_angles)
-    vocab_list = _build_vocab(direction_tokens)
+    vocab_list = _build_vocab(
+        direction_tokens,
+        enable_extended=enable_extended_vocab,
+        n_atoms=n_atoms,
+    )
     vocab = {tok: idx for idx, tok in enumerate(vocab_list)}
 
     tokenizer = Tokenizer(WordLevel(vocab=vocab, unk_token=_UNK_TOKEN))
-    tokenizer.pre_tokenizer = Whitespace()
+    tokenizer.pre_tokenizer = WhitespaceSplit()
 
     hf_tokenizer = PreTrainedTokenizerFast(
         tokenizer_object=tokenizer,
