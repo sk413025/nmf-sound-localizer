@@ -1,0 +1,2 @@
+Test root fingerprint: 0fe36c524acc9907510c8d357b4fd8b9
+Content root fingerprint: 5c1dbe8be3e782eef107d26da55208c0
