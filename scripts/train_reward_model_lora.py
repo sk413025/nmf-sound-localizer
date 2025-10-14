@@ -26,6 +26,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, List, Tuple, Sequence
+import subprocess, sys
 
 import numpy as np
 import torch
@@ -267,6 +268,13 @@ def main():
                     help="Angular temperature (deg) for teacher softmax in listwise supervision")
     ap.add_argument("--listwise-tol-deg", type=float, default=10.0,
                     help="Within-tolerance angles receive highest weight (teacher shaping)")
+    # Optional preflight evaluator (detection-only) to gate training
+    ap.add_argument("--preflight", action="store_true", help="Run physics-teacher alignment evaluator and gate training")
+    ap.add_argument("--preflight-max-samples", type=int, default=64)
+    ap.add_argument("--preflight-directions-per-sample", type=int, default=0)
+    ap.add_argument("--preflight-strict-teacher-top1", type=float, default=0.7)
+    ap.add_argument("--preflight-strict-recallK", type=float, default=0.9)
+    ap.add_argument("--preflight-strict-h-top1", type=float, default=0.7)
     args = ap.parse_args()
 
     if not HAS_PEFT:
@@ -316,6 +324,44 @@ def main():
             f"This indicates repeated/ambiguous angles; fix assets or dataset."
         )
     H = H_full[:, col_idx].contiguous()
+
+    # Optional: run detection-only preflight to ensure teacher→DoA alignment and H validity
+    if args.preflight:
+        pf_out = f"{args.out}_preflight"
+        cmd = [
+            sys.executable, "scripts/eval/eval_physics_teacher_alignment.py",
+            "--data-root", args.data_root,
+            "--content-root", args.content_root,
+            "--tf-path", args.tf_path,
+            "--w-path", args.w_path,
+            "--teacher", args.teacher,
+            "--K", str(args.K),
+            "--max-samples", str(args.preflight_max_samples),
+            "--directions-per-sample", str(args.preflight_directions_per_sample),
+            "--eps", str(args.eps),
+            "--strict-teacher-top1", str(args.preflight_strict_teacher_top1),
+            "--strict-recallK", str(args.preflight_strict_recallK),
+            "--strict-h-top1", str(args.preflight_strict_h_top1),
+            "--out", pf_out,
+        ]
+        print("\n[Preflight] Running:", " ".join(cmd))
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        # Echo evaluator output for visibility
+        print(res.stdout)
+        if res.returncode != 0:
+            raise RuntimeError(
+                f"Preflight failed (exit {res.returncode}). See results/{pf_out}/summary.json for details."
+            )
+        # Print concise summary if available
+        try:
+            with open(Path("results")/pf_out/"summary.json", "r") as sf:
+                summary = json.load(sf)
+            print("[Preflight] Teacher alignment:",
+                  f"top1={summary.get('teacher_top1_acc'):.3f}",
+                  f"recall@K={summary.get('teacher_recall_at_K'):.3f}",
+                  f"median_rank={summary.get('teacher_median_rank')}")
+        except Exception:
+            pass
 
     # Load W (USM dictionary) for ŝ estimation
     if args.w_path.endswith('.npz'):
