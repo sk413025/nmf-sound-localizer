@@ -1,0 +1,58 @@
+W1014 17:37:19.451000 26395 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 4
+  - Directions/sample (avg): 16.0
+  - Points total: 0 (~0.0/sample)
+Saved numeric diagnostics JSONL: results/rm_lora_mps_listwise_doa_smoke_run/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'listwise_ce': 2.765566885471344, 'samples': 4}
+{'epoch': 0, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.75, 'eval_samples': 4, 'K': 3}
+
+Training completed!
+
+Saved:
+  - LoRA adapters: rm_lora_mps_listwise_doa_smoke_run_adapters/
+  - Embeddings + V-head: rm_lora_mps_listwise_doa_smoke_run_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.155, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================

@@ -259,9 +259,14 @@ def main():
     
     ap.add_argument("--out", type=str, default="rm_ckpt_lora")
     ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
-    ap.add_argument("--supervision", type=str, choices=["pairwise", "pointwise"], default="pairwise",
-                    help="LTR supervision mode: pairwise BT or pointwise regression")
+    ap.add_argument("--supervision", type=str, choices=["pairwise", "pointwise", "listwise"], default="pairwise",
+                    help="LTR supervision: pairwise BT, pointwise regression, or listwise (DoA-aligned)")
     ap.add_argument("--eps", type=float, default=1e-8, help="Numerical epsilon for IS divergence and clamping")
+    # Listwise options (DoA-aligned)
+    ap.add_argument("--listwise-tau-deg", type=float, default=5.0,
+                    help="Angular temperature (deg) for teacher softmax in listwise supervision")
+    ap.add_argument("--listwise-tol-deg", type=float, default=10.0,
+                    help="Within-tolerance angles receive highest weight (teacher shaping)")
     args = ap.parse_args()
 
     if not HAS_PEFT:
@@ -415,6 +420,7 @@ def main():
 
     pair_rows: List[Dict[str, int]] = []
     point_rows: List[Dict[str, int]] = []
+    list_rows: List[Dict[str, object]] = []
     for si, p in enumerate(prompts):
         Y = cache[p]["Y"].float()
         F, N = Y.shape
@@ -505,7 +511,7 @@ def main():
                     "dir_neg": int(dir_token_ids_all[d_neg]),
                     "patch_len": int(len(patch_ids_list[si])),
                 })
-        else:  # pointwise
+        elif args.supervision == "pointwise":
             for idx_local, d_local in enumerate(d_indices):
                 point_rows.append({
                     "sample_index": si,
@@ -513,6 +519,49 @@ def main():
                     "score": float(scores[idx_local]),
                     "patch_len": int(len(patch_ids_list[si])),
                 })
+        else:  # listwise (DoA-aligned)
+            # Build a DoA-aligned teacher distribution over candidate directions using ground-truth angle
+            # Prefer within-tolerance angles, then decay by angular distance with temperature tau
+            tol = float(args.listwise_tol_deg)
+            tau = float(args.listwise_tau_deg)
+            # Retrieve gt angle_deg via DoADataset: we didn't keep it in cache; recompute by mapping path back
+            # Simpler: parse angle from path folder name angle_XXX
+            try:
+                angle_dir = os.path.basename(os.path.dirname(y_src))
+                gt_angle = int(angle_dir.split('_')[1])
+            except Exception:
+                raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
+            # Get degree for each candidate token id
+            cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
+            cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
+            cand_angles: List[int] = []
+            for tok in cand_tokens:
+                try:
+                    deg = int(tok.strip('<>').split('_')[1])
+                except Exception:
+                    raise RuntimeError(f"Invalid direction token format: {tok}")
+                cand_angles.append(deg)
+            def circ_dist(a, b):
+                d = abs(a - b) % 360
+                return min(d, 360 - d)
+            weights = []
+            for a in cand_angles:
+                d = circ_dist(a, gt_angle)
+                # inside tolerance: give max weight 1.0; else soft decay exp(-d/tau)
+                w = 1.0 if d <= tol else np.exp(-d / max(tau, 1e-6))
+                weights.append(w)
+            w_arr = np.asarray(weights, dtype=float)
+            if not np.isfinite(w_arr).all() or np.all(w_arr <= 0):
+                raise RuntimeError("Listwise teacher produced invalid weights")
+            P = (w_arr / np.sum(w_arr)).astype(float).tolist()
+            list_rows.append({
+                "sample_index": si,
+                "cand_ids": cand_token_ids,
+                "cand_angles": cand_angles,
+                "teacher_P": P,
+                "patch_len": int(len(patch_ids_list[si])),
+                "gt_angle": int(gt_angle),
+            })
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if (args.supervision == "pairwise" and 'pairs' in locals() and pairs) else np.array([0.0])
         # Signal stats and baseline_k=2
@@ -661,7 +710,7 @@ def main():
                 denom += len(batch)
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "bt_pair_loss": float(avg_loss), "pairs": int(denom)})
-        else:  # pointwise
+        elif args.supervision == "pointwise":
             for batch in _iter_batches(point_rows, args.batch_size):
                 # Build sequences and targets
                 seqs: List[List[int]] = []
@@ -701,6 +750,44 @@ def main():
                 denom += len(batch)
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "point_mse": float(avg_loss), "points": int(denom)})
+        else:  # listwise (DoA-aligned)
+            # Cross-entropy between teacher P and RM softmax over candidate directions per sample
+            ce = 0.0
+            for row in list_rows:
+                si = int(row["sample_index"])
+                patch_ids = patch_ids_list[si]
+                cand_ids = row["cand_ids"]
+                teacher_P = torch.tensor(row["teacher_P"], dtype=torch.float32, device=device)
+                seqs = [[tokenizer.bos_token_id, int(cid), *patch_ids] for cid in cand_ids]
+                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+                attn = (inp != tokenizer.pad_token_id).to(device)
+                out = rm_model.pretrained_model(
+                    input_ids=inp,
+                    attention_mask=attn,
+                    output_hidden_states=True,
+                    return_dict=True,
+                )
+                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
+                preds: List[torch.Tensor] = []
+                for r in range(vals.size(0)):
+                    seqlen = int(attn[r].sum().item())
+                    plen = len(patch_ids)
+                    if plen == 0:
+                        preds.append(vals[r, seqlen-1:seqlen].mean())
+                    else:
+                        preds.append(vals[r, seqlen-plen:seqlen].mean())
+                logits = torch.stack(preds, dim=0)
+                Q = torch.softmax(logits, dim=0)
+                loss = torch.sum(-teacher_P * torch.log(torch.clamp(Q, min=1e-12)))
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
+                optimizer.step()
+                total_loss += float(loss.item())
+                ce += float(loss.item())
+                denom += 1
+            avg_loss = total_loss / max(1, denom)
+            print({"epoch": epoch, "listwise_ce": float(avg_loss), "samples": int(denom)})
 
         # Evaluation: directions-first Top-1 and recall@K
         do_eval = (args.eval_every > 0) and (((epoch + 1) % args.eval_every == 0) or (epoch == args.rm_epochs - 1))
