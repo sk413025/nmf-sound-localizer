@@ -243,7 +243,9 @@ class DirectionProjectionTokenizer:
                 level = int(np.clip(normalized * (self.n_levels - 1), 0, self.n_levels - 1))
             
             angle = self.angles[dir_idx]
-            tokens.append(f"<R_{angle:03d}:{level}>")
+            # Convert to int (handle both tensor and numpy/python types)
+            angle_int = int(angle.item() if hasattr(angle, 'item') else angle)
+            tokens.append(f"<R_{angle_int:03d}:{level}>")
         
         logger.debug(
             "DirectionProjectionTokenizer: Y shape=%s, score range=[%.4f, %.4f], emitted %d tokens",
