@@ -42,15 +42,90 @@ def _discover_angles(root: str) -> List[int]:
 
 
 def _prepare_prompts(args, direction_angles: List[int]) -> List[str]:
-    ds = DoADataset(args.data_root, direction_angles, fs=args.sample_rate, n_fft=args.n_fft, freq_min=args.freq_min, freq_max=args.freq_max)
-    dl = create_dataloader(ds, batch_size=1, shuffle=False)
-    tok = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
-    prompts: List[str] = []
-    for batch in dl:
-        Y_np = batch["Y"].squeeze(0).numpy()
-        prompts.append(" ".join(tok(Y_np)))
-        if args.max_samples and len(prompts) >= args.max_samples:
-            break
+    # Check if multi-modal mode is enabled
+    if args.use_multi_modal:
+        # Multi-modal mode: use DoAICLDataset with prompt builder
+        from doa_rl.data import DoAICLDataset
+        from doa_rl.features.tokenizers_extended import (
+            NMFAtomTokenizer,
+            DirectionProjectionTokenizer,
+        )
+        from doa_rl.features.prompt_builder import (
+            MultiModalPromptBuilder,
+            PromptConfig,
+        )
+        from doa_rl.assets import load_H
+        
+        # Load W matrix
+        W_data = torch.load(args.w_path, map_location="cpu")
+        W = W_data["W"].numpy()
+        print(f"  ✓ Multi-modal: W matrix loaded {W.shape}")
+        
+        # Load H matrix
+        H_data, h_angles = load_H(args.tf_path)
+        H = H_data.cpu().numpy()
+        h_angles_list = h_angles.cpu().numpy().astype(int).tolist() if torch.is_tensor(h_angles) else list(h_angles)
+        print(f"  ✓ Multi-modal: H matrix loaded {H.shape}")
+        
+        # Create tokenizers
+        patch_tok = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
+        atom_tok = NMFAtomTokenizer(W, top_k=args.top_k_atoms)
+        dir_tok = DirectionProjectionTokenizer(H, h_angles_list, top_m=args.top_m_directions)
+        
+        # Create prompt builder
+        config = PromptConfig(
+            ordering=args.token_ordering,
+            use_directions=True,
+            use_atoms=True,
+            use_patches=True,
+            max_tokens=args.max_tokens,
+        )
+        
+        prompt_builder = MultiModalPromptBuilder(
+            patch_tokenizer=patch_tok,
+            atom_tokenizer=atom_tok,
+            direction_tokenizer=dir_tok,
+            config=config,
+        )
+        
+        print(f"  ✓ Multi-modal: PromptBuilder created ({args.token_ordering}, max={args.max_tokens})")
+        
+        # Create dataset
+        ds = DoAICLDataset(
+            root=args.data_root,
+            angles=direction_angles,
+            prompt_builder=prompt_builder,
+            icl_mode=args.icl_mode,
+            n_shots=args.n_shots if args.icl_mode else 0,
+            context_strategy=args.context_strategy if args.icl_mode else "random",
+            fs=args.sample_rate,
+            n_fft=args.n_fft,
+            freq_min=args.freq_min,
+            freq_max=args.freq_max,
+        )
+        
+        dl = create_dataloader(ds, batch_size=1, shuffle=False)
+        
+        prompts: List[str] = []
+        for batch in dl:
+            # Use the pre-generated multi-modal prompt
+            prompt = batch["prompt"][0] if isinstance(batch["prompt"], list) else batch["prompt"]
+            prompts.append(prompt)
+            if args.max_samples and len(prompts) >= args.max_samples:
+                break
+                
+    else:
+        # Original mode: Patch-only tokens
+        ds = DoADataset(args.data_root, direction_angles, fs=args.sample_rate, n_fft=args.n_fft, freq_min=args.freq_min, freq_max=args.freq_max)
+        dl = create_dataloader(ds, batch_size=1, shuffle=False)
+        tok = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
+        prompts: List[str] = []
+        for batch in dl:
+            Y_np = batch["Y"].squeeze(0).numpy()
+            prompts.append(" ".join(tok(Y_np)))
+            if args.max_samples and len(prompts) >= args.max_samples:
+                break
+                
     return prompts
 
 
@@ -162,6 +237,33 @@ def main():
     ap.add_argument("--lora-target-modules", type=str, default="c_attn,c_proj")
     # Output
     ap.add_argument("--out", type=str, default="sft_policy_rm_greedy")
+    
+    # Multi-modal ICL parameters
+    ap.add_argument("--use-multi-modal", action="store_true",
+                    help="Enable multi-modal tokenization (Direction + Atom + Patch tokens)")
+    ap.add_argument("--w-path", type=str,
+                    help="Path to W matrix (NMF dictionary)")
+    ap.add_argument("--tf-path", type=str,
+                    help="Path to transfer function H matrix")
+    ap.add_argument("--n-atoms", type=int, default=50,
+                    help="Number of NMF atoms in W matrix (for vocab sizing)")
+    ap.add_argument("--token-ordering", type=str, default="physics_first",
+                    choices=["physics_first", "structure_first", "patch_first", "interleaved"],
+                    help="Token ordering strategy for multi-modal prompts")
+    ap.add_argument("--max-tokens", type=int, default=200,
+                    help="Maximum tokens per prompt (for budget control)")
+    ap.add_argument("--top-k-atoms", type=int, default=8,
+                    help="Number of top NMF atoms to include in prompts")
+    ap.add_argument("--top-m-directions", type=int, default=5,
+                    help="Number of top direction projections to include in prompts")
+    ap.add_argument("--icl-mode", action="store_true",
+                    help="Enable ICL few-shot prompts")
+    ap.add_argument("--n-shots", type=int, default=3,
+                    help="Number of ICL context examples")
+    ap.add_argument("--context-strategy", type=str, default="random",
+                    choices=["random", "nearest", "diverse"],
+                    help="ICL context sampling strategy")
+    
     args = ap.parse_args()
 
     if not HAS_PEFT:
@@ -184,7 +286,25 @@ def main():
     # Angles/tokenizer/prompts
     direction_angles = _discover_angles(args.data_root)
     prompts = _prepare_prompts(args, direction_angles)
-    tokenizer = build_patch_tokenizer(direction_angles)
+    
+    # Build tokenizer (with optional extended vocabulary for multi-modal)
+    if args.use_multi_modal:
+        print("\n🚀 Multi-modal mode enabled:")
+        print(f"  - Token ordering: {args.token_ordering}")
+        print(f"  - Max tokens: {args.max_tokens}")
+        if args.icl_mode:
+            print(f"  - ICL mode: {args.n_shots}-shot ({args.context_strategy} sampling)")
+        
+        tokenizer = build_patch_tokenizer(
+            direction_angles,
+            enable_extended_vocab=True,
+            n_atoms=args.n_atoms,
+        )
+        print(f"  ✓ Extended tokenizer built: {len(tokenizer)} tokens")
+    else:
+        tokenizer = build_patch_tokenizer(direction_angles)
+        print(f"  ✓ Standard tokenizer built: {len(tokenizer)} tokens")
+    
     tokenizer.padding_side = "left"
 
     # Build policy and (optionally) apply LoRA
