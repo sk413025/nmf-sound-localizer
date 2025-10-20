@@ -1,3 +1,0 @@
-root=/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized
-files=51
-md5=2afa9a9e722ec1835fd99b7f5aa09899

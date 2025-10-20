@@ -1,6 +1,0 @@
-Device: mps
-Samples: 4
-Allowed directions: 17
-K: 2
-Top-1 accuracy: 0.000000
-Recall@K: 0.000000
