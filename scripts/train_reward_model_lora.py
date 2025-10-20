@@ -957,6 +957,10 @@ def main():
         else:  # listwise (DoA-aligned)
             # Cross-entropy between teacher P and RM softmax over candidate directions per sample
             ce = 0.0
+            # Collect predicted Q statistics per epoch to diagnose saturation/flatness
+            q_max_list: List[float] = []
+            q_entropy_list: List[float] = []
+            q_margin_list: List[float] = []
             for row in list_rows:
                 si = int(row["sample_index"])
                 patch_ids = patch_ids_list[si]
@@ -982,6 +986,19 @@ def main():
                         preds.append(vals[r, seqlen-plen:seqlen].mean())
                 logits = torch.stack(preds, dim=0)
                 Q = torch.softmax(logits, dim=0)
+                # Predicted distribution diagnostics
+                with torch.no_grad():
+                    q_np = Q.detach().cpu().numpy()
+                    if q_np.size > 0:
+                        q_max_list.append(float(np.max(q_np)))
+                        q_entropy_list.append(float(-(q_np * np.log(np.clip(q_np, 1e-12, 1.0))).sum()))
+                        # logit margin (max - second max)
+                        lg = logits.detach().cpu().numpy()
+                        if lg.size >= 2:
+                            idx = np.argsort(lg)[::-1]
+                            q_margin_list.append(float(lg[idx[0]] - lg[idx[1]]))
+                        else:
+                            q_margin_list.append(0.0)
                 loss = torch.sum(-teacher_P * torch.log(torch.clamp(Q, min=1e-12)))
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -992,6 +1009,32 @@ def main():
                 denom += 1
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "listwise_ce": float(avg_loss), "samples": int(denom)})
+            # Summarize predicted Q distribution stats for the epoch
+            try:
+                def _q(vals, p):
+                    return float(np.percentile(vals, p)) if vals else 0.0
+                q_summary = {"samples": int(len(q_max_list))}
+                if q_max_list:
+                    q_summary.update({
+                        "q_max_p50": _q(q_max_list, 50),
+                        "q_max_p90": _q(q_max_list, 90),
+                        "q_max_p95": _q(q_max_list, 95),
+                    })
+                if q_entropy_list:
+                    q_summary.update({
+                        "q_entropy_p50": _q(q_entropy_list, 50),
+                        "q_entropy_p90": _q(q_entropy_list, 90),
+                        "q_entropy_p95": _q(q_entropy_list, 95),
+                    })
+                if q_margin_list:
+                    q_summary.update({
+                        "q_margin_logit_p50": _q(q_margin_list, 50),
+                        "q_margin_logit_p90": _q(q_margin_list, 90),
+                        "q_margin_logit_p95": _q(q_margin_list, 95),
+                    })
+                print({"epoch": epoch, "q_softmax_summary": q_summary})
+            except Exception:
+                pass
 
         # Evaluation: directions-first Top-1 and recall@K
         do_eval = (args.eval_every > 0) and (((epoch + 1) % args.eval_every == 0) or (epoch == args.rm_epochs - 1))

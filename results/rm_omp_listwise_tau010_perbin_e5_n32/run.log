@@ -1,0 +1,77 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 01:05:23.470000 64195 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Points total: 0 (~0.0/sample)
+Saved numeric diagnostics JSONL: results/rm_omp_listwise_tau010_perbin_e5_n32/numeric_diagnostics.jsonl
+{'teacher_softmax_summary': {'samples': 32, 'teacher_p_max_p50': 0.3131655324804047, 'teacher_p_max_p90': 0.33307801328911824, 'teacher_p_max_p95': 0.35418144579486005, 'teacher_entropy_p50': 2.4661287403752468, 'teacher_entropy_p90': 2.492505464915971, 'teacher_entropy_p95': 2.506208551463725, 'teacher_margin_logit_p50': 1.2218239586483293, 'teacher_margin_logit_p90': 1.4452638446934003, 'teacher_margin_logit_p95': 1.5491520291376721, 'deltais_range_over_tau_p50': 271243.5576127026, 'deltais_range_over_tau_p90': 337458.02483251865, 'deltais_range_over_tau_p95': 383314.6710825773, 'sat_frac_pmax_gt_0.9': 0.0}}
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'listwise_ce': 2.834389850497246, 'samples': 32}
+{'epoch': 0, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06009405106306076, 'q_max_p90': 0.06059657745063305, 'q_max_p95': 0.0608586996793747, 'q_entropy_p50': 2.8331490755081177, 'q_entropy_p90': 2.833183526992798, 'q_entropy_p95': 2.833185064792633, 'q_margin_logit_p50': 0.004341157153248787, 'q_margin_logit_p90': 0.012426181137561805, 'q_margin_logit_p95': 0.014084936399012803}}
+{'epoch': 0, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'eval_manifest': 'results/rm_omp_listwise_tau010_perbin_e5_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'listwise_ce': 2.83194587379694, 'samples': 32}
+{'epoch': 1, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06036710552871227, 'q_max_p90': 0.06082930602133274, 'q_max_p95': 0.06089355070143938, 'q_entropy_p50': 2.8331360816955566, 'q_entropy_p90': 2.8331628799438477, 'q_entropy_p95': 2.833172047138214, 'q_margin_logit_p50': 0.006474263034760952, 'q_margin_logit_p90': 0.015298710949718962, 'q_margin_logit_p95': 0.017988097108900546}}
+{'epoch': 1, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'eval_manifest': 'results/rm_omp_listwise_tau010_perbin_e5_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 2, 'listwise_ce': 2.830317959189415, 'samples': 32}
+{'epoch': 2, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.060682957991957664, 'q_max_p90': 0.061642323061823844, 'q_max_p95': 0.061910932697355744, 'q_entropy_p50': 2.83302640914917, 'q_entropy_p90': 2.833088517189026, 'q_entropy_p95': 2.83311585187912, 'q_margin_logit_p50': 0.004101787228137255, 'q_margin_logit_p90': 0.016303513757884504, 'q_margin_logit_p95': 0.02329032002016902}}
+{'epoch': 2, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 2, 'eval_manifest': 'results/rm_omp_listwise_tau010_perbin_e5_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 3, 'listwise_ce': 2.8250835984945297, 'samples': 32}
+{'epoch': 3, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06295283883810043, 'q_max_p90': 0.06503820046782494, 'q_max_p95': 0.06618137396872044, 'q_entropy_p50': 2.8324419260025024, 'q_entropy_p90': 2.8328527212142944, 'q_entropy_p95': 2.8329188346862795, 'q_margin_logit_p50': 0.00894061615690589, 'q_margin_logit_p90': 0.03028395492583514, 'q_margin_logit_p95': 0.03296672776341438}}
+{'epoch': 3, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.25, 'eval_samples': 32, 'K': 3}
+{'epoch': 3, 'eval_manifest': 'results/rm_omp_listwise_tau010_perbin_e5_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 4, 'listwise_ce': 2.8107243478298187, 'samples': 32}
+{'epoch': 4, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.0730646513402462, 'q_max_p90': 0.08976670354604721, 'q_max_p95': 0.09296520277857781, 'q_entropy_p50': 2.8247798681259155, 'q_entropy_p90': 2.8298187017440797, 'q_entropy_p95': 2.830029881000519, 'q_margin_logit_p50': 0.038585320115089417, 'q_margin_logit_p90': 0.10562618970870973, 'q_margin_logit_p95': 0.1166027784347534}}
+{'epoch': 4, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 4, 'eval_manifest': 'results/rm_omp_listwise_tau010_perbin_e5_n32/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_omp_listwise_tau010_perbin_e5_n32_adapters/
+  - Embeddings + V-head: rm_omp_listwise_tau010_perbin_e5_n32_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.273, 1.000]
+  - Mean off-diagonal: 0.016
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================
