@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/eval/is_omp_oracle.py", line 192, in <module>
+    main()
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/eval/is_omp_oracle.py", line 136, in main
+    raise RuntimeError(
+RuntimeError: Grid mismatch: Y (173, 571), H.F=346, W.F=346, Y_content (173, 571)
