@@ -1,0 +1,78 @@
+H shape: (346, 17), angles: [30, 45, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+W shape: (346, 50)
+Settings: s_hat_iter=30, mu_iter=5, eps=1e-08
+Diagnostics samples: 32 (processing 32)
+Indexed data_root in 0.00s; files indexed: 3
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+Progress: 4/32 (12.5%) | Elapsed: 0.8s | ETA: 5.8s
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+Progress: 8/32 (25.0%) | Elapsed: 1.5s | ETA: 4.6s
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+Progress: 12/32 (37.5%) | Elapsed: 2.2s | ETA: 3.6s
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+Progress: 16/32 (50.0%) | Elapsed: 2.7s | ETA: 2.7s
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+Progress: 20/32 (62.5%) | Elapsed: 3.5s | ETA: 2.1s
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+Progress: 24/32 (75.0%) | Elapsed: 4.2s | ETA: 1.4s
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+Progress: 28/32 (87.5%) | Elapsed: 4.9s | ETA: 0.7s
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+✅ clip_000.npy    | GT= 95° (rank= 1, ΔIS= 27590.5) | Best= 95° (ΔIS= 27590.5) | Margin=     0.0
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+Progress: 32/32 (100.0%) | Elapsed: 5.6s | ETA: 0.0s
+
+================================================================================
+📊 統計結果
+================================================================================
+總樣本數: 32
+Top-1 準確率: 100.00% (32/32)
+
+GT 排名分布:
+  - Median: 1.0
+  - Mean: 1.00
+  - Min: 1
+  - Max: 1
+  - P25: 1.0
+  - P75: 1.0
+
+分數差異 (GT ΔIS - Best ΔIS):
+  - Mean: 0.00
+  - Median: 0.00
+  - Min: 0.00
+  - Max: 0.00
+
+Recall@1: 100.00% (32/32)
+
+Recall@3: 100.00% (32/32)
+
+Recall@5: 100.00% (32/32)
+
+================================================================================
+✅ 結論: ΔIS teacher 非常可靠，>90% 的樣本 GT 角度獲得最高分
+================================================================================
+real 7.00
+user 125.91
+sys 22.98
