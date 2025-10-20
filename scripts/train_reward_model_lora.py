@@ -613,7 +613,8 @@ def main():
                     cand_angles.append(deg)
                 deltas_sel = np.asarray([scores[d_indices.index(j)] for j in d_indices], dtype=float)
                 logits = deltas_sel / tau
-                e = np.exp(logits - np.max(logits))
+                z = logits - np.max(logits)
+                e = np.exp(z)
                 P = (e / np.sum(e)).astype(float).tolist()
             else:
                 # Angle‑based teacher (previous behavior)
@@ -645,6 +646,68 @@ def main():
                 if not np.isfinite(w_arr).all() or np.all(w_arr <= 0):
                     raise RuntimeError("Listwise teacher produced invalid weights")
                 P = (w_arr / np.sum(w_arr)).astype(float).tolist()
+            # Compute teacher softmax diagnostics for numeric logging (listwise only)
+            teacher_diag = {}
+            try:
+                if args.supervision == "listwise":
+                    if args.teacher == "omp":
+                        # z, P were computed above
+                        z_arr = np.asarray(z, dtype=float) if 'z' in locals() else np.asarray([], dtype=float)
+                        P_arr = np.asarray(P, dtype=float) if 'P' in locals() else np.asarray([], dtype=float)
+                    else:
+                        # For angle-based weights, derive pseudo-logits from weights to inspect concentration
+                        # Avoid log(0): clamp
+                        P_arr = np.asarray(P, dtype=float)
+                        z_arr = np.log(np.clip(P_arr, 1e-12, 1.0))
+                        z_arr = z_arr - np.max(z_arr)
+                    p_max = float(P_arr.max()) if P_arr.size > 0 else 0.0
+                    entropy = float(-(P_arr * np.log(np.clip(P_arr, 1e-12, 1.0))).sum()) if P_arr.size > 0 else 0.0
+                    # margin in logit space (max - second max); requires at least 2 candidates
+                    if z_arr.size >= 2:
+                        idx_sorted = np.argsort(z_arr)[::-1]
+                        margin = float(z_arr[idx_sorted[0]] - z_arr[idx_sorted[1]])
+                        z_min = float(z_arr.min())
+                        z_med = float(np.median(z_arr))
+                        z_max = float(z_arr.max())
+                    else:
+                        margin = 0.0
+                        z_min = z_med = z_max = 0.0
+                    # GT position in candidates
+                    try:
+                        gt_idx = cand_angles.index(int(gt_angle)) if 'cand_angles' in locals() else -1
+                    except Exception:
+                        gt_idx = -1
+                    gt_rank = None
+                    if gt_idx >= 0 and z_arr.size > 0:
+                        # rank 1 is best
+                        order_desc = np.argsort(z_arr)[::-1].tolist()
+                        gt_rank = int(order_desc.index(gt_idx) + 1) if gt_idx in order_desc else None
+                    p_gt = float(P_arr[gt_idx]) if gt_idx >= 0 and P_arr.size > gt_idx else 0.0
+                    deltais_min = float(np.min(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    deltais_med = float(np.median(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    deltais_max = float(np.max(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    deltais_std = float(np.std(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    deltais_range_over_tau = float((deltais_max - deltais_min) / max(tau, 1e-6)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    teacher_diag = {
+                        "tau_deg": float(tau),
+                        "teacher_p_max": p_max,
+                        "teacher_entropy": entropy,
+                        "teacher_margin_logit": margin,
+                        "logits_z_min": z_min,
+                        "logits_z_median": z_med,
+                        "logits_z_max": z_max,
+                        "deltais_min": deltais_min,
+                        "deltais_median": deltais_med,
+                        "deltais_max": deltais_max,
+                        "deltais_std": deltais_std,
+                        "deltais_range_over_tau": deltais_range_over_tau,
+                        "gt_in_candidates": bool(gt_idx >= 0),
+                        "gt_rank": int(gt_rank) if gt_rank is not None else None,
+                        "teacher_p_gt": p_gt,
+                    }
+            except Exception:
+                teacher_diag = {}
+
             list_rows.append({
                 "sample_index": si,
                 "cand_ids": cand_token_ids,
@@ -702,6 +765,9 @@ def main():
             "ratio_base_p95": ratio_p95,
             "ratio_base_p99": ratio_p99,
         }
+        # Attach teacher softmax diagnostics if available
+        if teacher_diag:
+            log_row.update(teacher_diag)
         sample_logs.append(log_row)
         with open(jsonl_path, "a") as jf:
             jf.write(json.dumps(log_row) + "\n")
@@ -715,6 +781,30 @@ def main():
     else:
         print(f"  - Points total: {len(point_rows)} (~{len(point_rows)/max(1,len(prompts)):.1f}/sample)")
     print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
+    # Summarize teacher softmax diagnostics if present
+    try:
+        keys = [
+            "teacher_p_max",
+            "teacher_entropy",
+            "teacher_margin_logit",
+            "deltais_range_over_tau",
+        ]
+        def _q(vals, q):
+            return float(np.percentile(vals, q)) if vals else 0.0
+        summary = {"samples": int(len(sample_logs))}
+        for k in keys:
+            vals = [float(r.get(k, 0.0)) for r in sample_logs if k in r]
+            if vals:
+                summary[f"{k}_p50"] = _q(vals, 50)
+                summary[f"{k}_p90"] = _q(vals, 90)
+                summary[f"{k}_p95"] = _q(vals, 95)
+        # Saturation fraction: p_max>0.9
+        pmax = [float(r.get("teacher_p_max", 0.0)) for r in sample_logs if "teacher_p_max" in r]
+        if pmax:
+            summary["sat_frac_pmax_gt_0.9"] = float(np.mean([1.0 if v > 0.9 else 0.0 for v in pmax]))
+        print({"teacher_softmax_summary": summary})
+    except Exception:
+        pass
 
     # Optimizer with differential learning rates
     # Group 1: LoRA adapters (medium LR)
