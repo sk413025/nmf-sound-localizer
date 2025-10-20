@@ -26,7 +26,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, List, Tuple, Sequence
-import subprocess, sys
+import sys
 import time
 
 import numpy as np
@@ -51,9 +51,8 @@ from doa_rl.features.nmf_utils import estimate_s_hat_torch
 from scripts.train_sft_policy_with_rm import (
     rm_score_for_prefix,
     get_patch_ids,
-    compute_rm_greedy_teacher,
 )
-from doa_rl.omp.is_omp import compute_deltais_step0, is_omp_select
+from doa_rl.omp.is_omp import compute_deltais_step0
 
 
 
@@ -228,8 +227,7 @@ def main():
     ap.add_argument("--content-root", type=str, required=True, help="Root of Original/content dataset (mirrors angle_/clip_ structure)")
     ap.add_argument("--K", type=int, default=3)
     # Teacher scoring (LTR)
-    ap.add_argument("--teacher", type=str, choices=["omp", "fit", "euc"], default="omp", help="Teacher: omp=ΔIS step0 (IS‑OMP), fit=−IS, euc=−L2")
-    ap.add_argument("--eval-omp-align", action="store_true", help="Enable OMP alignment metrics during eval (Intersection@K, Spearman vs ΔIS)")
+    ap.add_argument("--teacher", type=str, choices=["omp"], default="omp", help="Teacher: omp=ΔIS step0 (IS‑OMP)")
     ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for logits scaling")
     ap.add_argument("--directions-per-sample", type=int, default=0, help="0=all directions; else random subset size")
     ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
@@ -260,7 +258,7 @@ def main():
     ap.add_argument("--patch-fp", type=int, default=16)
     ap.add_argument("--patch-np", type=int, default=10)
     ap.add_argument("--max-samples", type=int, default=0)
-    ap.add_argument("--progress-every", type=int, default=16, help="Print progress every N rows/samples (0=off)")
+    # No verbose progress printing; only report eval loss↔metric alignment
     
     ap.add_argument("--out", type=str, default="rm_ckpt_lora")
     ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
@@ -329,43 +327,7 @@ def main():
         )
     H = H_full[:, col_idx].contiguous()
 
-    # Optional: run detection-only preflight to ensure teacher→DoA alignment and H validity
-    if args.preflight:
-        pf_out = f"{args.out}_preflight"
-        cmd = [
-            sys.executable, "scripts/eval/eval_physics_teacher_alignment.py",
-            "--data-root", args.data_root,
-            "--content-root", args.content_root,
-            "--tf-path", args.tf_path,
-            "--w-path", args.w_path,
-            "--teacher", args.teacher,
-            "--K", str(args.K),
-            "--max-samples", str(args.preflight_max_samples),
-            "--directions-per-sample", str(args.preflight_directions_per_sample),
-            "--eps", str(args.eps),
-            "--strict-teacher-top1", str(args.preflight_strict_teacher_top1),
-            "--strict-recallK", str(args.preflight_strict_recallK),
-            "--strict-h-top1", str(args.preflight_strict_h_top1),
-            "--out", pf_out,
-        ]
-        print("\n[Preflight] Running:", " ".join(cmd))
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        # Echo evaluator output for visibility
-        print(res.stdout)
-        if res.returncode != 0:
-            raise RuntimeError(
-                f"Preflight failed (exit {res.returncode}). See results/{pf_out}/summary.json for details."
-            )
-        # Print concise summary if available
-        try:
-            with open(Path("results")/pf_out/"summary.json", "r") as sf:
-                summary = json.load(sf)
-            print("[Preflight] Teacher alignment:",
-                  f"top1={summary.get('teacher_top1_acc'):.3f}",
-                  f"recall@K={summary.get('teacher_recall_at_K'):.3f}",
-                  f"median_rank={summary.get('teacher_median_rank')}")
-        except Exception:
-            pass
+    # Preflight removed to simplify codepath
 
     # Load W (USM dictionary) for ŝ estimation
     if args.w_path.endswith('.npz'):
@@ -436,13 +398,7 @@ def main():
     total_trainable = sum(p.numel() for p in rm_model.parameters() if p.requires_grad)
     total_params = sum(p.numel() for p in rm_model.parameters())
     
-    print(f"\nParameter counts:")
-    print(f"  - LoRA adapters:  {lora_params:,}")
-    print(f"  - Embeddings:     {embed_params:,}")
-    print(f"  - V-head:         {vhead_params:,}")
-    print(f"  - Total trainable: {total_trainable:,} / {total_params:,} ({100*total_trainable/total_params:.2f}%)")
-    print(f"  - Reduction vs full FT: {100*(1 - total_trainable/total_params):.2f}%")
-    print("=" * 60 + "\n")
+    # Omit verbose parameter table in simplified script
 
     # Build pairwise BT dataset from forward‑model teachers
     dir_token_ids_all: List[int] = list(direction_token_ids(tokenizer))
@@ -469,8 +425,6 @@ def main():
         patch_ids_list = [[tid for tid in row.tolist() if tid not in specials] for row in enc_patch["input_ids"]]
 
     pair_rows: List[Dict[str, int]] = []
-    point_rows: List[Dict[str, int]] = []
-    list_rows: List[Dict[str, object]] = []
     for si, p in enumerate(prompts):
         Y = cache[p]["Y"].float()
         F, N = Y.shape
@@ -585,161 +539,38 @@ def main():
                     "dir_neg": int(dir_token_ids_all[d_neg]),
                     "patch_len": int(len(patch_ids_list[si])),
                 })
-        elif args.supervision == "pointwise":
-            for idx_local, d_local in enumerate(d_indices):
-                point_rows.append({
+        else:
+            # Build pairwise (top vs bottom) supervision rows
+            order = list(range(len(d_indices)))
+            order.sort(key=lambda i: scores[i], reverse=True)
+            top_k = order[: max(1, len(order)//4)]
+            bot_k = order[-max(1, len(order)//4):]
+            pairs: List[Tuple[int, int]] = []
+            for a in top_k:
+                for b in bot_k:
+                    if a == b or scores[a] == scores[b]:
+                        continue
+                    pairs.append((a, b))
+            rng = np.random.default_rng(seed=si + args.seed)
+            while len(pairs) < args.pairs_per_sample and len(pairs) < len(order)*(len(order)-1):
+                i, j = rng.integers(0, len(order), size=2)
+                if i == j or scores[i] == scores[j]:
+                    continue
+                if scores[i] > scores[j]:
+                    pairs.append((i, j))
+                else:
+                    pairs.append((j, i))
+            if len(pairs) > args.pairs_per_sample:
+                pairs = pairs[: args.pairs_per_sample]
+            for (ai, bi) in pairs:
+                d_pos = d_indices[ai]
+                d_neg = d_indices[bi]
+                pair_rows.append({
                     "sample_index": si,
-                    "dir_id": int(dir_token_ids_all[d_local]),
-                    "score": float(scores[idx_local]),
+                    "dir_pos": int(dir_token_ids_all[d_pos]),
+                    "dir_neg": int(dir_token_ids_all[d_neg]),
                     "patch_len": int(len(patch_ids_list[si])),
                 })
-        else:  # listwise (DoA-aligned)
-            # Parse GT angle from path for logging and angle-based fallback
-            try:
-                angle_dir = os.path.basename(os.path.dirname(y_src))
-                gt_angle = int(angle_dir.split('_')[1])
-            except Exception:
-                raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
-            # Listwise distribution: default now uses ΔIS teacher (or fallback to angle-based if teacher!=omp)
-            if args.teacher == "omp":
-                # Softmax over ΔIS/τ on selected candidates
-                tau = max(1e-6, float(args.listwise_tau_deg))
-                # token ids and angles for selected direction indices (needed for logging/rows)
-                cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
-                cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
-                cand_angles: List[int] = []
-                for tok in cand_tokens:
-                    try:
-                        deg = int(tok.strip('<>').split('_')[1])
-                    except Exception:
-                        raise RuntimeError(f"Invalid direction token format: {tok}")
-                    cand_angles.append(deg)
-                deltas_sel = np.asarray([scores[d_indices.index(j)] for j in d_indices], dtype=float)
-                # Optional normalization to avoid softmax saturation
-                if args.listwise_normalize == "per_bin":
-                    # ΔIS averaged per time-frequency bin
-                    denom = max(1.0, float(F) * float(N))
-                    deltas_use = deltas_sel / denom
-                else:
-                    deltas_use = deltas_sel
-                logits = deltas_use / tau
-                z = logits - np.max(logits)
-                e = np.exp(z)
-                P = (e / np.sum(e)).astype(float).tolist()
-            else:
-                # Angle‑based teacher (previous behavior)
-                tol = float(args.listwise_tol_deg)
-                tau = float(args.listwise_tau_deg)
-                try:
-                    angle_dir = os.path.basename(os.path.dirname(y_src))
-                    gt_angle = int(angle_dir.split('_')[1])
-                except Exception:
-                    raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
-                cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
-                cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
-                cand_angles: List[int] = []
-                for tok in cand_tokens:
-                    try:
-                        deg = int(tok.strip('<>').split('_')[1])
-                    except Exception:
-                        raise RuntimeError(f"Invalid direction token format: {tok}")
-                    cand_angles.append(deg)
-                def circ_dist(a, b):
-                    d = abs(a - b) % 360
-                    return min(d, 360 - d)
-                weights = []
-                for a in cand_angles:
-                    d = circ_dist(a, gt_angle)
-                    w = 1.0 if d <= tol else np.exp(-d / max(tau, 1e-6))
-                    weights.append(w)
-                w_arr = np.asarray(weights, dtype=float)
-                if not np.isfinite(w_arr).all() or np.all(w_arr <= 0):
-                    raise RuntimeError("Listwise teacher produced invalid weights")
-                P = (w_arr / np.sum(w_arr)).astype(float).tolist()
-            # Compute teacher softmax diagnostics for numeric logging (listwise only)
-            teacher_diag = {}
-            try:
-                if args.supervision == "listwise":
-                    if args.teacher == "omp":
-                        # z, P were computed above
-                        z_arr = np.asarray(z, dtype=float) if 'z' in locals() else np.asarray([], dtype=float)
-                        P_arr = np.asarray(P, dtype=float) if 'P' in locals() else np.asarray([], dtype=float)
-                    else:
-                        # For angle-based weights, derive pseudo-logits from weights to inspect concentration
-                        # Avoid log(0): clamp
-                        P_arr = np.asarray(P, dtype=float)
-                        z_arr = np.log(np.clip(P_arr, 1e-12, 1.0))
-                        z_arr = z_arr - np.max(z_arr)
-                    p_max = float(P_arr.max()) if P_arr.size > 0 else 0.0
-                    entropy = float(-(P_arr * np.log(np.clip(P_arr, 1e-12, 1.0))).sum()) if P_arr.size > 0 else 0.0
-                    # margin in logit space (max - second max); requires at least 2 candidates
-                    if z_arr.size >= 2:
-                        idx_sorted = np.argsort(z_arr)[::-1]
-                        margin = float(z_arr[idx_sorted[0]] - z_arr[idx_sorted[1]])
-                        z_min = float(z_arr.min())
-                        z_med = float(np.median(z_arr))
-                        z_max = float(z_arr.max())
-                    else:
-                        margin = 0.0
-                        z_min = z_med = z_max = 0.0
-                    # GT position in candidates
-                    try:
-                        gt_idx = cand_angles.index(int(gt_angle)) if 'cand_angles' in locals() else -1
-                    except Exception:
-                        gt_idx = -1
-                    gt_rank = None
-                    if gt_idx >= 0 and z_arr.size > 0:
-                        # rank 1 is best
-                        order_desc = np.argsort(z_arr)[::-1].tolist()
-                        gt_rank = int(order_desc.index(gt_idx) + 1) if gt_idx in order_desc else None
-                    p_gt = float(P_arr[gt_idx]) if gt_idx >= 0 and P_arr.size > gt_idx else 0.0
-                    deltais_min = float(np.min(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
-                    deltais_med = float(np.median(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
-                    deltais_max = float(np.max(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
-                    deltais_std = float(np.std(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
-                    deltais_range_over_tau = float((deltais_max - deltais_min) / max(tau, 1e-6)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
-                    # Per-bin averaged ΔIS (for diagnostics)
-                    if 'deltas_use' in locals() and args.listwise_normalize == "per_bin":
-                        deltais_pb = deltas_use
-                        deltais_pb_min = float(np.min(deltais_pb)) if deltais_pb.size > 0 else 0.0
-                        deltais_pb_med = float(np.median(deltais_pb)) if deltais_pb.size > 0 else 0.0
-                        deltais_pb_max = float(np.max(deltais_pb)) if deltais_pb.size > 0 else 0.0
-                        deltais_pb_std = float(np.std(deltais_pb)) if deltais_pb.size > 0 else 0.0
-                    else:
-                        deltais_pb_min = deltais_pb_med = deltais_pb_max = deltais_pb_std = 0.0
-                    teacher_diag = {
-                        "tau_deg": float(tau),
-                        "teacher_p_max": p_max,
-                        "teacher_entropy": entropy,
-                        "teacher_margin_logit": margin,
-                        "logits_z_min": z_min,
-                        "logits_z_median": z_med,
-                        "logits_z_max": z_max,
-                        "deltais_min": deltais_min,
-                        "deltais_median": deltais_med,
-                        "deltais_max": deltais_max,
-                        "deltais_std": deltais_std,
-                        "deltais_range_over_tau": deltais_range_over_tau,
-                        "deltais_per_bin_min": deltais_pb_min,
-                        "deltais_per_bin_median": deltais_pb_med,
-                        "deltais_per_bin_max": deltais_pb_max,
-                        "deltais_per_bin_std": deltais_pb_std,
-                        "listwise_normalize": str(args.listwise_normalize),
-                        "gt_in_candidates": bool(gt_idx >= 0),
-                        "gt_rank": int(gt_rank) if gt_rank is not None else None,
-                        "teacher_p_gt": p_gt,
-                    }
-            except Exception:
-                teacher_diag = {}
-
-            list_rows.append({
-                "sample_index": si,
-                "cand_ids": cand_token_ids,
-                "cand_angles": cand_angles,
-                "teacher_P": P,
-                "patch_len": int(len(patch_ids_list[si])),
-                "gt_angle": int(gt_angle),
-            })
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if (args.supervision == "pairwise" and 'pairs' in locals() and pairs) else np.array([0.0])
         # Signal stats and baseline_k=2
@@ -800,35 +631,9 @@ def main():
     print(f"  - Samples: {len(prompts)}")
     avg_dirs = float(np.mean([r["dirs_considered"] for r in sample_logs])) if sample_logs else 0.0
     print(f"  - Directions/sample (avg): {avg_dirs:.1f}")
-    if args.supervision == "pairwise":
-        print(f"  - Pairs total: {len(pair_rows)} (~{len(pair_rows)/max(1,len(prompts)):.1f}/sample)")
-    else:
-        print(f"  - Points total: {len(point_rows)} (~{len(point_rows)/max(1,len(prompts)):.1f}/sample)")
+    print(f"  - Pairs total: {len(pair_rows)} (~{len(pair_rows)/max(1,len(prompts)):.1f}/sample)")
     print(f"Saved numeric diagnostics JSONL: {jsonl_path}")
-    # Summarize teacher softmax diagnostics if present
-    try:
-        keys = [
-            "teacher_p_max",
-            "teacher_entropy",
-            "teacher_margin_logit",
-            "deltais_range_over_tau",
-        ]
-        def _q(vals, q):
-            return float(np.percentile(vals, q)) if vals else 0.0
-        summary = {"samples": int(len(sample_logs))}
-        for k in keys:
-            vals = [float(r.get(k, 0.0)) for r in sample_logs if k in r]
-            if vals:
-                summary[f"{k}_p50"] = _q(vals, 50)
-                summary[f"{k}_p90"] = _q(vals, 90)
-                summary[f"{k}_p95"] = _q(vals, 95)
-        # Saturation fraction: p_max>0.9
-        pmax = [float(r.get("teacher_p_max", 0.0)) for r in sample_logs if "teacher_p_max" in r]
-        if pmax:
-            summary["sat_frac_pmax_gt_0.9"] = float(np.mean([1.0 if v > 0.9 else 0.0 for v in pmax]))
-        print({"teacher_softmax_summary": summary})
-    except Exception:
-        pass
+    # No teacher softmax/Q summaries
 
     # Optimizer with differential learning rates
     # Group 1: LoRA adapters (medium LR)
@@ -876,9 +681,6 @@ def main():
         epoch_loss_name = "loss"
         epoch_loss_value = 0.0
         if args.supervision == "pairwise":
-            pw_total = len(pair_rows)
-            pw_done = 0
-            pw_t0 = time.time()
             for batch in _iter_batches(pair_rows, args.batch_size):
                 # Build sequences for pos/neg
                 seqs: List[List[int]] = []
@@ -918,189 +720,10 @@ def main():
                 optimizer.step()
                 total_loss += float(loss.item()) * len(batch)
                 denom += len(batch)
-                # Progress
-                pw_done += len(batch)
-                if args.progress_every and (pw_done % max(1, args.progress_every) == 0 or pw_done == pw_total):
-                    elapsed = time.time() - pw_t0
-                    pct = 100.0 * pw_done / max(1, pw_total)
-                    eta = elapsed * (pw_total / max(1, pw_done) - 1.0)
-                    print({
-                        "epoch": epoch,
-                        "phase": "train",
-                        "supervision": "pairwise",
-                        "progress_rows": int(pw_done),
-                        "total_rows": int(pw_total),
-                        "pct": float(pct),
-                        "elapsed_s": float(elapsed),
-                        "eta_s": float(max(0.0, eta)),
-                    }, flush=True)
             avg_loss = total_loss / max(1, denom)
             epoch_loss_name = "bt_pair_loss"
             epoch_loss_value = float(avg_loss)
             print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "pairs": int(denom)})
-        elif args.supervision == "pointwise":
-            pt_total = len(point_rows)
-            pt_done = 0
-            pt_t0 = time.time()
-            for batch in _iter_batches(point_rows, args.batch_size):
-                # Build sequences and targets
-                seqs: List[List[int]] = []
-                targets: List[float] = []
-                patch_lens: List[int] = []
-                for row in batch:
-                    si = row["sample_index"]
-                    patch_ids = patch_ids_list[si]
-                    seqs.append([tokenizer.bos_token_id, row["dir_id"], *patch_ids])
-                    patch_lens.append(len(patch_ids))
-                    targets.append(float(row["score"]))
-                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
-                attn = (inp != tokenizer.pad_token_id).to(device)
-                out = rm_model.pretrained_model(
-                    input_ids=inp,
-                    attention_mask=attn,
-                    output_hidden_states=True,
-                    return_dict=True,
-                )
-                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
-                means: List[torch.Tensor] = []
-                for r in range(vals.size(0)):
-                    plen = patch_lens[r]
-                    seqlen = int(attn[r].sum().item())
-                    if plen == 0:
-                        means.append(vals[r, seqlen-1:seqlen].mean())
-                    else:
-                        means.append(vals[r, seqlen-plen:seqlen].mean())
-                pred = torch.stack(means, dim=0)
-                tgt = torch.tensor(targets, dtype=pred.dtype, device=pred.device)
-                loss = nn.MSELoss()(pred, tgt)
-                optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
-                optimizer.step()
-                total_loss += float(loss.item()) * len(batch)
-                denom += len(batch)
-                # Progress
-                pt_done += len(batch)
-                if args.progress_every and (pt_done % max(1, args.progress_every) == 0 or pt_done == pt_total):
-                    elapsed = time.time() - pt_t0
-                    pct = 100.0 * pt_done / max(1, pt_total)
-                    eta = elapsed * (pt_total / max(1, pt_done) - 1.0)
-                    print({
-                        "epoch": epoch,
-                        "phase": "train",
-                        "supervision": "pointwise",
-                        "progress_rows": int(pt_done),
-                        "total_rows": int(pt_total),
-                        "pct": float(pct),
-                        "elapsed_s": float(elapsed),
-                        "eta_s": float(max(0.0, eta)),
-                    }, flush=True)
-            avg_loss = total_loss / max(1, denom)
-            epoch_loss_name = "point_mse"
-            epoch_loss_value = float(avg_loss)
-            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "points": int(denom)})
-        else:  # listwise (DoA-aligned)
-            # Cross-entropy between teacher P and RM softmax over candidate directions per sample
-            ce = 0.0
-            # Collect predicted Q statistics per epoch to diagnose saturation/flatness
-            q_max_list: List[float] = []
-            q_entropy_list: List[float] = []
-            q_margin_list: List[float] = []
-            lw_total = len(list_rows)
-            lw_done = 0
-            lw_t0 = time.time()
-            for row in list_rows:
-                si = int(row["sample_index"])
-                patch_ids = patch_ids_list[si]
-                cand_ids = row["cand_ids"]
-                teacher_P = torch.tensor(row["teacher_P"], dtype=torch.float32, device=device)
-                seqs = [[tokenizer.bos_token_id, int(cid), *patch_ids] for cid in cand_ids]
-                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
-                attn = (inp != tokenizer.pad_token_id).to(device)
-                out = rm_model.pretrained_model(
-                    input_ids=inp,
-                    attention_mask=attn,
-                    output_hidden_states=True,
-                    return_dict=True,
-                )
-                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
-                preds: List[torch.Tensor] = []
-                for r in range(vals.size(0)):
-                    seqlen = int(attn[r].sum().item())
-                    plen = len(patch_ids)
-                    if plen == 0:
-                        preds.append(vals[r, seqlen-1:seqlen].mean())
-                    else:
-                        preds.append(vals[r, seqlen-plen:seqlen].mean())
-                logits = torch.stack(preds, dim=0)
-                Q = torch.softmax(logits, dim=0)
-                # Predicted distribution diagnostics
-                with torch.no_grad():
-                    q_np = Q.detach().cpu().numpy()
-                    if q_np.size > 0:
-                        q_max_list.append(float(np.max(q_np)))
-                        q_entropy_list.append(float(-(q_np * np.log(np.clip(q_np, 1e-12, 1.0))).sum()))
-                        # logit margin (max - second max)
-                        lg = logits.detach().cpu().numpy()
-                        if lg.size >= 2:
-                            idx = np.argsort(lg)[::-1]
-                            q_margin_list.append(float(lg[idx[0]] - lg[idx[1]]))
-                        else:
-                            q_margin_list.append(0.0)
-                loss = torch.sum(-teacher_P * torch.log(torch.clamp(Q, min=1e-12)))
-                optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
-                optimizer.step()
-                total_loss += float(loss.item())
-                ce += float(loss.item())
-                denom += 1
-                # Progress
-                lw_done += 1
-                if args.progress_every and (lw_done % max(1, args.progress_every) == 0 or lw_done == lw_total):
-                    elapsed = time.time() - lw_t0
-                    pct = 100.0 * lw_done / max(1, lw_total)
-                    eta = elapsed * (lw_total / max(1, lw_done) - 1.0)
-                    print({
-                        "epoch": epoch,
-                        "phase": "train",
-                        "supervision": "listwise",
-                        "progress_rows": int(lw_done),
-                        "total_rows": int(lw_total),
-                        "pct": float(pct),
-                        "elapsed_s": float(elapsed),
-                        "eta_s": float(max(0.0, eta)),
-                    }, flush=True)
-            avg_loss = total_loss / max(1, denom)
-            epoch_loss_name = "listwise_ce"
-            epoch_loss_value = float(avg_loss)
-            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "samples": int(denom)})
-            # Summarize predicted Q distribution stats for the epoch
-            try:
-                def _q(vals, p):
-                    return float(np.percentile(vals, p)) if vals else 0.0
-                q_summary = {"samples": int(len(q_max_list))}
-                if q_max_list:
-                    q_summary.update({
-                        "q_max_p50": _q(q_max_list, 50),
-                        "q_max_p90": _q(q_max_list, 90),
-                        "q_max_p95": _q(q_max_list, 95),
-                    })
-                if q_entropy_list:
-                    q_summary.update({
-                        "q_entropy_p50": _q(q_entropy_list, 50),
-                        "q_entropy_p90": _q(q_entropy_list, 90),
-                        "q_entropy_p95": _q(q_entropy_list, 95),
-                    })
-                if q_margin_list:
-                    q_summary.update({
-                        "q_margin_logit_p50": _q(q_margin_list, 50),
-                        "q_margin_logit_p90": _q(q_margin_list, 90),
-                        "q_margin_logit_p95": _q(q_margin_list, 95),
-                    })
-                print({"epoch": epoch, "q_softmax_summary": q_summary})
-            except Exception:
-                pass
 
         # Record epoch loss for downstream correlation with eval metrics
         try:
@@ -1121,32 +744,50 @@ def main():
                     freq_min=args.freq_min,
                     freq_max=args.freq_max,
                 )
-                # Use shuffle=True to avoid sampling a single-angle prefix when max_samples is small
-                dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=True)
                 tok_patch = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
                 eval_prompts: List[str] = []
                 gt_angles: List[int] = []
-                # Collect eval sample meta for manifest
                 eval_records: List[Dict[str, object]] = []
-                for batch_eval in dl_eval:
-                    Y_np = batch_eval["Y"].squeeze(0).numpy()
-                    eval_prompts.append(" ".join(tok_patch(Y_np)))
-                    gt_a = int(batch_eval["angle_deg"]) if "angle_deg" in batch_eval else None
-                    gt_angles.append(int(gt_a) if gt_a is not None else 0)
-                    pth = batch_eval.get("path", "")
-                    if isinstance(pth, (list, tuple)):
-                        pth = pth[0] if pth else ""
+                # Deterministic: reuse existing manifest if present; else create once from dataloader
+                results_dir = os.path.join("results", f"{args.out}")
+                os.makedirs(results_dir, exist_ok=True)
+                manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
+                if os.path.exists(manifest_path):
                     try:
-                        pth_abs = os.path.abspath(str(pth)) if pth else ""
+                        with open(manifest_path, "r") as mf:
+                            manifest = json.load(mf)
+                        files = manifest.get("files", [])
+                        for rec in files:
+                            pth_abs = rec.get("path_abs") or rec.get("path") or ""
+                            angle = rec.get("angle_deg")
+                            if not pth_abs or angle is None:
+                                continue
+                            Y_np = _load_band_spectrogram_from_npy(Path(pth_abs), fs=args.sample_rate, n_fft=args.n_fft, freq_min=args.freq_min, freq_max=args.freq_max).numpy()
+                            eval_prompts.append(" ".join(tok_patch(Y_np)))
+                            gt_angles.append(int(angle))
+                            eval_records.append({"path_abs": os.path.abspath(pth_abs), "angle_deg": int(angle)})
                     except Exception:
-                        pth_abs = str(pth) if pth else ""
-                    rec = {"path_abs": pth_abs, "angle_deg": int(gt_a) if gt_a is not None else None}
-                    eval_records.append(rec)
-                    # Keep path for OMP teacher alignment
-                    if "path" in batch_eval:
-                        pass
-                    if args.max_samples and len(eval_prompts) >= args.max_samples:
-                        break
+                        eval_prompts = []
+                        eval_records = []
+                        gt_angles = []
+                if not eval_prompts:
+                    dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=False)
+                    for batch_eval in dl_eval:
+                        Y_np = batch_eval["Y"].squeeze(0).numpy()
+                        eval_prompts.append(" ".join(tok_patch(Y_np)))
+                        gt_a = int(batch_eval["angle_deg"]) if "angle_deg" in batch_eval else None
+                        gt_angles.append(int(gt_a) if gt_a is not None else 0)
+                        pth = batch_eval.get("path", "")
+                        if isinstance(pth, (list, tuple)):
+                            pth = pth[0] if pth else ""
+                        try:
+                            pth_abs = os.path.abspath(str(pth)) if pth else ""
+                        except Exception:
+                            pth_abs = str(pth) if pth else ""
+                        rec = {"path_abs": pth_abs, "angle_deg": int(gt_a) if gt_a is not None else None}
+                        eval_records.append(rec)
+                        if args.max_samples and len(eval_prompts) >= args.max_samples:
+                            break
                 enc_eval = tokenizer(
                     eval_prompts,
                     padding=True,
@@ -1158,18 +799,9 @@ def main():
                 allowed = set(direction_token_ids(tokenizer))
                 if args.K < 1 or args.K > len(allowed):
                     raise RuntimeError(f"Invalid K={args.K}; valid range is [1, {len(allowed)}]")
-                teacher_dir_ids = compute_rm_greedy_teacher(
-                    rm_model=rm_model,
-                    tokenizer=tokenizer,
-                    input_ids_prompt=input_ids_prompt,
-                    K=args.K,
-                    device=device,
-                )
+                # Compute Top-1 and Recall@K directly from RM scores (no greedy teacher)
                 top1_hits = 0
                 teacher_hits = 0
-                ev_total = int(input_ids_prompt.size(0))
-                ev_done = 0
-                ev_t0 = time.time()
                 for i in range(input_ids_prompt.size(0)):
                     row = input_ids_prompt[i]
                     patch_ids = get_patch_ids(tokenizer, row)
@@ -1183,26 +815,15 @@ def main():
                     gt_id = tokenizer.convert_tokens_to_ids(gt_token)
                     if gt_id not in allowed:
                         raise RuntimeError(f"Ground-truth token '{gt_token}' not in allowed direction tokens")
+                    # Top-1 by RM scores
                     best_id = max(cand_scores, key=cand_scores.get)
                     if best_id == gt_id:
                         top1_hits += 1
-                    if gt_id in teacher_dir_ids[i]:
+                    # Recall@K by RM scores
+                    topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(args.K)]]
+                    if gt_id in topk_ids:
                         teacher_hits += 1
-                    # Eval progress
-                    ev_done += 1
-                    if args.progress_every and (ev_done % max(1, args.progress_every) == 0 or ev_done == ev_total):
-                        elapsed = time.time() - ev_t0
-                        pct = 100.0 * ev_done / max(1, ev_total)
-                        eta = elapsed * (ev_total / max(1, ev_done) - 1.0)
-                        print({
-                            "epoch": epoch,
-                            "phase": "eval",
-                            "progress_samples": int(ev_done),
-                            "total_samples": int(ev_total),
-                            "pct": float(pct),
-                            "elapsed_s": float(elapsed),
-                            "eta_s": float(max(0.0, eta)),
-                        }, flush=True)
+                    # No noisy eval progress spam
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
                 recall_k = teacher_hits / max(1, total)
@@ -1238,83 +859,15 @@ def main():
                         "aligned_loss_vs_metrics": (bool(aligned) if aligned is not None else None),
                     }
                 })
-                # Write eval subset manifest for reproducibility and downstream verification
+                # Persist deterministic eval manifest
                 try:
-                    results_dir = os.path.join("results", f"{args.out}")
-                    os.makedirs(results_dir, exist_ok=True)
-                    manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
                     with open(manifest_path, "w") as mf:
                         json.dump({"files": eval_records}, mf, indent=2)
                     print({"epoch": epoch, "eval_manifest": manifest_path, "eval_records": int(len(eval_records))})
                 except Exception as _e:
                     print(f"Warning: failed to write eval manifest: {_e}")
 
-                if args.eval_omp_align:
-                    # Optional: OMP alignment metrics (may be slow)
-                    try:
-                        from scipy.stats import spearmanr  # Optional; fallback below if missing
-                        HAVE_SCIPY = True
-                    except Exception:
-                        HAVE_SCIPY = False
-
-                    inter_hits = 0
-                    rhos = []
-                    for batch_eval in dl_eval:
-                        Y_t = batch_eval["Y"].squeeze(0)
-                        y_src = batch_eval.get("path", None)
-                        if isinstance(y_src, (list, tuple)):
-                            y_src = y_src[0] if y_src else None
-                        if not y_src:
-                            continue
-                        content_path = _derive_content_path(args.content_root, y_src)
-                        Y_content = _load_band_spectrogram_from_npy(
-                            content_path,
-                            fs=args.sample_rate,
-                            n_fft=args.n_fft,
-                            freq_min=args.freq_min,
-                            freq_max=args.freq_max,
-                        ).float()
-                        if Y_content.shape != Y_t.shape:
-                            continue
-                        s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
-                        S_omp, _, _ = is_omp_select(
-                            Y_t.numpy().astype(np.float64), H.numpy().astype(np.float64), W_t.numpy().astype(np.float64),
-                            K=int(args.K), s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=16, mu_iter_warm=5, mu_iter_accept=20, eps=float(args.eps)
-                        )
-                        # Map RM top-K tokens to direction indices
-                        dir_ids_all_list = list(direction_token_ids(tokenizer))
-                        rm_topk_idx = []
-                        for tid in teacher_dir_ids[i]:
-                            if int(tid) in dir_ids_all_list:
-                                rm_topk_idx.append(int(dir_ids_all_list.index(int(tid))))
-                        inter_hits += len(set(S_omp).intersection(set(rm_topk_idx)))
-                        # Spearman: ΔIS vs RM scores across all directions
-                        ord_all, deltas_all = compute_deltais_step0(
-                            Y=Y_t.numpy().astype(np.float64), H=H.numpy().astype(np.float64), W=W_t.numpy().astype(np.float64),
-                            s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=None, mu_iter=10, baseline_k=2, eps=float(args.eps)
-                        )
-                        rm_scores_all = []
-                        row = input_ids_prompt[i]
-                        patch_ids = get_patch_ids(tokenizer, row)
-                        for j in ord_all:
-                            tid = int(dir_ids_all_list[j])
-                            rm_scores_all.append(float(rm_score_for_prefix(rm_model, tokenizer, [tid], patch_ids, device)))
-                        if len(rm_scores_all) >= 2:
-                            if HAVE_SCIPY:
-                                rho = float(spearmanr(rm_scores_all, deltas_all[:len(rm_scores_all)]).correlation)
-                            else:
-                                import numpy as _np
-                                def _rank(a):
-                                    order = _np.argsort(a)
-                                    ranks = _np.empty_like(order, dtype=float)
-                                    ranks[order] = _np.arange(1, len(a)+1)
-                                    return ranks
-                                r1 = _rank(_np.asarray(rm_scores_all))
-                                r2 = _rank(_np.asarray(deltas_all[:len(rm_scores_all)]))
-                                rho = float(_np.corrcoef(r1, r2)[0,1])
-                            rhos.append(rho)
-                    if total > 0:
-                        print({"epoch": epoch, "eval_intersection_at_K_sum": int(inter_hits), "eval_spearman_mean": float(np.mean(rhos) if rhos else 0.0)})
+                # OMP alignment diagnostics removed (simplification)
             finally:
                 rm_model.train()
 
@@ -1339,32 +892,6 @@ def main():
     print(f"\nSaved:")
     print(f"  - LoRA adapters: {lora_dir}/")
     print(f"  - Embeddings + V-head: {heads_path}")
-    
-    # Analyze embedding quality
-    print("\n" + "=" * 60)
-    print("Embedding Quality Analysis")
-    print("=" * 60)
-    
-    embeddings = rm_model.pretrained_model.get_input_embeddings()
-    dir_ids = tokenizer.convert_tokens_to_ids(list(tokenizer.direction_tokens))
-    dir_embs = embeddings(torch.tensor(dir_ids, device=device))
-    
-    # Compute pairwise cosine similarity
-    similarity = torch.nn.functional.cosine_similarity(
-        dir_embs.unsqueeze(1),
-        dir_embs.unsqueeze(0),
-        dim=2,
-    )
-    
-    off_diag_mean = (similarity.sum() - similarity.trace()).item() / (len(dir_ids) * (len(dir_ids) - 1))
-    
-    print(f"Direction token embeddings:")
-    print(f"  - Similarity range: [{similarity.min():.3f}, {similarity.max():.3f}]")
-    print(f"  - Mean off-diagonal: {off_diag_mean:.3f}")
-    print(f"\nInterpretation:")
-    print(f"  - Random embeddings: ~0.0")
-    print(f"  - Learned structure: >0.3 for nearby angles")
-    print("=" * 60)
 
 
 if __name__ == "__main__":
