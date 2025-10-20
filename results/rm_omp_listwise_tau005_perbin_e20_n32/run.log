@@ -1,0 +1,137 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 01:20:40.651000 68883 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Points total: 0 (~0.0/sample)
+Saved numeric diagnostics JSONL: results/rm_omp_listwise_tau005_perbin_e20_n32/numeric_diagnostics.jsonl
+{'teacher_softmax_summary': {'samples': 32, 'teacher_p_max_p50': 0.7373675418543404, 'teacher_p_max_p90': 0.771385764603655, 'teacher_p_max_p95': 0.8009163303090413, 'teacher_entropy_p50': 1.2052109318813145, 'teacher_entropy_p90': 1.3990624287715392, 'teacher_entropy_p95': 1.4296905907259, 'teacher_margin_logit_p50': 2.4436479172966585, 'teacher_margin_logit_p90': 2.8905276893868006, 'teacher_margin_logit_p95': 3.0983040582753443, 'deltais_range_over_tau_p50': 542487.1152254052, 'deltais_range_over_tau_p90': 674916.0496650373, 'deltais_range_over_tau_p95': 766629.3421651546, 'sat_frac_pmax_gt_0.9': 0.0}}
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'listwise_ce': 2.836296871304512, 'samples': 32}
+{'epoch': 0, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06012869253754616, 'q_max_p90': 0.060600098595023154, 'q_max_p95': 0.06086355112493038, 'q_entropy_p50': 2.8331512212753296, 'q_entropy_p90': 2.833183217048645, 'q_entropy_p95': 2.8331863641738892, 'q_margin_logit_p50': 0.004371538758277893, 'q_margin_logit_p90': 0.011083702743053439, 'q_margin_logit_p95': 0.012817079201340675}}
+{'epoch': 0, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'listwise_ce': 2.830721840262413, 'samples': 32}
+{'epoch': 1, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06027382239699364, 'q_max_p90': 0.06072026006877422, 'q_max_p95': 0.06092016976326704, 'q_entropy_p50': 2.833137631416321, 'q_entropy_p90': 2.8331605195999146, 'q_entropy_p95': 2.833174431324005, 'q_margin_logit_p50': 0.005432740319520235, 'q_margin_logit_p90': 0.015192853938788177, 'q_margin_logit_p95': 0.01586600225418806}}
+{'epoch': 1, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 2, 'listwise_ce': 2.8270289823412895, 'samples': 32}
+{'epoch': 2, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.060656771063804626, 'q_max_p90': 0.06149839796125889, 'q_max_p95': 0.061606571264564994, 'q_entropy_p50': 2.833051085472107, 'q_entropy_p90': 2.8331013917922974, 'q_entropy_p95': 2.833123564720154, 'q_margin_logit_p50': 0.0042336368933320045, 'q_margin_logit_p90': 0.014596713520586493, 'q_margin_logit_p95': 0.020204565580934277}}
+{'epoch': 2, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 2, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 3, 'listwise_ce': 2.819106988608837, 'samples': 32}
+{'epoch': 3, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.062209347262978554, 'q_max_p90': 0.06348614990711213, 'q_max_p95': 0.06362035423517227, 'q_entropy_p50': 2.8325634002685547, 'q_entropy_p90': 2.8329012632369994, 'q_entropy_p95': 2.8329917073249815, 'q_margin_logit_p50': 0.009825475513935089, 'q_margin_logit_p90': 0.02484809383749962, 'q_margin_logit_p95': 0.02596547156572342}}
+{'epoch': 3, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.25, 'eval_samples': 32, 'K': 3}
+{'epoch': 3, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 4, 'listwise_ce': 2.7852231860160828, 'samples': 32}
+{'epoch': 4, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.06832323595881462, 'q_max_p90': 0.07610494047403336, 'q_max_p95': 0.07771467566490173, 'q_entropy_p50': 2.827515125274658, 'q_entropy_p90': 2.8311452627182008, 'q_entropy_p95': 2.8312781929969786, 'q_margin_logit_p50': 0.022208867594599724, 'q_margin_logit_p90': 0.06169667467474939, 'q_margin_logit_p95': 0.06763529479503631}}
+{'epoch': 4, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 4, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 5, 'listwise_ce': 2.6897938400506973, 'samples': 32}
+{'epoch': 5, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.09827845171093941, 'q_max_p90': 0.12773015573620797, 'q_max_p95': 0.13272373601794243, 'q_entropy_p50': 2.7395119667053223, 'q_entropy_p90': 2.800666570663452, 'q_entropy_p95': 2.805001676082611, 'q_margin_logit_p50': 0.06266781687736511, 'q_margin_logit_p90': 0.209003359079361, 'q_margin_logit_p95': 0.31600104421377184}}
+{'epoch': 5, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.25, 'eval_samples': 32, 'K': 3}
+{'epoch': 5, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 6, 'listwise_ce': 2.708356000483036, 'samples': 32}
+{'epoch': 6, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.09777195379137993, 'q_max_p90': 0.12361322715878487, 'q_max_p95': 0.1296801045536995, 'q_entropy_p50': 2.730492353439331, 'q_entropy_p90': 2.771696186065674, 'q_entropy_p95': 2.7809356570243837, 'q_margin_logit_p50': 0.041936635971069336, 'q_margin_logit_p90': 0.26098779439926156, 'q_margin_logit_p95': 0.3261899158358573}}
+{'epoch': 6, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 6, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 7, 'listwise_ce': 2.633308693766594, 'samples': 32}
+{'epoch': 7, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.1040499098598957, 'q_max_p90': 0.11547301262617111, 'q_max_p95': 0.11916673518717288, 'q_entropy_p50': 2.6538259983062744, 'q_entropy_p90': 2.738583517074585, 'q_entropy_p95': 2.7424065232276917, 'q_margin_logit_p50': 0.07108938694000244, 'q_margin_logit_p90': 0.17184516191482546, 'q_margin_logit_p95': 0.21265889406204222}}
+{'epoch': 7, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 7, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 8, 'listwise_ce': 2.649271048605442, 'samples': 32}
+{'epoch': 8, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10826996341347694, 'q_max_p90': 0.13249941468238832, 'q_max_p95': 0.13638810366392135, 'q_entropy_p50': 2.602750539779663, 'q_entropy_p90': 2.697233510017395, 'q_entropy_p95': 2.7029993653297426, 'q_margin_logit_p50': 0.050409555435180664, 'q_margin_logit_p90': 0.17926657199859622, 'q_margin_logit_p95': 0.21182816624641415}}
+{'epoch': 8, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 8, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 9, 'listwise_ce': 2.6981306672096252, 'samples': 32}
+{'epoch': 9, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10089969262480736, 'q_max_p90': 0.11741058900952339, 'q_max_p95': 0.1251935351639986, 'q_entropy_p50': 2.678372621536255, 'q_entropy_p90': 2.76512553691864, 'q_entropy_p95': 2.770335781574249, 'q_margin_logit_p50': 0.07192444801330566, 'q_margin_logit_p90': 0.2150256037712098, 'q_margin_logit_p95': 0.23445370942354202}}
+{'epoch': 9, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.25, 'eval_samples': 32, 'K': 3}
+{'epoch': 9, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 10, 'listwise_ce': 2.6218267157673836, 'samples': 32}
+{'epoch': 10, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10769245401024818, 'q_max_p90': 0.11813579723238946, 'q_max_p95': 0.12413495555520057, 'q_entropy_p50': 2.6324679851531982, 'q_entropy_p90': 2.671854758262634, 'q_entropy_p95': 2.6781741976737976, 'q_margin_logit_p50': 0.08363038301467896, 'q_margin_logit_p90': 0.16673594713211062, 'q_margin_logit_p95': 0.1910590440034866}}
+{'epoch': 10, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 10, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 11, 'listwise_ce': 2.636697068810463, 'samples': 32}
+{'epoch': 11, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10665762051939964, 'q_max_p90': 0.11985460445284844, 'q_max_p95': 0.12013016529381275, 'q_entropy_p50': 2.6134363412857056, 'q_entropy_p90': 2.642971467971802, 'q_entropy_p95': 2.650756072998047, 'q_margin_logit_p50': 0.04770529270172119, 'q_margin_logit_p90': 0.15327937602996827, 'q_margin_logit_p95': 0.18230146989226337}}
+{'epoch': 11, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 11, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 12, 'listwise_ce': 2.646431550383568, 'samples': 32}
+{'epoch': 12, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10678287968039513, 'q_max_p90': 0.11943129524588585, 'q_max_p95': 0.12782433032989501, 'q_entropy_p50': 2.581931948661804, 'q_entropy_p90': 2.6365585803985594, 'q_entropy_p95': 2.6397539138793946, 'q_margin_logit_p50': 0.05547632277011871, 'q_margin_logit_p90': 0.12741266489028932, 'q_margin_logit_p95': 0.1593319177627563}}
+{'epoch': 12, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.09375, 'eval_samples': 32, 'K': 3}
+{'epoch': 12, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 13, 'listwise_ce': 2.614851623773575, 'samples': 32}
+{'epoch': 13, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10434340685606003, 'q_max_p90': 0.1146231733262539, 'q_max_p95': 0.11793983988463878, 'q_entropy_p50': 2.618182420730591, 'q_entropy_p90': 2.6875523805618284, 'q_entropy_p95': 2.6910949110984803, 'q_margin_logit_p50': 0.05403029918670654, 'q_margin_logit_p90': 0.1562489986419678, 'q_margin_logit_p95': 0.16220349222421646}}
+{'epoch': 13, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 13, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 14, 'listwise_ce': 2.6296171322464943, 'samples': 32}
+{'epoch': 14, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.09688448160886765, 'q_max_p90': 0.11944156587123872, 'q_max_p95': 0.12302901819348336, 'q_entropy_p50': 2.6105340719223022, 'q_entropy_p90': 2.722148036956787, 'q_entropy_p95': 2.7243783235549928, 'q_margin_logit_p50': 0.0314713716506958, 'q_margin_logit_p90': 0.17180747985839845, 'q_margin_logit_p95': 0.18324485421180725}}
+{'epoch': 14, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 14, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 15, 'listwise_ce': 2.671647012233734, 'samples': 32}
+{'epoch': 15, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10454441979527473, 'q_max_p90': 0.11351151168346404, 'q_max_p95': 0.11625179313123227, 'q_entropy_p50': 2.617993116378784, 'q_entropy_p90': 2.7038832187652586, 'q_entropy_p95': 2.705094075202942, 'q_margin_logit_p50': 0.046947091817855835, 'q_margin_logit_p90': 0.17109609842300424, 'q_margin_logit_p95': 0.1844921290874481}}
+{'epoch': 15, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 15, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 16, 'listwise_ce': 2.6503651961684227, 'samples': 32}
+{'epoch': 16, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.10097769275307655, 'q_max_p90': 0.11046148389577866, 'q_max_p95': 0.11207043677568436, 'q_entropy_p50': 2.5969542264938354, 'q_entropy_p90': 2.6660665035247804, 'q_entropy_p95': 2.672947633266449, 'q_margin_logit_p50': 0.03620564937591553, 'q_margin_logit_p90': 0.08974945545196535, 'q_margin_logit_p95': 0.11132430434226989}}
+{'epoch': 16, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 16, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 17, 'listwise_ce': 2.6389366686344147, 'samples': 32}
+{'epoch': 17, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.09781799837946892, 'q_max_p90': 0.10821926221251488, 'q_max_p95': 0.11156062185764312, 'q_entropy_p50': 2.583868145942688, 'q_entropy_p90': 2.6598476648330687, 'q_entropy_p95': 2.6619754314422606, 'q_margin_logit_p50': 0.030897140502929688, 'q_margin_logit_p90': 0.08632514476776124, 'q_margin_logit_p95': 0.1086756110191345}}
+{'epoch': 17, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 17, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 18, 'listwise_ce': 2.644106335937977, 'samples': 32}
+{'epoch': 18, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.09999512135982513, 'q_max_p90': 0.11233199983835221, 'q_max_p95': 0.11452428884804249, 'q_entropy_p50': 2.5774725675582886, 'q_entropy_p90': 2.6519662618637083, 'q_entropy_p95': 2.6531609773635862, 'q_margin_logit_p50': 0.03833252191543579, 'q_margin_logit_p90': 0.10686359405517579, 'q_margin_logit_p95': 0.13150187730789184}}
+{'epoch': 18, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 18, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 19, 'listwise_ce': 2.6346185132861137, 'samples': 32}
+{'epoch': 19, 'q_softmax_summary': {'samples': 32, 'q_max_p50': 0.1016421914100647, 'q_max_p90': 0.11494064629077912, 'q_max_p95': 0.11686133071780205, 'q_entropy_p50': 2.5690088272094727, 'q_entropy_p90': 2.636932682991028, 'q_entropy_p95': 2.6403071165084837, 'q_margin_logit_p50': 0.03496754169464111, 'q_margin_logit_p90': 0.10105003118515019, 'q_margin_logit_p95': 0.11414804458618164}}
+{'epoch': 19, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.0625, 'eval_samples': 32, 'K': 3}
+{'epoch': 19, 'eval_manifest': 'results/rm_omp_listwise_tau005_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_omp_listwise_tau005_perbin_e20_n32_adapters/
+  - Embeddings + V-head: rm_omp_listwise_tau005_perbin_e20_n32_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.213, 1.000]
+  - Mean off-diagonal: 0.043
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================
