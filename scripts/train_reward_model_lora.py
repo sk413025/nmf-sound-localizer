@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
-"""Train Reward Model with LoRA — LTR (pairwise/pointwise) using USM ŝ.
+"""Train Reward Model with LoRA — Pairwise LTR (Bradley–Terry) using USM ŝ.
 
-Conceptual alignment with docs/rm.md while preserving project data flow:
-- Physics teacher uses USM content spectrum ŝ(F,) computed from real data and a
-  pre-trained dictionary W(F,K): Y_hat(d) = diag(H_d) ⊙ ŝ, score s_d = -D_IS(Y || Y_hat(d))
-  (or -||Y - Y_hat(d)||^2 for euc). No S(F,N) waveform teacher or fallback.
-
-Supervision modes:
-- pairwise (default): Bradley–Terry on β·(pred_pos − pred_neg)
-- pointwise: MSE on teacher scores per direction
+Flow:
+- Physics teacher uses USM content spectrum ŝ(F,) with dictionary W(F,K)
+  to score directions by ΔIS(d|∅) (IS‑OMP step0); higher is better.
+- Supervision: pairwise Bradley–Terry on β·(pred_pos − pred_neg).
 
 Guardrails (No‑fallback policy):
 - Exact angle match (dataset ↔ TF asset); no nearest mapping
 - Strict grid alignment: Y.F == H.F == W.F; band [freq_min, freq_max]
 - ŝ must be non‑negative, finite, shape (F,); else raise
 
-Diagnostics: per‑sample JSONL under results/<out>/numeric_diagnostics.jsonl
-including STFT grid, eps, signal stats (Y/ŝ), and teacher score stats.
+Diagnostics: minimal per‑sample JSONL with STFT grid and invariants.
 """
 
 from __future__ import annotations
@@ -26,8 +21,6 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, List, Tuple, Sequence
-import sys
-import time
 
 import numpy as np
 import torch
@@ -92,53 +85,7 @@ def _load_band_spectrogram_from_npy(
     return torch.from_numpy(mag_band)
 
 
-def _is_divergence(Y: torch.Tensor, Yhat: torch.Tensor, eps: float) -> torch.Tensor:
-    """Itakura–Saito divergence with shared eps; supports vector Yhat.
-
-    Y: (F,N), Yhat: (F,N) or (F,). If (F,), it will be broadcast across time.
-    """
-    Yc = torch.clamp(Y, min=eps)
-    if Yhat.dim() == 1:
-        Yhc = torch.clamp(Yhat.view(-1, 1).expand_as(Yc), min=eps)
-    else:
-        Yhc = torch.clamp(Yhat, min=eps)
-    ratio = Yc / Yhc
-    return torch.sum(ratio - torch.log(torch.clamp(ratio, min=eps)) - 1.0)
-
-
-def _teacher_scores(
-    Y: torch.Tensor,
-    s_hat: torch.Tensor,
-    H: torch.Tensor,
-    dir_indices: Sequence[int],
-    teacher: str = "fit",
-    eps: float = 1e-8,
-) -> List[float]:
-    """Compute s_d for each direction index using USM ŝ:
-
-    - fit (IS): s_d = -IS(Y || diag(H_d) ⊙ ŝ)
-    - euc:      s_d = -||Y - diag(H_d) ⊙ ŝ||^2
-    """
-    F, N = Y.shape
-    if H.shape[0] != F:
-        raise RuntimeError(f"H.F must equal Y.F. Got H.F={int(H.shape[0])} vs Y.F={int(F)}")
-    if s_hat.dim() != 1 or int(s_hat.shape[0]) != int(F):
-        raise RuntimeError(f"ŝ must be (F,), got {tuple(s_hat.shape)} vs F={int(F)}")
-    Yc = torch.clamp(Y.float(), min=eps)
-    sh = torch.clamp(s_hat.float(), min=eps)
-    scores: List[float] = []
-    for d in dir_indices:
-        Hd = torch.clamp(H[:, d], min=eps)
-        Yhat_vec = Hd * sh  # (F,)
-        if teacher == "fit":
-            val = -_is_divergence(Yc, Yhat_vec, eps=eps).item()
-        elif teacher == "euc":
-            diff = (Yc - Yhat_vec.view(-1, 1).expand_as(Yc))
-            val = -float(torch.sum(diff * diff).item())
-        else:
-            raise ValueError(f"Unknown teacher: {teacher}")
-        scores.append(val)
-    return scores
+## Removed alternative teacher score helpers (fit/euc). OMP ΔIS only.
 
 
 def _pad_to_batch(rows: List[List[int]], pad_id: int) -> torch.Tensor:
@@ -226,10 +173,9 @@ def main():
     ap.add_argument("--w-path", type=str, required=True)
     ap.add_argument("--content-root", type=str, required=True, help="Root of Original/content dataset (mirrors angle_/clip_ structure)")
     ap.add_argument("--K", type=int, default=3)
-    # Teacher scoring (LTR)
-    ap.add_argument("--teacher", type=str, choices=["omp"], default="omp", help="Teacher: omp=ΔIS step0 (IS‑OMP)")
+    # Teacher scoring (LTR): fixed to OMP ΔIS step0 (IS‑OMP)
     ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for logits scaling")
-    ap.add_argument("--directions-per-sample", type=int, default=0, help="0=all directions; else random subset size")
+    # Always use all directions per sample (no subsampling)
     ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
     
     # LoRA hyperparameters
@@ -262,17 +208,9 @@ def main():
     
     ap.add_argument("--out", type=str, default="rm_ckpt_lora")
     ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
-    ap.add_argument("--supervision", type=str, choices=["pairwise", "pointwise"], default="pairwise",
-                    help="LTR supervision: pairwise BT or pointwise regression (listwise disabled in this branch)")
+    # Pairwise-only supervision (simplified)
     ap.add_argument("--eps", type=float, default=1e-8, help="Numerical epsilon for IS divergence and clamping")
     # Listwise disabled in this branch
-    # Optional preflight evaluator (detection-only) to gate training
-    ap.add_argument("--preflight", action="store_true", help="Run physics-teacher alignment evaluator and gate training")
-    ap.add_argument("--preflight-max-samples", type=int, default=64)
-    ap.add_argument("--preflight-directions-per-sample", type=int, default=0)
-    ap.add_argument("--preflight-strict-teacher-top1", type=float, default=0.7)
-    ap.add_argument("--preflight-strict-recallK", type=float, default=0.9)
-    ap.add_argument("--preflight-strict-h-top1", type=float, default=0.7)
     args = ap.parse_args()
 
     # Track epoch loss and eval metrics to report alignment of loss vs Top-1/Recall@K
@@ -330,12 +268,8 @@ def main():
     # Preflight removed to simplify codepath
 
     # Load W (USM dictionary) for ŝ estimation
-    if args.w_path.endswith('.npz'):
-        W_np = np.load(args.w_path)["W"].astype(np.float32)
-        W_t = torch.from_numpy(W_np)
-    else:
-        W_t = load_W(args.w_path).float().cpu()
-        W_np = W_t.cpu().numpy().astype(np.float32)
+    # Load W (USM dictionary) for ŝ estimation
+    W_t = load_W(args.w_path).float().cpu()
 
     # Build base RM model
     rm_model, _ = build_value_head_model(tokenizer)
@@ -356,7 +290,7 @@ def main():
         inference_mode=False,
     )
     
-    print(f"LoRA config:")
+    print("LoRA config:")
     print(f"  - Rank (r): {args.lora_r}")
     print(f"  - Alpha: {args.lora_alpha}")
     print(f"  - Dropout: {args.lora_dropout}")
@@ -403,7 +337,7 @@ def main():
     # Build pairwise BT dataset from forward‑model teachers
     dir_token_ids_all: List[int] = list(direction_token_ids(tokenizer))
     d_count = len(dir_token_ids_all)
-    tokenid_to_dindex = {tid: i for i, tid in enumerate(dir_token_ids_all)}
+    # No reverse index needed in simplified trainer
 
     results_dir = os.path.join("results", f"{args.out}")
     os.makedirs(results_dir, exist_ok=True)
@@ -461,39 +395,22 @@ def main():
             raise RuntimeError("ŝ contains non-finite values; aborting")
         if (s_hat_t < 0).any():
             raise RuntimeError("ŝ contains negatives; aborting")
-        # Candidate direction indices
-        if args.directions_per_sample and args.directions_per_sample > 0:
-            sel_idx = np.random.choice(d_count, size=min(args.directions_per_sample, d_count), replace=False)
-            d_indices = [int(i) for i in sel_idx]
-        else:
-            d_indices = list(range(d_count))
-        # Teacher scores
-        if args.teacher == "omp":
-            # Use ΔIS(d|S=∅) via IS‑OMP step0; returns sorted indices and deltas
-            ord_all, deltas_all = compute_deltais_step0(
-                Y=Y.numpy().astype(np.float64),
-                H=H.numpy().astype(np.float64),
-                W=W_t.numpy().astype(np.float64),
-                s_hat=s_hat_t.numpy().astype(np.float64),
-                prefilter_M=None,
-                mu_iter=10,
-                baseline_k=2,
-                eps=float(args.eps),
-            )
-            # Respect directions_per_sample if set
-            if args.directions_per_sample and args.directions_per_sample > 0:
-                ord_use = ord_all[: min(int(args.directions_per_sample), len(ord_all))]
-            else:
-                ord_use = ord_all
-            d_indices = ord_use
-            # Map deltas for selected indices
-            delta_map = {ord_all[i]: deltas_all[i] for i in range(len(ord_all))}
-            scores = [float(delta_map[idx]) for idx in d_indices]
-        else:
-            # −IS / −L2 teacher
-            scores = _teacher_scores(
-                Y=Y, s_hat=s_hat_t, H=H, dir_indices=d_indices, teacher=args.teacher, eps=float(args.eps)
-            )
+        # Candidate direction indices: use all directions
+        d_indices = list(range(d_count))
+        # Teacher scores: ΔIS(d|∅) via IS‑OMP step0
+        ord_all, deltas_all = compute_deltais_step0(
+            Y=Y.numpy().astype(np.float64),
+            H=H.numpy().astype(np.float64),
+            W=W_t.numpy().astype(np.float64),
+            s_hat=s_hat_t.numpy().astype(np.float64),
+            prefilter_M=None,
+            mu_iter=10,
+            baseline_k=2,
+            eps=float(args.eps),
+        )
+        d_indices = ord_all
+        delta_map = {ord_all[i]: deltas_all[i] for i in range(len(ord_all))}
+        scores = [float(delta_map[idx]) for idx in d_indices]
         s_arr = np.asarray(scores, dtype=float)
         def stats(x):
             return {
@@ -509,38 +426,33 @@ def main():
         order.sort(key=lambda i: scores[i], reverse=True)
         top_k = order[: max(1, len(order)//4)]
         bot_k = order[-max(1, len(order)//4):]
-        teacher_diag = {}
-        if args.supervision == "pairwise":
-            pairs: List[Tuple[int, int]] = []
-            for a in top_k:
-                for b in bot_k:
-                    if a == b or scores[a] == scores[b]:
-                        continue
-                    pairs.append((a, b))
-            # Fill with random distinct pairs if needed
-            rng = np.random.default_rng(seed=si + args.seed)
-            while len(pairs) < args.pairs_per_sample and len(pairs) < len(order)*(len(order)-1):
-                i, j = rng.integers(0, len(order), size=2)
-                if i == j or scores[i] == scores[j]:
+        # Build pairwise supervision rows (top vs bottom)
+        pairs: List[Tuple[int, int]] = []
+        for a in top_k:
+            for b in bot_k:
+                if a == b or scores[a] == scores[b]:
                     continue
-                if scores[i] > scores[j]:
-                    pairs.append((i, j))
-                else:
-                    pairs.append((j, i))
-            if len(pairs) > args.pairs_per_sample:
-                pairs = pairs[: args.pairs_per_sample]
-            # Emit rows
-            for (ai, bi) in pairs:
-                d_pos = d_indices[ai]
-                d_neg = d_indices[bi]
-                pair_rows.append({
-                    "sample_index": si,
-                    "dir_pos": int(dir_token_ids_all[d_pos]),
-                    "dir_neg": int(dir_token_ids_all[d_neg]),
-                    "patch_len": int(len(patch_ids_list[si])),
-                })
-        else:
-            # Build pairwise (top vs bottom) supervision rows
+                pairs.append((a, b))
+        rng = np.random.default_rng(seed=si + args.seed)
+        while len(pairs) < args.pairs_per_sample and len(pairs) < len(order)*(len(order)-1):
+            i, j = rng.integers(0, len(order), size=2)
+            if i == j or scores[i] == scores[j]:
+                continue
+            if scores[i] > scores[j]:
+                pairs.append((i, j))
+            else:
+                pairs.append((j, i))
+        if len(pairs) > args.pairs_per_sample:
+            pairs = pairs[: args.pairs_per_sample]
+        for (ai, bi) in pairs:
+            d_pos = d_indices[ai]
+            d_neg = d_indices[bi]
+            pair_rows.append({
+                "sample_index": si,
+                "dir_pos": int(dir_token_ids_all[d_pos]),
+                "dir_neg": int(dir_token_ids_all[d_neg]),
+                "patch_len": int(len(patch_ids_list[si])),
+            })
             order = list(range(len(d_indices)))
             order.sort(key=lambda i: scores[i], reverse=True)
             top_k = order[: max(1, len(order)//4)]
@@ -572,7 +484,7 @@ def main():
                     "patch_len": int(len(patch_ids_list[si])),
                 })
         # Per-sample log
-        deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if (args.supervision == "pairwise" and 'pairs' in locals() and pairs) else np.array([0.0])
+        deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if ('pairs' in locals() and pairs) else np.array([0.0])
         # Signal stats and baseline_k=2
         Y_np = Y.numpy()
         s_np = s_hat_t.numpy()
@@ -599,7 +511,6 @@ def main():
             "path": os.path.basename(y_src) or "",
             "F": int(F),
             "N": int(N),
-            "teacher": args.teacher,
             "beta": float(args.bt_beta),
             "fs": int(args.sample_rate),
             "n_fft": int(args.n_fft),
@@ -607,7 +518,7 @@ def main():
             "freq_max": float(args.freq_max),
             "eps": float(args.eps),
             "dirs_considered": int(len(d_indices)),
-            "pairs": int(len(pairs)) if args.supervision == "pairwise" else 0,
+            "pairs": int(len(pairs)),
             "score_stats": stats(s_arr),
             "delta_stats": stats(deltas),
             "Y_min": Y_min, "Y_mean": Y_mean, "Y_max": Y_max,
@@ -620,9 +531,7 @@ def main():
             "ratio_base_p95": ratio_p95,
             "ratio_base_p99": ratio_p99,
         }
-        # Attach teacher softmax diagnostics if available
-        if 'teacher_diag' in locals() and teacher_diag:
-            log_row.update(teacher_diag)
+        # No teacher softmax diagnostics in simplified trainer
         sample_logs.append(log_row)
         with open(jsonl_path, "a") as jf:
             jf.write(json.dumps(log_row) + "\n")
@@ -657,7 +566,7 @@ def main():
         },
     ])
     
-    print(f"Optimizer:")
+    print("Optimizer:")
     print(f"  - LoRA LR:       {args.lr_lora}")
     print(f"  - Embedding LR:  {args.lr_embed}")
     print(f"  - V-head LR:     {args.lr_vhead}\n")
@@ -680,50 +589,50 @@ def main():
         denom = 0
         epoch_loss_name = "loss"
         epoch_loss_value = 0.0
-        if args.supervision == "pairwise":
-            for batch in _iter_batches(pair_rows, args.batch_size):
-                # Build sequences for pos/neg
-                seqs: List[List[int]] = []
-                patch_lens: List[int] = []
-                for row in batch:
-                    si = row["sample_index"]
-                    patch_ids = patch_ids_list[si]
-                    seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
-                    seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
-                    patch_lens.extend([len(patch_ids), len(patch_ids)])
-                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
-                attn = (inp != tokenizer.pad_token_id).to(device)
-                out = rm_model.pretrained_model(
-                    input_ids=inp,
-                    attention_mask=attn,
-                    output_hidden_states=True,
-                    return_dict=True,
-                )
-                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
-                means: List[torch.Tensor] = []
-                for r in range(vals.size(0)):
-                    plen = patch_lens[r]
-                    seqlen = int(attn[r].sum().item())
-                    if plen == 0:
-                        means.append(vals[r, seqlen-1:seqlen].mean())
-                    else:
-                        means.append(vals[r, seqlen-plen:seqlen].mean())
-                means_t = torch.stack(means, dim=0)
-                pos_pred = means_t[0::2]
-                neg_pred = means_t[1::2]
-                logits = float(args.bt_beta) * (pos_pred - neg_pred)
-                target = torch.ones_like(logits)
-                loss = bce(logits, target)
-                optimizer.zero_grad(set_to_none=True)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
-                optimizer.step()
-                total_loss += float(loss.item()) * len(batch)
-                denom += len(batch)
-            avg_loss = total_loss / max(1, denom)
-            epoch_loss_name = "bt_pair_loss"
-            epoch_loss_value = float(avg_loss)
-            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "pairs": int(denom)})
+        # Pairwise BT training
+        for batch in _iter_batches(pair_rows, args.batch_size):
+            # Build sequences for pos/neg
+            seqs: List[List[int]] = []
+            patch_lens: List[int] = []
+            for row in batch:
+                si = row["sample_index"]
+                patch_ids = patch_ids_list[si]
+                seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
+                seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
+                patch_lens.extend([len(patch_ids), len(patch_ids)])
+            inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+            attn = (inp != tokenizer.pad_token_id).to(device)
+            out = rm_model.pretrained_model(
+                input_ids=inp,
+                attention_mask=attn,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
+            means: List[torch.Tensor] = []
+            for r in range(vals.size(0)):
+                plen = patch_lens[r]
+                seqlen = int(attn[r].sum().item())
+                if plen == 0:
+                    means.append(vals[r, seqlen-1:seqlen].mean())
+                else:
+                    means.append(vals[r, seqlen-plen:seqlen].mean())
+            means_t = torch.stack(means, dim=0)
+            pos_pred = means_t[0::2]
+            neg_pred = means_t[1::2]
+            logits = float(args.bt_beta) * (pos_pred - neg_pred)
+            target = torch.ones_like(logits)
+            loss = bce(logits, target)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
+            optimizer.step()
+            total_loss += float(loss.item()) * len(batch)
+            denom += len(batch)
+        avg_loss = total_loss / max(1, denom)
+        epoch_loss_name = "bt_pair_loss"
+        epoch_loss_value = float(avg_loss)
+        print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "pairs": int(denom)})
 
         # Record epoch loss for downstream correlation with eval metrics
         try:
@@ -871,7 +780,7 @@ def main():
             finally:
                 rm_model.train()
 
-    print(f"\nTraining completed!")
+    print("\nTraining completed!")
     
     # Save LoRA adapters and heads
     lora_dir = f"{args.out}_adapters"
@@ -884,12 +793,12 @@ def main():
         "config": {
             "lora_r": args.lora_r,
             "lora_alpha": args.lora_alpha,
-            "teacher": args.teacher,
+            "teacher": "omp",
             "bt_beta": float(args.bt_beta),
         }
     }, heads_path)
     
-    print(f"\nSaved:")
+    print("\nSaved:")
     print(f"  - LoRA adapters: {lora_dir}/")
     print(f"  - Embeddings + V-head: {heads_path}")
 
