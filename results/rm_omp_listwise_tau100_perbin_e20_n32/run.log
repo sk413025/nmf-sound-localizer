@@ -1,0 +1,117 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 00:44:31.485000 57983 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Points total: 0 (~0.0/sample)
+Saved numeric diagnostics JSONL: results/rm_omp_listwise_tau100_perbin_e20_n32/numeric_diagnostics.jsonl
+{'teacher_softmax_summary': {'samples': 32, 'teacher_p_max_p50': 0.07134352754824247, 'teacher_p_max_p90': 0.07218555078245267, 'teacher_p_max_p95': 0.07277364678619912, 'teacher_entropy_p50': 2.8308251755966727, 'teacher_entropy_p90': 2.831376468443162, 'teacher_entropy_p95': 2.831451644389427, 'teacher_margin_logit_p50': 0.12218239586483294, 'teacher_margin_logit_p90': 0.14452638446934005, 'teacher_margin_logit_p95': 0.1549152029137672, 'deltais_range_over_tau_p50': 27124.355761270264, 'deltais_range_over_tau_p90': 33745.80248325187, 'deltais_range_over_tau_p95': 38331.46710825773, 'sat_frac_pmax_gt_0.9': 0.0}}
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'listwise_ce': 2.8333077281713486, 'samples': 32}
+{'epoch': 0, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'listwise_ce': 2.8331681564450264, 'samples': 32}
+{'epoch': 1, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 2, 'listwise_ce': 2.833128958940506, 'samples': 32}
+{'epoch': 2, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 2, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 3, 'listwise_ce': 2.8330406844615936, 'samples': 32}
+{'epoch': 3, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 3, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 4, 'listwise_ce': 2.8330069556832314, 'samples': 32}
+{'epoch': 4, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.125, 'eval_samples': 32, 'K': 3}
+{'epoch': 4, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 5, 'listwise_ce': 2.8329496309161186, 'samples': 32}
+{'epoch': 5, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.25, 'eval_samples': 32, 'K': 3}
+{'epoch': 5, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 6, 'listwise_ce': 2.833028919994831, 'samples': 32}
+{'epoch': 6, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 6, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 7, 'listwise_ce': 2.8329583182930946, 'samples': 32}
+{'epoch': 7, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 7, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 8, 'listwise_ce': 2.833008699119091, 'samples': 32}
+{'epoch': 8, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.125, 'eval_samples': 32, 'K': 3}
+{'epoch': 8, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 9, 'listwise_ce': 2.8329661563038826, 'samples': 32}
+{'epoch': 9, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 9, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 10, 'listwise_ce': 2.8329082131385803, 'samples': 32}
+{'epoch': 10, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 10, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 11, 'listwise_ce': 2.832940772175789, 'samples': 32}
+{'epoch': 11, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 11, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 12, 'listwise_ce': 2.8329061791300774, 'samples': 32}
+{'epoch': 12, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.09375, 'eval_samples': 32, 'K': 3}
+{'epoch': 12, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 13, 'listwise_ce': 2.832926355302334, 'samples': 32}
+{'epoch': 13, 'eval_top1_acc': 0.03125, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 13, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 14, 'listwise_ce': 2.8328626602888107, 'samples': 32}
+{'epoch': 14, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 14, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 15, 'listwise_ce': 2.832983560860157, 'samples': 32}
+{'epoch': 15, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.15625, 'eval_samples': 32, 'K': 3}
+{'epoch': 15, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 16, 'listwise_ce': 2.8329445347189903, 'samples': 32}
+{'epoch': 16, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 16, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 17, 'listwise_ce': 2.832905948162079, 'samples': 32}
+{'epoch': 17, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 17, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 18, 'listwise_ce': 2.8329517245292664, 'samples': 32}
+{'epoch': 18, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 18, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 19, 'listwise_ce': 2.8328773453831673, 'samples': 32}
+{'epoch': 19, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.0625, 'eval_samples': 32, 'K': 3}
+{'epoch': 19, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_e20_n32/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_omp_listwise_tau100_perbin_e20_n32_adapters/
+  - Embeddings + V-head: rm_omp_listwise_tau100_perbin_e20_n32_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.308, 1.000]
+  - Mean off-diagonal: -0.005
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================
