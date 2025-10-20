@@ -27,6 +27,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Tuple, Sequence
 import subprocess, sys
+import time
 
 import numpy as np
 import torch
@@ -259,19 +260,14 @@ def main():
     ap.add_argument("--patch-fp", type=int, default=16)
     ap.add_argument("--patch-np", type=int, default=10)
     ap.add_argument("--max-samples", type=int, default=0)
+    ap.add_argument("--progress-every", type=int, default=16, help="Print progress every N rows/samples (0=off)")
     
     ap.add_argument("--out", type=str, default="rm_ckpt_lora")
     ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
-    ap.add_argument("--supervision", type=str, choices=["pairwise", "pointwise", "listwise"], default="pairwise",
-                    help="LTR supervision: pairwise BT, pointwise regression, or listwise (DoA-aligned)")
+    ap.add_argument("--supervision", type=str, choices=["pairwise", "pointwise"], default="pairwise",
+                    help="LTR supervision: pairwise BT or pointwise regression (listwise disabled in this branch)")
     ap.add_argument("--eps", type=float, default=1e-8, help="Numerical epsilon for IS divergence and clamping")
-    # Listwise options (DoA-aligned)
-    ap.add_argument("--listwise-tau-deg", type=float, default=5.0,
-                    help="Angular temperature (deg) for teacher softmax in listwise supervision")
-    ap.add_argument("--listwise-tol-deg", type=float, default=10.0,
-                    help="Within-tolerance angles receive highest weight (teacher shaping)")
-    ap.add_argument("--listwise-normalize", type=str, default="none", choices=["none", "per_bin"],
-                    help="Normalize teacher scores before softmax: none (raw ΔIS) or per_bin (ΔIS/(F*N))")
+    # Listwise disabled in this branch
     # Optional preflight evaluator (detection-only) to gate training
     ap.add_argument("--preflight", action="store_true", help="Run physics-teacher alignment evaluator and gate training")
     ap.add_argument("--preflight-max-samples", type=int, default=64)
@@ -555,6 +551,7 @@ def main():
         order.sort(key=lambda i: scores[i], reverse=True)
         top_k = order[: max(1, len(order)//4)]
         bot_k = order[-max(1, len(order)//4):]
+        teacher_diag = {}
         if args.supervision == "pairwise":
             pairs: List[Tuple[int, int]] = []
             for a in top_k:
@@ -789,7 +786,7 @@ def main():
             "ratio_base_p99": ratio_p99,
         }
         # Attach teacher softmax diagnostics if available
-        if teacher_diag:
+        if 'teacher_diag' in locals() and teacher_diag:
             log_row.update(teacher_diag)
         sample_logs.append(log_row)
         with open(jsonl_path, "a") as jf:
@@ -873,6 +870,9 @@ def main():
         total_loss = 0.0
         denom = 0
         if args.supervision == "pairwise":
+            pw_total = len(pair_rows)
+            pw_done = 0
+            pw_t0 = time.time()
             for batch in _iter_batches(pair_rows, args.batch_size):
                 # Build sequences for pos/neg
                 seqs: List[List[int]] = []
@@ -912,9 +912,28 @@ def main():
                 optimizer.step()
                 total_loss += float(loss.item()) * len(batch)
                 denom += len(batch)
+                # Progress
+                pw_done += len(batch)
+                if args.progress_every and (pw_done % max(1, args.progress_every) == 0 or pw_done == pw_total):
+                    elapsed = time.time() - pw_t0
+                    pct = 100.0 * pw_done / max(1, pw_total)
+                    eta = elapsed * (pw_total / max(1, pw_done) - 1.0)
+                    print({
+                        "epoch": epoch,
+                        "phase": "train",
+                        "supervision": "pairwise",
+                        "progress_rows": int(pw_done),
+                        "total_rows": int(pw_total),
+                        "pct": float(pct),
+                        "elapsed_s": float(elapsed),
+                        "eta_s": float(max(0.0, eta)),
+                    }, flush=True)
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "bt_pair_loss": float(avg_loss), "pairs": int(denom)})
         elif args.supervision == "pointwise":
+            pt_total = len(point_rows)
+            pt_done = 0
+            pt_t0 = time.time()
             for batch in _iter_batches(point_rows, args.batch_size):
                 # Build sequences and targets
                 seqs: List[List[int]] = []
@@ -952,6 +971,22 @@ def main():
                 optimizer.step()
                 total_loss += float(loss.item()) * len(batch)
                 denom += len(batch)
+                # Progress
+                pt_done += len(batch)
+                if args.progress_every and (pt_done % max(1, args.progress_every) == 0 or pt_done == pt_total):
+                    elapsed = time.time() - pt_t0
+                    pct = 100.0 * pt_done / max(1, pt_total)
+                    eta = elapsed * (pt_total / max(1, pt_done) - 1.0)
+                    print({
+                        "epoch": epoch,
+                        "phase": "train",
+                        "supervision": "pointwise",
+                        "progress_rows": int(pt_done),
+                        "total_rows": int(pt_total),
+                        "pct": float(pct),
+                        "elapsed_s": float(elapsed),
+                        "eta_s": float(max(0.0, eta)),
+                    }, flush=True)
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "point_mse": float(avg_loss), "points": int(denom)})
         else:  # listwise (DoA-aligned)
@@ -961,6 +996,9 @@ def main():
             q_max_list: List[float] = []
             q_entropy_list: List[float] = []
             q_margin_list: List[float] = []
+            lw_total = len(list_rows)
+            lw_done = 0
+            lw_t0 = time.time()
             for row in list_rows:
                 si = int(row["sample_index"])
                 patch_ids = patch_ids_list[si]
@@ -1007,6 +1045,22 @@ def main():
                 total_loss += float(loss.item())
                 ce += float(loss.item())
                 denom += 1
+                # Progress
+                lw_done += 1
+                if args.progress_every and (lw_done % max(1, args.progress_every) == 0 or lw_done == lw_total):
+                    elapsed = time.time() - lw_t0
+                    pct = 100.0 * lw_done / max(1, lw_total)
+                    eta = elapsed * (lw_total / max(1, lw_done) - 1.0)
+                    print({
+                        "epoch": epoch,
+                        "phase": "train",
+                        "supervision": "listwise",
+                        "progress_rows": int(lw_done),
+                        "total_rows": int(lw_total),
+                        "pct": float(pct),
+                        "elapsed_s": float(elapsed),
+                        "eta_s": float(max(0.0, eta)),
+                    }, flush=True)
             avg_loss = total_loss / max(1, denom)
             print({"epoch": epoch, "listwise_ce": float(avg_loss), "samples": int(denom)})
             # Summarize predicted Q distribution stats for the epoch
@@ -1095,6 +1149,9 @@ def main():
                 )
                 top1_hits = 0
                 teacher_hits = 0
+                ev_total = int(input_ids_prompt.size(0))
+                ev_done = 0
+                ev_t0 = time.time()
                 for i in range(input_ids_prompt.size(0)):
                     row = input_ids_prompt[i]
                     patch_ids = get_patch_ids(tokenizer, row)
@@ -1113,6 +1170,21 @@ def main():
                         top1_hits += 1
                     if gt_id in teacher_dir_ids[i]:
                         teacher_hits += 1
+                    # Eval progress
+                    ev_done += 1
+                    if args.progress_every and (ev_done % max(1, args.progress_every) == 0 or ev_done == ev_total):
+                        elapsed = time.time() - ev_t0
+                        pct = 100.0 * ev_done / max(1, ev_total)
+                        eta = elapsed * (ev_total / max(1, ev_done) - 1.0)
+                        print({
+                            "epoch": epoch,
+                            "phase": "eval",
+                            "progress_samples": int(ev_done),
+                            "total_samples": int(ev_total),
+                            "pct": float(pct),
+                            "elapsed_s": float(elapsed),
+                            "eta_s": float(max(0.0, eta)),
+                        }, flush=True)
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
                 recall_k = teacher_hits / max(1, total)
