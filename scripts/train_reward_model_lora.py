@@ -228,6 +228,7 @@ def main():
     ap.add_argument("--K", type=int, default=3)
     # Teacher scoring (LTR)
     ap.add_argument("--teacher", type=str, choices=["omp", "fit", "euc"], default="omp", help="Teacher: omp=ΔIS step0 (IS‑OMP), fit=−IS, euc=−L2")
+    ap.add_argument("--eval-omp-align", action="store_true", help="Enable OMP alignment metrics during eval (Intersection@K, Spearman vs ΔIS)")
     ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for logits scaling")
     ap.add_argument("--directions-per-sample", type=int, default=0, help="0=all directions; else random subset size")
     ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
@@ -590,10 +591,26 @@ def main():
                     "patch_len": int(len(patch_ids_list[si])),
                 })
         else:  # listwise (DoA-aligned)
+            # Parse GT angle from path for logging and angle-based fallback
+            try:
+                angle_dir = os.path.basename(os.path.dirname(y_src))
+                gt_angle = int(angle_dir.split('_')[1])
+            except Exception:
+                raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
             # Listwise distribution: default now uses ΔIS teacher (or fallback to angle-based if teacher!=omp)
             if args.teacher == "omp":
                 # Softmax over ΔIS/τ on selected candidates
                 tau = max(1e-6, float(args.listwise_tau_deg))
+                # token ids and angles for selected direction indices (needed for logging/rows)
+                cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
+                cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
+                cand_angles: List[int] = []
+                for tok in cand_tokens:
+                    try:
+                        deg = int(tok.strip('<>').split('_')[1])
+                    except Exception:
+                        raise RuntimeError(f"Invalid direction token format: {tok}")
+                    cand_angles.append(deg)
                 deltas_sel = np.asarray([scores[d_indices.index(j)] for j in d_indices], dtype=float)
                 logits = deltas_sel / tau
                 e = np.exp(logits - np.max(logits))
@@ -938,74 +955,72 @@ def main():
                     "K": int(args.K),
                 })
 
-                # Optional: OMP alignment metrics (small eval subset)
-                try:
-                    from scipy.stats import spearmanr  # Optional; fallback below if missing
-                    HAVE_SCIPY = True
-                except Exception:
-                    HAVE_SCIPY = False
+                if args.eval_omp_align:
+                    # Optional: OMP alignment metrics (may be slow)
+                    try:
+                        from scipy.stats import spearmanr  # Optional; fallback below if missing
+                        HAVE_SCIPY = True
+                    except Exception:
+                        HAVE_SCIPY = False
 
-                # Compute Intersection@K with OMP greedy selections and Spearman ρ between RM scores and ΔIS step0
-                inter_hits = 0
-                rhos = []
-                for batch_eval in dl_eval:
-                    Y_t = batch_eval["Y"].squeeze(0)
-                    y_src = batch_eval.get("path", None)
-                    if isinstance(y_src, (list, tuple)):
-                        y_src = y_src[0] if y_src else None
-                    if not y_src:
-                        continue
-                    # ŝ
-                    content_path = _derive_content_path(args.content_root, y_src)
-                    Y_content = _load_band_spectrogram_from_npy(
-                        content_path,
-                        fs=args.sample_rate,
-                        n_fft=args.n_fft,
-                        freq_min=args.freq_min,
-                        freq_max=args.freq_max,
-                    ).float()
-                    if Y_content.shape != Y_t.shape:
-                        continue
-                    s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
-                    # OMP greedy top-K
-                    S_omp, _, _ = is_omp_select(
-                        Y_t.numpy().astype(np.float64), H.numpy().astype(np.float64), W_t.numpy().astype(np.float64),
-                        K=int(args.K), s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=16, mu_iter_warm=5, mu_iter_accept=20, eps=float(args.eps)
-                    )
-                    # RM top-K (already computed as teacher_dir_ids)
-                    # Intersection
-                    inter_hits += len(set(S_omp).intersection(set([int(x) for x in teacher_dir_ids[0]])))
-                    # Spearman: RM scores vs ΔIS step0 across all directions
-                    ord_all, deltas_all = compute_deltais_step0(
-                        Y=Y_t.numpy().astype(np.float64), H=H.numpy().astype(np.float64), W=W_t.numpy().astype(np.float64),
-                        s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=None, mu_iter=10, baseline_k=2, eps=float(args.eps)
-                    )
-                    # Build RM scores per cand
-                    allowed = list(direction_token_ids(tokenizer))
-                    # Get patch ids for this sample
-                    row = input_ids_prompt[0]
-                    patch_ids = get_patch_ids(tokenizer, row)
-                    rm_scores = []
-                    for j in range(len(ord_all)):
-                        token_id = allowed[ord_all[j]]
-                        rm_scores.append(float(rm_score_for_prefix(rm_model, tokenizer, [token_id], patch_ids, device)))
-                    if len(rm_scores) >= 2:
-                        if HAVE_SCIPY:
-                            rho = float(spearmanr(rm_scores, deltas_all[:len(rm_scores)]).correlation)
-                        else:
-                            # Simple Spearman approx: rank and Pearson
-                            import numpy as _np
-                            def _rank(a):
-                                order = _np.argsort(a)
-                                ranks = _np.empty_like(order, dtype=float)
-                                ranks[order] = _np.arange(1, len(a)+1)
-                                return ranks
-                            r1 = _rank(_np.asarray(rm_scores))
-                            r2 = _rank(_np.asarray(deltas_all[:len(rm_scores)]))
-                            rho = float(_np.corrcoef(r1, r2)[0,1])
-                        rhos.append(rho)
-                if total > 0:
-                    print({"epoch": epoch, "eval_intersection_at_K_sum": int(inter_hits), "eval_spearman_mean": float(np.mean(rhos) if rhos else 0.0)})
+                    inter_hits = 0
+                    rhos = []
+                    for batch_eval in dl_eval:
+                        Y_t = batch_eval["Y"].squeeze(0)
+                        y_src = batch_eval.get("path", None)
+                        if isinstance(y_src, (list, tuple)):
+                            y_src = y_src[0] if y_src else None
+                        if not y_src:
+                            continue
+                        content_path = _derive_content_path(args.content_root, y_src)
+                        Y_content = _load_band_spectrogram_from_npy(
+                            content_path,
+                            fs=args.sample_rate,
+                            n_fft=args.n_fft,
+                            freq_min=args.freq_min,
+                            freq_max=args.freq_max,
+                        ).float()
+                        if Y_content.shape != Y_t.shape:
+                            continue
+                        s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
+                        S_omp, _, _ = is_omp_select(
+                            Y_t.numpy().astype(np.float64), H.numpy().astype(np.float64), W_t.numpy().astype(np.float64),
+                            K=int(args.K), s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=16, mu_iter_warm=5, mu_iter_accept=20, eps=float(args.eps)
+                        )
+                        # Map RM top-K tokens to direction indices
+                        dir_ids_all_list = list(direction_token_ids(tokenizer))
+                        rm_topk_idx = []
+                        for tid in teacher_dir_ids[i]:
+                            if int(tid) in dir_ids_all_list:
+                                rm_topk_idx.append(int(dir_ids_all_list.index(int(tid))))
+                        inter_hits += len(set(S_omp).intersection(set(rm_topk_idx)))
+                        # Spearman: ΔIS vs RM scores across all directions
+                        ord_all, deltas_all = compute_deltais_step0(
+                            Y=Y_t.numpy().astype(np.float64), H=H.numpy().astype(np.float64), W=W_t.numpy().astype(np.float64),
+                            s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=None, mu_iter=10, baseline_k=2, eps=float(args.eps)
+                        )
+                        rm_scores_all = []
+                        row = input_ids_prompt[i]
+                        patch_ids = get_patch_ids(tokenizer, row)
+                        for j in ord_all:
+                            tid = int(dir_ids_all_list[j])
+                            rm_scores_all.append(float(rm_score_for_prefix(rm_model, tokenizer, [tid], patch_ids, device)))
+                        if len(rm_scores_all) >= 2:
+                            if HAVE_SCIPY:
+                                rho = float(spearmanr(rm_scores_all, deltas_all[:len(rm_scores_all)]).correlation)
+                            else:
+                                import numpy as _np
+                                def _rank(a):
+                                    order = _np.argsort(a)
+                                    ranks = _np.empty_like(order, dtype=float)
+                                    ranks[order] = _np.arange(1, len(a)+1)
+                                    return ranks
+                                r1 = _rank(_np.asarray(rm_scores_all))
+                                r2 = _rank(_np.asarray(deltas_all[:len(rm_scores_all)]))
+                                rho = float(_np.corrcoef(r1, r2)[0,1])
+                            rhos.append(rho)
+                    if total > 0:
+                        print({"epoch": epoch, "eval_intersection_at_K_sum": int(inter_hits), "eval_spearman_mean": float(np.mean(rhos) if rhos else 0.0)})
             finally:
                 rm_model.train()
 

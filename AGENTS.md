@@ -276,6 +276,10 @@ Next experiments:
   - Purpose: Quickly confirm the system can start and run end‑to‑end on real data with a minimal subset.
   - Scope: End‑to‑end invocation for the affected script/component using a very small real subset; completes in minutes.
   - Artifacts: Save stdout/stderr to a log under `results/<name>/run.log` and record env info + subset manifest + dataset fingerprint.
+  - Logging (unbuffered): If you pipe Python output to `tee`, you MUST run in unbuffered mode so logs flush immediately. Use one of:
+    - `python -u path/to/script.py [args] 2>&1 | tee results/<name>/run.log`
+    - `PYTHONUNBUFFERED=1 python path/to/script.py [args] 2>&1 | tee results/<name>/run.log`
+    This ensures you can see progress live in the log instead of it being held in Python’s stdio buffers.
   - Acceptance: Process starts, prints device, loads assets (H/W), performs at least one forward/training step, and finishes without errors.
   - Repro: Provide exact command using `conda run -n trl-training` and `PYTHONPATH` set to the project root.
 
