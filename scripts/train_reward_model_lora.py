@@ -52,6 +52,7 @@ from scripts.train_sft_policy_with_rm import (
     get_patch_ids,
     compute_rm_greedy_teacher,
 )
+from doa_rl.omp.is_omp import compute_deltais_step0, is_omp_select
 
 
 
@@ -226,7 +227,7 @@ def main():
     ap.add_argument("--content-root", type=str, required=True, help="Root of Original/content dataset (mirrors angle_/clip_ structure)")
     ap.add_argument("--K", type=int, default=3)
     # Teacher scoring (LTR)
-    ap.add_argument("--teacher", type=str, choices=["fit", "euc"], default="fit", help="Teacher score (docs/LTR.md §1/§3)")
+    ap.add_argument("--teacher", type=str, choices=["omp", "fit", "euc"], default="omp", help="Teacher: omp=ΔIS step0 (IS‑OMP), fit=−IS, euc=−L2")
     ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for logits scaling")
     ap.add_argument("--directions-per-sample", type=int, default=0, help="0=all directions; else random subset size")
     ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
@@ -509,10 +510,33 @@ def main():
             d_indices = [int(i) for i in sel_idx]
         else:
             d_indices = list(range(d_count))
-        # Teacher scores (using ŝ)
-        scores = _teacher_scores(
-            Y=Y, s_hat=s_hat_t, H=H, dir_indices=d_indices, teacher=args.teacher, eps=float(args.eps)
-        )
+        # Teacher scores
+        if args.teacher == "omp":
+            # Use ΔIS(d|S=∅) via IS‑OMP step0; returns sorted indices and deltas
+            ord_all, deltas_all = compute_deltais_step0(
+                Y=Y.numpy().astype(np.float64),
+                H=H.numpy().astype(np.float64),
+                W=W_t.numpy().astype(np.float64),
+                s_hat=s_hat_t.numpy().astype(np.float64),
+                prefilter_M=None,
+                mu_iter=10,
+                baseline_k=2,
+                eps=float(args.eps),
+            )
+            # Respect directions_per_sample if set
+            if args.directions_per_sample and args.directions_per_sample > 0:
+                ord_use = ord_all[: min(int(args.directions_per_sample), len(ord_all))]
+            else:
+                ord_use = ord_all
+            d_indices = ord_use
+            # Map deltas for selected indices
+            delta_map = {ord_all[i]: deltas_all[i] for i in range(len(ord_all))}
+            scores = [float(delta_map[idx]) for idx in d_indices]
+        else:
+            # −IS / −L2 teacher
+            scores = _teacher_scores(
+                Y=Y, s_hat=s_hat_t, H=H, dir_indices=d_indices, teacher=args.teacher, eps=float(args.eps)
+            )
         s_arr = np.asarray(scores, dtype=float)
         def stats(x):
             return {
@@ -566,40 +590,44 @@ def main():
                     "patch_len": int(len(patch_ids_list[si])),
                 })
         else:  # listwise (DoA-aligned)
-            # Build a DoA-aligned teacher distribution over candidate directions using ground-truth angle
-            # Prefer within-tolerance angles, then decay by angular distance with temperature tau
-            tol = float(args.listwise_tol_deg)
-            tau = float(args.listwise_tau_deg)
-            # Retrieve gt angle_deg via DoADataset: we didn't keep it in cache; recompute by mapping path back
-            # Simpler: parse angle from path folder name angle_XXX
-            try:
-                angle_dir = os.path.basename(os.path.dirname(y_src))
-                gt_angle = int(angle_dir.split('_')[1])
-            except Exception:
-                raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
-            # Get degree for each candidate token id
-            cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
-            cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
-            cand_angles: List[int] = []
-            for tok in cand_tokens:
+            # Listwise distribution: default now uses ΔIS teacher (or fallback to angle-based if teacher!=omp)
+            if args.teacher == "omp":
+                # Softmax over ΔIS/τ on selected candidates
+                tau = max(1e-6, float(args.listwise_tau_deg))
+                deltas_sel = np.asarray([scores[d_indices.index(j)] for j in d_indices], dtype=float)
+                logits = deltas_sel / tau
+                e = np.exp(logits - np.max(logits))
+                P = (e / np.sum(e)).astype(float).tolist()
+            else:
+                # Angle‑based teacher (previous behavior)
+                tol = float(args.listwise_tol_deg)
+                tau = float(args.listwise_tau_deg)
                 try:
-                    deg = int(tok.strip('<>').split('_')[1])
+                    angle_dir = os.path.basename(os.path.dirname(y_src))
+                    gt_angle = int(angle_dir.split('_')[1])
                 except Exception:
-                    raise RuntimeError(f"Invalid direction token format: {tok}")
-                cand_angles.append(deg)
-            def circ_dist(a, b):
-                d = abs(a - b) % 360
-                return min(d, 360 - d)
-            weights = []
-            for a in cand_angles:
-                d = circ_dist(a, gt_angle)
-                # inside tolerance: give max weight 1.0; else soft decay exp(-d/tau)
-                w = 1.0 if d <= tol else np.exp(-d / max(tau, 1e-6))
-                weights.append(w)
-            w_arr = np.asarray(weights, dtype=float)
-            if not np.isfinite(w_arr).all() or np.all(w_arr <= 0):
-                raise RuntimeError("Listwise teacher produced invalid weights")
-            P = (w_arr / np.sum(w_arr)).astype(float).tolist()
+                    raise RuntimeError(f"Cannot parse ground-truth angle from path: {y_src}")
+                cand_token_ids = [int(dir_token_ids_all[j]) for j in d_indices]
+                cand_tokens = tokenizer.convert_ids_to_tokens(cand_token_ids)
+                cand_angles: List[int] = []
+                for tok in cand_tokens:
+                    try:
+                        deg = int(tok.strip('<>').split('_')[1])
+                    except Exception:
+                        raise RuntimeError(f"Invalid direction token format: {tok}")
+                    cand_angles.append(deg)
+                def circ_dist(a, b):
+                    d = abs(a - b) % 360
+                    return min(d, 360 - d)
+                weights = []
+                for a in cand_angles:
+                    d = circ_dist(a, gt_angle)
+                    w = 1.0 if d <= tol else np.exp(-d / max(tau, 1e-6))
+                    weights.append(w)
+                w_arr = np.asarray(weights, dtype=float)
+                if not np.isfinite(w_arr).all() or np.all(w_arr <= 0):
+                    raise RuntimeError("Listwise teacher produced invalid weights")
+                P = (w_arr / np.sum(w_arr)).astype(float).tolist()
             list_rows.append({
                 "sample_index": si,
                 "cand_ids": cand_token_ids,
@@ -856,6 +884,9 @@ def main():
                     Y_np = batch_eval["Y"].squeeze(0).numpy()
                     eval_prompts.append(" ".join(tok_patch(Y_np)))
                     gt_angles.append(int(batch_eval["angle_deg"]))
+                    # Keep path for OMP teacher alignment
+                    if "path" in batch_eval:
+                        pass
                     if args.max_samples and len(eval_prompts) >= args.max_samples:
                         break
                 enc_eval = tokenizer(
@@ -906,6 +937,75 @@ def main():
                     "eval_samples": int(total),
                     "K": int(args.K),
                 })
+
+                # Optional: OMP alignment metrics (small eval subset)
+                try:
+                    from scipy.stats import spearmanr  # Optional; fallback below if missing
+                    HAVE_SCIPY = True
+                except Exception:
+                    HAVE_SCIPY = False
+
+                # Compute Intersection@K with OMP greedy selections and Spearman ρ between RM scores and ΔIS step0
+                inter_hits = 0
+                rhos = []
+                for batch_eval in dl_eval:
+                    Y_t = batch_eval["Y"].squeeze(0)
+                    y_src = batch_eval.get("path", None)
+                    if isinstance(y_src, (list, tuple)):
+                        y_src = y_src[0] if y_src else None
+                    if not y_src:
+                        continue
+                    # ŝ
+                    content_path = _derive_content_path(args.content_root, y_src)
+                    Y_content = _load_band_spectrogram_from_npy(
+                        content_path,
+                        fs=args.sample_rate,
+                        n_fft=args.n_fft,
+                        freq_min=args.freq_min,
+                        freq_max=args.freq_max,
+                    ).float()
+                    if Y_content.shape != Y_t.shape:
+                        continue
+                    s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
+                    # OMP greedy top-K
+                    S_omp, _, _ = is_omp_select(
+                        Y_t.numpy().astype(np.float64), H.numpy().astype(np.float64), W_t.numpy().astype(np.float64),
+                        K=int(args.K), s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=16, mu_iter_warm=5, mu_iter_accept=20, eps=float(args.eps)
+                    )
+                    # RM top-K (already computed as teacher_dir_ids)
+                    # Intersection
+                    inter_hits += len(set(S_omp).intersection(set([int(x) for x in teacher_dir_ids[0]])))
+                    # Spearman: RM scores vs ΔIS step0 across all directions
+                    ord_all, deltas_all = compute_deltais_step0(
+                        Y=Y_t.numpy().astype(np.float64), H=H.numpy().astype(np.float64), W=W_t.numpy().astype(np.float64),
+                        s_hat=s_hat_t.numpy().astype(np.float64), prefilter_M=None, mu_iter=10, baseline_k=2, eps=float(args.eps)
+                    )
+                    # Build RM scores per cand
+                    allowed = list(direction_token_ids(tokenizer))
+                    # Get patch ids for this sample
+                    row = input_ids_prompt[0]
+                    patch_ids = get_patch_ids(tokenizer, row)
+                    rm_scores = []
+                    for j in range(len(ord_all)):
+                        token_id = allowed[ord_all[j]]
+                        rm_scores.append(float(rm_score_for_prefix(rm_model, tokenizer, [token_id], patch_ids, device)))
+                    if len(rm_scores) >= 2:
+                        if HAVE_SCIPY:
+                            rho = float(spearmanr(rm_scores, deltas_all[:len(rm_scores)]).correlation)
+                        else:
+                            # Simple Spearman approx: rank and Pearson
+                            import numpy as _np
+                            def _rank(a):
+                                order = _np.argsort(a)
+                                ranks = _np.empty_like(order, dtype=float)
+                                ranks[order] = _np.arange(1, len(a)+1)
+                                return ranks
+                            r1 = _rank(_np.asarray(rm_scores))
+                            r2 = _rank(_np.asarray(deltas_all[:len(rm_scores)]))
+                            rho = float(_np.corrcoef(r1, r2)[0,1])
+                        rhos.append(rho)
+                if total > 0:
+                    print({"epoch": epoch, "eval_intersection_at_K_sum": int(inter_hits), "eval_spearman_mean": float(np.mean(rhos) if rhos else 0.0)})
             finally:
                 rm_model.train()
 

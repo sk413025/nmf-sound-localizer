@@ -267,3 +267,52 @@ __all__ = [
     "teacher_scores_is",
     "is_omp_select",
 ]
+
+
+def compute_deltais_step0(
+    Y: np.ndarray,
+    H: np.ndarray,
+    W: np.ndarray,
+    s_hat: Optional[np.ndarray] = None,
+    prefilter_M: Optional[int] = None,
+    mu_iter: int = 10,
+    baseline_k: int = 2,
+    eps: float = 1e-8,
+) -> Tuple[List[int], List[float]]:
+    """Compute ΔIS(d|S=∅) for all directions (or top-M after sorting).
+
+    Returns (dir_indices, deltas) where both are sorted by decreasing ΔIS.
+    """
+    Yc = _safe_np(np.asarray(Y, dtype=np.float64), eps)
+    Hc = _safe_np(np.asarray(H, dtype=np.float64), eps)
+    Wc = _safe_np(np.asarray(W, dtype=np.float64), eps)
+    F, N = Yc.shape
+    Fh, D = Hc.shape
+    Fw, R = Wc.shape
+    if Fh != F or Fw != F:
+        raise ValueError(f"Grid mismatch: Y.F={F}, H.F={Fh}, W.F={Fw}")
+    # Baseline with k-smallest per-freq contributions if ŝ provided
+    if s_hat is not None and int(baseline_k) > 0:
+        sh = _safe_np(np.asarray(s_hat, dtype=np.float64).reshape(F), eps)
+        contrib = _safe_np(Hc * sh[:, None], eps)
+        k = min(int(baseline_k), D)
+        sorted_vals = np.sort(contrib, axis=1)
+        base_vec = _safe_np(np.sum(sorted_vals[:, :k], axis=1), eps)
+        Yhat0 = np.repeat(base_vec[:, None], N, axis=1)
+    else:
+        Yhat0 = np.full_like(Yc, eps)
+    J_prev = is_divergence(Yc, Yhat0, eps=eps)
+    blocks = build_blocks(Hc, Wc)
+    deltas: List[float] = []
+    for j in range(D):
+        A_j = blocks[j]
+        X_hat, _ = solve_x_is_smu(Yc, A_j, X0=None, max_iter=mu_iter, eps=eps)
+        Yhat = _safe_np(A_j @ X_hat, eps)
+        J_new = is_divergence(Yc, Yhat, eps=eps)
+        deltas.append(J_prev - J_new)
+    order = list(range(D))
+    order.sort(key=lambda i: deltas[i], reverse=True)
+    if prefilter_M is not None and int(prefilter_M) > 0:
+        m = min(int(prefilter_M), D)
+        order = order[:m]
+    return order, [float(deltas[i]) for i in order]
