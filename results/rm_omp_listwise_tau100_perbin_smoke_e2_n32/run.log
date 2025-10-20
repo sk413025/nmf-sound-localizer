@@ -1,0 +1,63 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 00:38:40.300000 55908 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Points total: 0 (~0.0/sample)
+Saved numeric diagnostics JSONL: results/rm_omp_listwise_tau100_perbin_smoke_e2_n32/numeric_diagnostics.jsonl
+{'teacher_softmax_summary': {'samples': 32, 'teacher_p_max_p50': 0.07134352754824247, 'teacher_p_max_p90': 0.07218555078245267, 'teacher_p_max_p95': 0.07277364678619912, 'teacher_entropy_p50': 2.8308251755966727, 'teacher_entropy_p90': 2.831376468443162, 'teacher_entropy_p95': 2.831451644389427, 'teacher_margin_logit_p50': 0.12218239586483294, 'teacher_margin_logit_p90': 0.14452638446934005, 'teacher_margin_logit_p95': 0.1549152029137672, 'deltais_range_over_tau_p50': 27124.355761270264, 'deltais_range_over_tau_p90': 33745.80248325187, 'deltais_range_over_tau_p95': 38331.46710825773, 'sat_frac_pmax_gt_0.9': 0.0}}
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'listwise_ce': 2.8333076909184456, 'samples': 32}
+{'epoch': 0, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.21875, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_smoke_e2_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'listwise_ce': 2.833168141543865, 'samples': 32}
+{'epoch': 1, 'eval_top1_acc': 0.0625, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'eval_manifest': 'results/rm_omp_listwise_tau100_perbin_smoke_e2_n32/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_omp_listwise_tau100_perbin_smoke_e2_n32_adapters/
+  - Embeddings + V-head: rm_omp_listwise_tau100_perbin_smoke_e2_n32_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.160, 1.000]
+  - Mean off-diagonal: -0.002
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================

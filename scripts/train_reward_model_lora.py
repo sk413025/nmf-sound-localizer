@@ -270,6 +270,8 @@ def main():
                     help="Angular temperature (deg) for teacher softmax in listwise supervision")
     ap.add_argument("--listwise-tol-deg", type=float, default=10.0,
                     help="Within-tolerance angles receive highest weight (teacher shaping)")
+    ap.add_argument("--listwise-normalize", type=str, default="none", choices=["none", "per_bin"],
+                    help="Normalize teacher scores before softmax: none (raw ΔIS) or per_bin (ΔIS/(F*N))")
     # Optional preflight evaluator (detection-only) to gate training
     ap.add_argument("--preflight", action="store_true", help="Run physics-teacher alignment evaluator and gate training")
     ap.add_argument("--preflight-max-samples", type=int, default=64)
@@ -612,7 +614,14 @@ def main():
                         raise RuntimeError(f"Invalid direction token format: {tok}")
                     cand_angles.append(deg)
                 deltas_sel = np.asarray([scores[d_indices.index(j)] for j in d_indices], dtype=float)
-                logits = deltas_sel / tau
+                # Optional normalization to avoid softmax saturation
+                if args.listwise_normalize == "per_bin":
+                    # ΔIS averaged per time-frequency bin
+                    denom = max(1.0, float(F) * float(N))
+                    deltas_use = deltas_sel / denom
+                else:
+                    deltas_use = deltas_sel
+                logits = deltas_use / tau
                 z = logits - np.max(logits)
                 e = np.exp(z)
                 P = (e / np.sum(e)).astype(float).tolist()
@@ -688,6 +697,15 @@ def main():
                     deltais_max = float(np.max(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
                     deltais_std = float(np.std(deltas_sel)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
                     deltais_range_over_tau = float((deltais_max - deltais_min) / max(tau, 1e-6)) if 'deltas_sel' in locals() and len(deltas_sel) > 0 else 0.0
+                    # Per-bin averaged ΔIS (for diagnostics)
+                    if 'deltas_use' in locals() and args.listwise_normalize == "per_bin":
+                        deltais_pb = deltas_use
+                        deltais_pb_min = float(np.min(deltais_pb)) if deltais_pb.size > 0 else 0.0
+                        deltais_pb_med = float(np.median(deltais_pb)) if deltais_pb.size > 0 else 0.0
+                        deltais_pb_max = float(np.max(deltais_pb)) if deltais_pb.size > 0 else 0.0
+                        deltais_pb_std = float(np.std(deltais_pb)) if deltais_pb.size > 0 else 0.0
+                    else:
+                        deltais_pb_min = deltais_pb_med = deltais_pb_max = deltais_pb_std = 0.0
                     teacher_diag = {
                         "tau_deg": float(tau),
                         "teacher_p_max": p_max,
@@ -701,6 +719,11 @@ def main():
                         "deltais_max": deltais_max,
                         "deltais_std": deltais_std,
                         "deltais_range_over_tau": deltais_range_over_tau,
+                        "deltais_per_bin_min": deltais_pb_min,
+                        "deltais_per_bin_median": deltais_pb_med,
+                        "deltais_per_bin_max": deltais_pb_max,
+                        "deltais_per_bin_std": deltais_pb_std,
+                        "listwise_normalize": str(args.listwise_normalize),
                         "gt_in_candidates": bool(gt_idx >= 0),
                         "gt_rank": int(gt_rank) if gt_rank is not None else None,
                         "teacher_p_gt": p_gt,
