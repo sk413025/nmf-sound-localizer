@@ -1,0 +1,57 @@
+H shape: (346, 17), angles: [30, 45, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
+W shape: (346, 50)
+Settings: s_hat_iter=30, mu_iter=5, eps=1e-08
+Diagnostics samples: 16 (processing 16)
+✅ clip_001.npy    | GT= 95° (rank= 1, ΔIS= 28996.1) | Best= 95° (ΔIS= 28996.1) | Margin=     0.0
+✅ clip_002.npy    | GT=140° (rank= 1, ΔIS= 26984.6) | Best=140° (ΔIS= 26984.6) | Margin=     0.0
+✅ clip_002.npy    | GT=105° (rank= 1, ΔIS= 32027.2) | Best=105° (ΔIS= 32027.2) | Margin=     0.0
+✅ clip_001.npy    | GT= 90° (rank= 1, ΔIS= 30844.1) | Best= 90° (ΔIS= 30844.1) | Margin=     0.0
+Progress: 4/16 (25.0%) | Elapsed: 0.8s | ETA: 2.4s
+✅ clip_001.npy    | GT=110° (rank= 1, ΔIS= 33796.9) | Best=110° (ΔIS= 33796.9) | Margin=     0.0
+✅ clip_001.npy    | GT= 30° (rank= 1, ΔIS= 34219.7) | Best= 30° (ΔIS= 34219.7) | Margin=     0.0
+✅ clip_001.npy    | GT= 80° (rank= 1, ΔIS= 38806.6) | Best= 80° (ΔIS= 38806.6) | Margin=     0.0
+✅ clip_002.npy    | GT= 95° (rank= 1, ΔIS= 25462.4) | Best= 95° (ΔIS= 25462.4) | Margin=     0.0
+Progress: 8/16 (50.0%) | Elapsed: 1.5s | ETA: 1.5s
+✅ clip_002.npy    | GT=110° (rank= 1, ΔIS= 29201.2) | Best=110° (ΔIS= 29201.2) | Margin=     0.0
+✅ clip_000.npy    | GT=100° (rank= 1, ΔIS= 34768.3) | Best=100° (ΔIS= 34768.3) | Margin=     0.0
+✅ clip_001.npy    | GT=140° (rank= 1, ΔIS= 26936.4) | Best=140° (ΔIS= 26936.4) | Margin=     0.0
+✅ clip_002.npy    | GT= 30° (rank= 1, ΔIS= 34834.9) | Best= 30° (ΔIS= 34834.9) | Margin=     0.0
+Progress: 12/16 (75.0%) | Elapsed: 2.3s | ETA: 0.8s
+✅ clip_000.npy    | GT=135° (rank= 1, ΔIS= 27414.9) | Best=135° (ΔIS= 27414.9) | Margin=     0.0
+✅ clip_001.npy    | GT=150° (rank= 1, ΔIS= 25684.9) | Best=150° (ΔIS= 25684.9) | Margin=     0.0
+✅ clip_001.npy    | GT=130° (rank= 1, ΔIS= 29683.9) | Best=130° (ΔIS= 29683.9) | Margin=     0.0
+✅ clip_001.npy    | GT=145° (rank= 1, ΔIS= 27617.7) | Best=145° (ΔIS= 27617.7) | Margin=     0.0
+Progress: 16/16 (100.0%) | Elapsed: 2.8s | ETA: 0.0s
+
+================================================================================
+📊 統計結果
+================================================================================
+總樣本數: 16
+Top-1 準確率: 100.00% (16/16)
+
+GT 排名分布:
+  - Median: 1.0
+  - Mean: 1.00
+  - Min: 1
+  - Max: 1
+  - P25: 1.0
+  - P75: 1.0
+
+分數差異 (GT ΔIS - Best ΔIS):
+  - Mean: 0.00
+  - Median: 0.00
+  - Min: 0.00
+  - Max: 0.00
+
+Recall@1: 100.00% (16/16)
+
+Recall@3: 100.00% (16/16)
+
+Recall@5: 100.00% (16/16)
+
+================================================================================
+✅ 結論: ΔIS teacher 非常可靠，>90% 的樣本 GT 角度獲得最高分
+================================================================================
+real 4.30
+user 63.16
+sys 21.07

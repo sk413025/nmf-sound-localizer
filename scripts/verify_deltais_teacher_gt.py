@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
-"""驗證 ΔIS teacher 是否真的把 ground-truth 角度排在最高分
+"""Verify ΔIS(d|∅) teacher ranks GT angle highest (manifest‑only, multi‑angle required).
 
-這個腳本會：
-1. 讀取 numeric_diagnostics.jsonl 中的所有樣本
-2. 對每個樣本，計算所有方向的 ΔIS（使用 compute_deltais_step0）
-3. 檢查 GT 角度是否獲得最高的 ΔIS 分數
-4. 輸出統計結果：Top-1 準確率、GT 排名分布、分數差異等
+This script now only accepts a manifest of absolute paths (eval subset manifest) and
+verifies, per sample, that GT angle (from manifest angle_deg or angle_XXX folder) has
+the highest ΔIS(d|∅). It prints progress, per-sample lines, and summary stats.
+
+Guardrails:
+- Manifest is required and must contain absolute paths to Box npy files.
+- At least 2 distinct GT angles must be present; single‑angle verification is rejected.
 """
 
 import argparse
 import json
 import os
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 import numpy as np
 import torch
 
 from doa_rl.omp.is_omp import compute_deltais_step0
-from doa_rl.assets import load_H, load_W
+from doa_rl.assets import load_H
 from doa_rl.features.nmf_utils import estimate_s_hat_torch
 from nmf_localizer.utils.audio_utils import AudioProcessor
 
@@ -70,25 +72,16 @@ import sys
 import time
 
 
-def _build_basename_index(data_root: Path) -> Dict[str, str]:
-    """Walk once and map clip basename -> absolute path under data_root.
-
-    This avoids per-sample filesystem scans that are slow on large trees.
-    """
-    mapping: Dict[str, str] = {}
-    for root, _, files in os.walk(str(data_root)):
-        for fn in files:
-            if fn.endswith('.npy'):
-                mapping[fn] = str(Path(root) / fn)
-    return mapping
+def _require_file(p: str) -> str:
+    if not p or not os.path.isabs(p) or not os.path.isfile(p):
+        raise FileNotFoundError(f"Invalid or missing file: {p}")
+    return p
 
 
 def main():
-    ap = argparse.ArgumentParser(description="驗證 ΔIS teacher 是否把 GT 角度排在最高")
-    ap.add_argument("--diagnostics", type=str, required=True,
-                    help="Path to numeric_diagnostics.jsonl")
-    ap.add_argument("--data-root", type=str, required=True,
-                    help="Data root (Box)")
+    ap = argparse.ArgumentParser(description="Verify ΔIS(d|∅) teacher ranks GT highest (manifest‑only)")
+    ap.add_argument("--manifest", type=str, required=True,
+                    help="Path to eval_subset_manifest.json (absolute paths + angle_deg, if available)")
     ap.add_argument("--content-root", type=str, required=True,
                     help="Content root (Original)")
     ap.add_argument("--tf-path", type=str, required=True,
@@ -117,7 +110,7 @@ def main():
         W = np.load(args.w_path)["W"].astype(np.float64)
         W_t = torch.from_numpy(W.astype(np.float32))
     else:
-        from doa_rl.assets import load_W
+        from doa_rl.assets import load_W  # lazy import to avoid cycles
         W_full = load_W(args.w_path)
         W = W_full.float().cpu().numpy().astype(np.float64)
         W_t = W_full.float().cpu()
@@ -127,14 +120,21 @@ def main():
     print(f"Settings: s_hat_iter={args.s_hat_iter}, mu_iter={args.mu_iter}, eps={args.eps}")
     sys.stdout.flush()
 
-    # 讀取 diagnostics 獲取樣本路徑
-    diagnostics_path = Path(args.diagnostics)
-    if not diagnostics_path.exists():
-        raise RuntimeError(f"Diagnostics file not found: {diagnostics_path}")
-    
-    # Pre-count samples for ETA
-    with open(diagnostics_path, 'r') as f:
-        total_lines = sum(1 for _ in f if _.strip())
+    # 讀取 manifest 作為唯一來源
+    mp = Path(args.manifest)
+    if not mp.exists():
+        raise RuntimeError(f"Manifest not found: {mp}")
+    m = json.loads(mp.read_text())
+    rows = m.get('files', [])
+    manifest_paths: List[Dict[str, object]] = []
+    for row in rows:
+        pa = row.get('path_abs') or row.get('path')
+        if isinstance(pa, str) and pa.endswith('.npy'):
+            manifest_paths.append({
+                'path_abs': _require_file(pa),
+                'angle_deg': row.get('angle_deg')
+            })
+    total_lines = len(manifest_paths)
     if args.max_samples and args.max_samples > 0:
         total = min(total_lines, args.max_samples)
     else:
@@ -142,129 +142,119 @@ def main():
     print(f"Diagnostics samples: {total_lines} (processing {total})")
     sys.stdout.flush()
 
-    # Build basename index to avoid repeated directory scans
-    data_root = Path(args.data_root)
-    t0_index = time.time()
-    basename_index = _build_basename_index(data_root)
-    print(f"Indexed data_root in {time.time()-t0_index:.2f}s; files indexed: {len(basename_index)}")
-    sys.stdout.flush()
-
     results: List[Dict] = []
     count = 0
     start_time = time.time()
 
-    with open(diagnostics_path, 'r') as f:
-        for line in f:
-            if not line.strip():
-                continue
-            
-            diag = json.loads(line)
-            clip_name = diag["path"]
-            
-            # 由索引快速找到完整路徑
-            y_path = basename_index.get(clip_name)
-            
-            if not y_path:
-                print(f"⚠️  Warning: Cannot find {clip_name} in {args.data_root}")
-                continue
-            
-            # 解析 GT 角度
-            gt_angle = parse_gt_angle_from_path(y_path)
-            if gt_angle not in anglesT_list:
-                print(f"⚠️  Warning: GT angle {gt_angle}° not in TF angles")
-                continue
-            
-            gt_idx = anglesT_list.index(gt_angle)
-            
-            # 載入 Y
-            Y = load_band_spectrogram_from_npy(
-                Path(y_path),
-                fs=args.sample_rate,
-                n_fft=args.n_fft,
-                freq_min=args.freq_min,
-                freq_max=args.freq_max,
-            ).float()
-            
-            # 載入對應的 content 並估計 ŝ
-            content_path = derive_content_path(args.content_root, y_path)
-            Y_content = load_band_spectrogram_from_npy(
-                content_path,
-                fs=args.sample_rate,
-                n_fft=args.n_fft,
-                freq_min=args.freq_min,
-                freq_max=args.freq_max,
-            ).float()
-            
-            if Y_content.shape != Y.shape:
-                print(f"⚠️  Warning: Shape mismatch for {clip_name}")
-                continue
-            
-            s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=int(args.s_hat_iter), l1=0.0)
-            
-            # 計算所有方向的 ΔIS
-            Y_np = Y.numpy().astype(np.float64)
-            s_hat_np = s_hat_t.numpy().astype(np.float64)
-            
-            ord_all, deltas_all = compute_deltais_step0(
-                Y=Y_np,
-                H=H,
-                W=W,
-                s_hat=s_hat_np,
-                prefilter_M=None,  # 不使用 prefilter，計算所有方向
-                mu_iter=int(args.mu_iter),
-                baseline_k=2,
-                eps=float(args.eps)
-            )
-            
-            # 找到 GT 角度在排序中的位置
-            gt_global_idx = anglesT_list.index(gt_angle)
+    # 遍歷 manifest 條目
+    for row in manifest_paths[:total]:
+        y_path = str(row['path_abs'])
+        clip_name = os.path.basename(y_path)
+        
+        # Determine GT angle: prefer angle in manifest/diag if present; else parse from path
+        gt_angle = None
+        ang = row.get('angle_deg')
+        if ang is not None:
+            gt_angle = int(ang)
+        if gt_angle is None:
             try:
-                gt_position_in_ord = list(ord_all).index(gt_global_idx)
-                gt_rank = gt_position_in_ord + 1  # 1-based rank
-            except ValueError:
-                print(f"⚠️  Warning: GT angle {gt_angle}° not in ord_all for {clip_name}")
+                gt_angle = parse_gt_angle_from_path(y_path)
+            except Exception:
+                print(f"⚠️  Warning: Cannot parse ground truth angle for {y_path}")
                 continue
+        if gt_angle not in anglesT_list:
+            print(f"⚠️  Warning: GT angle {gt_angle}° not in TF angles")
+            continue
+        gt_idx = anglesT_list.index(gt_angle)
             
-            # GT 的 ΔIS 分數
-            gt_deltais = deltas_all[gt_position_in_ord]
+        # 載入 Y
+        Y = load_band_spectrogram_from_npy(
+            Path(y_path),
+            fs=args.sample_rate,
+            n_fft=args.n_fft,
+            freq_min=args.freq_min,
+            freq_max=args.freq_max,
+        ).float()
             
-            # 最高分的方向
-            best_idx = ord_all[0]
-            best_angle = anglesT_list[best_idx]
-            best_deltais = deltas_all[0]
+        # 載入對應的 content 並估計 ŝ
+        content_path = derive_content_path(args.content_root, y_path)
+        Y_content = load_band_spectrogram_from_npy(
+            content_path,
+            fs=args.sample_rate,
+            n_fft=args.n_fft,
+            freq_min=args.freq_min,
+            freq_max=args.freq_max,
+        ).float()
             
-            # 分數差異
-            margin = gt_deltais - best_deltais  # 負數表示 GT 不是最好的
-            
-            # Top-1 命中
-            top1_hit = int(best_idx == gt_global_idx)
-            
-            result = {
-                "clip": clip_name,
-                "gt_angle": gt_angle,
-                "gt_rank": gt_rank,
-                "gt_deltais": float(gt_deltais),
-                "best_angle": best_angle,
-                "best_deltais": float(best_deltais),
-                "margin": float(margin),
-                "top1_hit": top1_hit,
-                "dirs_total": len(ord_all),
-            }
-            results.append(result)
-            
-            # 打印個別結果
-            status = "✅" if top1_hit else "❌"
-            print(f"{status} {clip_name:15s} | GT={gt_angle:3d}° (rank={gt_rank:2d}, ΔIS={gt_deltais:8.1f}) | "
-                  f"Best={best_angle:3d}° (ΔIS={best_deltais:8.1f}) | Margin={margin:8.1f}", flush=True)
-            
-            count += 1
-            if args.progress_every and count % int(args.progress_every) == 0:
-                elapsed = time.time() - start_time
-                rate = elapsed / max(1, count)
-                remaining = (total - count) * rate if total > 0 else 0.0
-                print(f"Progress: {count}/{total} ({count/total*100:.1f}%) | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s", flush=True)
-            if args.max_samples > 0 and count >= args.max_samples:
-                break
+        if Y_content.shape != Y.shape:
+            print(f"⚠️  Warning: Shape mismatch for {clip_name}")
+            continue
+        s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=int(args.s_hat_iter), l1=0.0)
+
+        # 計算所有方向的 ΔIS
+        Y_np = Y.numpy().astype(np.float64)
+        s_hat_np = s_hat_t.numpy().astype(np.float64)
+
+        ord_all, deltas_all = compute_deltais_step0(
+            Y=Y_np,
+            H=H,
+            W=W,
+            s_hat=s_hat_np,
+            prefilter_M=None,  # 不使用 prefilter，計算所有方向
+            mu_iter=int(args.mu_iter),
+            baseline_k=2,
+            eps=float(args.eps)
+        )
+
+        # 找到 GT 角度在排序中的位置
+        gt_global_idx = anglesT_list.index(gt_angle)
+        try:
+            gt_position_in_ord = list(ord_all).index(gt_global_idx)
+            gt_rank = gt_position_in_ord + 1  # 1-based rank
+        except ValueError:
+            print(f"⚠️  Warning: GT angle {gt_angle}° not in ord_all for {clip_name}")
+            continue
+
+        # GT 的 ΔIS 分數
+        gt_deltais = deltas_all[gt_position_in_ord]
+
+        # 最高分的方向
+        best_idx = ord_all[0]
+        best_angle = anglesT_list[best_idx]
+        best_deltais = deltas_all[0]
+
+        # 分數差異
+        margin = gt_deltais - best_deltais  # 負數表示 GT 不是最好的
+
+        # Top-1 命中
+        top1_hit = int(best_idx == gt_global_idx)
+
+        result = {
+            "clip": clip_name,
+            "gt_angle": gt_angle,
+            "gt_rank": gt_rank,
+            "gt_deltais": float(gt_deltais),
+            "best_angle": best_angle,
+            "best_deltais": float(best_deltais),
+            "margin": float(margin),
+            "top1_hit": top1_hit,
+            "dirs_total": len(ord_all),
+        }
+        results.append(result)
+
+        # 打印個別結果
+        status = "✅" if top1_hit else "❌"
+        print(f"{status} {clip_name:15s} | GT={gt_angle:3d}° (rank={gt_rank:2d}, ΔIS={gt_deltais:8.1f}) | "
+              f"Best={best_angle:3d}° (ΔIS={best_deltais:8.1f}) | Margin={margin:8.1f}", flush=True)
+
+        count += 1
+        if args.progress_every and count % int(args.progress_every) == 0:
+            elapsed = time.time() - start_time
+            rate = elapsed / max(1, count)
+            remaining = (total - count) * rate if total > 0 else 0.0
+            print(f"Progress: {count}/{total} ({count/total*100:.1f}%) | Elapsed: {elapsed:.1f}s | ETA: {remaining:.1f}s", flush=True)
+        if args.max_samples > 0 and count >= args.max_samples:
+            break
     
     # 統計結果
     print("\n" + "="*80)
@@ -273,6 +263,13 @@ def main():
     
     if not results:
         print("❌ 沒有有效的樣本結果")
+        return
+
+    # 至少要有兩種不同的 GT 角度
+    unique_angles = sorted({r['gt_angle'] for r in results})
+    if len(unique_angles) < 2:
+        print("❌ 驗證失敗：樣本只有單一角度，無法代表性驗證教師排序。請提供包含多個角度的 eval manifest。")
+        print(f"角度集合: {unique_angles}")
         return
     
     top1_acc = np.mean([r["top1_hit"] for r in results])

@@ -893,14 +893,27 @@ def main():
                     freq_min=args.freq_min,
                     freq_max=args.freq_max,
                 )
-                dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=False)
+                # Use shuffle=True to avoid sampling a single-angle prefix when max_samples is small
+                dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=True)
                 tok_patch = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
                 eval_prompts: List[str] = []
                 gt_angles: List[int] = []
+                # Collect eval sample meta for manifest
+                eval_records: List[Dict[str, object]] = []
                 for batch_eval in dl_eval:
                     Y_np = batch_eval["Y"].squeeze(0).numpy()
                     eval_prompts.append(" ".join(tok_patch(Y_np)))
-                    gt_angles.append(int(batch_eval["angle_deg"]))
+                    gt_a = int(batch_eval["angle_deg"]) if "angle_deg" in batch_eval else None
+                    gt_angles.append(int(gt_a) if gt_a is not None else 0)
+                    pth = batch_eval.get("path", "")
+                    if isinstance(pth, (list, tuple)):
+                        pth = pth[0] if pth else ""
+                    try:
+                        pth_abs = os.path.abspath(str(pth)) if pth else ""
+                    except Exception:
+                        pth_abs = str(pth) if pth else ""
+                    rec = {"path_abs": pth_abs, "angle_deg": int(gt_a) if gt_a is not None else None}
+                    eval_records.append(rec)
                     # Keep path for OMP teacher alignment
                     if "path" in batch_eval:
                         pass
@@ -954,6 +967,16 @@ def main():
                     "eval_samples": int(total),
                     "K": int(args.K),
                 })
+                # Write eval subset manifest for reproducibility and downstream verification
+                try:
+                    results_dir = os.path.join("results", f"{args.out}")
+                    os.makedirs(results_dir, exist_ok=True)
+                    manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
+                    with open(manifest_path, "w") as mf:
+                        json.dump({"files": eval_records}, mf, indent=2)
+                    print({"epoch": epoch, "eval_manifest": manifest_path, "eval_records": int(len(eval_records))})
+                except Exception as _e:
+                    print(f"Warning: failed to write eval manifest: {_e}")
 
                 if args.eval_omp_align:
                     # Optional: OMP alignment metrics (may be slow)
