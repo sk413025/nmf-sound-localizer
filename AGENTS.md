@@ -117,6 +117,16 @@ Cleanup: Remove obsolete experiment artifacts and deprecated scripts
 - Verified: No remaining dependencies on removed files
 ```
 
+## Output Location Policy (Mandatory)
+
+- Never write experiment or test outputs directly to the repository root (`./`).
+- Place all run artifacts under a dedicated subdirectory, defaulting to `results/<run_name>/`.
+- Allowed outputs include: logs (`run.log`), JSON/JSONL metrics, manifests, numeric diagnostics, checkpoints, and visualizations — but they must live under `results/<run_name>/` (or another pre-declared subfolder).
+- Prohibited at repo root: `*.log`, `*.json[l]`, `*.pt`/`*.pth`/`*.ckpt`, `*.png`/`*.pdf`, `numeric_diagnostics.jsonl`, `metric*.json`, or any other run artifact.
+- Scripts must expose an `--out_dir` (or equivalent) argument and default to `results/<run_name>`; do not hardcode outputs to `./`.
+- Results commits must `git add -f results/<run_name>/` to ensure atomic code+artifacts without polluting the root.
+- Rationale: keeps the project root clean and preserves reproducibility via consistent artifact paths.
+
 ## ❗ No‑Fallback Execution Policy (Fail‑Fast)
 
 Effective immediately, all RL reward/GRPO/RM scripts run with ZERO fallbacks:
