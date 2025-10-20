@@ -1,0 +1,66 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 02:14:15.842000 85958 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+
+Parameter counts:
+  - LoRA adapters:  45,056
+  - Embeddings:     521,472
+  - V-head:         257
+  - Total trainable: 566,785 / 4,243,969 (13.36%)
+  - Reduction vs full FT: 86.64%
+============================================================
+
+Training data:
+  - Samples: 16
+  - Directions/sample (avg): 17.0
+  - Pairs total: 1024 (~64.0/sample)
+Saved numeric diagnostics JSONL: results/rm_bt_progress_corr_smoke_e1_n16/numeric_diagnostics.jsonl
+{'teacher_softmax_summary': {'samples': 16}}
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'phase': 'train', 'supervision': 'pairwise', 'progress_rows': 256, 'total_rows': 1024, 'pct': 25.0, 'elapsed_s': 8.784740209579468, 'eta_s': 26.354220628738403}
+{'epoch': 0, 'phase': 'train', 'supervision': 'pairwise', 'progress_rows': 512, 'total_rows': 1024, 'pct': 50.0, 'elapsed_s': 17.228556156158447, 'eta_s': 17.228556156158447}
+{'epoch': 0, 'phase': 'train', 'supervision': 'pairwise', 'progress_rows': 768, 'total_rows': 1024, 'pct': 75.0, 'elapsed_s': 25.674898147583008, 'eta_s': 8.558299382527668}
+{'epoch': 0, 'phase': 'train', 'supervision': 'pairwise', 'progress_rows': 1024, 'total_rows': 1024, 'pct': 100.0, 'elapsed_s': 34.12295126914978, 'eta_s': 0.0}
+{'epoch': 0, 'bt_pair_loss': 0.6340880955394823, 'pairs': 1024}
+{'epoch': 0, 'phase': 'eval', 'progress_samples': 16, 'total_samples': 16, 'pct': 100.0, 'elapsed_s': 1.733062744140625, 'eta_s': 0.0}
+{'epoch': 0, 'eval_top1_acc': 0.125, 'eval_recall_at_K': 0.1875, 'eval_samples': 16, 'K': 3}
+{'epoch': 0, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6340880955394823, 'loss_delta': 0.0, 'top1': 0.125, 'top1_delta': 0.0, 'recall_at_K': 0.1875, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': None}}
+{'epoch': 0, 'eval_manifest': 'results/rm_bt_progress_corr_smoke_e1_n16/eval_subset_manifest.json', 'eval_records': 16}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_bt_progress_corr_smoke_e1_n16_adapters/
+  - Embeddings + V-head: rm_bt_progress_corr_smoke_e1_n16_heads.pt
+
+============================================================
+Embedding Quality Analysis
+============================================================
+Direction token embeddings:
+  - Similarity range: [-0.293, 1.000]
+  - Mean off-diagonal: -0.008
+
+Interpretation:
+  - Random embeddings: ~0.0
+  - Learned structure: >0.3 for nearby angles
+============================================================

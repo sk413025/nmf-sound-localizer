@@ -277,6 +277,10 @@ def main():
     ap.add_argument("--preflight-strict-h-top1", type=float, default=0.7)
     args = ap.parse_args()
 
+    # Track epoch loss and eval metrics to report alignment of loss vs Top-1/Recall@K
+    loss_history: List[Dict[str, object]] = []
+    eval_history: List[Dict[str, object]] = []
+
     if not HAS_PEFT:
         print("\n" + "=" * 60)
         print("ERROR: peft library is required for LoRA training")
@@ -869,6 +873,8 @@ def main():
         rm_model.train()
         total_loss = 0.0
         denom = 0
+        epoch_loss_name = "loss"
+        epoch_loss_value = 0.0
         if args.supervision == "pairwise":
             pw_total = len(pair_rows)
             pw_done = 0
@@ -929,7 +935,9 @@ def main():
                         "eta_s": float(max(0.0, eta)),
                     }, flush=True)
             avg_loss = total_loss / max(1, denom)
-            print({"epoch": epoch, "bt_pair_loss": float(avg_loss), "pairs": int(denom)})
+            epoch_loss_name = "bt_pair_loss"
+            epoch_loss_value = float(avg_loss)
+            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "pairs": int(denom)})
         elif args.supervision == "pointwise":
             pt_total = len(point_rows)
             pt_done = 0
@@ -988,7 +996,9 @@ def main():
                         "eta_s": float(max(0.0, eta)),
                     }, flush=True)
             avg_loss = total_loss / max(1, denom)
-            print({"epoch": epoch, "point_mse": float(avg_loss), "points": int(denom)})
+            epoch_loss_name = "point_mse"
+            epoch_loss_value = float(avg_loss)
+            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "points": int(denom)})
         else:  # listwise (DoA-aligned)
             # Cross-entropy between teacher P and RM softmax over candidate directions per sample
             ce = 0.0
@@ -1062,7 +1072,9 @@ def main():
                         "eta_s": float(max(0.0, eta)),
                     }, flush=True)
             avg_loss = total_loss / max(1, denom)
-            print({"epoch": epoch, "listwise_ce": float(avg_loss), "samples": int(denom)})
+            epoch_loss_name = "listwise_ce"
+            epoch_loss_value = float(avg_loss)
+            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "samples": int(denom)})
             # Summarize predicted Q distribution stats for the epoch
             try:
                 def _q(vals, p):
@@ -1089,6 +1101,12 @@ def main():
                 print({"epoch": epoch, "q_softmax_summary": q_summary})
             except Exception:
                 pass
+
+        # Record epoch loss for downstream correlation with eval metrics
+        try:
+            loss_history.append({"epoch": int(epoch), "name": epoch_loss_name, "value": float(epoch_loss_value)})
+        except Exception:
+            pass
 
         # Evaluation: directions-first Top-1 and recall@K
         do_eval = (args.eval_every > 0) and (((epoch + 1) % args.eval_every == 0) or (epoch == args.rm_epochs - 1))
@@ -1188,12 +1206,37 @@ def main():
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
                 recall_k = teacher_hits / max(1, total)
+                # Record eval
+                eval_rec = {"epoch": int(epoch), "top1": float(top1_acc), "recallK": float(recall_k), "K": int(args.K), "samples": int(total)}
+                prev_eval = eval_history[-1] if len(eval_history) > 0 else None
+                eval_history.append(eval_rec)
+                # Compute deltas and alignment
+                cur_loss = loss_history[-1]["value"] if len(loss_history) > 0 else None
+                prev_loss = loss_history[-2]["value"] if len(loss_history) > 1 else None
+                d_top1 = (eval_rec["top1"] - prev_eval["top1"]) if prev_eval else 0.0
+                d_recall = (eval_rec["recallK"] - prev_eval["recallK"]) if prev_eval else 0.0
+                d_loss = (float(cur_loss) - float(prev_loss)) if (cur_loss is not None and prev_loss is not None) else 0.0
+                aligned = (d_loss < 0.0) and ((d_top1 > 0.0) or (d_recall > 0.0)) if prev_eval and prev_loss is not None else None
+                # Emit raw eval and correlation report
                 print({
                     "epoch": epoch,
                     "eval_top1_acc": float(top1_acc),
                     "eval_recall_at_K": float(recall_k),
                     "eval_samples": int(total),
                     "K": int(args.K),
+                })
+                print({
+                    "epoch": epoch,
+                    "progress_report": {
+                        "loss_name": epoch_loss_name,
+                        "loss": float(cur_loss) if cur_loss is not None else None,
+                        "loss_delta": float(d_loss),
+                        "top1": float(eval_rec["top1"]),
+                        "top1_delta": float(d_top1),
+                        "recall_at_K": float(eval_rec["recallK"]),
+                        "recall_delta": float(d_recall),
+                        "aligned_loss_vs_metrics": (bool(aligned) if aligned is not None else None),
+                    }
                 })
                 # Write eval subset manifest for reproducibility and downstream verification
                 try:
