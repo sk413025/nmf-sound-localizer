@@ -42,7 +42,6 @@ from nmf_localizer.utils.audio_utils import AudioProcessor
 from doa_rl.features.nmf_utils import estimate_s_hat_torch
 # Reuse greedy eval helpers for directions‑first evaluation
 from scripts.train_sft_policy_with_rm import (
-    rm_score_for_prefix,
     get_patch_ids,
 )
 from doa_rl.omp.is_omp import compute_deltais_step0
@@ -103,7 +102,7 @@ def _rm_pred_score_train(
     patch_ids: Sequence[int],
     device: torch.device,
 ) -> torch.Tensor:
-    """Compute RM score with gradient: mean v_head over patch positions.
+    """Compute RM score with gradient: MAX over patch positions (sharper margins).
 
     Sequence: [BOS] <D> + patch_ids (no EOS). Returns a scalar tensor.
     """
@@ -114,7 +113,7 @@ def _rm_pred_score_train(
     out = rm_model.pretrained_model(input_ids=inp, attention_mask=attn, output_hidden_states=True, return_dict=True)
     vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)[0]
     patch_vals = vals[-len(patch_ids):] if len(patch_ids) > 0 else vals.new_tensor([0.0])
-    return patch_vals.mean()
+    return patch_vals.max()
 
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
@@ -174,7 +173,12 @@ def main():
     ap.add_argument("--content-root", type=str, required=True, help="Root of Original/content dataset (mirrors angle_/clip_ structure)")
     ap.add_argument("--K", type=int, default=3)
     # Teacher scoring (LTR): fixed to OMP ΔIS step0 (IS‑OMP)
-    ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for logits scaling")
+    ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for base pairs")
+    # Hard-negative controls
+    ap.add_argument("--hn-per-sample", type=int, default=1, help="Hard-negative pairs per sample per epoch (GT vs model top-N non-GT)")
+    ap.add_argument("--hn-beta", type=float, default=1.0, help="β for hard-negative pairs (overrides --bt-beta for HN rows)")
+    ap.add_argument("--hn-include-teacher", action="store_true", help="Also add teacher (top vs second/third) pairs to fill HN quota")
+    ap.add_argument("--hn-only-wrong", action="store_true", help="Allocate hard negatives only to samples mispredicted by current RM (pre-eval)")
     # Always use all directions per sample (no subsampling)
     ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
     
@@ -469,6 +473,7 @@ def main():
                 "dir_pos": t_pos,
                 "dir_neg": t_neg,
                 "patch_len": int(len(patch_ids_list[si])),
+                "beta": float(args.bt_beta),
             })
             # Update coverage structures
             pair_set.add((min(t_pos, t_neg), max(t_pos, t_neg)))
@@ -483,10 +488,15 @@ def main():
         if path_abs:
             pair_sets_by_path[path_abs] = pair_set
         # Record per-sample meta
+        # Teacher top-K token ids (first three) for optional HN teacher pairs
+        teacher_sorted_dir_idxs = [d_indices[i] for i in order]
+        teacher_top_token_ids = [int(dir_token_ids_all[j]) for j in teacher_sorted_dir_idxs[:3]]
+
         sample_meta[int(si)] = {
             "path_abs": path_abs,
             "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
             "patch_len": int(len(patch_ids_list[si])),
+            "teacher_top_ids": teacher_top_token_ids,
         }
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if ('pairs' in locals() and pairs) else np.array([0.0])
@@ -602,6 +612,11 @@ def main():
         # Build hard-negative pairs for this epoch: (GT vs current model top non-GT)
         hard_rows: List[Dict[str, int]] = []
         allowed_ids = list(direction_token_ids(tokenizer))
+        # Optional pre-eval to focus HN on current wrong samples
+        consider_indices: List[int] = []
+        cand_scores_cache: Dict[int, Dict[int, float]] = {}
+        top_pred_cache: Dict[int, int] = {}
+        wrong_set: set = set()
         for si in range(len(patch_ids_list)):
             meta = sample_meta.get(int(si), {})
             gt_tok = meta.get("gt_tok", None)
@@ -611,35 +626,104 @@ def main():
             if not patch_ids:
                 continue
             # Score all candidate directions with current RM
-            cand_scores = {}
+            cand_scores: Dict[int, float] = {}
             for cand in allowed_ids:
-                cand_scores[int(cand)] = float(rm_score_for_prefix(rm_model, tokenizer, [int(cand)], patch_ids, device))
-            # Pick model top
+                cand_scores[int(cand)] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
+            cand_scores_cache[int(si)] = cand_scores
             best_id = max(cand_scores, key=cand_scores.get)
-            if int(best_id) == int(gt_tok):
+            top_pred_cache[int(si)] = int(best_id)
+            if args.hn_only_wrong:
+                if int(best_id) != int(gt_tok):
+                    wrong_set.add(int(si))
+            else:
+                consider_indices.append(int(si))
+
+        if args.hn_only_wrong:
+            consider_indices = sorted(list(wrong_set))
+
+        # Build HN rows for considered samples
+        for si in consider_indices:
+            meta = sample_meta.get(int(si), {})
+            gt_tok = meta.get("gt_tok", None)
+            if gt_tok is None:
                 continue
-            hard_rows.append({
-                "sample_index": int(si),
-                "dir_pos": int(gt_tok),
-                "dir_neg": int(best_id),
-                "patch_len": int(len(patch_ids)),
-            })
+            patch_ids = patch_ids_list[si]
+            if not patch_ids:
+                continue
+            cand_scores = cand_scores_cache.get(int(si)) or {}
+            ranked = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)]
+            model_non_gt = [cid for cid in ranked if int(cid) != int(gt_tok)]
+            hn_quota = max(0, int(args.hn_per_sample))
+            # 1) GT vs model top-N non-GT
+            for cid in model_non_gt[:hn_quota]:
+                hard_rows.append({
+                    "sample_index": int(si),
+                    "dir_pos": int(gt_tok),
+                    "dir_neg": int(cid),
+                    "patch_len": int(len(patch_ids)),
+                    "beta": float(args.hn_beta),
+                })
+            # 2) Optionally teacher top vs teacher second/third
+            if args.hn_include_teacher and hn_quota > 0:
+                teacher_ids = meta.get("teacher_top_ids", []) or []
+                if len(teacher_ids) >= 2:
+                    t1 = int(teacher_ids[0])
+                    for tid in teacher_ids[1:3]:
+                        hard_rows.append({
+                            "sample_index": int(si),
+                            "dir_pos": int(t1),
+                            "dir_neg": int(int(tid)),
+                            "patch_len": int(len(patch_ids)),
+                            "beta": float(args.hn_beta),
+                        })
+
+        # Build epoch coverage sets including HN pairs
+        pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path.items()}
+        for row in hard_rows:
+            si = int(row.get("sample_index", -1))
+            if si < 0:
+                continue
+            p_meta = sample_meta.get(int(si), {})
+            p_abs = p_meta.get("path_abs", None)
+            if not p_abs:
+                continue
+            up = (min(int(row["dir_pos"]), int(row["dir_neg"])), max(int(row["dir_pos"]), int(row["dir_neg"])))
+            if p_abs not in pair_sets_by_path_epoch:
+                pair_sets_by_path_epoch[p_abs] = set()
+            pair_sets_by_path_epoch[p_abs].add(up)
 
         # Compose epoch rows: base pairs + hard negatives
         rows_epoch = list(pair_rows)
         rows_epoch.extend(hard_rows)
+
+        # Log HN allocation stats for this epoch
+        try:
+            targeted = len(consider_indices)
+            print({
+                "epoch": epoch,
+                "hard_negative_stats": {
+                    "hn_rows": int(len(hard_rows)),
+                    "targeted_samples": int(targeted),
+                    "avg_hn_per_targeted": float(len(hard_rows) / max(1, targeted)),
+                    "pairs_epoch_total": int(len(rows_epoch)),
+                }
+            })
+        except Exception:
+            pass
 
         # Pairwise BT training
         for batch in _iter_batches(rows_epoch, args.batch_size):
             # Build sequences for pos/neg
             seqs: List[List[int]] = []
             patch_lens: List[int] = []
+            betas: List[float] = []
             for row in batch:
                 si = row["sample_index"]
                 patch_ids = patch_ids_list[si]
                 seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
                 seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
                 patch_lens.extend([len(patch_ids), len(patch_ids)])
+                betas.append(float(row.get("beta", float(args.bt_beta))))
             inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
             attn = (inp != tokenizer.pad_token_id).to(device)
             out = rm_model.pretrained_model(
@@ -649,18 +733,19 @@ def main():
                 return_dict=True,
             )
             vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
-            means: List[torch.Tensor] = []
+            pooled_vals: List[torch.Tensor] = []
             for r in range(vals.size(0)):
                 plen = patch_lens[r]
                 seqlen = int(attn[r].sum().item())
                 if plen == 0:
-                    means.append(vals[r, seqlen-1:seqlen].mean())
+                    pooled_vals.append(vals[r, seqlen-1:seqlen].max())
                 else:
-                    means.append(vals[r, seqlen-plen:seqlen].mean())
-            means_t = torch.stack(means, dim=0)
-            pos_pred = means_t[0::2]
-            neg_pred = means_t[1::2]
-            logits = float(args.bt_beta) * (pos_pred - neg_pred)
+                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max())
+            pooled_t = torch.stack(pooled_vals, dim=0)
+            pos_pred = pooled_t[0::2]
+            neg_pred = pooled_t[1::2]
+            beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
+            logits = beta_vec * (pos_pred - neg_pred)
             target = torch.ones_like(logits)
             loss = bce(logits, target)
             optimizer.zero_grad(set_to_none=True)
@@ -761,7 +846,8 @@ def main():
                         raise RuntimeError("Eval prompt row has no patch tokens; cannot score")
                     cand_scores = {}
                     for cand in allowed:
-                        cand_scores[cand] = float(rm_score_for_prefix(rm_model, tokenizer, [cand], patch_ids, device))
+                        # Use local max-pooling scorer for sharper margins
+                        cand_scores[cand] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
                     gt_angle = int(gt_angles[i])
                     gt_token = f"<D_{gt_angle:03d}>"
                     gt_id = tokenizer.convert_tokens_to_ids(gt_token)
@@ -780,7 +866,8 @@ def main():
                     p_abs = eval_records[i].get("path_abs") if i < len(eval_records) else None
                     if p_abs and best_id != gt_id:
                         wrong_cnt += 1
-                        ps = pair_sets_by_path.get(p_abs, set())
+                        # Use epoch-inclusive coverage (base + current HN)
+                        ps = pair_sets_by_path_epoch.get(p_abs, set())
                         upair = (min(int(gt_id), int(best_id)), max(int(gt_id), int(best_id)))
                         if upair in ps:
                             covered_cnt += 1
