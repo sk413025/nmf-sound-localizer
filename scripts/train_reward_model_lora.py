@@ -41,9 +41,7 @@ from doa_rl.assets import load_H, load_W
 from nmf_localizer.utils.audio_utils import AudioProcessor
 from doa_rl.features.nmf_utils import estimate_s_hat_torch
 # Reuse greedy eval helpers for directions‑first evaluation
-from scripts.train_sft_policy_with_rm import (
-    get_patch_ids,
-)
+from scripts.train_sft_policy_with_rm import get_patch_ids
 from doa_rl.omp.is_omp import compute_deltais_step0
 
 
@@ -133,6 +131,88 @@ def _rm_pred_scores_batched(
     return {int(dir_ids[i]): float(scores[i]) for i in range(len(dir_ids))}
 
 ## Unified batched scorer is used for eval (training uses pooled logits directly)
+
+
+# -------------------------
+# Small utilities (refactor)
+# -------------------------
+
+def select_device(dev_arg: str) -> torch.device:
+    dev = dev_arg
+    if dev == "auto":
+        if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+            dev = "mps"
+        elif torch.cuda.is_available():
+            dev = "cuda"
+        else:
+            dev = "cpu"
+    device = torch.device(dev)
+    print(f"\nDevice: {device}")
+    return device
+
+
+def apply_lora_and_unfreeze(rm_model, args):
+    print("\n" + "=" * 60)
+    print("Applying LoRA to Reward Model")
+    print("=" * 60)
+    target_modules = [m.strip() for m in args.lora_target_modules.split(",")]
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        target_modules=target_modules,
+        bias="none",
+        inference_mode=False,
+    )
+    print("LoRA config:")
+    print(f"  - Rank (r): {args.lora_r}")
+    print(f"  - Alpha: {args.lora_alpha}")
+    print(f"  - Dropout: {args.lora_dropout}")
+    print(f"  - Target modules: {target_modules}")
+    rm_model.pretrained_model = get_peft_model(rm_model.pretrained_model, lora_config)
+    embedding_layer = rm_model.pretrained_model.get_input_embeddings()
+    if hasattr(embedding_layer, 'base_layer'):
+        embedding_layer.base_layer.weight.requires_grad = True
+    else:
+        embedding_layer.weight.requires_grad = True
+    rm_model.score = rm_model.v_head
+    return rm_model, embedding_layer
+
+
+def build_optimizer_for_rm(rm_model, args):
+    return torch.optim.Adam([
+        {
+            "params": [p for n, p in rm_model.named_parameters() if p.requires_grad and "lora" in n.lower()],
+            "lr": args.lr_lora,
+        },
+        {
+            "params": [p for n, p in rm_model.named_parameters() if p.requires_grad and ("wte" in n.lower() or "wpe" in n.lower())],
+            "lr": args.lr_embed,
+        },
+        {
+            "params": rm_model.v_head.parameters(),
+            "lr": args.lr_vhead,
+        },
+    ])
+
+
+def pool_patch(vals_row: torch.Tensor, attn_row: torch.Tensor, patch_len: int, pooling: str, tau: float) -> torch.Tensor:
+    seqlen = int(attn_row.sum().item())
+    if patch_len <= 0:
+        patch_slice = vals_row[seqlen-1:seqlen]
+    else:
+        patch_slice = vals_row[seqlen - patch_len: seqlen]
+    if pooling == "lse":
+        t = max(1e-6, float(tau))
+        return torch.logsumexp(patch_slice / t, dim=-1) * t
+    return patch_slice.max()
+
+
+def iter_batches(rows: List[Dict[str, int]], bs: int):
+    step = max(1, bs)
+    for i in range(0, len(rows), step):
+        yield rows[i:i+step]
 
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
@@ -252,16 +332,7 @@ def main():
     set_seed(args.seed)
 
     # Select device
-    dev = args.device
-    if dev == "auto":
-        if torch.backends.mps.is_available() and torch.backends.mps.is_built():
-            dev = "mps"
-        elif torch.cuda.is_available():
-            dev = "cuda"
-        else:
-            dev = "cpu"
-    device = torch.device(dev)
-    print(f"\nDevice: {device}")
+    device = select_device(args.device)
 
     # Prepare data
     direction_angles = _discover_angles(args.data_root)
@@ -298,46 +369,7 @@ def main():
 
     # Build base RM model
     rm_model, _ = build_value_head_model(tokenizer)
-    
-    print("\n" + "=" * 60)
-    print("Applying LoRA to Reward Model")
-    print("=" * 60)
-    
-    # Configure LoRA
-    target_modules = [m.strip() for m in args.lora_target_modules.split(",")]
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        r=args.lora_r,
-        lora_alpha=args.lora_alpha,
-        lora_dropout=args.lora_dropout,
-        target_modules=target_modules,
-        bias="none",
-        inference_mode=False,
-    )
-    
-    print("LoRA config:")
-    print(f"  - Rank (r): {args.lora_r}")
-    print(f"  - Alpha: {args.lora_alpha}")
-    print(f"  - Dropout: {args.lora_dropout}")
-    print(f"  - Target modules: {target_modules}")
-    
-    # Apply LoRA to the backbone
-    rm_model.pretrained_model = get_peft_model(
-        rm_model.pretrained_model,
-        lora_config
-    )
-    
-    # CRITICAL: Unfreeze embeddings for new tokens
-    # This is essential for learning patch/direction token meanings!
-    embedding_layer = rm_model.pretrained_model.get_input_embeddings()
-    if hasattr(embedding_layer, 'base_layer'):
-        # PEFT wraps the embedding layer
-        embedding_layer.base_layer.weight.requires_grad = True
-    else:
-        embedding_layer.weight.requires_grad = True
-    
-    # V-head is already trainable
-    rm_model.score = rm_model.v_head
+    rm_model, embedding_layer = apply_lora_and_unfreeze(rm_model, args)
     rm_model.to(device)
     rm_model.train()
     
@@ -570,26 +602,7 @@ def main():
     print("Training")
     print("=" * 60)
 
-    def _iter_batches(rows: List[Dict[str, int]], bs: int):
-        step = max(1, bs)
-        for i in range(0, len(rows), step):
-            yield rows[i:i+step]
-
-    def _pool_patch(vals_row: torch.Tensor, attn_row: torch.Tensor, patch_len: int,
-                    pooling: str, tau: float) -> torch.Tensor:
-        """Pool over the patch span using max or log-sum-exp with temperature τ.
-        vals_row: (S,) token-wise scores; attn_row: (S,) attention mask (bool); patch_len: number of patch tokens.
-        """
-        seqlen = int(attn_row.sum().item())
-        if patch_len <= 0:
-            patch_slice = vals_row[seqlen-1:seqlen]
-        else:
-            patch_slice = vals_row[seqlen - patch_len: seqlen]
-        if pooling == "lse":
-            t = max(1e-6, float(tau))
-            return torch.logsumexp(patch_slice / t, dim=-1) * t
-        # default: max
-        return patch_slice.max()
+    # helpers moved to module level: iter_batches, pool_patch
 
     # Precompute fixed pairs (base pairs only in simplified trainer)
     rows_fixed: List[Dict[str, int]] = []
@@ -617,7 +630,7 @@ def main():
         else:
             rows_epoch = list(pair_rows)
 
-        batches = list(_iter_batches(rows_epoch, args.batch_size))
+        batches = list(iter_batches(rows_epoch, args.batch_size))
         for bi, batch in enumerate(batches):
             seqs: List[List[int]] = []
             patch_lens: List[int] = []
@@ -641,7 +654,7 @@ def main():
             pooled_vals: List[torch.Tensor] = []
             for r in range(vals.size(0)):
                 plen = patch_lens[r]
-                pooled_vals.append(_pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
+                pooled_vals.append(pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
             pooled_t = torch.stack(pooled_vals, dim=0)
             pos_pred = pooled_t[0::2]
             neg_pred = pooled_t[1::2]
