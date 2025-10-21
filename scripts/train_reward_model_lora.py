@@ -196,9 +196,7 @@ def _prepare_samples(args, direction_angles: List[int]) -> Tuple[List[str], Dict
 
 
 
-def _parse_completion(*args, **kwargs):
-    # No longer used (we sample directions directly); kept as stub to preserve namespace stability if imported
-    return []
+# Removed unused completion parser (simplification)
 
 
 def main():
@@ -217,19 +215,9 @@ def main():
                     help="Pooling over patch tokens: 'max' or 'lse' (log-sum-exp)")
     ap.add_argument("--pool-temp", type=float, default=1.0,
                     help="Temperature τ for LSE pooling (τ>0; ignored if --pooling=max)")
-    # Hard-negative controls
-    ap.add_argument("--hn-per-sample", type=int, default=1, help="Hard-negative pairs per sample per epoch (GT vs model top-N non-GT)")
-    ap.add_argument("--hn-beta", type=float, default=1.0, help="β for hard-negative pairs (overrides --bt-beta for HN rows)")
-    ap.add_argument("--hn-include-teacher", action="store_true", help="Also add teacher (top vs second/third) pairs to fill HN quota")
-    ap.add_argument("--hn-only-wrong", action="store_true", help="Allocate hard negatives only to samples mispredicted by current RM (pre-eval)")
-    # Decisive-pairs only and retargeting frequency
-    ap.add_argument("--no-base-pairs", action="store_true", help="Use only decisive HN pairs; skip base top-vs-bottom pairs")
-    ap.add_argument("--retarget-every", type=float, default=0.0, help="Fraction of an epoch after which to rebuild HN targets (e.g., 0.5 → twice per epoch)")
-    ap.add_argument("--teacher-pool", type=int, default=5, help="Use top-M teacher directions for HN candidate pre-filter")
+    # Removed hard-negative and retargeting controls (simplified trainer)
     ap.add_argument("--fixed-pairs", action="store_true", help="Construct training pairs once before training and keep them fixed across epochs")
-    ap.add_argument("--no-hard-negatives", action="store_true", help="Disable all hard-negative selection; train on base pairs only")
-    # Always use all directions per sample (no subsampling)
-    ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample (ignored if --teacher-all-pairs)")
+    # Always use all directions per sample (teacher-all-pairs is the default behavior)
     ap.add_argument("--teacher-all-pairs", action="store_true", help="Use all teacher-consistent pairs per sample (pos>neg for all direction pairs)")
     
     # LoRA hyperparameters
@@ -482,39 +470,17 @@ def main():
                 "max": float(np.max(x)),
             }
         # Build supervision rows
-        order = list(range(len(d_indices)))
-        order.sort(key=lambda i: scores[i], reverse=True)
-        top_k = order[: max(1, len(order)//4)]
-        bot_k = order[-max(1, len(order)//4):]
-        # Build pairwise supervision rows
-        pairs: List[Tuple[int, int]] = []
-        if not args.no_base_pairs:
-            if args.teacher_all_pairs:
-                # Use all teacher-consistent pairs: for all a ranked above b, (a,b)
-                for ii in range(len(order)):
-                    ai = order[ii]
-                    for jj in range(ii+1, len(order)):
-                        bi = order[jj]
-                        if scores[ai] == scores[bi]:
-                            continue
-                        pairs.append((ai, bi))
-            else:
-                # Default: top quartile vs bottom quartile + random fill to budget
-                for a in top_k:
-                    for b in bot_k:
-                        if a == b or scores[a] == scores[b]:
-                            continue
-                        pairs.append((a, b))
-                rng = np.random.default_rng(seed=si + args.seed)
-                budget = int(args.pairs_per_sample)
-                while len(pairs) < budget and len(pairs) < len(order)*(len(order)-1):
-                    i, j = rng.integers(0, len(order), size=2)
-                    if i == j or scores[i] == scores[j]:
-                        continue
-                    if scores[i] > scores[j]:
-                        pairs.append((i, j))
-                    else:
-                        pairs.append((j, i))
+    order = list(range(len(d_indices)))
+    order.sort(key=lambda i: scores[i], reverse=True)
+    # Build pairwise supervision rows (teacher-all-pairs by default)
+    pairs: List[Tuple[int, int]] = []
+    for ii in range(len(order)):
+        ai = order[ii]
+        for jj in range(ii+1, len(order)):
+            bi = order[jj]
+            if scores[ai] == scores[bi]:
+                continue
+            pairs.append((ai, bi))
         # Derive GT from source path for coverage stats
         try:
             angle_dir = os.path.basename(os.path.dirname(y_src))
@@ -696,8 +662,7 @@ def main():
     rows_fixed: List[Dict[str, int]] = []
     pair_sets_by_path_fixed: Dict[str, set] = {}
     if args.fixed_pairs:
-        base_rows = list(pair_rows) if not args.no_base_pairs else []
-        hn_rows_init: List[Dict[str, int]] = []  # simplified: no initial hard negatives
+        base_rows = list(pair_rows)
         rows_fixed = list(base_rows)
         # Build fixed coverage pairs per path from base pairs only
         pair_sets_by_path_fixed = {k: set(v) for k, v in pair_sets_by_path.items()}
@@ -706,8 +671,8 @@ def main():
             pairs_out = os.path.join("results", f"{args.out}", "training_pairs.json")
             os.makedirs(os.path.dirname(pairs_out), exist_ok=True)
             with open(pairs_out, "w") as pf:
-                json.dump({"rows": rows_fixed, "counts": {"base": len(base_rows), "hn": len(hn_rows_init)}}, pf, indent=2)
-            print({"training_pairs": pairs_out, "base_rows": len(base_rows), "hn_rows": len(hn_rows_init), "total": len(rows_fixed)})
+                json.dump({"rows": rows_fixed, "counts": {"base": len(base_rows), "hn": 0}}, pf, indent=2)
+            print({"training_pairs": pairs_out, "base_rows": len(base_rows), "hn_rows": 0, "total": len(rows_fixed)})
         except Exception as _e:
             print(f"Warning: failed to write training_pairs.json: {_e}")
 
@@ -715,10 +680,7 @@ def main():
         rm_model.train()
         total_loss = 0.0
         denom = 0
-        # Diagnostics placeholders (remain for eval prints)
-        targeted_conf_by_path: Dict[str, int] = {}
-        targeted_margin_pre: List[float] = []
-        # Select rows and coverage set once per epoch (no HN retargeting in simplified path)
+        # Select rows and coverage set once per epoch (simplified path)
         if args.fixed_pairs:
             pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path_fixed.items()}
             rows_epoch = list(rows_fixed)
@@ -854,17 +816,6 @@ def main():
                 # Compute Top-1 and Recall@K directly from RM scores (no greedy teacher)
                 top1_hits = 0
                 teacher_hits = 0
-                # Confusor coverage counters (for wrong samples)
-                wrong_cnt = 0
-                covered_cnt = 0
-                # Diagnostics aggregates
-                gt_ranks: List[int] = []
-                targeted_pre: List[float] = list(targeted_margin_pre)
-                targeted_post: List[float] = []
-                persistence_numer = 0
-                persistence_denom = 0
-                corr_vals: List[float] = []
-                corr_ok = 0
                 for i in range(input_ids_prompt.size(0)):
                     row = input_ids_prompt[i]
                     patch_ids = get_patch_ids(tokenizer, row)
@@ -887,58 +838,7 @@ def main():
                     topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(args.K)]]
                     if gt_id in topk_ids:
                         teacher_hits += 1
-                    # Confusor coverage: if wrong, check if (gt, best) pair existed in training pairs for this sample
-                    # Map back to training sample via absolute path (manifest stores path_abs)
-                    p_abs = eval_records[i].get("path_abs") if i < len(eval_records) else None
-                    if p_abs and best_id != gt_id:
-                        wrong_cnt += 1
-                        # Use epoch-inclusive coverage (base + current HN)
-                        ps = pair_sets_by_path_epoch.get(p_abs, set())
-                        upair = (min(int(gt_id), int(best_id)), max(int(gt_id), int(best_id)))
-                        if upair in ps:
-                            covered_cnt += 1
-                        # Persistence check: is current confusor the targeted one?
-                        targ = targeted_conf_by_path.get(p_abs, None)
-                        if targ is not None:
-                            persistence_denom += 1
-                            if int(targ) == int(best_id):
-                                persistence_numer += 1
-                        # Targeted margin post
-                        if targ is not None and int(targ) in cand_scores:
-                            targeted_post.append(float(cand_scores[int(gt_id)] - cand_scores[int(targ)]))
-                    # GT rank among all
-                    rank_desc = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)]
-                    try:
-                        gt_ranks.append(1 + int(rank_desc.index(int(gt_id))))
-                    except ValueError:
-                        gt_ranks.append(len(allowed))
-                    # RM vs teacher Spearman correlation if teacher scores available
-                    if p_abs:
-                        # Find si by path
-                        si_match = None
-                        for si_k, meta in sample_meta.items():
-                            if meta.get("path_abs", None) == p_abs:
-                                si_match = int(si_k)
-                                break
-                        if si_match is not None:
-                            t_scores = sample_meta.get(si_match, {}).get("teacher_scores", {})
-                            if t_scores:
-                                rm_vec = [float(cand_scores[int(tid)]) for tid in allowed]
-                                te_vec = [float(t_scores.get(int(tid), 0.0)) for tid in allowed]
-                                # use module-level numpy as np
-                                def rankify(a):
-                                    a = np.asarray(a)
-                                    order = np.argsort(a)
-                                    ranks = np.empty_like(order, dtype=np.float64)
-                                    ranks[order] = np.arange(1, len(a)+1)
-                                    return ranks
-                                r1 = rankify(rm_vec)
-                                r2 = rankify(te_vec)
-                                s1 = float(np.std(r1)); s2 = float(np.std(r2))
-                                if s1 > 0 and s2 > 0:
-                                    cov = float(np.mean((r1 - float(np.mean(r1))) * (r2 - float(np.mean(r2)))))
-                                    corr_vals.append(cov / (s1 * s2))
-                                    corr_ok += 1
+                    # Simplified eval loop: omit coverage, rank stats and teacher-correlation
                     # No noisy eval progress spam
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
@@ -962,42 +862,7 @@ def main():
                     "eval_samples": int(total),
                     "K": int(args.K),
                 })
-                # Print confusor coverage summary for this epoch
-                try:
-                    ratio = float(covered_cnt) / float(max(1, wrong_cnt))
-                except Exception:
-                    ratio = 0.0
-                print({
-                    "epoch": epoch,
-                    "confusor_coverage": {
-                        "wrong_samples": int(wrong_cnt),
-                        "covered": int(covered_cnt),
-                        "covered_ratio": float(ratio),
-                    }
-                })
-                # Extra diagnostics
-                try:
-                    # use module-level numpy as np
-                    def qstats(x):
-                        a = np.asarray(x, dtype=float)
-                        return {
-                            "mean": float(np.mean(a)) if a.size > 0 else 0.0,
-                            "median": float(np.median(a)) if a.size > 0 else 0.0,
-                            "p95": float(np.percentile(a,95)) if a.size > 0 else 0.0,
-                        }
-                    gt_rank_stats = qstats(gt_ranks)
-                    margin_stats = {"pre": qstats(targeted_pre), "post": qstats(targeted_post), "count": int(len(targeted_post))}
-                    persistence = float(persistence_numer) / float(max(1, persistence_denom))
-                    corr_summary = qstats(corr_vals); corr_summary.update({"count": int(corr_ok)})
-                    print({
-                        "epoch": epoch,
-                        "gt_rank_stats": gt_rank_stats,
-                        "margin_target_stats": margin_stats,
-                        "hn_target_persistence": float(persistence),
-                        "rm_teacher_spearman": corr_summary,
-                    })
-                except Exception:
-                    pass
+                # Simplified: omit verbose coverage/correlation diagnostics
                 print({
                     "epoch": epoch,
                     "progress_report": {
