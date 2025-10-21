@@ -101,7 +101,7 @@ def _rm_pred_scores_batched(
     patch_ids: Sequence[int],
     device: torch.device,
 ) -> Dict[int, float]:
-    """Score multiple direction ids in one forward using MAX pooling over patch tokens.
+    """Score multiple direction ids in one forward using max pooling over patch tokens.
 
     Returns a dict {dir_id: score} computed without gradient for efficiency.
     """
@@ -132,26 +132,7 @@ def _rm_pred_scores_batched(
             scores.append(float(pooled.item()))
     return {int(dir_ids[i]): float(scores[i]) for i in range(len(dir_ids))}
 
-
-def _rm_pred_score_train(
-    rm_model,
-    tokenizer,
-    dir_id: int,
-    patch_ids: Sequence[int],
-    device: torch.device,
-) -> torch.Tensor:
-    """Compute RM score with gradient: MAX over patch positions (sharper margins).
-
-    Sequence: [BOS] <D> + patch_ids (no EOS). Returns a scalar tensor.
-    """
-    bos = tokenizer.bos_token_id
-    ids = [bos, int(dir_id)] + [int(x) for x in patch_ids]
-    inp = torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(0)
-    attn = torch.ones_like(inp, device=device)
-    out = rm_model.pretrained_model(input_ids=inp, attention_mask=attn, output_hidden_states=True, return_dict=True)
-    vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)[0]
-    patch_vals = vals[-len(patch_ids):] if len(patch_ids) > 0 else vals.new_tensor([0.0])
-    return patch_vals.max()
+## Unified batched scorer is used for eval (training uses pooled logits directly)
 
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
@@ -360,23 +341,7 @@ def main():
     rm_model.to(device)
     rm_model.train()
     
-    # Count parameters
-    def count_parameters(model, pattern: str = None):
-        if pattern:
-            return sum(
-                p.numel() for n, p in model.named_parameters()
-                if p.requires_grad and pattern.lower() in n.lower()
-            )
-        return sum(p.numel() for p in model.parameters() if p.requires_grad)
-    
-    lora_params = count_parameters(rm_model, "lora")
-    # GPT2 uses 'wte' for word token embeddings, not 'embed'
-    embed_params = count_parameters(rm_model, "wte") + count_parameters(rm_model, "wpe")
-    vhead_params = sum(p.numel() for p in rm_model.v_head.parameters())
-    total_trainable = sum(p.numel() for p in rm_model.parameters() if p.requires_grad)
-    total_params = sum(p.numel() for p in rm_model.parameters())
-    
-    # Omit verbose parameter table in simplified script
+    # Omit parameter counting in simplified script
 
     # Build pairwise BT dataset from forward‑model teachers
     dir_token_ids_all: List[int] = list(direction_token_ids(tokenizer))
@@ -403,10 +368,6 @@ def main():
         patch_ids_list = [[tid for tid in row.tolist() if tid not in specials] for row in enc_patch["input_ids"]]
 
     pair_rows: List[Dict[str, int]] = []
-    # Track training pairs per sample (by absolute source path) for confusor coverage checks
-    pair_sets_by_path: Dict[str, set] = {}
-    # Per-sample metadata for hard-negative mining
-    sample_meta: Dict[int, Dict[str, object]] = {}
     for si, p in enumerate(prompts):
         Y = cache[p]["Y"].float()
         F, N = Y.shape
@@ -488,8 +449,6 @@ def main():
         except Exception:
             gt_angle = -1
         gt_tok = tokenizer.convert_tokens_to_ids(f"<D_{gt_angle:03d}>") if gt_angle >= 0 else -1
-        # Build a per-sample set of unordered token-id pairs for later coverage checks
-        pair_set = set()
         gt_pairs_count = 0
 
         for (ai, bi) in pairs:
@@ -504,36 +463,10 @@ def main():
                 "patch_len": int(len(patch_ids_list[si])),
                 "beta": float(args.bt_beta),
             })
-            # Update coverage structures
-            pair_set.add((min(t_pos, t_neg), max(t_pos, t_neg)))
             if gt_tok >= 0 and (t_pos == gt_tok or t_neg == gt_tok):
                 gt_pairs_count += 1
 
-        # Record per-sample pair set by absolute path for eval-time coverage checks
-        try:
-            path_abs = os.path.abspath(str(y_src)) if y_src else ""
-        except Exception:
-            path_abs = str(y_src) if y_src else ""
-        if path_abs:
-            pair_sets_by_path[path_abs] = pair_set
-        # Record per-sample meta
-        # Teacher top-K token ids (first three) for optional HN teacher pairs
-        teacher_sorted_dir_idxs = [d_indices[i] for i in order]
-        teacher_top_token_ids = [int(dir_token_ids_all[j]) for j in teacher_sorted_dir_idxs[:3]]
-        # Store teacher scores keyed by token id for diagnostics
-        teacher_scores_tok: Dict[int, float] = {}
-        for idx in range(len(d_indices)):
-            di = d_indices[idx]
-            tok = int(dir_token_ids_all[di])
-            teacher_scores_tok[tok] = float(scores[idx])
-
-        sample_meta[int(si)] = {
-            "path_abs": path_abs,
-            "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
-            "patch_len": int(len(patch_ids_list[si])),
-            "teacher_top_ids": teacher_top_token_ids,
-            "teacher_scores": teacher_scores_tok,
-        }
+        # No per-sample coverage or teacher metadata needed in simplified path
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if ('pairs' in locals() and pairs) else np.array([0.0])
         # Signal stats and baseline_k=2
@@ -660,12 +593,10 @@ def main():
 
     # Precompute fixed pairs (base pairs only in simplified trainer)
     rows_fixed: List[Dict[str, int]] = []
-    pair_sets_by_path_fixed: Dict[str, set] = {}
     if args.fixed_pairs:
         base_rows = list(pair_rows)
         rows_fixed = list(base_rows)
-        # Build fixed coverage pairs per path from base pairs only
-        pair_sets_by_path_fixed = {k: set(v) for k, v in pair_sets_by_path.items()}
+        # Coverage tracking removed in simplified path
         # Persist training pairs for reproducibility
         try:
             pairs_out = os.path.join("results", f"{args.out}", "training_pairs.json")
@@ -680,12 +611,10 @@ def main():
         rm_model.train()
         total_loss = 0.0
         denom = 0
-        # Select rows and coverage set once per epoch (simplified path)
+        # Select rows once per epoch (simplified path)
         if args.fixed_pairs:
-            pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path_fixed.items()}
             rows_epoch = list(rows_fixed)
         else:
-            pair_sets_by_path_epoch = {k: set(v) for k, v in pair_sets_by_path.items()}
             rows_epoch = list(pair_rows)
 
         batches = list(_iter_batches(rows_epoch, args.batch_size))
@@ -810,7 +739,7 @@ def main():
                     return_tensors="pt",
                 )
                 input_ids_prompt = enc_eval["input_ids"].to(device)
-                allowed = set(direction_token_ids(tokenizer))
+                allowed = list(direction_token_ids(tokenizer))
                 if args.K < 1 or args.K > len(allowed):
                     raise RuntimeError(f"Invalid K={args.K}; valid range is [1, {len(allowed)}]")
                 # Compute Top-1 and Recall@K directly from RM scores (no greedy teacher)
@@ -821,10 +750,7 @@ def main():
                     patch_ids = get_patch_ids(tokenizer, row)
                     if not patch_ids:
                         raise RuntimeError("Eval prompt row has no patch tokens; cannot score")
-                    cand_scores = {}
-                    for cand in allowed:
-                        # Use local max-pooling scorer for sharper margins
-                        cand_scores[cand] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
+                    cand_scores = _rm_pred_scores_batched(rm_model, tokenizer, allowed, patch_ids, device)
                     gt_angle = int(gt_angles[i])
                     gt_token = f"<D_{gt_angle:03d}>"
                     gt_id = tokenizer.convert_tokens_to_ids(gt_token)
