@@ -98,8 +98,11 @@ def _rm_pred_scores_batched(
     dir_ids: Sequence[int],
     patch_ids: Sequence[int],
     device: torch.device,
+    *,
+    pooling: str = "max",
+    tau: float = 1.0,
 ) -> Dict[int, float]:
-    """Score multiple direction ids in one forward using max pooling over patch tokens.
+    """Score multiple direction ids in one forward, pooling over patch tokens.
 
     Returns a dict {dir_id: score} computed without gradient for efficiency.
     """
@@ -122,11 +125,7 @@ def _rm_pred_scores_batched(
         vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (B, S)
         scores: List[float] = []
         for r in range(vals.size(0)):
-            seqlen = int(attn[r].sum().item())
-            if patch_len == 0:
-                pooled = vals[r, seqlen-1:seqlen].max()
-            else:
-                pooled = vals[r, seqlen-patch_len:seqlen].max()
+            pooled = pool_patch(vals[r], attn[r], patch_len, pooling, tau)
             scores.append(float(pooled.item()))
     return {int(dir_ids[i]): float(scores[i]) for i in range(len(dir_ids))}
 
@@ -397,6 +396,138 @@ def load_and_align_assets(args, direction_angles: List[int]) -> Tuple[torch.Tens
     W_t = load_W(args.w_path).float().cpu()
     return H, W_t
 
+
+# -------------------------
+# Eval helpers (refactor)
+# -------------------------
+
+def collect_eval_data(args, direction_angles: List[int], results_dir: str) -> Tuple[List[str], List[int], List[Dict[str, object]]]:
+    ds_eval = DoADataset(
+        args.data_root,
+        direction_angles,
+        fs=args.sample_rate,
+        n_fft=args.n_fft,
+        freq_min=args.freq_min,
+        freq_max=args.freq_max,
+    )
+    tok_patch = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
+    eval_prompts: List[str] = []
+    gt_angles: List[int] = []
+    eval_records: List[Dict[str, object]] = []
+    manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r") as mf:
+                manifest = json.load(mf)
+            files = manifest.get("files", [])
+            for rec in files:
+                pth_abs = rec.get("path_abs") or rec.get("path") or ""
+                angle = rec.get("angle_deg")
+                if not pth_abs or angle is None:
+                    continue
+                Y_np = _load_band_spectrogram_from_npy(Path(pth_abs), fs=args.sample_rate, n_fft=args.n_fft, freq_min=args.freq_min, freq_max=args.freq_max).numpy()
+                eval_prompts.append(" ".join(tok_patch(Y_np)))
+                gt_angles.append(int(angle))
+                eval_records.append({"path_abs": os.path.abspath(pth_abs), "angle_deg": int(angle)})
+        except Exception:
+            eval_prompts = []
+            eval_records = []
+            gt_angles = []
+    if not eval_prompts:
+        dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=False)
+        for batch_eval in dl_eval:
+            Y_np = batch_eval["Y"].squeeze(0).numpy()
+            eval_prompts.append(" ".join(tok_patch(Y_np)))
+            gt_a = int(batch_eval["angle_deg"]) if "angle_deg" in batch_eval else None
+            gt_angles.append(int(gt_a) if gt_a is not None else 0)
+            pth = batch_eval.get("path", "")
+            if isinstance(pth, (list, tuple)):
+                pth = pth[0] if pth else ""
+            try:
+                pth_abs = os.path.abspath(str(pth)) if pth else ""
+            except Exception:
+                pth_abs = str(pth) if pth else ""
+            rec = {"path_abs": pth_abs, "angle_deg": int(gt_a) if gt_a is not None else None}
+            eval_records.append(rec)
+            if args.max_samples and len(eval_prompts) >= args.max_samples:
+                break
+    return eval_prompts, gt_angles, eval_records
+
+
+def encode_eval_prompts(tokenizer, eval_prompts: List[str], device: torch.device) -> torch.Tensor:
+    enc_eval = tokenizer(
+        eval_prompts,
+        padding=True,
+        truncation=True,
+        max_length=tokenizer.model_max_length,
+        return_tensors="pt",
+    )
+    return enc_eval["input_ids"].to(device)
+
+
+def score_eval(
+    rm_model,
+    tokenizer,
+    allowed: List[int],
+    input_ids_prompt: torch.Tensor,
+    gt_angles: List[int],
+    device: torch.device,
+    *,
+    pooling: str,
+    tau: float,
+) -> Tuple[int, int, int]:
+    top1_hits = 0
+    teacher_hits = 0
+    total = int(input_ids_prompt.size(0))
+    for i in range(total):
+        row = input_ids_prompt[i]
+        patch_ids = get_patch_ids(tokenizer, row)
+        if not patch_ids:
+            raise RuntimeError("Eval prompt row has no patch tokens; cannot score")
+        cand_scores = _rm_pred_scores_batched(
+            rm_model, tokenizer, allowed, patch_ids, device, pooling=pooling, tau=tau
+        )
+        gt_angle = int(gt_angles[i])
+        gt_token = f"<D_{gt_angle:03d}>"
+        gt_id = tokenizer.convert_tokens_to_ids(gt_token)
+        if gt_id not in allowed:
+            raise RuntimeError(f"Ground-truth token '{gt_token}' not in allowed direction tokens")
+        best_id = max(cand_scores, key=cand_scores.get)
+        if best_id == gt_id:
+            top1_hits += 1
+        topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(max(1, len(allowed)))]]
+        # restrict to K
+        topk_ids = topk_ids[:int(max(1, min(len(topk_ids), len(allowed))))]
+        if gt_id in topk_ids[:int(len(allowed))]:
+            # we will clip to K in metric computation outside
+            pass
+        # Compute Recall@K precisely below
+        topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(min(len(allowed), max(1, len(allowed))))]]
+        if gt_id in topk_ids[:int(min(len(allowed), max(1, len(allowed))))]:
+            teacher_hits += 1
+    return top1_hits, teacher_hits, total
+
+
+def write_eval_manifest(results_dir: str, eval_records: List[Dict[str, object]], epoch: int):
+    manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
+    with open(manifest_path, "w") as mf:
+        json.dump({"files": eval_records}, mf, indent=2)
+    print({"epoch": int(epoch), "eval_manifest": manifest_path, "eval_records": int(len(eval_records))})
+
+
+def emit_eval_progress(eval_history: List[Dict[str, object]], loss_history: List[Dict[str, object]], top1_acc: float, recall_k: float, K: int, samples: int):
+    eval_rec = {"epoch": int(len(eval_history)), "top1": float(top1_acc), "recallK": float(recall_k), "K": int(K), "samples": int(samples)}
+    prev_eval = eval_history[-1] if len(eval_history) > 0 else None
+    eval_history.append(eval_rec)
+    cur_loss = loss_history[-1]["value"] if len(loss_history) > 0 else None
+    prev_loss = loss_history[-2]["value"] if len(loss_history) > 1 else None
+    d_top1 = (eval_rec["top1"] - prev_eval["top1"]) if prev_eval else 0.0
+    d_recall = (eval_rec["recallK"] - prev_eval["recallK"]) if prev_eval else 0.0
+    d_loss = (float(cur_loss) - float(prev_loss)) if (cur_loss is not None and prev_loss is not None) else 0.0
+    aligned = (d_loss < 0.0) and ((d_top1 > 0.0) or (d_recall > 0.0)) if prev_eval and prev_loss is not None else None
+    print({"epoch": int(eval_rec["epoch"]), "eval_top1_acc": float(top1_acc), "eval_recall_at_K": float(recall_k), "eval_samples": int(samples), "K": int(K)})
+    print({"epoch": int(eval_rec["epoch"]), "progress_report": {"loss_name": loss_history[-1]["name"] if loss_history else "bt_pair_loss", "loss": float(cur_loss) if cur_loss is not None else None, "loss_delta": float(d_loss), "top1": float(eval_rec["top1"]), "top1_delta": float(d_top1), "recall_at_K": float(eval_rec["recallK"]), "recall_delta": float(d_recall), "aligned_loss_vs_metrics": (bool(aligned) if aligned is not None else None)}})
+
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
     angles = sorted(
@@ -603,105 +734,22 @@ def evaluate_rm(
 ):
     rm_model.eval()
     try:
-        ds_eval = DoADataset(
-            args.data_root,
-            direction_angles,
-            fs=args.sample_rate,
-            n_fft=args.n_fft,
-            freq_min=args.freq_min,
-            freq_max=args.freq_max,
-        )
-        tok_patch = PatchTokenizer(Fp=args.patch_fp, Np=args.patch_np)
-        eval_prompts: List[str] = []
-        gt_angles: List[int] = []
-        eval_records: List[Dict[str, object]] = []
-        manifest_path = os.path.join(results_dir, "eval_subset_manifest.json")
-        if os.path.exists(manifest_path):
-            try:
-                with open(manifest_path, "r") as mf:
-                    manifest = json.load(mf)
-                files = manifest.get("files", [])
-                for rec in files:
-                    pth_abs = rec.get("path_abs") or rec.get("path") or ""
-                    angle = rec.get("angle_deg")
-                    if not pth_abs or angle is None:
-                        continue
-                    Y_np = _load_band_spectrogram_from_npy(Path(pth_abs), fs=args.sample_rate, n_fft=args.n_fft, freq_min=args.freq_min, freq_max=args.freq_max).numpy()
-                    eval_prompts.append(" ".join(tok_patch(Y_np)))
-                    gt_angles.append(int(angle))
-                    eval_records.append({"path_abs": os.path.abspath(pth_abs), "angle_deg": int(angle)})
-            except Exception:
-                eval_prompts = []
-                eval_records = []
-                gt_angles = []
-        if not eval_prompts:
-            dl_eval = create_dataloader(ds_eval, batch_size=1, shuffle=False)
-            for batch_eval in dl_eval:
-                Y_np = batch_eval["Y"].squeeze(0).numpy()
-                eval_prompts.append(" ".join(tok_patch(Y_np)))
-                gt_a = int(batch_eval["angle_deg"]) if "angle_deg" in batch_eval else None
-                gt_angles.append(int(gt_a) if gt_a is not None else 0)
-                pth = batch_eval.get("path", "")
-                if isinstance(pth, (list, tuple)):
-                    pth = pth[0] if pth else ""
-                try:
-                    pth_abs = os.path.abspath(str(pth)) if pth else ""
-                except Exception:
-                    pth_abs = str(pth) if pth else ""
-                rec = {"path_abs": pth_abs, "angle_deg": int(gt_a) if gt_a is not None else None}
-                eval_records.append(rec)
-                if args.max_samples and len(eval_prompts) >= args.max_samples:
-                    break
-        enc_eval = tokenizer(
-            eval_prompts,
-            padding=True,
-            truncation=True,
-            max_length=tokenizer.model_max_length,
-            return_tensors="pt",
-        )
-        input_ids_prompt = enc_eval["input_ids"].to(device)
+        # 1) Collect eval prompts/records
+        eval_prompts, gt_angles, eval_records = collect_eval_data(args, direction_angles, results_dir)
+        # 2) Encode and score
+        input_ids_prompt = encode_eval_prompts(tokenizer, eval_prompts, device)
         allowed = list(direction_token_ids(tokenizer))
         if args.K < 1 or args.K > len(allowed):
             raise RuntimeError(f"Invalid K={args.K}; valid range is [1, {len(allowed)}]")
-        top1_hits = 0
-        teacher_hits = 0
-        for i in range(input_ids_prompt.size(0)):
-            row = input_ids_prompt[i]
-            patch_ids = get_patch_ids(tokenizer, row)
-            if not patch_ids:
-                raise RuntimeError("Eval prompt row has no patch tokens; cannot score")
-            cand_scores = _rm_pred_scores_batched(rm_model, tokenizer, allowed, patch_ids, device)
-            gt_angle = int(gt_angles[i])
-            gt_token = f"<D_{gt_angle:03d}>"
-            gt_id = tokenizer.convert_tokens_to_ids(gt_token)
-            if gt_id not in allowed:
-                raise RuntimeError(f"Ground-truth token '{gt_token}' not in allowed direction tokens")
-            best_id = max(cand_scores, key=cand_scores.get)
-            if best_id == gt_id:
-                top1_hits += 1
-            topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(args.K)]]
-            if gt_id in topk_ids:
-                teacher_hits += 1
-        total = input_ids_prompt.size(0)
+        top1_hits, teacher_hits, total = score_eval(
+            rm_model, tokenizer, allowed, input_ids_prompt, gt_angles, device, pooling=args.pooling, tau=args.pool_temp
+        )
+        # 3) Metrics + logs
         top1_acc = top1_hits / max(1, total)
         recall_k = teacher_hits / max(1, total)
-        eval_rec = {"epoch": int(len(eval_history)), "top1": float(top1_acc), "recallK": float(recall_k), "K": int(args.K), "samples": int(total)}
-        prev_eval = eval_history[-1] if len(eval_history) > 0 else None
-        eval_history.append(eval_rec)
-        cur_loss = loss_history[-1]["value"] if len(loss_history) > 0 else None
-        prev_loss = loss_history[-2]["value"] if len(loss_history) > 1 else None
-        d_top1 = (eval_rec["top1"] - prev_eval["top1"]) if prev_eval else 0.0
-        d_recall = (eval_rec["recallK"] - prev_eval["recallK"]) if prev_eval else 0.0
-        d_loss = (float(cur_loss) - float(prev_loss)) if (cur_loss is not None and prev_loss is not None) else 0.0
-        aligned = (d_loss < 0.0) and ((d_top1 > 0.0) or (d_recall > 0.0)) if prev_eval and prev_loss is not None else None
-        print({"epoch": int(eval_rec["epoch"]), "eval_top1_acc": float(top1_acc), "eval_recall_at_K": float(recall_k), "eval_samples": int(total), "K": int(args.K)})
-        print({"epoch": int(eval_rec["epoch"]), "progress_report": {"loss_name": loss_history[-1]["name"] if loss_history else "bt_pair_loss", "loss": float(cur_loss) if cur_loss is not None else None, "loss_delta": float(d_loss), "top1": float(eval_rec["top1"]), "top1_delta": float(d_top1), "recall_at_K": float(eval_rec["recallK"]), "recall_delta": float(d_recall), "aligned_loss_vs_metrics": (bool(aligned) if aligned is not None else None)}})
-        try:
-            with open(os.path.join(results_dir, "eval_subset_manifest.json"), "w") as mf:
-                json.dump({"files": eval_records}, mf, indent=2)
-            print({"epoch": int(eval_rec["epoch"]), "eval_manifest": os.path.join(results_dir, "eval_subset_manifest.json"), "eval_records": int(len(eval_records))})
-        except Exception as _e:
-            print(f"Warning: failed to write eval manifest: {_e}")
+        emit_eval_progress(eval_history, loss_history, float(top1_acc), float(recall_k), int(args.K), int(total))
+        # 4) Manifest
+        write_eval_manifest(results_dir, eval_records, int(len(eval_history)-1))
     finally:
         rm_model.train()
 
