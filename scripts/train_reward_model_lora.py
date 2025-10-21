@@ -326,6 +326,77 @@ def pooled_pair_logits(rm_model, inp: torch.Tensor, attn: torch.Tensor, patch_le
     neg_pred = pooled_t[1::2]
     return pos_pred, neg_pred
 
+
+def write_sample_log_row(
+    *,
+    y_src: str,
+    Y: torch.Tensor,
+    s_hat_t: torch.Tensor,
+    H: torch.Tensor,
+    pairs: List[Tuple[int, int]],
+    ord_all: List[int],
+    scores: List[float],
+    gt_tok: int,
+    gt_angle: int,
+    args,
+    jsonl_path: str,
+):
+    Y_np = Y.numpy(); s_np = s_hat_t.numpy()
+    F, N = int(Y_np.shape[0]), int(Y_np.shape[1])
+    try:
+        Hs = (H * s_hat_t.view(-1, 1)).float().cpu().numpy()
+        k = 2
+        part = np.partition(Hs, kth=k-1, axis=1)[:, :k]
+        Y_base = np.maximum(np.sum(part, axis=1), float(args.eps))
+        Y_base_exp = np.repeat(Y_base[:, None], N, axis=1)
+        ratio = np.clip(Y_np / np.maximum(Y_base_exp, float(args.eps)), 1e-12, 1e12)
+        ratio_p50 = float(np.percentile(ratio, 50)); ratio_p95 = float(np.percentile(ratio, 95)); ratio_p99 = float(np.percentile(ratio, 99))
+        mix_base_min = float(np.min(Y_base)); mix_base_mean = float(np.mean(Y_base)); mix_base_max = float(np.max(Y_base))
+    except Exception:
+        k = 2
+        ratio_p50 = ratio_p95 = ratio_p99 = 0.0
+        mix_base_min = mix_base_mean = mix_base_max = 0.0
+    log_row = {
+        "path": os.path.basename(y_src) or "",
+        "F": int(F), "N": int(N), "beta": float(args.bt_beta),
+        "fs": int(args.sample_rate), "n_fft": int(args.n_fft),
+        "freq_min": float(args.freq_min), "freq_max": float(args.freq_max), "eps": float(args.eps),
+        "dirs_considered": int(len(ord_all)), "pairs": int(len(pairs)),
+        "score_stats": qstats_array(scores),
+        "delta_stats": qstats_array([scores[a]-scores[b] for (a,b) in pairs]) if pairs else qstats_array([0.0]),
+        "Y_min": float(np.min(Y_np)), "Y_mean": float(np.mean(Y_np)), "Y_max": float(np.max(Y_np)),
+        "s_hat_min": float(np.min(s_np)), "s_hat_mean": float(np.mean(s_np)), "s_hat_max": float(np.max(s_np)),
+        "baseline_k": int(k),
+        "mix_base_min": mix_base_min, "mix_base_mean": mix_base_mean, "mix_base_max": mix_base_max,
+        "ratio_base_p50": ratio_p50, "ratio_base_p95": ratio_p95, "ratio_base_p99": ratio_p99,
+        "gt_angle": int(gt_angle) if gt_angle >= 0 else None,
+        "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
+        "pairs_total": int(len(pairs)), "gt_pairs_count": int(sum(1 for (a,b) in pairs if gt_tok>=0)),
+        # Note: gt_pairs_count above is conservative; detailed count computed earlier if needed
+    }
+    with open(jsonl_path, "a") as jf:
+        jf.write(json.dumps(log_row) + "\n")
+
+
+def load_and_align_assets(args, direction_angles: List[int]) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Load TF H and USM W, align H columns to dataset angles, and return (H_aligned, W)."""
+    H_full, anglesT = load_H(args.tf_path)
+    H_full = H_full.float().cpu()
+    anglesT = list(map(int, (anglesT.cpu().numpy().tolist() if hasattr(anglesT, 'cpu') else anglesT)))
+    col_idx: List[int] = []
+    for a in direction_angles:
+        if int(a) not in anglesT:
+            raise RuntimeError(
+                f"Angle {int(a)}° not found in TF angles {anglesT}. Ensure dataset angles exactly match TF asset."
+            )
+        j = anglesT.index(int(a))
+        col_idx.append(j)
+    if len(set(col_idx)) != len(col_idx):
+        raise RuntimeError(f"Duplicate TF column mappings detected: {col_idx}. Fix assets or dataset.")
+    H = H_full[:, col_idx].contiguous()
+    W_t = load_W(args.w_path).float().cpu()
+    return H, W_t
+
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
     angles = sorted(
@@ -715,32 +786,8 @@ def main():
     tokenizer = build_patch_tokenizer(direction_angles)
     tokenizer.padding_side = "left"
 
-    # Load assets
-    H_full, anglesT = load_H(args.tf_path)
-    H_full = H_full.float().cpu()
-    anglesT = anglesT.cpu().numpy().astype(int).tolist()
-    col_idx: List[int] = []
-    for a in direction_angles:
-        # Require exact angle match; no nearest fallback
-        if int(a) not in anglesT:
-            raise RuntimeError(
-                f"Angle {int(a)}° not found in TF angles {anglesT}. "
-                f"Ensure dataset angles exactly match TF asset."
-            )
-        j = anglesT.index(int(a))
-        col_idx.append(j)
-    if len(set(col_idx)) != len(col_idx):
-        raise RuntimeError(
-            f"Duplicate TF column mappings detected: {col_idx}. "
-            f"This indicates repeated/ambiguous angles; fix assets or dataset."
-        )
-    H = H_full[:, col_idx].contiguous()
-
-    # Preflight removed to simplify codepath
-
-    # Load W (USM dictionary) for ŝ estimation
-    # Load W (USM dictionary) for ŝ estimation
-    W_t = load_W(args.w_path).float().cpu()
+    # Load TF/W assets and align
+    H, W_t = load_and_align_assets(args, direction_angles)
 
     # Build base RM model and apply LoRA
     rm_model, _ = build_value_head_model(tokenizer)
