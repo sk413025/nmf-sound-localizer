@@ -214,6 +214,118 @@ def iter_batches(rows: List[Dict[str, int]], bs: int):
     for i in range(0, len(rows), step):
         yield rows[i:i+step]
 
+
+def derive_gt_from_path(tokenizer, y_src: str) -> Tuple[int, int]:
+    try:
+        angle_dir = os.path.basename(os.path.dirname(y_src))
+        gt_angle = int(angle_dir.split('_')[1])
+    except Exception:
+        gt_angle = -1
+    gt_tok = tokenizer.convert_tokens_to_ids(f"<D_{gt_angle:03d}>") if gt_angle >= 0 else -1
+    return int(gt_tok), int(gt_angle)
+
+
+def qstats_array(x: Sequence[float]) -> Dict[str, float]:
+    a = np.asarray(list(x), dtype=float)
+    if a.size == 0:
+        a = np.array([0.0], dtype=float)
+    return {
+        "min": float(np.min(a)),
+        "median": float(np.median(a)),
+        "mean": float(np.mean(a)),
+        "p95": float(np.percentile(a, 95)),
+        "p99": float(np.percentile(a, 99)),
+        "max": float(np.max(a)),
+    }
+
+
+def estimate_shat_and_validate(y_src: str, Y: torch.Tensor, args, H: torch.Tensor, W_t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Load Original/content counterpart, compute ŝ, and enforce grid checks."""
+    F, N = int(Y.shape[0]), int(Y.shape[1])
+    content_path = _derive_content_path(args.content_root, y_src)
+    Y_content = _load_band_spectrogram_from_npy(
+        content_path,
+        fs=args.sample_rate,
+        n_fft=args.n_fft,
+        freq_min=args.freq_min,
+        freq_max=args.freq_max,
+    ).float()
+    if list(Y_content.shape) != list(Y.shape):
+        raise RuntimeError(f"Y_content shape {tuple(Y_content.shape)} must equal Y {tuple(Y.shape)}; align STFT grid (fs/n_fft/band).")
+    if int(H.shape[0]) != F:
+        raise RuntimeError(f"H.F ({int(H.shape[0])}) != Y.F ({F}); check tf_path or STFT grid (fs/n_fft/band).")
+    if (W_t.dim() != 2) or (int(W_t.shape[0]) != F):
+        raise RuntimeError(f"W.F ({int(W_t.shape[0])}) != Y.F ({F}); ensure USM W matches STFT grid.")
+    s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
+    if int(s_hat_t.shape[0]) != F:
+        raise RuntimeError(f"ŝ shape mismatch: got {tuple(s_hat_t.shape)} vs F={F}")
+    if not torch.isfinite(s_hat_t).all():
+        raise RuntimeError("ŝ contains non-finite values; aborting")
+    if (s_hat_t < 0).any():
+        raise RuntimeError("ŝ contains negatives; aborting")
+    return s_hat_t, Y_content
+
+
+def teacher_scores_ord(Y: torch.Tensor, H: torch.Tensor, W_t: torch.Tensor, s_hat_t: torch.Tensor, eps: float) -> Tuple[List[int], List[float]]:
+    ord_all, deltas_all = compute_deltais_step0(
+        Y=Y.numpy().astype(np.float64),
+        H=H.numpy().astype(np.float64),
+        W=W_t.numpy().astype(np.float64),
+        s_hat=s_hat_t.numpy().astype(np.float64),
+        prefilter_M=None,
+        mu_iter=10,
+        baseline_k=2,
+        eps=float(eps),
+    )
+    scores = [float(deltas_all[i]) for i in range(len(deltas_all))]
+    return list(ord_all), scores
+
+
+def build_all_pairs(order_idx: List[int], scores: List[float]) -> List[Tuple[int, int]]:
+    pairs: List[Tuple[int, int]] = []
+    for ii in range(len(order_idx)):
+        ai = order_idx[ii]
+        for jj in range(ii + 1, len(order_idx)):
+            bi = order_idx[jj]
+            if scores[ai] == scores[bi]:
+                continue
+            pairs.append((ai, bi))
+    return pairs
+
+
+def batch_inputs_from_pairs(batch: List[Dict[str, int]], tokenizer, patch_ids_list: List[List[int]]) -> Tuple[torch.Tensor, torch.Tensor, List[int], List[float]]:
+    seqs: List[List[int]] = []
+    patch_lens: List[int] = []
+    betas: List[float] = []
+    for row in batch:
+        si = int(row.get("sample_index", 0))
+        patch_ids = patch_ids_list[si]
+        seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
+        seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
+        patch_lens.extend([len(patch_ids), len(patch_ids)])
+        betas.append(float(row.get("beta", 1.0)))
+    inp = _pad_to_batch(seqs, tokenizer.pad_token_id)
+    attn = (inp != tokenizer.pad_token_id)
+    return inp, attn, patch_lens, betas
+
+
+def pooled_pair_logits(rm_model, inp: torch.Tensor, attn: torch.Tensor, patch_lens: List[int], pooling: str, tau: float) -> Tuple[torch.Tensor, torch.Tensor]:
+    out = rm_model.pretrained_model(
+        input_ids=inp,
+        attention_mask=attn,
+        output_hidden_states=True,
+        return_dict=True,
+    )
+    vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
+    pooled_vals: List[torch.Tensor] = []
+    for r in range(vals.size(0)):
+        plen = patch_lens[r]
+        pooled_vals.append(pool_patch(vals[r], attn[r], plen, pooling, tau))
+    pooled_t = torch.stack(pooled_vals, dim=0)
+    pos_pred = pooled_t[0::2]
+    neg_pred = pooled_t[1::2]
+    return pos_pred, neg_pred
+
 def _discover_angles(root: str) -> List[int]:
     base = Path(root)
     angles = sorted(
@@ -287,73 +399,24 @@ def build_pairs_and_diagnostics(
 ) -> List[Dict[str, int]]:
     pair_rows: List[Dict[str, int]] = []
     sample_logs: List[Dict[str, float]] = []
-    d_count = len(dir_token_ids_all)
     for si, p in enumerate(prompts):
         Y = cache[p]["Y"].float()
         F, N = Y.shape
         y_src = cache[p].get("path", "")
         if not y_src:
             raise RuntimeError("Dataset did not provide source path for Y; cannot derive content counterpart")
-        # Load corresponding content spectrogram and estimate ŝ via W (strict grid checks)
-        content_path = _derive_content_path(args.content_root, y_src)
-        Y_content = _load_band_spectrogram_from_npy(
-            content_path,
-            fs=args.sample_rate,
-            n_fft=args.n_fft,
-            freq_min=args.freq_min,
-            freq_max=args.freq_max,
-        ).float()
-        if Y_content.shape != Y.shape:
-            raise RuntimeError(
-                f"Y_content shape {tuple(Y_content.shape)} must equal Y {tuple(Y.shape)}; align STFT grid (fs/n_fft/band)."
-            )
-        if H.shape[0] != F:
-            raise RuntimeError(f"H.F ({int(H.shape[0])}) != Y.F ({int(F)}); check tf_path or STFT grid (fs/n_fft/band).")
-        if (W_t.dim() != 2) or (int(W_t.shape[0]) != int(F)):
-            raise RuntimeError(f"W.F ({int(W_t.shape[0])}) != Y.F ({int(F)}); ensure USM W matches STFT grid.")
 
-        s_hat_t, _ = estimate_s_hat_torch(Y_content, W_t, mode="S1", H=None, n_iter=50, l1=0.0)
-        if s_hat_t.shape[0] != F:
-            raise RuntimeError(f"ŝ shape mismatch: got {tuple(s_hat_t.shape)} vs F={int(F)}")
-        if not torch.isfinite(s_hat_t).all():
-            raise RuntimeError("ŝ contains non-finite values; aborting")
-        if (s_hat_t < 0).any():
-            raise RuntimeError("ŝ contains negatives; aborting")
+        # ŝ estimation + grid checks
+        s_hat_t, _ = estimate_shat_and_validate(y_src, Y, args, H, W_t)
 
-        # Teacher scores: ΔIS(d|∅) via IS‑OMP step0
-        ord_all, deltas_all = compute_deltais_step0(
-            Y=Y.numpy().astype(np.float64),
-            H=H.numpy().astype(np.float64),
-            W=W_t.numpy().astype(np.float64),
-            s_hat=s_hat_t.numpy().astype(np.float64),
-            prefilter_M=None,
-            mu_iter=10,
-            baseline_k=2,
-            eps=float(args.eps),
-        )
-        delta_map = {ord_all[i]: deltas_all[i] for i in range(len(ord_all))}
-        scores = [float(delta_map[idx]) for idx in ord_all]
-        s_arr = np.asarray(scores, dtype=float)
-
-        # Teacher‑all‑pairs (transitive closure): a ranked above b → (a,b)
+        # Teacher scores and ranking
+        ord_all, scores = teacher_scores_ord(Y, H, W_t, s_hat_t, args.eps)
         order_idx = list(range(len(ord_all)))
         order_idx.sort(key=lambda i: scores[i], reverse=True)
-        pairs: List[Tuple[int, int]] = []
-        for ii in range(len(order_idx)):
-            ai = order_idx[ii]
-            for jj in range(ii+1, len(order_idx)):
-                bi = order_idx[jj]
-                if scores[ai] == scores[bi]:
-                    continue
-                pairs.append((ai, bi))
+        pairs = build_all_pairs(order_idx, scores)
 
-        # Map to token ids and append
-        try:
-            angle_dir = os.path.basename(os.path.dirname(y_src))
-            gt_angle = int(angle_dir.split('_')[1])
-        except Exception:
-            gt_angle = -1
-        gt_tok = tokenizer.convert_tokens_to_ids(f"<D_{gt_angle:03d}>") if gt_angle >= 0 else -1
+        # Map to token rows
+        gt_tok, gt_angle = derive_gt_from_path(tokenizer, y_src)
         gt_pairs_count = 0
         for (ai, bi) in pairs:
             d_pos = ord_all[ai]
@@ -364,26 +427,14 @@ def build_pairs_and_diagnostics(
                 "sample_index": si,
                 "dir_pos": t_pos,
                 "dir_neg": t_neg,
-                "patch_len": 0,  # filled at train time from pretokenized lengths
+                "patch_len": 0,
                 "beta": float(args.bt_beta),
             })
             if gt_tok >= 0 and (t_pos == gt_tok or t_neg == gt_tok):
                 gt_pairs_count += 1
 
-        # Minimal per‑sample diagnostics
-        def stats(x):
-            a = np.asarray(x, dtype=float)
-            return {
-                "min": float(np.min(a)),
-                "median": float(np.median(a)),
-                "mean": float(np.mean(a)),
-                "p95": float(np.percentile(a, 95)),
-                "p99": float(np.percentile(a, 99)),
-                "max": float(np.max(a)),
-            }
+        # Minimal per‑sample diagnostics row
         Y_np = Y.numpy(); s_np = s_hat_t.numpy()
-        Y_min, Y_mean, Y_max = float(np.min(Y_np)), float(np.mean(Y_np)), float(np.max(Y_np))
-        s_min, s_mean, s_max = float(np.min(s_np)), float(np.mean(s_np)), float(np.max(s_np))
         try:
             Hs = (H * s_hat_t.view(-1, 1)).float().cpu().numpy()
             k = 2
@@ -391,43 +442,28 @@ def build_pairs_and_diagnostics(
             Y_base = np.maximum(np.sum(part, axis=1), float(args.eps))
             Y_base_exp = np.repeat(Y_base[:, None], N, axis=1)
             ratio = np.clip(Y_np / np.maximum(Y_base_exp, float(args.eps)), 1e-12, 1e12)
-            ratio_p50 = float(np.percentile(ratio, 50))
-            ratio_p95 = float(np.percentile(ratio, 95))
-            ratio_p99 = float(np.percentile(ratio, 99))
-            mix_base_min = float(np.min(Y_base))
-            mix_base_mean = float(np.mean(Y_base))
-            mix_base_max = float(np.max(Y_base))
+            ratio_p50 = float(np.percentile(ratio, 50)); ratio_p95 = float(np.percentile(ratio, 95)); ratio_p99 = float(np.percentile(ratio, 99))
+            mix_base_min = float(np.min(Y_base)); mix_base_mean = float(np.mean(Y_base)); mix_base_max = float(np.max(Y_base))
         except Exception:
             k = 2
             ratio_p50 = ratio_p95 = ratio_p99 = 0.0
             mix_base_min = mix_base_mean = mix_base_max = 0.0
         log_row = {
             "path": os.path.basename(y_src) or "",
-            "F": int(F),
-            "N": int(N),
-            "beta": float(args.bt_beta),
-            "fs": int(args.sample_rate),
-            "n_fft": int(args.n_fft),
-            "freq_min": float(args.freq_min),
-            "freq_max": float(args.freq_max),
-            "eps": float(args.eps),
-            "dirs_considered": int(len(ord_all)),
-            "pairs": int(len(pairs)),
-            "score_stats": stats(s_arr),
-            "delta_stats": stats([scores[a]-scores[b] for (a,b) in pairs]) if pairs else stats([0.0]),
-            "Y_min": Y_min, "Y_mean": Y_mean, "Y_max": Y_max,
-            "s_hat_min": s_min, "s_hat_mean": s_mean, "s_hat_max": s_max,
+            "F": int(F), "N": int(N), "beta": float(args.bt_beta),
+            "fs": int(args.sample_rate), "n_fft": int(args.n_fft),
+            "freq_min": float(args.freq_min), "freq_max": float(args.freq_max), "eps": float(args.eps),
+            "dirs_considered": int(len(ord_all)), "pairs": int(len(pairs)),
+            "score_stats": qstats_array(scores),
+            "delta_stats": qstats_array([scores[a]-scores[b] for (a,b) in pairs]) if pairs else qstats_array([0.0]),
+            "Y_min": float(np.min(Y_np)), "Y_mean": float(np.mean(Y_np)), "Y_max": float(np.max(Y_np)),
+            "s_hat_min": float(np.min(s_np)), "s_hat_mean": float(np.mean(s_np)), "s_hat_max": float(np.max(s_np)),
             "baseline_k": int(k),
-            "mix_base_min": mix_base_min,
-            "mix_base_mean": mix_base_mean,
-            "mix_base_max": mix_base_max,
-            "ratio_base_p50": ratio_p50,
-            "ratio_base_p95": ratio_p95,
-            "ratio_base_p99": ratio_p99,
+            "mix_base_min": mix_base_min, "mix_base_mean": mix_base_mean, "mix_base_max": mix_base_max,
+            "ratio_base_p50": ratio_p50, "ratio_base_p95": ratio_p95, "ratio_base_p99": ratio_p99,
             "gt_angle": int(gt_angle) if gt_angle >= 0 else None,
             "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
-            "pairs_total": int(len(pairs)),
-            "gt_pairs_count": int(gt_pairs_count),
+            "pairs_total": int(len(pairs)), "gt_pairs_count": int(gt_pairs_count),
             "gt_pair_ratio": float(gt_pairs_count / max(1, len(pairs))),
         }
         sample_logs.append(log_row)
@@ -466,32 +502,9 @@ def train_one_epoch(
     denom = 0
     batches = list(iter_batches(rows_epoch, args.batch_size))
     for bi, batch in enumerate(batches):
-        seqs: List[List[int]] = []
-        patch_lens: List[int] = []
-        betas: List[float] = []
-        for row in batch:
-            si = int(row.get("sample_index", 0))
-            patch_ids = patch_ids_list[si]
-            seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
-            seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
-            patch_lens.extend([len(patch_ids), len(patch_ids)])
-            betas.append(float(row.get("beta", float(args.bt_beta))))
-        inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
-        attn = (inp != tokenizer.pad_token_id).to(device)
-        out = rm_model.pretrained_model(
-            input_ids=inp,
-            attention_mask=attn,
-            output_hidden_states=True,
-            return_dict=True,
-        )
-        vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
-        pooled_vals: List[torch.Tensor] = []
-        for r in range(vals.size(0)):
-            plen = patch_lens[r]
-            pooled_vals.append(pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
-        pooled_t = torch.stack(pooled_vals, dim=0)
-        pos_pred = pooled_t[0::2]
-        neg_pred = pooled_t[1::2]
+        inp, attn, patch_lens, betas = batch_inputs_from_pairs(batch, tokenizer, patch_ids_list)
+        inp = inp.to(device); attn = attn.to(device)
+        pos_pred, neg_pred = pooled_pair_logits(rm_model, inp, attn, patch_lens, args.pooling, args.pool_temp)
         beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
         logits = beta_vec * (pos_pred - neg_pred)
         target = torch.ones_like(logits)
