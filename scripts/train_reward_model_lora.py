@@ -847,10 +847,12 @@ def main():
 
     print("\nTraining completed!")
     
-    # Save LoRA adapters and heads
-    lora_dir = f"{args.out}_adapters"
-    heads_path = f"{args.out}_heads.pt"
-    
+    # Save LoRA adapters and heads under results/<out>/
+    results_dir = os.path.join("results", f"{args.out}")
+    os.makedirs(results_dir, exist_ok=True)
+    lora_dir = os.path.join(results_dir, "adapters")
+    heads_path = os.path.join(results_dir, "heads.pt")
+
     rm_model.pretrained_model.save_pretrained(lora_dir)
     torch.save({
         "embeddings": embedding_layer.state_dict(),
