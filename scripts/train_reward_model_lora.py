@@ -212,6 +212,11 @@ def main():
     ap.add_argument("--K", type=int, default=3)
     # Teacher scoring (LTR): fixed to OMP ΔIS step0 (IS‑OMP)
     ap.add_argument("--bt-beta", type=float, default=1.0, help="Bradley–Terry temperature β for base pairs")
+    # Pooling over patch span
+    ap.add_argument("--pooling", type=str, default="max", choices=["max", "lse"],
+                    help="Pooling over patch tokens: 'max' or 'lse' (log-sum-exp)")
+    ap.add_argument("--pool-temp", type=float, default=1.0,
+                    help="Temperature τ for LSE pooling (τ>0; ignored if --pooling=max)")
     # Hard-negative controls
     ap.add_argument("--hn-per-sample", type=int, default=1, help="Hard-negative pairs per sample per epoch (GT vs model top-N non-GT)")
     ap.add_argument("--hn-beta", type=float, default=1.0, help="β for hard-negative pairs (overrides --bt-beta for HN rows)")
@@ -655,6 +660,9 @@ def main():
     print(f"  - LoRA LR:       {args.lr_lora}")
     print(f"  - Embedding LR:  {args.lr_embed}")
     print(f"  - V-head LR:     {args.lr_vhead}\n")
+    print("Pooling:")
+    print(f"  - Type:          {args.pooling}")
+    print(f"  - Temperature τ: {args.pool_temp}\n")
     
     bce = nn.BCEWithLogitsLoss()
     
@@ -667,6 +675,22 @@ def main():
         step = max(1, bs)
         for i in range(0, len(rows), step):
             yield rows[i:i+step]
+
+    def _pool_patch(vals_row: torch.Tensor, attn_row: torch.Tensor, patch_len: int,
+                    pooling: str, tau: float) -> torch.Tensor:
+        """Pool over the patch span using max or log-sum-exp with temperature τ.
+        vals_row: (S,) token-wise scores; attn_row: (S,) attention mask (bool); patch_len: number of patch tokens.
+        """
+        seqlen = int(attn_row.sum().item())
+        if patch_len <= 0:
+            patch_slice = vals_row[seqlen-1:seqlen]
+        else:
+            patch_slice = vals_row[seqlen - patch_len: seqlen]
+        if pooling == "lse":
+            t = max(1e-6, float(tau))
+            return torch.logsumexp(patch_slice / t, dim=-1) * t
+        # default: max
+        return patch_slice.max()
 
     # Optionally precompute fixed HN pairs once before training
     allowed_ids_all = list(direction_token_ids(tokenizer))
@@ -779,8 +803,7 @@ def main():
                 pooled_vals: List[torch.Tensor] = []
                 for r in range(vals.size(0)):
                     plen = patch_lens[r]
-                    seqlen = int(attn[r].sum().item())
-                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max() if plen > 0 else vals[r, seqlen-1:seqlen].max())
+                    pooled_vals.append(_pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
                 pooled_t = torch.stack(pooled_vals, dim=0)
                 pos_pred = pooled_t[0::2]
                 neg_pred = pooled_t[1::2]
@@ -855,8 +878,7 @@ def main():
                 pooled_vals: List[torch.Tensor] = []
                 for r in range(vals.size(0)):
                     plen = patch_lens[r]
-                    seqlen = int(attn[r].sum().item())
-                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max() if plen > 0 else vals[r, seqlen-1:seqlen].max())
+                    pooled_vals.append(_pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
                 pooled_t = torch.stack(pooled_vals, dim=0)
                 pos_pred = pooled_t[0::2]
                 neg_pred = pooled_t[1::2]
@@ -998,11 +1020,7 @@ def main():
                     pooled_vals: List[torch.Tensor] = []
                     for r in range(vals.size(0)):
                         plen = patch_lens[r]
-                        seqlen = int(attn[r].sum().item())
-                        if plen == 0:
-                            pooled_vals.append(vals[r, seqlen-1:seqlen].max())
-                        else:
-                            pooled_vals.append(vals[r, seqlen-plen:seqlen].max())
+                        pooled_vals.append(_pool_patch(vals[r], attn[r], plen, args.pooling, args.pool_temp))
                     pooled_t = torch.stack(pooled_vals, dim=0)
                     pos_pred = pooled_t[0::2]
                     neg_pred = pooled_t[1::2]
