@@ -94,6 +94,44 @@ def _pad_to_batch(rows: List[List[int]], pad_id: int) -> torch.Tensor:
         out.append([pad_id] * (max_len - len(r)) + r)
     return torch.tensor(out, dtype=torch.long)
 
+def _rm_pred_scores_batched(
+    rm_model,
+    tokenizer,
+    dir_ids: Sequence[int],
+    patch_ids: Sequence[int],
+    device: torch.device,
+) -> Dict[int, float]:
+    """Score multiple direction ids in one forward using MAX pooling over patch tokens.
+
+    Returns a dict {dir_id: score} computed without gradient for efficiency.
+    """
+    if not dir_ids:
+        return {}
+    seqs: List[List[int]] = []
+    patch_len = len(patch_ids)
+    bos = tokenizer.bos_token_id
+    for did in dir_ids:
+        seqs.append([bos, int(did), *[int(x) for x in patch_ids]])
+    with torch.no_grad():
+        inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+        attn = (inp != tokenizer.pad_token_id).to(device)
+        out = rm_model.pretrained_model(
+            input_ids=inp,
+            attention_mask=attn,
+            output_hidden_states=True,
+            return_dict=True,
+        )
+        vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (B, S)
+        scores: List[float] = []
+        for r in range(vals.size(0)):
+            seqlen = int(attn[r].sum().item())
+            if patch_len == 0:
+                pooled = vals[r, seqlen-1:seqlen].max()
+            else:
+                pooled = vals[r, seqlen-patch_len:seqlen].max()
+            scores.append(float(pooled.item()))
+    return {int(dir_ids[i]): float(scores[i]) for i in range(len(dir_ids))}
+
 
 def _rm_pred_score_train(
     rm_model,
@@ -179,8 +217,15 @@ def main():
     ap.add_argument("--hn-beta", type=float, default=1.0, help="β for hard-negative pairs (overrides --bt-beta for HN rows)")
     ap.add_argument("--hn-include-teacher", action="store_true", help="Also add teacher (top vs second/third) pairs to fill HN quota")
     ap.add_argument("--hn-only-wrong", action="store_true", help="Allocate hard negatives only to samples mispredicted by current RM (pre-eval)")
+    # Decisive-pairs only and retargeting frequency
+    ap.add_argument("--no-base-pairs", action="store_true", help="Use only decisive HN pairs; skip base top-vs-bottom pairs")
+    ap.add_argument("--retarget-every", type=float, default=0.0, help="Fraction of an epoch after which to rebuild HN targets (e.g., 0.5 → twice per epoch)")
+    ap.add_argument("--teacher-pool", type=int, default=5, help="Use top-M teacher directions for HN candidate pre-filter")
+    ap.add_argument("--fixed-pairs", action="store_true", help="Construct training pairs once before training and keep them fixed across epochs")
+    ap.add_argument("--no-hard-negatives", action="store_true", help="Disable all hard-negative selection; train on base pairs only")
     # Always use all directions per sample (no subsampling)
-    ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample")
+    ap.add_argument("--pairs-per-sample", type=int, default=64, help="Max pairwise examples per sample (ignored if --teacher-all-pairs)")
+    ap.add_argument("--teacher-all-pairs", action="store_true", help="Use all teacher-consistent pairs per sample (pos>neg for all direction pairs)")
     
     # LoRA hyperparameters
     ap.add_argument("--lora-r", type=int, default=8, help="LoRA rank (4, 8, 16)")
@@ -214,6 +259,8 @@ def main():
     ap.add_argument("--debug-info", action="store_true", help="Print tensor shapes and sample pred/target values")
     # Pairwise-only supervision (simplified)
     ap.add_argument("--eps", type=float, default=1e-8, help="Numerical epsilon for IS divergence and clamping")
+    # Gradient accumulation to emulate larger batches without increasing memory
+    ap.add_argument("--grad-accum", type=int, default=1, help="Accumulate gradients over N micro-batches before optimizer.step()")
     # Listwise disabled in this branch
     args = ap.parse_args()
 
@@ -434,24 +481,35 @@ def main():
         order.sort(key=lambda i: scores[i], reverse=True)
         top_k = order[: max(1, len(order)//4)]
         bot_k = order[-max(1, len(order)//4):]
-        # Build pairwise supervision rows (top vs bottom)
+        # Build pairwise supervision rows
         pairs: List[Tuple[int, int]] = []
-        for a in top_k:
-            for b in bot_k:
-                if a == b or scores[a] == scores[b]:
-                    continue
-                pairs.append((a, b))
-        rng = np.random.default_rng(seed=si + args.seed)
-        while len(pairs) < args.pairs_per_sample and len(pairs) < len(order)*(len(order)-1):
-            i, j = rng.integers(0, len(order), size=2)
-            if i == j or scores[i] == scores[j]:
-                continue
-            if scores[i] > scores[j]:
-                pairs.append((i, j))
+        if not args.no_base_pairs:
+            if args.teacher_all_pairs:
+                # Use all teacher-consistent pairs: for all a ranked above b, (a,b)
+                for ii in range(len(order)):
+                    ai = order[ii]
+                    for jj in range(ii+1, len(order)):
+                        bi = order[jj]
+                        if scores[ai] == scores[bi]:
+                            continue
+                        pairs.append((ai, bi))
             else:
-                pairs.append((j, i))
-        if len(pairs) > args.pairs_per_sample:
-            pairs = pairs[: args.pairs_per_sample]
+                # Default: top quartile vs bottom quartile + random fill to budget
+                for a in top_k:
+                    for b in bot_k:
+                        if a == b or scores[a] == scores[b]:
+                            continue
+                        pairs.append((a, b))
+                rng = np.random.default_rng(seed=si + args.seed)
+                budget = int(args.pairs_per_sample)
+                while len(pairs) < budget and len(pairs) < len(order)*(len(order)-1):
+                    i, j = rng.integers(0, len(order), size=2)
+                    if i == j or scores[i] == scores[j]:
+                        continue
+                    if scores[i] > scores[j]:
+                        pairs.append((i, j))
+                    else:
+                        pairs.append((j, i))
         # Derive GT from source path for coverage stats
         try:
             angle_dir = os.path.basename(os.path.dirname(y_src))
@@ -491,12 +549,19 @@ def main():
         # Teacher top-K token ids (first three) for optional HN teacher pairs
         teacher_sorted_dir_idxs = [d_indices[i] for i in order]
         teacher_top_token_ids = [int(dir_token_ids_all[j]) for j in teacher_sorted_dir_idxs[:3]]
+        # Store teacher scores keyed by token id for diagnostics
+        teacher_scores_tok: Dict[int, float] = {}
+        for idx in range(len(d_indices)):
+            di = d_indices[idx]
+            tok = int(dir_token_ids_all[di])
+            teacher_scores_tok[tok] = float(scores[idx])
 
         sample_meta[int(si)] = {
             "path_abs": path_abs,
             "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
             "patch_len": int(len(patch_ids_list[si])),
             "teacher_top_ids": teacher_top_token_ids,
+            "teacher_scores": teacher_scores_tok,
         }
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if ('pairs' in locals() and pairs) else np.array([0.0])
@@ -603,6 +668,73 @@ def main():
         for i in range(0, len(rows), step):
             yield rows[i:i+step]
 
+    # Optionally precompute fixed HN pairs once before training
+    allowed_ids_all = list(direction_token_ids(tokenizer))
+    rows_fixed: List[Dict[str, int]] = []
+    pair_sets_by_path_fixed: Dict[str, set] = {}
+    if args.fixed_pairs:
+        # Start from base pairs (unless disabled)
+        base_rows = list(pair_rows) if not args.no_base_pairs else []
+        # Build initial HN pairs once (using current RM scores) unless disabled
+        hn_rows_init: List[Dict[str, int]] = []
+        if not args.no_hard_negatives:
+            for si in range(len(patch_ids_list)):
+                meta = sample_meta.get(int(si), {})
+                gt_tok = meta.get("gt_tok", None)
+                if gt_tok is None:
+                    continue
+                patch_ids = patch_ids_list[si]
+                if not patch_ids:
+                    continue
+                # Batched RM scores over all directions
+                cand_scores = _rm_pred_scores_batched(rm_model, tokenizer, allowed_ids_all, patch_ids, device)
+                best_id = max(cand_scores, key=cand_scores.get)
+                if args.hn_only_wrong and int(best_id) == int(gt_tok):
+                    continue
+                gt_score = float(cand_scores.get(int(gt_tok), 0.0))
+                # Teacher pre-filter pool (top-M, exclude GT). Fallback: all non-GT
+                t_scores = meta.get("teacher_scores", {}) or {}
+                pool = [int(tid) for tid,_ in sorted(t_scores.items(), key=lambda x: x[1], reverse=True)]
+                pool = [tid for tid in pool if tid != int(gt_tok)][: max(0, int(args.teacher_pool))]
+                if not pool:
+                    pool = [int(cid) for cid in cand_scores.keys() if int(cid) != int(gt_tok)]
+                margins = [(int(cid), float(cand_scores.get(int(cid), -1e9) - gt_score)) for cid in pool]
+                hard_cands = [cid for cid, m in sorted(margins, key=lambda x: (x[1] if x[1] >= 0 else float('inf')))]
+                hard_cands = [cid for cid in hard_cands if cand_scores.get(int(cid), -1e9) > gt_score]
+                for cid in hard_cands[: max(0, int(args.hn_per_sample))]:
+                    hn_rows_init.append({
+                        "sample_index": int(si),
+                        "dir_pos": int(gt_tok),
+                        "dir_neg": int(cid),
+                        "patch_len": int(len(patch_ids)),
+                        "beta": float(args.hn_beta),
+                    })
+        rows_fixed = []
+        rows_fixed.extend(base_rows)
+        rows_fixed.extend(hn_rows_init)
+        # Build fixed coverage pairs per path
+        pair_sets_by_path_fixed = {k: set(v) for k, v in pair_sets_by_path.items()}
+        for row in hn_rows_init:
+            si = int(row.get("sample_index", -1))
+            if si < 0:
+                continue
+            p_abs = sample_meta.get(int(si), {}).get("path_abs", None)
+            if not p_abs:
+                continue
+            up = (min(int(row["dir_pos"]), int(row["dir_neg"])), max(int(row["dir_pos"]), int(row["dir_neg"])))
+            if p_abs not in pair_sets_by_path_fixed:
+                pair_sets_by_path_fixed[p_abs] = set()
+            pair_sets_by_path_fixed[p_abs].add(up)
+        # Persist training pairs for reproducibility
+        try:
+            pairs_out = os.path.join("results", f"{args.out}", "training_pairs.json")
+            os.makedirs(os.path.dirname(pairs_out), exist_ok=True)
+            with open(pairs_out, "w") as pf:
+                json.dump({"rows": rows_fixed, "counts": {"base": len(base_rows), "hn": len(hn_rows_init)}}, pf, indent=2)
+            print({"training_pairs": pairs_out, "base_rows": len(base_rows), "hn_rows": len(hn_rows_init), "total": len(rows_fixed)})
+        except Exception as _e:
+            print(f"Warning: failed to write training_pairs.json: {_e}")
+
     for epoch in range(args.rm_epochs):
         rm_model.train()
         total_loss = 0.0
@@ -612,148 +744,281 @@ def main():
         # Build hard-negative pairs for this epoch: (GT vs current model top non-GT)
         hard_rows: List[Dict[str, int]] = []
         allowed_ids = list(direction_token_ids(tokenizer))
-        # Optional pre-eval to focus HN on current wrong samples
-        consider_indices: List[int] = []
-        cand_scores_cache: Dict[int, Dict[int, float]] = {}
-        top_pred_cache: Dict[int, int] = {}
-        wrong_set: set = set()
-        for si in range(len(patch_ids_list)):
-            meta = sample_meta.get(int(si), {})
-            gt_tok = meta.get("gt_tok", None)
-            if gt_tok is None:
-                continue
-            patch_ids = patch_ids_list[si]
-            if not patch_ids:
-                continue
-            # Score all candidate directions with current RM
-            cand_scores: Dict[int, float] = {}
-            for cand in allowed_ids:
-                cand_scores[int(cand)] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
-            cand_scores_cache[int(si)] = cand_scores
-            best_id = max(cand_scores, key=cand_scores.get)
-            top_pred_cache[int(si)] = int(best_id)
-            if args.hn_only_wrong:
-                if int(best_id) != int(gt_tok):
-                    wrong_set.add(int(si))
-            else:
-                consider_indices.append(int(si))
+        # Determine retargeting passes per epoch
+        passes = 1
+        if args.retarget_every and args.retarget_every > 0.0:
+            try:
+                passes = max(1, int(round(1.0 / float(args.retarget_every))))
+            except Exception:
+                passes = 2
+        # Fast path: no-HN, no fixed pairs → train on base pairs only
+        if args.no_hard_negatives and not args.fixed_pairs:
+            pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path.items()}
+            rows_epoch = list(pair_rows)
+            batches = list(_iter_batches(rows_epoch, args.batch_size))
+            for bi, batch in enumerate(batches):
+                seqs: List[List[int]] = []
+                patch_lens: List[int] = []
+                betas: List[float] = []
+                for row in batch:
+                    si = row.get("sample_index", 0)
+                    patch_ids = patch_ids_list[si]
+                    seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
+                    seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
+                    patch_lens.extend([len(patch_ids), len(patch_ids)])
+                    betas.append(float(row.get("beta", float(args.bt_beta))))
+                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+                attn = (inp != tokenizer.pad_token_id).to(device)
+                out = rm_model.pretrained_model(
+                    input_ids=inp,
+                    attention_mask=attn,
+                    output_hidden_states=True,
+                    return_dict=True,
+                )
+                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
+                pooled_vals: List[torch.Tensor] = []
+                for r in range(vals.size(0)):
+                    plen = patch_lens[r]
+                    seqlen = int(attn[r].sum().item())
+                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max() if plen > 0 else vals[r, seqlen-1:seqlen].max())
+                pooled_t = torch.stack(pooled_vals, dim=0)
+                pos_pred = pooled_t[0::2]
+                neg_pred = pooled_t[1::2]
+                beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
+                logits = beta_vec * (pos_pred - neg_pred)
+                target = torch.ones_like(logits)
+                loss = bce(logits, target)
+                loss_div = loss / float(max(1, args.grad_accum))
+                loss_div.backward()
+                step_now = ((bi + 1) % max(1, args.grad_accum) == 0) or (bi == len(batches) - 1)
+                if step_now:
+                    torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
+                    optimizer.step()
+                    optimizer.zero_grad(set_to_none=True)
+                total_loss += float(loss.item()) * len(batch)
+                denom += len(batch)
+            avg_loss = total_loss / max(1, denom)
+            epoch_loss_name = "bt_pair_loss"
+            epoch_loss_value = float(avg_loss)
+            print({"epoch": epoch, epoch_loss_name: epoch_loss_value, "pairs": int(denom)})
+            try:
+                loss_history.append({"epoch": int(epoch), "name": epoch_loss_name, "value": float(epoch_loss_value)})
+            except Exception:
+                pass
+            # fall through to common eval block below
+        # Diagnostics helpers per epoch
+        targeted_conf_by_path: Dict[str, int] = {}
+        targeted_margin_pre: List[float] = []
+        # Maintain epoch-inclusive coverage set (base + all HN added this epoch)
+        pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path.items()}
+        # If fixed pairs are requested, skip retarget passes and use precomputed rows
+        if args.fixed_pairs:
+            rows_epoch = list(rows_fixed)
+            # Build coverage from fixed
+            pair_sets_by_path_epoch = {k: set(v) for k, v in pair_sets_by_path_fixed.items()}
+            # Log summary once per epoch (debug only)
+            if args.debug_info:
+                try:
+                    print({
+                        "epoch": epoch,
+                        "hard_negative_stats": {
+                            "hn_rows": int(len(rows_fixed) - len(pair_rows)),
+                            "targeted_samples": int(len({r["sample_index"] for r in rows_fixed if "sample_index" in r})),
+                            "avg_hn_per_targeted": float((len(rows_fixed) - len(pair_rows)) / max(1, len({r["sample_index"] for r in rows_fixed if "sample_index" in r}))),
+                            "pairs_epoch_total": int(len(rows_epoch)),
+                        }
+                    })
+                except Exception:
+                    pass
+            # Train one pass over fixed rows
+            batches = list(_iter_batches(rows_epoch, args.batch_size))
+            for bi, batch in enumerate(batches):
+                seqs: List[List[int]] = []
+                patch_lens: List[int] = []
+                betas: List[float] = []
+                for row in batch:
+                    si = row.get("sample_index", 0)
+                    patch_ids = patch_ids_list[si]
+                    seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
+                    seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
+                    patch_lens.extend([len(patch_ids), len(patch_ids)])
+                    betas.append(float(row.get("beta", float(args.bt_beta))))
+                inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+                attn = (inp != tokenizer.pad_token_id).to(device)
+                out = rm_model.pretrained_model(
+                    input_ids=inp,
+                    attention_mask=attn,
+                    output_hidden_states=True,
+                    return_dict=True,
+                )
+                vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)
+                pooled_vals: List[torch.Tensor] = []
+                for r in range(vals.size(0)):
+                    plen = patch_lens[r]
+                    seqlen = int(attn[r].sum().item())
+                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max() if plen > 0 else vals[r, seqlen-1:seqlen].max())
+                pooled_t = torch.stack(pooled_vals, dim=0)
+                pos_pred = pooled_t[0::2]
+                neg_pred = pooled_t[1::2]
+                beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
+                logits = beta_vec * (pos_pred - neg_pred)
+                target = torch.ones_like(logits)
+                loss = bce(logits, target)
+                loss_div = loss / float(max(1, args.grad_accum))
+                loss_div.backward()
+                step_now = ((bi + 1) % max(1, args.grad_accum) == 0) or (bi == len(batches) - 1)
+                if step_now:
+                    torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
+                    optimizer.step()
+                    optimizer.zero_grad(set_to_none=True)
+                total_loss += float(loss.item()) * len(batch)
+                denom += len(batch)
+        else:
+            for rpass in range(passes):
+                # Optional pre-eval to focus HN on current wrong samples
+                consider_indices: List[int] = []
+                cand_scores_cache: Dict[int, Dict[int, float]] = {}
+                wrong_set: set = set()
+            for si in range(len(patch_ids_list)):
+                meta = sample_meta.get(int(si), {})
+                gt_tok = meta.get("gt_tok", None)
+                if gt_tok is None:
+                    continue
+                patch_ids = patch_ids_list[si]
+                if not patch_ids:
+                    continue
+                # Score all candidate directions with current RM in one batched forward (no grad)
+                cand_scores: Dict[int, float] = _rm_pred_scores_batched(
+                    rm_model, tokenizer, allowed_ids, patch_ids, device
+                )
+                cand_scores_cache[int(si)] = cand_scores
+                best_id = max(cand_scores, key=cand_scores.get)
+                if args.hn_only_wrong:
+                    if int(best_id) != int(gt_tok):
+                        wrong_set.add(int(si))
+                else:
+                    consider_indices.append(int(si))
 
-        if args.hn_only_wrong:
-            consider_indices = sorted(list(wrong_set))
+                if args.hn_only_wrong:
+                    consider_indices = sorted(list(wrong_set))
 
-        # Build HN rows for considered samples
-        for si in consider_indices:
-            meta = sample_meta.get(int(si), {})
-            gt_tok = meta.get("gt_tok", None)
-            if gt_tok is None:
-                continue
-            patch_ids = patch_ids_list[si]
-            if not patch_ids:
-                continue
-            cand_scores = cand_scores_cache.get(int(si)) or {}
-            ranked = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)]
-            model_non_gt = [cid for cid in ranked if int(cid) != int(gt_tok)]
-            hn_quota = max(0, int(args.hn_per_sample))
-            # 1) GT vs model top-N non-GT
-            for cid in model_non_gt[:hn_quota]:
-                hard_rows.append({
-                    "sample_index": int(si),
-                    "dir_pos": int(gt_tok),
-                    "dir_neg": int(cid),
-                    "patch_len": int(len(patch_ids)),
-                    "beta": float(args.hn_beta),
-                })
-            # 2) Optionally teacher top vs teacher second/third
-            if args.hn_include_teacher and hn_quota > 0:
-                teacher_ids = meta.get("teacher_top_ids", []) or []
-                if len(teacher_ids) >= 2:
-                    t1 = int(teacher_ids[0])
-                    for tid in teacher_ids[1:3]:
+                # Build HN rows via nearest-margin confusors (teacher pre-filter)
+                hard_rows: List[Dict[str, int]] = []
+                for si in consider_indices:
+                    meta = sample_meta.get(int(si), {})
+                    gt_tok = meta.get("gt_tok", None)
+                    if gt_tok is None:
+                        continue
+                    patch_ids = patch_ids_list[si]
+                    if not patch_ids:
+                        continue
+                    cand_scores = cand_scores_cache.get(int(si)) or {}
+                    gt_score = float(cand_scores.get(int(gt_tok), 0.0))
+                    # Teacher pre-filter: take top-M teacher tokens (excluding GT); fallback to all non-GT
+                    t_scores = meta.get("teacher_scores", {}) or {}
+                    pool = [int(tid) for tid,_ in sorted(t_scores.items(), key=lambda x: x[1], reverse=True)]
+                    pool = [tid for tid in pool if tid != int(gt_tok)][: max(0, int(args.teacher_pool))]
+                    if not pool:
+                        pool = [int(cid) for cid in cand_scores.keys() if int(cid) != int(gt_tok)]
+                    margins = [(int(cid), float(cand_scores.get(int(cid), -1e9) - gt_score)) for cid in pool]
+                    # Select smallest positive margins (closest confusors beating GT)
+                    hard_cands = [cid for cid, m in sorted(margins, key=lambda x: (x[1] if x[1] >= 0 else float('inf')))]
+                    hard_cands = [cid for cid in hard_cands if cand_scores.get(int(cid), -1e9) > gt_score]
+                    hn_quota = max(0, int(args.hn_per_sample))
+                    for cid in hard_cands[:hn_quota]:
                         hard_rows.append({
                             "sample_index": int(si),
-                            "dir_pos": int(t1),
-                            "dir_neg": int(int(tid)),
+                            "dir_pos": int(gt_tok),
+                            "dir_neg": int(cid),
                             "patch_len": int(len(patch_ids)),
                             "beta": float(args.hn_beta),
                         })
+                    p_abs = sample_meta.get(int(si), {}).get("path_abs", None)
+                    if p_abs and hard_cands[:hn_quota]:
+                        targeted_conf_by_path[p_abs] = int(hard_cands[0])
+                        targeted_margin_pre.append(float(gt_score - cand_scores[int(hard_cands[0])]))
 
-        # Build epoch coverage sets including HN pairs
-        pair_sets_by_path_epoch: Dict[str, set] = {k: set(v) for k, v in pair_sets_by_path.items()}
-        for row in hard_rows:
-            si = int(row.get("sample_index", -1))
-            if si < 0:
-                continue
-            p_meta = sample_meta.get(int(si), {})
-            p_abs = p_meta.get("path_abs", None)
-            if not p_abs:
-                continue
-            up = (min(int(row["dir_pos"]), int(row["dir_neg"])), max(int(row["dir_pos"]), int(row["dir_neg"])))
-            if p_abs not in pair_sets_by_path_epoch:
-                pair_sets_by_path_epoch[p_abs] = set()
-            pair_sets_by_path_epoch[p_abs].add(up)
+                # Update epoch coverage with new HN
+                for row in hard_rows:
+                    si = int(row.get("sample_index", -1))
+                    if si < 0:
+                        continue
+                    p_abs = sample_meta.get(int(si), {}).get("path_abs", None)
+                    if not p_abs:
+                        continue
+                    up = (min(int(row["dir_pos"]), int(row["dir_neg"])), max(int(row["dir_pos"]), int(row["dir_neg"])))
+                    if p_abs not in pair_sets_by_path_epoch:
+                        pair_sets_by_path_epoch[p_abs] = set()
+                    pair_sets_by_path_epoch[p_abs].add(up)
 
-        # Compose epoch rows: base pairs + hard negatives
-        rows_epoch = list(pair_rows)
-        rows_epoch.extend(hard_rows)
+                # Compose rows: base (optional) + HN
+                rows_epoch = ([] if args.no_base_pairs else list(pair_rows))
+                rows_epoch.extend(hard_rows)
 
-        # Log HN allocation stats for this epoch
-        try:
-            targeted = len(consider_indices)
-            print({
-                "epoch": epoch,
-                "hard_negative_stats": {
-                    "hn_rows": int(len(hard_rows)),
-                    "targeted_samples": int(targeted),
-                    "avg_hn_per_targeted": float(len(hard_rows) / max(1, targeted)),
-                    "pairs_epoch_total": int(len(rows_epoch)),
-                }
-            })
-        except Exception:
-            pass
+                # Log HN stats for this pass (debug only)
+                if args.debug_info:
+                    try:
+                        targeted = len(consider_indices)
+                        print({
+                            "epoch": epoch,
+                            "retarget_pass": int(rpass),
+                            "hard_negative_stats": {
+                                "hn_rows": int(len(hard_rows)),
+                                "targeted_samples": int(targeted),
+                                "avg_hn_per_targeted": float(len(hard_rows) / max(1, targeted)) if targeted > 0 else 0.0,
+                                "pairs_epoch_total": int(len(rows_epoch)),
+                            }
+                        })
+                    except Exception:
+                        pass
 
-        # Pairwise BT training
-        for batch in _iter_batches(rows_epoch, args.batch_size):
-            # Build sequences for pos/neg
-            seqs: List[List[int]] = []
-            patch_lens: List[int] = []
-            betas: List[float] = []
-            for row in batch:
-                si = row["sample_index"]
-                patch_ids = patch_ids_list[si]
-                seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
-                seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
-                patch_lens.extend([len(patch_ids), len(patch_ids)])
-                betas.append(float(row.get("beta", float(args.bt_beta))))
-            inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
-            attn = (inp != tokenizer.pad_token_id).to(device)
-            out = rm_model.pretrained_model(
-                input_ids=inp,
-                attention_mask=attn,
-                output_hidden_states=True,
-                return_dict=True,
-            )
-            vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
-            pooled_vals: List[torch.Tensor] = []
-            for r in range(vals.size(0)):
-                plen = patch_lens[r]
-                seqlen = int(attn[r].sum().item())
-                if plen == 0:
-                    pooled_vals.append(vals[r, seqlen-1:seqlen].max())
-                else:
-                    pooled_vals.append(vals[r, seqlen-plen:seqlen].max())
-            pooled_t = torch.stack(pooled_vals, dim=0)
-            pos_pred = pooled_t[0::2]
-            neg_pred = pooled_t[1::2]
-            beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
-            logits = beta_vec * (pos_pred - neg_pred)
-            target = torch.ones_like(logits)
-            loss = bce(logits, target)
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
-            optimizer.step()
-            total_loss += float(loss.item()) * len(batch)
-            denom += len(batch)
+                # Pairwise BT training for this pass
+                batches = list(_iter_batches(rows_epoch, args.batch_size))
+                for bi, batch in enumerate(batches):
+                    # Build sequences for pos/neg
+                    seqs: List[List[int]] = []
+                    patch_lens: List[int] = []
+                    betas: List[float] = []
+                    for row in batch:
+                        si = row["sample_index"]
+                        patch_ids = patch_ids_list[si]
+                        seqs.append([tokenizer.bos_token_id, row["dir_pos"], *patch_ids])
+                        seqs.append([tokenizer.bos_token_id, row["dir_neg"], *patch_ids])
+                        patch_lens.extend([len(patch_ids), len(patch_ids)])
+                        betas.append(float(row.get("beta", float(args.bt_beta))))
+                    inp = _pad_to_batch(seqs, tokenizer.pad_token_id).to(device)
+                    attn = (inp != tokenizer.pad_token_id).to(device)
+                    out = rm_model.pretrained_model(
+                        input_ids=inp,
+                        attention_mask=attn,
+                        output_hidden_states=True,
+                        return_dict=True,
+                    )
+                    vals = rm_model.v_head(out.hidden_states[-1]).squeeze(-1)  # (2B, S)
+                    pooled_vals: List[torch.Tensor] = []
+                    for r in range(vals.size(0)):
+                        plen = patch_lens[r]
+                        seqlen = int(attn[r].sum().item())
+                        if plen == 0:
+                            pooled_vals.append(vals[r, seqlen-1:seqlen].max())
+                        else:
+                            pooled_vals.append(vals[r, seqlen-plen:seqlen].max())
+                    pooled_t = torch.stack(pooled_vals, dim=0)
+                    pos_pred = pooled_t[0::2]
+                    neg_pred = pooled_t[1::2]
+                    beta_vec = torch.tensor(betas, dtype=pos_pred.dtype, device=pos_pred.device)
+                    logits = beta_vec * (pos_pred - neg_pred)
+                    target = torch.ones_like(logits)
+                    loss = bce(logits, target)
+                    loss_div = loss / float(max(1, args.grad_accum))
+                    loss_div.backward()
+                    step_now = ((bi + 1) % max(1, args.grad_accum) == 0) or (bi == len(batches) - 1)
+                    if step_now:
+                        torch.nn.utils.clip_grad_norm_(rm_model.parameters(), max_norm=1.0)
+                        optimizer.step()
+                        optimizer.zero_grad(set_to_none=True)
+                    total_loss += float(loss.item()) * len(batch)
+                denom += len(batch)
         avg_loss = total_loss / max(1, denom)
         epoch_loss_name = "bt_pair_loss"
         epoch_loss_value = float(avg_loss)
@@ -839,6 +1104,14 @@ def main():
                 # Confusor coverage counters (for wrong samples)
                 wrong_cnt = 0
                 covered_cnt = 0
+                # Diagnostics aggregates
+                gt_ranks: List[int] = []
+                targeted_pre: List[float] = list(targeted_margin_pre)
+                targeted_post: List[float] = []
+                persistence_numer = 0
+                persistence_denom = 0
+                corr_vals: List[float] = []
+                corr_ok = 0
                 for i in range(input_ids_prompt.size(0)):
                     row = input_ids_prompt[i]
                     patch_ids = get_patch_ids(tokenizer, row)
@@ -871,6 +1144,48 @@ def main():
                         upair = (min(int(gt_id), int(best_id)), max(int(gt_id), int(best_id)))
                         if upair in ps:
                             covered_cnt += 1
+                        # Persistence check: is current confusor the targeted one?
+                        targ = targeted_conf_by_path.get(p_abs, None)
+                        if targ is not None:
+                            persistence_denom += 1
+                            if int(targ) == int(best_id):
+                                persistence_numer += 1
+                        # Targeted margin post
+                        if targ is not None and int(targ) in cand_scores:
+                            targeted_post.append(float(cand_scores[int(gt_id)] - cand_scores[int(targ)]))
+                    # GT rank among all
+                    rank_desc = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)]
+                    try:
+                        gt_ranks.append(1 + int(rank_desc.index(int(gt_id))))
+                    except ValueError:
+                        gt_ranks.append(len(allowed))
+                    # RM vs teacher Spearman correlation if teacher scores available
+                    if p_abs:
+                        # Find si by path
+                        si_match = None
+                        for si_k, meta in sample_meta.items():
+                            if meta.get("path_abs", None) == p_abs:
+                                si_match = int(si_k)
+                                break
+                        if si_match is not None:
+                            t_scores = sample_meta.get(si_match, {}).get("teacher_scores", {})
+                            if t_scores:
+                                rm_vec = [float(cand_scores[int(tid)]) for tid in allowed]
+                                te_vec = [float(t_scores.get(int(tid), 0.0)) for tid in allowed]
+                                # use module-level numpy as np
+                                def rankify(a):
+                                    a = np.asarray(a)
+                                    order = np.argsort(a)
+                                    ranks = np.empty_like(order, dtype=np.float64)
+                                    ranks[order] = np.arange(1, len(a)+1)
+                                    return ranks
+                                r1 = rankify(rm_vec)
+                                r2 = rankify(te_vec)
+                                s1 = float(np.std(r1)); s2 = float(np.std(r2))
+                                if s1 > 0 and s2 > 0:
+                                    cov = float(np.mean((r1 - float(np.mean(r1))) * (r2 - float(np.mean(r2)))))
+                                    corr_vals.append(cov / (s1 * s2))
+                                    corr_ok += 1
                     # No noisy eval progress spam
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
@@ -907,6 +1222,29 @@ def main():
                         "covered_ratio": float(ratio),
                     }
                 })
+                # Extra diagnostics
+                try:
+                    # use module-level numpy as np
+                    def qstats(x):
+                        a = np.asarray(x, dtype=float)
+                        return {
+                            "mean": float(np.mean(a)) if a.size > 0 else 0.0,
+                            "median": float(np.median(a)) if a.size > 0 else 0.0,
+                            "p95": float(np.percentile(a,95)) if a.size > 0 else 0.0,
+                        }
+                    gt_rank_stats = qstats(gt_ranks)
+                    margin_stats = {"pre": qstats(targeted_pre), "post": qstats(targeted_post), "count": int(len(targeted_post))}
+                    persistence = float(persistence_numer) / float(max(1, persistence_denom))
+                    corr_summary = qstats(corr_vals); corr_summary.update({"count": int(corr_ok)})
+                    print({
+                        "epoch": epoch,
+                        "gt_rank_stats": gt_rank_stats,
+                        "margin_target_stats": margin_stats,
+                        "hn_target_persistence": float(persistence),
+                        "rm_teacher_spearman": corr_summary,
+                    })
+                except Exception:
+                    pass
                 print({
                     "epoch": epoch,
                     "progress_report": {

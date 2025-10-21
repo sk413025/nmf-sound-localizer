@@ -1,0 +1,339 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 16:01:41.597000 87781 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Pairs total: 4352 (~136.0/sample)
+Saved numeric diagnostics JSONL: results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'training_pairs': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/training_pairs.json', 'base_rows': 4352, 'hn_rows': 0, 'total': 4352}
+{'epoch': 0, 'bt_pair_loss': 0.6973924325669513, 'pairs': 4352}
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/train_reward_model_lora.py:1123: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  cand_scores[cand] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
+{'epoch': 0, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.1875, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 0, 'gt_rank_stats': {'mean': 7.75, 'median': 7.0, 'p95': 16.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.29490828589500334, 'median': 0.35049019607843146, 'p95': 0.8014705882352942, 'count': 31}}
+{'epoch': 0, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6973924325669513, 'loss_delta': 0.0, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.1875, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': None}}
+{'epoch': 0, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'bt_pair_loss': 0.6950806659810683, 'pairs': 4352}
+{'epoch': 1, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 1, 'gt_rank_stats': {'mean': 7.21875, 'median': 7.0, 'p95': 16.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.35618279569892475, 'median': 0.556372549019608, 'p95': 0.8112745098039216, 'count': 31}}
+{'epoch': 1, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6950806659810683, 'loss_delta': -0.002311766585882946, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.09375, 'aligned_loss_vs_metrics': True}}
+{'epoch': 1, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 2, 'bt_pair_loss': 0.696030859999797, 'pairs': 4352}
+{'epoch': 2, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 2, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 2, 'gt_rank_stats': {'mean': 6.875, 'median': 7.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.38417141049968395, 'median': 0.6299019607843138, 'p95': 0.7769607843137256, 'count': 31}}
+{'epoch': 2, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.696030859999797, 'loss_delta': 0.0009501940187286451, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 2, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 3, 'bt_pair_loss': 0.6933956536300042, 'pairs': 4352}
+{'epoch': 3, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 3, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 3, 'gt_rank_stats': {'mean': 7.3125, 'median': 8.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4140575585072738, 'median': 0.5661764705882354, 'p95': 0.7377450980392157, 'count': 31}}
+{'epoch': 3, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6933956536300042, 'loss_delta': -0.002635206369792753, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 3, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 4, 'bt_pair_loss': 0.6663954805801896, 'pairs': 4352}
+{'epoch': 4, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 4, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 4, 'gt_rank_stats': {'mean': 6.96875, 'median': 7.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.424493991144845, 'median': 0.573529411764706, 'p95': 0.7463235294117648, 'count': 31}}
+{'epoch': 4, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6663954805801896, 'loss_delta': -0.027000173049814613, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 4, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 5, 'bt_pair_loss': 0.6459347417249399, 'pairs': 4352}
+{'epoch': 5, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 5, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 5, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42931688804554097, 'median': 0.6519607843137256, 'p95': 0.7843137254901962, 'count': 31}}
+{'epoch': 5, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6459347417249399, 'loss_delta': -0.020460738855249683, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 5, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 6, 'bt_pair_loss': 0.6484053656458855, 'pairs': 4352}
+{'epoch': 6, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 6, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 6, 'gt_rank_stats': {'mean': 6.65625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4276565464895637, 'median': 0.7279411764705883, 'p95': 0.8394607843137256, 'count': 31}}
+{'epoch': 6, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6484053656458855, 'loss_delta': 0.002470623920945547, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 6, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 7, 'bt_pair_loss': 0.647247556158725, 'pairs': 4352}
+{'epoch': 7, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 7, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 7, 'gt_rank_stats': {'mean': 6.5625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4292378241619229, 'median': 0.715686274509804, 'p95': 0.8382352941176472, 'count': 31}}
+{'epoch': 7, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.647247556158725, 'loss_delta': -0.0011578094871604883, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 7, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 8, 'bt_pair_loss': 0.6425190918585834, 'pairs': 4352}
+{'epoch': 8, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 8, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 8, 'gt_rank_stats': {'mean': 6.5625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4284471853257432, 'median': 0.7107843137254903, 'p95': 0.849264705882353, 'count': 31}}
+{'epoch': 8, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6425190918585834, 'loss_delta': -0.0047284643001416216, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 8, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 9, 'bt_pair_loss': 0.6444504929377752, 'pairs': 4352}
+{'epoch': 9, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 9, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 9, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.429079696394687, 'median': 0.7083333333333335, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 9, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6444504929377752, 'loss_delta': 0.0019314010791918745, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 9, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 10, 'bt_pair_loss': 0.6431508879451191, 'pairs': 4352}
+{'epoch': 10, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 10, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 10, 'gt_rank_stats': {'mean': 6.65625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42654965211891205, 'median': 0.7279411764705883, 'p95': 0.849264705882353, 'count': 31}}
+{'epoch': 10, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6431508879451191, 'loss_delta': -0.0012996049926561337, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 10, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 11, 'bt_pair_loss': 0.6514180819777882, 'pairs': 4352}
+{'epoch': 11, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 11, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 11, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42378241619228346, 'median': 0.7377450980392158, 'p95': 0.8541666666666667, 'count': 31}}
+{'epoch': 11, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6514180819777882, 'loss_delta': 0.008267194032669067, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 11, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 12, 'bt_pair_loss': 0.6507658531122348, 'pairs': 4352}
+{'epoch': 12, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 12, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 12, 'gt_rank_stats': {'mean': 6.46875, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4241777356103732, 'median': 0.7279411764705883, 'p95': 0.8602941176470589, 'count': 31}}
+{'epoch': 12, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6507658531122348, 'loss_delta': -0.0006522288655533837, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 12, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 13, 'bt_pair_loss': 0.6507827315260383, 'pairs': 4352}
+{'epoch': 13, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 13, 'confusor_coverage': {'wrong_samples': 29, 'covered': 28, 'covered_ratio': 0.9655172413793104}}
+{'epoch': 13, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42346616065781156, 'median': 0.735294117647059, 'p95': 0.8602941176470589, 'count': 31}}
+{'epoch': 13, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6507827315260383, 'loss_delta': 1.6878413803489423e-05, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 13, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 14, 'bt_pair_loss': 0.6529373999904183, 'pairs': 4352}
+{'epoch': 14, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 14, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 14, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 14, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6529373999904183, 'loss_delta': 0.0021546684643800607, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 14, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 15, 'bt_pair_loss': 0.649485812686822, 'pairs': 4352}
+{'epoch': 15, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 15, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 15, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 15, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.649485812686822, 'loss_delta': -0.003451587303596293, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 15, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 16, 'bt_pair_loss': 0.6504671275615692, 'pairs': 4352}
+{'epoch': 16, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 16, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 16, 'gt_rank_stats': {'mean': 6.53125, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.424810246679317, 'median': 0.7279411764705883, 'p95': 0.8651960784313726, 'count': 31}}
+{'epoch': 16, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6504671275615692, 'loss_delta': 0.0009813148747471745, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 16, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 17, 'bt_pair_loss': 0.650729271418908, 'pairs': 4352}
+{'epoch': 17, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 17, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 17, 'gt_rank_stats': {'mean': 6.71875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4230708412397217, 'median': 0.7475490196078433, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 17, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.650729271418908, 'loss_delta': 0.0002621438573388035, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 17, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 18, 'bt_pair_loss': 0.649310959612622, 'pairs': 4352}
+{'epoch': 18, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 18, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 18, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 18, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.649310959612622, 'loss_delta': -0.0014183118062860434, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 18, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 19, 'bt_pair_loss': 0.6437454791191746, 'pairs': 4352}
+{'epoch': 19, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 19, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 19, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 19, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6437454791191746, 'loss_delta': -0.005565480493447406, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 19, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 20, 'bt_pair_loss': 0.6549684841404942, 'pairs': 4352}
+{'epoch': 20, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 20, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 20, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 20, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6549684841404942, 'loss_delta': 0.011223005021319676, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 20, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 21, 'bt_pair_loss': 0.6495478777762722, 'pairs': 4352}
+{'epoch': 21, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 21, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 21, 'gt_rank_stats': {'mean': 6.6875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42441492726122704, 'median': 0.7205882352941178, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 21, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6495478777762722, 'loss_delta': -0.005420606364222036, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 21, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 22, 'bt_pair_loss': 0.6461246327004012, 'pairs': 4352}
+{'epoch': 22, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 22, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 22, 'gt_rank_stats': {'mean': 6.71875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4230708412397217, 'median': 0.7475490196078433, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 22, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6461246327004012, 'loss_delta': -0.0034232450758709954, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 22, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 23, 'bt_pair_loss': 0.6480602330582983, 'pairs': 4352}
+{'epoch': 23, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 23, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 23, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 23, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6480602330582983, 'loss_delta': 0.0019356003578970826, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 23, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 24, 'bt_pair_loss': 0.6460061062346486, 'pairs': 4352}
+{'epoch': 24, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 24, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 24, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 24, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6460061062346486, 'loss_delta': -0.0020541268236496935, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 24, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 25, 'bt_pair_loss': 0.6461138415205128, 'pairs': 4352}
+{'epoch': 25, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 25, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 25, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 25, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6461138415205128, 'loss_delta': 0.00010773528586416337, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 25, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 26, 'bt_pair_loss': 0.6440241409136969, 'pairs': 4352}
+{'epoch': 26, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 26, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 26, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 26, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6440241409136969, 'loss_delta': -0.002089700606815903, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 26, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 27, 'bt_pair_loss': 0.644840639522847, 'pairs': 4352}
+{'epoch': 27, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 27, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 27, 'gt_rank_stats': {'mean': 6.71875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4230708412397217, 'median': 0.7475490196078433, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 27, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.644840639522847, 'loss_delta': 0.0008164986091501181, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 27, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 28, 'bt_pair_loss': 0.6480056204120902, 'pairs': 4352}
+{'epoch': 28, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 28, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 28, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42465211891208116, 'median': 0.7303921568627453, 'p95': 0.8541666666666667, 'count': 31}}
+{'epoch': 28, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6480056204120902, 'loss_delta': 0.0031649808892432185, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 28, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 29, 'bt_pair_loss': 0.6489241224001435, 'pairs': 4352}
+{'epoch': 29, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 29, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 29, 'gt_rank_stats': {'mean': 6.71875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4230708412397217, 'median': 0.7475490196078433, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 29, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6489241224001435, 'loss_delta': 0.0009185019880533218, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 29, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 30, 'bt_pair_loss': 0.6468413603656432, 'pairs': 4352}
+{'epoch': 30, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 30, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 30, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 14.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42322896900695767, 'median': 0.7401960784313727, 'p95': 0.8627450980392157, 'count': 31}}
+{'epoch': 30, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6468413603656432, 'loss_delta': -0.0020827620345003073, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 30, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 31, 'bt_pair_loss': 0.6464867727721438, 'pairs': 4352}
+{'epoch': 31, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 31, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 31, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 31, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6464867727721438, 'loss_delta': -0.0003545875934993781, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 31, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 32, 'bt_pair_loss': 0.6457384754629696, 'pairs': 4352}
+{'epoch': 32, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 32, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 32, 'gt_rank_stats': {'mean': 6.65625, 'median': 6.0, 'p95': 13.899999999999999}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42291271347248593, 'median': 0.7230392156862746, 'p95': 0.8676470588235294, 'count': 31}}
+{'epoch': 32, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6457384754629696, 'loss_delta': -0.0007482973091742506, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 32, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 33, 'bt_pair_loss': 0.6412185934536597, 'pairs': 4352}
+{'epoch': 33, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 33, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 33, 'gt_rank_stats': {'mean': 6.59375, 'median': 6.0, 'p95': 13.45}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42314990512333966, 'median': 0.7328431372549021, 'p95': 0.8700980392156863, 'count': 31}}
+{'epoch': 33, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6412185934536597, 'loss_delta': -0.004519882009309861, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 33, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 34, 'bt_pair_loss': 0.6477389151559156, 'pairs': 4352}
+{'epoch': 34, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 34, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 34, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 34, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6477389151559156, 'loss_delta': 0.006520321702255916, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 34, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 35, 'bt_pair_loss': 0.6421452955726314, 'pairs': 4352}
+{'epoch': 35, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 35, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 35, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42465211891208116, 'median': 0.7303921568627453, 'p95': 0.8541666666666667, 'count': 31}}
+{'epoch': 35, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6421452955726314, 'loss_delta': -0.005593619583284193, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 35, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 36, 'bt_pair_loss': 0.6452425122261047, 'pairs': 4352}
+{'epoch': 36, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 36, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 36, 'gt_rank_stats': {'mean': 6.59375, 'median': 6.0, 'p95': 13.45}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42314990512333966, 'median': 0.7328431372549021, 'p95': 0.8700980392156863, 'count': 31}}
+{'epoch': 36, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6452425122261047, 'loss_delta': 0.0030972166534732892, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 36, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 37, 'bt_pair_loss': 0.6455865881460554, 'pairs': 4352}
+{'epoch': 37, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 37, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 37, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 37, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6455865881460554, 'loss_delta': 0.00034407591995067044, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 37, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 38, 'bt_pair_loss': 0.6416989845388076, 'pairs': 4352}
+{'epoch': 38, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 38, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 38, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 38, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6416989845388076, 'loss_delta': -0.003887603607247825, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 38, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 39, 'bt_pair_loss': 0.6413311850936974, 'pairs': 4352}
+{'epoch': 39, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 39, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 39, 'gt_rank_stats': {'mean': 6.59375, 'median': 6.0, 'p95': 13.45}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42314990512333966, 'median': 0.7328431372549021, 'p95': 0.8700980392156863, 'count': 31}}
+{'epoch': 39, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6413311850936974, 'loss_delta': -0.00036779944511022844, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 39, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 40, 'bt_pair_loss': 0.644362378427211, 'pairs': 4352}
+{'epoch': 40, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 40, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 40, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 40, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.644362378427211, 'loss_delta': 0.0030311933335136487, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 40, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 41, 'bt_pair_loss': 0.6462204026825288, 'pairs': 4352}
+{'epoch': 41, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 41, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 41, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.41801075268817217, 'median': 0.752450980392157, 'p95': 0.8615196078431373, 'count': 31}}
+{'epoch': 41, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6462204026825288, 'loss_delta': 0.0018580242553177806, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 41, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 42, 'bt_pair_loss': 0.646613377639476, 'pairs': 4352}
+{'epoch': 42, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 42, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 42, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42465211891208116, 'median': 0.7303921568627453, 'p95': 0.8541666666666667, 'count': 31}}
+{'epoch': 42, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.646613377639476, 'loss_delta': 0.00039297495694723406, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 42, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 43, 'bt_pair_loss': 0.6464638872181668, 'pairs': 4352}
+{'epoch': 43, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 43, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 43, 'gt_rank_stats': {'mean': 6.6875, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42441492726122704, 'median': 0.7205882352941178, 'p95': 0.8517156862745099, 'count': 31}}
+{'epoch': 43, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6464638872181668, 'loss_delta': -0.0001494904213091841, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 43, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 44, 'bt_pair_loss': 0.6407978131490595, 'pairs': 4352}
+{'epoch': 44, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 44, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 44, 'gt_rank_stats': {'mean': 6.625, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42465211891208116, 'median': 0.7303921568627453, 'p95': 0.8541666666666667, 'count': 31}}
+{'epoch': 44, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6407978131490595, 'loss_delta': -0.005666074069107352, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 44, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 45, 'bt_pair_loss': 0.6410786649760079, 'pairs': 4352}
+{'epoch': 45, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 45, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 45, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 45, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6410786649760079, 'loss_delta': 0.0002808518269483695, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 45, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 46, 'bt_pair_loss': 0.6426154414520544, 'pairs': 4352}
+{'epoch': 46, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 46, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 46, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 46, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6426154414520544, 'loss_delta': 0.001536776476046553, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 46, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 47, 'bt_pair_loss': 0.6394575702793458, 'pairs': 4352}
+{'epoch': 47, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 47, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 47, 'gt_rank_stats': {'mean': 6.75, 'median': 6.0, 'p95': 14.45}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4227545857052499, 'median': 0.7254901960784315, 'p95': 0.857843137254902, 'count': 31}}
+{'epoch': 47, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6394575702793458, 'loss_delta': -0.003157871172708604, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 47, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 48, 'bt_pair_loss': 0.6434401964001796, 'pairs': 4352}
+{'epoch': 48, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 48, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 48, 'gt_rank_stats': {'mean': 6.5625, 'median': 6.0, 'p95': 13.899999999999999}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.4244939911448451, 'median': 0.7058823529411766, 'p95': 0.8700980392156864, 'count': 31}}
+{'epoch': 48, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6434401964001796, 'loss_delta': 0.0039826261208337765, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 48, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 49, 'bt_pair_loss': 0.6431472629089566, 'pairs': 4352}
+{'epoch': 49, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 49, 'confusor_coverage': {'wrong_samples': 29, 'covered': 29, 'covered_ratio': 1.0}}
+{'epoch': 49, 'gt_rank_stats': {'mean': 6.78125, 'median': 6.0, 'p95': 15.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.42283364958886793, 'median': 0.7377450980392158, 'p95': 0.8504901960784315, 'count': 31}}
+{'epoch': 49, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6431472629089566, 'loss_delta': -0.00029293349122294643, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 49, 'eval_manifest': 'results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/adapters/
+  - Embeddings + V-head: results/rm_bt_teacher_allpairs_e50_n32_bs32_acc4/heads.pt
