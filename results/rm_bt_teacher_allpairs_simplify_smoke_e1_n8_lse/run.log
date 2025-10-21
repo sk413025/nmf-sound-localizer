@@ -1,0 +1,49 @@
+W1022 01:12:27.214000 98176 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:2174: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+Training data:
+  - Samples: 8
+  - Directions/sample (avg): 17.0
+  - Pairs total: 1088 (~136.0/sample)
+Saved numeric diagnostics JSONL: results/rm_bt_teacher_allpairs_simplify_smoke_e1_n8_lse/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+Pooling:
+  - Type:          lse
+  - Temperature τ: 1.0
+
+============================================================
+Training
+============================================================
+{'training_pairs': 'results/rm_bt_teacher_allpairs_simplify_smoke_e1_n8_lse/training_pairs.json', 'base_rows': 1088, 'hn_rows': 0, 'total': 1088}
+{'epoch': 0, 'bt_pair_loss': 0.6930542342803058, 'pairs': 1088}
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/train_reward_model_lora.py:876: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  cand_scores[cand] = float(_rm_pred_score_train(rm_model, tokenizer, int(cand), patch_ids, device))
+{'epoch': 0, 'eval_top1_acc': 0.0, 'eval_recall_at_K': 0.75, 'eval_samples': 8, 'K': 3}
+{'epoch': 0, 'confusor_coverage': {'wrong_samples': 8, 'covered': 8, 'covered_ratio': 1.0}}
+{'epoch': 0, 'gt_rank_stats': {'mean': 6.125, 'median': 3.0, 'p95': 17.0}, 'margin_target_stats': {'pre': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'post': {'mean': 0.0, 'median': 0.0, 'p95': 0.0}, 'count': 0}, 'hn_target_persistence': 0.0, 'rm_teacher_spearman': {'mean': 0.5104166666666667, 'median': 0.6715686274509804, 'p95': 0.7295343137254904, 'count': 8}}
+{'epoch': 0, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6930542342803058, 'loss_delta': 0.0, 'top1': 0.0, 'top1_delta': 0.0, 'recall_at_K': 0.75, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': None}}
+{'epoch': 0, 'eval_manifest': 'results/rm_bt_teacher_allpairs_simplify_smoke_e1_n8_lse/eval_subset_manifest.json', 'eval_records': 8}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:286: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: results/rm_bt_teacher_allpairs_simplify_smoke_e1_n8_lse/adapters/
+  - Embeddings + V-head: results/rm_bt_teacher_allpairs_simplify_smoke_e1_n8_lse/heads.pt
