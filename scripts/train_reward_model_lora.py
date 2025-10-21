@@ -359,6 +359,10 @@ def main():
         patch_ids_list = [[tid for tid in row.tolist() if tid not in specials] for row in enc_patch["input_ids"]]
 
     pair_rows: List[Dict[str, int]] = []
+    # Track training pairs per sample (by absolute source path) for confusor coverage checks
+    pair_sets_by_path: Dict[str, set] = {}
+    # Per-sample metadata for hard-negative mining
+    sample_meta: Dict[int, Dict[str, object]] = {}
     for si, p in enumerate(prompts):
         Y = cache[p]["Y"].float()
         F, N = Y.shape
@@ -444,45 +448,46 @@ def main():
                 pairs.append((j, i))
         if len(pairs) > args.pairs_per_sample:
             pairs = pairs[: args.pairs_per_sample]
+        # Derive GT from source path for coverage stats
+        try:
+            angle_dir = os.path.basename(os.path.dirname(y_src))
+            gt_angle = int(angle_dir.split('_')[1])
+        except Exception:
+            gt_angle = -1
+        gt_tok = tokenizer.convert_tokens_to_ids(f"<D_{gt_angle:03d}>") if gt_angle >= 0 else -1
+        # Build a per-sample set of unordered token-id pairs for later coverage checks
+        pair_set = set()
+        gt_pairs_count = 0
+
         for (ai, bi) in pairs:
             d_pos = d_indices[ai]
             d_neg = d_indices[bi]
+            t_pos = int(dir_token_ids_all[d_pos])
+            t_neg = int(dir_token_ids_all[d_neg])
             pair_rows.append({
                 "sample_index": si,
-                "dir_pos": int(dir_token_ids_all[d_pos]),
-                "dir_neg": int(dir_token_ids_all[d_neg]),
+                "dir_pos": t_pos,
+                "dir_neg": t_neg,
                 "patch_len": int(len(patch_ids_list[si])),
             })
-            order = list(range(len(d_indices)))
-            order.sort(key=lambda i: scores[i], reverse=True)
-            top_k = order[: max(1, len(order)//4)]
-            bot_k = order[-max(1, len(order)//4):]
-            pairs: List[Tuple[int, int]] = []
-            for a in top_k:
-                for b in bot_k:
-                    if a == b or scores[a] == scores[b]:
-                        continue
-                    pairs.append((a, b))
-            rng = np.random.default_rng(seed=si + args.seed)
-            while len(pairs) < args.pairs_per_sample and len(pairs) < len(order)*(len(order)-1):
-                i, j = rng.integers(0, len(order), size=2)
-                if i == j or scores[i] == scores[j]:
-                    continue
-                if scores[i] > scores[j]:
-                    pairs.append((i, j))
-                else:
-                    pairs.append((j, i))
-            if len(pairs) > args.pairs_per_sample:
-                pairs = pairs[: args.pairs_per_sample]
-            for (ai, bi) in pairs:
-                d_pos = d_indices[ai]
-                d_neg = d_indices[bi]
-                pair_rows.append({
-                    "sample_index": si,
-                    "dir_pos": int(dir_token_ids_all[d_pos]),
-                    "dir_neg": int(dir_token_ids_all[d_neg]),
-                    "patch_len": int(len(patch_ids_list[si])),
-                })
+            # Update coverage structures
+            pair_set.add((min(t_pos, t_neg), max(t_pos, t_neg)))
+            if gt_tok >= 0 and (t_pos == gt_tok or t_neg == gt_tok):
+                gt_pairs_count += 1
+
+        # Record per-sample pair set by absolute path for eval-time coverage checks
+        try:
+            path_abs = os.path.abspath(str(y_src)) if y_src else ""
+        except Exception:
+            path_abs = str(y_src) if y_src else ""
+        if path_abs:
+            pair_sets_by_path[path_abs] = pair_set
+        # Record per-sample meta
+        sample_meta[int(si)] = {
+            "path_abs": path_abs,
+            "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
+            "patch_len": int(len(patch_ids_list[si])),
+        }
         # Per-sample log
         deltas = np.array([scores[a] - scores[b] for (a, b) in pairs], dtype=float) if ('pairs' in locals() and pairs) else np.array([0.0])
         # Signal stats and baseline_k=2
@@ -530,6 +535,11 @@ def main():
             "ratio_base_p50": ratio_p50,
             "ratio_base_p95": ratio_p95,
             "ratio_base_p99": ratio_p99,
+            "gt_angle": int(gt_angle) if gt_angle >= 0 else None,
+            "gt_tok": int(gt_tok) if gt_tok >= 0 else None,
+            "pairs_total": int(len(pairs)),
+            "gt_pairs_count": int(gt_pairs_count),
+            "gt_pair_ratio": float(gt_pairs_count / max(1, len(pairs))),
         }
         # No teacher softmax diagnostics in simplified trainer
         sample_logs.append(log_row)
@@ -589,8 +599,38 @@ def main():
         denom = 0
         epoch_loss_name = "loss"
         epoch_loss_value = 0.0
+        # Build hard-negative pairs for this epoch: (GT vs current model top non-GT)
+        hard_rows: List[Dict[str, int]] = []
+        allowed_ids = list(direction_token_ids(tokenizer))
+        for si in range(len(patch_ids_list)):
+            meta = sample_meta.get(int(si), {})
+            gt_tok = meta.get("gt_tok", None)
+            if gt_tok is None:
+                continue
+            patch_ids = patch_ids_list[si]
+            if not patch_ids:
+                continue
+            # Score all candidate directions with current RM
+            cand_scores = {}
+            for cand in allowed_ids:
+                cand_scores[int(cand)] = float(rm_score_for_prefix(rm_model, tokenizer, [int(cand)], patch_ids, device))
+            # Pick model top
+            best_id = max(cand_scores, key=cand_scores.get)
+            if int(best_id) == int(gt_tok):
+                continue
+            hard_rows.append({
+                "sample_index": int(si),
+                "dir_pos": int(gt_tok),
+                "dir_neg": int(best_id),
+                "patch_len": int(len(patch_ids)),
+            })
+
+        # Compose epoch rows: base pairs + hard negatives
+        rows_epoch = list(pair_rows)
+        rows_epoch.extend(hard_rows)
+
         # Pairwise BT training
-        for batch in _iter_batches(pair_rows, args.batch_size):
+        for batch in _iter_batches(rows_epoch, args.batch_size):
             # Build sequences for pos/neg
             seqs: List[List[int]] = []
             patch_lens: List[int] = []
@@ -711,6 +751,9 @@ def main():
                 # Compute Top-1 and Recall@K directly from RM scores (no greedy teacher)
                 top1_hits = 0
                 teacher_hits = 0
+                # Confusor coverage counters (for wrong samples)
+                wrong_cnt = 0
+                covered_cnt = 0
                 for i in range(input_ids_prompt.size(0)):
                     row = input_ids_prompt[i]
                     patch_ids = get_patch_ids(tokenizer, row)
@@ -732,6 +775,15 @@ def main():
                     topk_ids = [k for k,_ in sorted(cand_scores.items(), key=lambda x: x[1], reverse=True)[:int(args.K)]]
                     if gt_id in topk_ids:
                         teacher_hits += 1
+                    # Confusor coverage: if wrong, check if (gt, best) pair existed in training pairs for this sample
+                    # Map back to training sample via absolute path (manifest stores path_abs)
+                    p_abs = eval_records[i].get("path_abs") if i < len(eval_records) else None
+                    if p_abs and best_id != gt_id:
+                        wrong_cnt += 1
+                        ps = pair_sets_by_path.get(p_abs, set())
+                        upair = (min(int(gt_id), int(best_id)), max(int(gt_id), int(best_id)))
+                        if upair in ps:
+                            covered_cnt += 1
                     # No noisy eval progress spam
                 total = input_ids_prompt.size(0)
                 top1_acc = top1_hits / max(1, total)
@@ -754,6 +806,19 @@ def main():
                     "eval_recall_at_K": float(recall_k),
                     "eval_samples": int(total),
                     "K": int(args.K),
+                })
+                # Print confusor coverage summary for this epoch
+                try:
+                    ratio = float(covered_cnt) / float(max(1, wrong_cnt))
+                except Exception:
+                    ratio = 0.0
+                print({
+                    "epoch": epoch,
+                    "confusor_coverage": {
+                        "wrong_samples": int(wrong_cnt),
+                        "covered": int(covered_cnt),
+                        "covered_ratio": float(ratio),
+                    }
                 })
                 print({
                     "epoch": epoch,

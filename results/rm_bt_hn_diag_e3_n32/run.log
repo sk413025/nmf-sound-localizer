@@ -1,0 +1,50 @@
+
+Device: mps
+
+============================================================
+Applying LoRA to Reward Model
+============================================================
+LoRA config:
+  - Rank (r): 8
+  - Alpha: 16
+  - Dropout: 0.1
+  - Target modules: ['c_attn', 'c_proj']
+W1021 11:07:56.759000 41299 site-packages/torch/distributed/elastic/multiprocessing/redirects.py:29] NOTE: Redirects are currently not supported in Windows or MacOs.
+/opt/anaconda3/lib/python3.12/site-packages/peft/tuners/lora/layer.py:1768: UserWarning: fan_in_fan_out is set to False but the target module is `Conv1D`. Setting fan_in_fan_out to True.
+  warnings.warn(
+Training data:
+  - Samples: 32
+  - Directions/sample (avg): 17.0
+  - Pairs total: 1024 (~32.0/sample)
+Saved numeric diagnostics JSONL: results/rm_bt_hn_diag_e3_n32/numeric_diagnostics.jsonl
+Optimizer:
+  - LoRA LR:       0.0001
+  - Embedding LR:  0.0001
+  - V-head LR:     0.001
+
+============================================================
+Training
+============================================================
+{'epoch': 0, 'bt_pair_loss': 0.6926137083395608, 'pairs': 1054}
+{'epoch': 0, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 0, 'confusor_coverage': {'wrong_samples': 29, 'covered': 6, 'covered_ratio': 0.20689655172413793}}
+{'epoch': 0, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6926137083395608, 'loss_delta': 0.0, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': None}}
+{'epoch': 0, 'eval_manifest': 'results/rm_bt_hn_diag_e3_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 1, 'bt_pair_loss': 0.6843975006516111, 'pairs': 1054}
+{'epoch': 1, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 1, 'confusor_coverage': {'wrong_samples': 29, 'covered': 6, 'covered_ratio': 0.20689655172413793}}
+{'epoch': 1, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6843975006516111, 'loss_delta': -0.008216207687949728, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 1, 'eval_manifest': 'results/rm_bt_hn_diag_e3_n32/eval_subset_manifest.json', 'eval_records': 32}
+{'epoch': 2, 'bt_pair_loss': 0.6152121105465279, 'pairs': 1055}
+{'epoch': 2, 'eval_top1_acc': 0.09375, 'eval_recall_at_K': 0.28125, 'eval_samples': 32, 'K': 3}
+{'epoch': 2, 'confusor_coverage': {'wrong_samples': 29, 'covered': 6, 'covered_ratio': 0.20689655172413793}}
+{'epoch': 2, 'progress_report': {'loss_name': 'bt_pair_loss', 'loss': 0.6152121105465279, 'loss_delta': -0.06918539010508318, 'top1': 0.09375, 'top1_delta': 0.0, 'recall_at_K': 0.28125, 'recall_delta': 0.0, 'aligned_loss_vs_metrics': False}}
+{'epoch': 2, 'eval_manifest': 'results/rm_bt_hn_diag_e3_n32/eval_subset_manifest.json', 'eval_records': 32}
+
+Training completed!
+/opt/anaconda3/lib/python3.12/site-packages/peft/utils/save_and_load.py:236: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+
+Saved:
+  - LoRA adapters: rm_bt_hn_diag_e3_n32_adapters/
+  - Embeddings + V-head: rm_bt_hn_diag_e3_n32_heads.pt
