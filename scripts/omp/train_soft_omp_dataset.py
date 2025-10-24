@@ -186,7 +186,18 @@ def main():
     axs[3].bar(np.arange(len(A_group)), A_group); axs[3].axvline(doa_pred_idx, color='r', linestyle='--', label=f'pred={doa_pred_idx}')
     axs[3].set_title("Group energy A_group"); axs[3].legend()
 
+    # Save run (also include predicted angle in a small JSON sidecar)
     save_run(out_dir, losses, curves_id, curves_ood, A_group, doa_pred_idx, fig)
+    try:
+        doa_pred_angle = float(angles_subset[doa_pred_idx].item())
+    except Exception:
+        doa_pred_angle = None
+    (Path(args.out_dir) / 'summary.json').write_text(json.dumps({
+        'F': int(F), 'E': int(E), 'M': int(M),
+        'doa_pred_idx': int(doa_pred_idx),
+        'doa_pred_angle': doa_pred_angle,
+        'angles_subset': [float(a) for a in angles_subset.tolist()],
+    }, indent=2))
     print(f"Saved outputs to {out_dir}")
 
 
