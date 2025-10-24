@@ -1,0 +1,22 @@
+Device: cpu
+Loaded H: (346, 5), W: (346, 50) (F=346, E=5, M=50)
+{
+  "n_samples": 15,
+  "angles": [
+    100,
+    110,
+    120,
+    130,
+    140
+  ],
+  "F": 346,
+  "E": 5,
+  "M": 50,
+  "top1_acc": 1.0,
+  "acc_within_5deg": 1.0,
+  "acc_within_10deg": 1.0,
+  "mae_deg": 0.0,
+  "median_abs_err_deg": 0.0,
+  "p95_abs_err_deg": 0.0
+}
+Saved outputs to results/soft_omp_doa_eval_20251024_120247
