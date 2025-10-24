@@ -1,0 +1,11 @@
+== Training (soft routing) on ID ==
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/omp-transformer.py:196: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  res.append( float(torch.norm(r)) )
+[iter 24/120] loss=0.0052 rec=0.0052 mono=0.0000  tau_e=0.500 tau_a=0.200 eta=0.563
+[iter 48/120] loss=0.0039 rec=0.0039 mono=0.0000  tau_e=0.500 tau_a=0.200 eta=0.611
+[iter 72/120] loss=0.0038 rec=0.0038 mono=0.0000  tau_e=0.500 tau_a=0.200 eta=0.642
+[iter 96/120] loss=0.0031 rec=0.0031 mono=0.0000  tau_e=0.500 tau_a=0.200 eta=0.651
+[iter 120/120] loss=0.0026 rec=0.0026 mono=0.0000  tau_e=0.500 tau_a=0.200 eta=0.658
+== Eval (hard routing) curves ==
+Saved figure to results/omp_transformer_savefig_20251024_111921/curves.png
