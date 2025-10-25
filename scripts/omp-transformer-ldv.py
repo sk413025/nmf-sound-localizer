@@ -340,6 +340,10 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         # Query/Key projections
         self.Wq = nn.Linear(self.d, self.d, bias=False)
         self.Wk = nn.Linear(self.d, self.d, bias=False)
+
+        # Diagnostics controls (non-breaking): when enabled, forward() stores step-0 signals
+        self.enable_diag: bool = False
+        self.last_diag = None
     
     def _build_tokens(self, r: torch.Tensor, D: torch.Tensor):
         """Build token sequence: [Residual; Dictionary atoms]."""
@@ -387,6 +391,10 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         r = y.clone()
         res_curve = []
         
+        # reset diagnostics snapshot each call
+        if self.enable_diag:
+            self.last_diag = None
+
         for step in range(self.steps):
             # Build tokens and apply Transformer
             T = self._build_tokens(r, D)  # (1+P, d)
@@ -413,6 +421,12 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                     w_a_e = self._soft_picker(scores_atoms[e].abs(), self.tau_a, self.routing, hard=False)
                     w_all[e] = w_e[e] * w_a_e
                 w_all = w_all.reshape(-1)  # (P,)
+                # Snapshot diagnostics at step 0
+                if self.enable_diag and step == 0:
+                    self.last_diag = {
+                        'scores_expert': scores_expert.detach(),
+                        'w_e': w_e.detach(),
+                    }
                 g = (D.T @ r)  # (P,) gradient-like signal
                 # Remove .item() on eta to keep it learnable / schedulable
                 x = x + self.eta * (w_all * g)
@@ -426,6 +440,10 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                     chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
                     chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
                 chosen_idx = list(dict.fromkeys(chosen_idx))
+                if self.enable_diag and step == 0:
+                    self.last_diag = {
+                        'scores_expert': scores_expert.detach(),
+                    }
                 if len(chosen_idx) > 0:
                     g = (D.T @ r)
                     x[chosen_idx] = x[chosen_idx] + self.eta * g[chosen_idx]
@@ -445,7 +463,8 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 Y_samples: torch.Tensor, labels: torch.Tensor,
                 opt: torch.optim.Optimizer, idx2angle: List[Tuple[float, int]],
                 batch_size: int = 16, device='cpu',
-                alpha: float = 1.0, beta: float = 0.2, gamma: float = 0.5):
+                alpha: float = 1.0, beta: float = 0.2, gamma: float = 0.5,
+                epoch: int | None = None, diag_path: str | None = None, diag_subset: int = 16):
     """
     Train for one epoch on real LDV data.
     
@@ -473,6 +492,14 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
     class_losses = []
     total_losses = []
     
+    # Diagnostics accumulators (subset)
+    diag_seen = 0
+    teacher_correct = 0
+    teacher_margins = []
+    qk_g_corrs = []
+    qk_top1_matches = 0
+    w_e_entropies = []
+
     for start_idx in range(0, N, batch_size):
         end_idx = min(start_idx + batch_size, N)
         batch_indices = indices[start_idx:end_idx]
@@ -486,6 +513,8 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         
         for b in range(yb.size(0)):
             # Forward pass
+            # enable one-shot diagnostics capture for first few samples
+            model.enable_diag = (diag_seen < diag_subset)
             x_hat, r_curve = model(yb[b], D.to(device), train_mode=True)
             y_hat = D.to(device) @ x_hat
             
@@ -502,6 +531,34 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
             x_by_expert = x_hat.reshape(model.E, model.M).abs().sum(dim=1)  # (E,)
             logits = x_by_expert
             class_loss = class_loss + F.cross_entropy(logits.unsqueeze(0), lb[b].unsqueeze(0))
+
+            # Diagnostics: teacher (|g|) vs QK alignment on a small subset
+            if model.enable_diag:
+                diag_seen += 1
+                g_vec = (D.to(device).T @ yb[b])
+                g_energy = g_vec.abs().view(model.E, model.M).sum(dim=1)
+                # teacher stats
+                top_vals, _ = torch.topk(g_energy, k=min(2, g_energy.numel()))
+                margin = float((top_vals[0] - (top_vals[1] if top_vals.numel() > 1 else 0.0)).item())
+                teacher_margins.append(margin)
+                teacher_pred = int(torch.argmax(g_energy).item())
+                teacher_correct += int(teacher_pred == int(lb[b].item()))
+                # alignment with scores_expert
+                if model.last_diag is not None and 'scores_expert' in model.last_diag:
+                    se = model.last_diag['scores_expert'].to(device)
+                    se_c = se - se.mean()
+                    ge_c = g_energy - g_energy.mean()
+                    denom = (se_c.norm() * ge_c.norm()).item()
+                    pearson = float((se_c @ ge_c).item() / denom) if denom > 0 else 0.0
+                    qk_g_corrs.append(pearson)
+                    qk_pred = int(torch.argmax(se).item())
+                    if qk_pred == teacher_pred:
+                        qk_top1_matches += 1
+                if model.last_diag is not None and 'w_e' in model.last_diag:
+                    w_e = model.last_diag['w_e'].to(device)
+                    pe = torch.clamp(w_e, min=1e-12)
+                    ent = float((-pe * pe.log()).sum().item())
+                    w_e_entropies.append(ent)
         
         # Average over batch
         rec_loss /= yb.size(0)
@@ -514,6 +571,24 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         # Backward
         opt.zero_grad()
         loss.backward()
+        # Gradient norms (last batch only)
+        def _gn(param):
+            try:
+                return float(param.grad.norm().item()) if (param is not None and getattr(param, 'grad', None) is not None) else 0.0
+            except Exception:
+                return 0.0
+        grad_norms = {
+            'P_R': _gn(model.P_R.weight),
+            'P_D': _gn(model.P_D.weight),
+            'Wq': _gn(model.Wq.weight),
+            'Wk': _gn(model.Wk.weight),
+            'type_R': _gn(model.type_R),
+            'type_D': _gn(model.type_D),
+            'tau_e': _gn(model.tau_e),
+            'tau_a': _gn(model.tau_a),
+            'eta': _gn(model.eta),
+            'encoder': float(sum((p.grad.norm().item() for p in model.encoder.parameters() if p.grad is not None), 0.0)),
+        }
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         opt.step()
         
@@ -523,11 +598,39 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         class_losses.append(class_loss.item())
         total_losses.append(loss.item())
     
+    # Persist per-epoch diagnostics JSONL
+    if diag_path is not None and epoch is not None:
+        try:
+            rec = {
+                'epoch': int(epoch) + 1,
+                'rec_loss': float(np.mean(rec_losses)) if rec_losses else None,
+                'mono_loss': float(np.mean(mono_losses)) if mono_losses else None,
+                'class_loss': float(np.mean(class_losses)) if class_losses else None,
+                'total_loss': float(np.mean(total_losses)) if total_losses else None,
+                'teacher_samples': int(diag_seen),
+                'teacher_acc_subset': float(teacher_correct / max(1, diag_seen)),
+                'teacher_margin_p50': float(np.median(teacher_margins)) if teacher_margins else None,
+                'teacher_margin_p95': float(np.percentile(teacher_margins, 95)) if teacher_margins else None,
+                'qk_g_corr_pearson_mean': float(np.mean(qk_g_corrs)) if qk_g_corrs else None,
+                'qk_top1_match_rate': float(qk_top1_matches / max(1, diag_seen)),
+                'w_e_entropy_mean': float(np.mean(w_e_entropies)) if w_e_entropies else None,
+                'tau_e': float(model.tau_e.item()) if isinstance(model.tau_e, torch.Tensor) else None,
+                'tau_a': float(model.tau_a.item()) if isinstance(model.tau_a, torch.Tensor) else None,
+                'eta': float(model.eta.item()) if isinstance(model.eta, torch.Tensor) else None,
+                'grad_norms': grad_norms,
+            }
+            with open(diag_path, 'a') as f:
+                f.write(json.dumps(rec) + "\n")
+        except Exception:
+            pass
+
     return {
         'rec_loss': np.mean(rec_losses),
         'mono_loss': np.mean(mono_losses),
         'class_loss': np.mean(class_losses),
-        'total_loss': np.mean(total_losses)
+        'total_loss': np.mean(total_losses),
+        'teacher_acc_subset': (teacher_correct / max(1, diag_seen)) if diag_seen > 0 else None,
+        'qk_g_corr_pearson_mean': (float(np.mean(qk_g_corrs)) if qk_g_corrs else None)
     }
 
 
@@ -767,7 +870,8 @@ def main():
         metrics = train_epoch(
             model, D, Y_samples, labels, opt, idx2angle,
             batch_size=args.batch_size, device=args.device,
-            alpha=args.alpha, beta=args.beta, gamma=args.gamma
+            alpha=args.alpha, beta=args.beta, gamma=args.gamma,
+            epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=16
         )
         
         train_history.append(metrics)
@@ -777,16 +881,25 @@ def main():
             eval_metrics = evaluate(model, D, Y_samples, labels, idx2angle, device=args.device)
             accuracy = eval_metrics['accuracy']
             
-            print(f"Epoch {epoch+1:3d}/{args.epochs}: "
-                  f"loss={metrics['total_loss']:.4f} "
-                  f"rec={metrics['rec_loss']:.4f} "
-                  f"mono={metrics['mono_loss']:.4f} "
-                  f"class={metrics['class_loss']:.4f} "
-                  f"acc={accuracy:.3f} "
-                  f"tau_e={float(model.tau_e.item()):.3f} "
-                  f"tau_a={float(model.tau_a.item()):.3f} "
-                  f"eta={float(model.eta.item()):.3f}")
-            
+            parts = [
+                f"Epoch {epoch+1:3d}/{args.epochs}:",
+                f"loss={metrics['total_loss']:.4f}",
+                f"rec={metrics['rec_loss']:.4f}",
+                f"mono={metrics['mono_loss']:.4f}",
+                f"class={metrics['class_loss']:.4f}",
+                f"acc={accuracy:.3f}",
+            ]
+            if metrics.get('teacher_acc_subset') is not None:
+                parts.append(f"teach={metrics['teacher_acc_subset']:.3f}")
+            if metrics.get('qk_g_corr_pearson_mean') is not None:
+                parts.append(f"align={metrics['qk_g_corr_pearson_mean']:.3f}")
+            parts += [
+                f"tau_e={float(model.tau_e.item()):.3f}",
+                f"tau_a={float(model.tau_a.item()):.3f}",
+                f"eta={float(model.eta.item()):.3f}",
+            ]
+            print(" ".join(parts))
+        
             if accuracy > best_accuracy:
                 best_accuracy = accuracy
                 best_epoch = epoch + 1
