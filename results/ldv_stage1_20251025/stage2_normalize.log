@@ -1,0 +1,14 @@
+2025-10-25 15:36:20,646 - INFO - 归一化: white_noise_original_data_no_edge_sync_vad -> white_noise_original_data_no_edge_sync_vad_normalized
+2025-10-25 15:36:20,797 - INFO -   完成: 37 个角度, 111 个文件
+2025-10-25 15:36:20,797 - INFO - 归一化: white_noise_box_data_no_edge_sync_vad -> white_noise_box_data_no_edge_sync_vad_normalized
+2025-10-25 15:36:20,891 - INFO -   完成: 37 个角度, 111 个文件
+2025-10-25 15:36:20,891 - INFO - 归一化: white_noise_original_data_no_edge_sync_vad_irregularbox -> white_noise_original_data_no_edge_sync_vad_irregularbox_normalized
+2025-10-25 15:36:20,970 - INFO -   完成: 37 个角度, 111 个文件
+2025-10-25 15:36:20,970 - INFO - 归一化: white_noise_irregularbox_data_no_edge_sync_vad -> white_noise_irregularbox_data_no_edge_sync_vad_normalized
+2025-10-25 15:36:21,047 - INFO -   完成: 37 个角度, 111 个文件
+
+✅ Stage 2 归一化完成!
+   Original (Box): 111 文件
+   Box: 111 文件
+   Original (IrregularBox): 111 文件
+   IrregularBox: 111 文件

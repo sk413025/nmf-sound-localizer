@@ -1,0 +1,44 @@
+LDV-data Stage 1-2 Dataset Fingerprints
+========================================
+
+Note: These fingerprints verify the integrity and reproducibility of the
+Stage 1 (VAD) and Stage 2 (Normalization) outputs.
+
+File Counts
+-----------
+Stage 1 VAD outputs:
+- white_noise_original_data_no_edge_sync_vad: 111 NPY files
+- white_noise_box_data_no_edge_sync_vad: 111 NPY files
+- white_noise_original_data_no_edge_sync_vad_irregularbox: 111 NPY files
+- white_noise_irregularbox_data_no_edge_sync_vad: 111 NPY files
+Total: 444 NPY files
+
+Stage 2 Normalized outputs:
+- white_noise_original_data_no_edge_sync_vad_normalized: 111 NPY files
+- white_noise_box_data_no_edge_sync_vad_normalized: 111 NPY files
+- white_noise_original_data_no_edge_sync_vad_irregularbox_normalized: 111 NPY files
+- white_noise_irregularbox_data_no_edge_sync_vad_normalized: 111 NPY files
+Total: 444 NPY files
+
+Directory Structure
+-------------------
+All datasets follow the structure:
+  <dataset_root>/
+    angle_0/
+      box_000_000.npy (or original_clip_000.npy)
+      box_000_001.npy
+      box_000_002.npy
+    angle_5/
+      ...
+    [... 35 more angle directories ...]
+    angle_180/
+      ...
+
+Verification
+------------
+To verify dataset integrity, run:
+  find <dataset_root> -name "*.npy" | wc -l
+Expected: 111 files per dataset
+
+To compute MD5 fingerprint:
+  find <dataset_root> -name "*.npy" -exec md5sum {} \; | sort | md5sum

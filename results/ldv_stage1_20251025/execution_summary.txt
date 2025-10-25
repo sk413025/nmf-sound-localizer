@@ -1,0 +1,110 @@
+LDV-data Stage 1-2 Processing Execution Summary
+================================================
+
+Date: 2025-10-25
+Branch: feature/routed-soft-omp-dataset
+Commit: (to be filled after commit)
+
+Processing Overview
+-------------------
+Successfully completed Stage 1 (Synchronized VAD) and Stage 2 (Normalization)
+for the expanded LDV-data dataset with 37 angles (0°-180°, every 5°).
+
+Stage 1: Synchronized VAD Processing
+-------------------------------------
+Purpose: Apply synchronized Voice Activity Detection to remove silence periods
+         and ensure temporal alignment between original (X) and recorded (Y) signals.
+
+Parameters:
+- VAD threshold: 1e-5
+- VAD method: soft
+- Sample rate: 48000 Hz
+- STFT config: n_fft=2048, hop_length=512
+- Frequency range: [300, 3000] Hz
+
+Input:
+- Original (for VAD): ~/LDV-data-processed/white_noise_original_data_no_edge_for_vad/
+  (3 clips × 37 angles = 111 NPY files)
+- Box: ~/LDV-data-processed/white_noise_box_data_no_edge/
+  (37 angles × 3 clips = 111 NPY files)
+- IrregularBox: ~/LDV-data-processed/white_noise_irregularbox_data_no_edge/
+  (37 angles × 3 clips = 111 NPY files)
+
+Output:
+- Original (Box) VAD: ~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad/
+  (111 NPY files)
+- Box VAD: ~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad/
+  (111 NPY files)
+- Original (IrregularBox) VAD: ~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad_irregularbox/
+  (111 NPY files)
+- IrregularBox VAD: ~/LDV-data-processed/white_noise_irregularbox_data_no_edge_sync_vad/
+  (111 NPY files)
+
+Results (Box):
+- Files processed: 111
+- Common angles: 37
+- Average X energy retained: 99.6%
+- Average Y energy retained: 100.0%
+- Synchronization success rate: 100.0%
+
+Results (IrregularBox):
+- Files processed: 111
+- Common angles: 37
+- Average X energy retained: 99.0%
+- Average Y energy retained: 100.0%
+- Synchronization success rate: 100.0%
+
+Processing time: ~3 minutes (Box + IrregularBox)
+
+Stage 2: Data Normalization
+----------------------------
+Purpose: Normalize all datasets to [0,1] range to eliminate amplitude scale
+         differences while preserving relative spectral structure.
+
+Method: Per-file min-max normalization: (data - min) / (max - min)
+
+Input:
+- Original (Box) VAD: 111 NPY files
+- Box VAD: 111 NPY files
+- Original (IrregularBox) VAD: 111 NPY files
+- IrregularBox VAD: 111 NPY files
+
+Output:
+- Original (Box) normalized: ~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad_normalized/
+  (111 NPY files)
+- Box normalized: ~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized/
+  (111 NPY files)
+- Original (IrregularBox) normalized: ~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad_irregularbox_normalized/
+  (111 NPY files)
+- IrregularBox normalized: ~/LDV-data-processed/white_noise_irregularbox_data_no_edge_sync_vad_normalized/
+  (111 NPY files)
+
+Results:
+- Total normalized files: 444 NPY
+- All files successfully normalized to [0,1] range
+- Processing time: ~0.4 seconds
+
+Total Output Summary
+--------------------
+Stage 1 (VAD): 444 NPY files
+Stage 2 (Normalized): 444 NPY files
+Total processed: 888 NPY files
+
+Key Observations
+----------------
+1. VAD processing retained 99%+ energy for both X and Y signals
+2. Synchronization achieved 100% success rate for all 37 angles
+3. Both Box and IrregularBox materials processed successfully
+4. Ready for Stage 3 (H Matrix estimation) and Stage 4 (USM training)
+
+Environment
+-----------
+- Machine: Mac Studio (120.126.94.197)
+- Conda environment: base
+- Python: 3.x
+- Processing location: ~/LDV-data-processed/
+
+Next Steps
+----------
+- Stage 3: Estimate transfer function H matrix [346 frequencies × 37 angles]
+- Stage 4: Train USM model using normalized datasets

@@ -1,0 +1,9 @@
+usage: apply_spectrogram_vad.py [-h] --x_input_dir X_INPUT_DIR --y_input_dir
+                                Y_INPUT_DIR --x_output_dir X_OUTPUT_DIR
+                                --y_output_dir Y_OUTPUT_DIR --vad_threshold
+                                VAD_THRESHOLD [--vad_method {hard,soft}]
+                                [--sample_rate SAMPLE_RATE] [--n_fft N_FFT]
+                                [--hop_length HOP_LENGTH]
+                                [--freq_min FREQ_MIN] [--freq_max FREQ_MAX]
+                                [--log_file LOG_FILE] [--backup]
+apply_spectrogram_vad.py: error: the following arguments are required: --x_input_dir, --y_input_dir, --x_output_dir, --y_output_dir, --vad_threshold

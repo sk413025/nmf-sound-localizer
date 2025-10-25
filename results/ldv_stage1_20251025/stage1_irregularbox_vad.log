@@ -1,0 +1,1395 @@
+2025-10-25 15:35:32,140 - INFO - Using synchronized X-Y spectrogram VAD threshold: 1.00e-05
+2025-10-25 15:35:32,140 - INFO - STFT config: n_fft=2048, hop_length=512, freq_range=[300.0, 3000.0]
+2025-10-25 15:35:32,141 - INFO - Found 37 common angles: ['angle_0', 'angle_10', 'angle_100', 'angle_105', 'angle_110', 'angle_115', 'angle_120', 'angle_125', 'angle_130', 'angle_135', 'angle_140', 'angle_145', 'angle_15', 'angle_150', 'angle_155', 'angle_160', 'angle_165', 'angle_170', 'angle_175', 'angle_180', 'angle_20', 'angle_25', 'angle_30', 'angle_35', 'angle_40', 'angle_45', 'angle_5', 'angle_50', 'angle_55', 'angle_60', 'angle_65', 'angle_70', 'angle_75', 'angle_80', 'angle_85', 'angle_90', 'angle_95']
+2025-10-25 15:35:32,141 - INFO - Processing angle_0...
+2025-10-25 15:35:32,142 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,142 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,142 - INFO -   Y audio shape: (145920,), range: [-0.053565, 0.058492]
+2025-10-25 15:35:32,145 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,146 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,146 - INFO - Original Y magnitude stats: mean=4.076067e-04, std=6.309418e-04
+2025-10-25 15:35:32,146 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,146 - INFO - Y values below threshold 1.00e-05: 0.4%
+2025-10-25 15:35:32,146 - INFO - VAD mask applied: 99.6% time-frequency points retained
+2025-10-25 15:35:32,146 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,147 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,147 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,148 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,148 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,148 - INFO -   Y audio shape: (145920,), range: [-0.053074, 0.053050]
+2025-10-25 15:35:32,152 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,152 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,152 - INFO - Original Y magnitude stats: mean=4.012597e-04, std=6.181471e-04
+2025-10-25 15:35:32,152 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,152 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,152 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,153 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,153 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,153 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,155 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,155 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,155 - INFO -   Y audio shape: (145920,), range: [-0.048838, 0.058520]
+2025-10-25 15:35:32,160 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,160 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,160 - INFO - Original Y magnitude stats: mean=4.001968e-04, std=6.136079e-04
+2025-10-25 15:35:32,160 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,160 - INFO - Y values below threshold 1.00e-05: 0.4%
+2025-10-25 15:35:32,160 - INFO - VAD mask applied: 99.6% time-frequency points retained
+2025-10-25 15:35:32,160 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,160 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,161 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,161 - INFO - Processing angle_10...
+2025-10-25 15:35:32,162 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,162 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,162 - INFO -   Y audio shape: (145920,), range: [-0.053612, 0.045684]
+2025-10-25 15:35:32,166 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,166 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,167 - INFO - Original Y magnitude stats: mean=2.512618e-04, std=3.003135e-04
+2025-10-25 15:35:32,167 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,167 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,167 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,167 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,167 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,167 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,169 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,169 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,169 - INFO -   Y audio shape: (145920,), range: [-0.036455, 0.042784]
+2025-10-25 15:35:32,173 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,173 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,174 - INFO - Original Y magnitude stats: mean=2.487284e-04, std=2.972617e-04
+2025-10-25 15:35:32,174 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,174 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,174 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,174 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,174 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,174 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,176 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,176 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,176 - INFO -   Y audio shape: (145920,), range: [-0.040900, 0.038904]
+2025-10-25 15:35:32,180 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,180 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,180 - INFO - Original Y magnitude stats: mean=2.483980e-04, std=2.976038e-04
+2025-10-25 15:35:32,180 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,180 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,181 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,181 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,181 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,181 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,182 - INFO - Processing angle_100...
+2025-10-25 15:35:32,183 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,183 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,183 - INFO -   Y audio shape: (145920,), range: [-0.060063, 0.051612]
+2025-10-25 15:35:32,186 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,186 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,187 - INFO - Original Y magnitude stats: mean=4.114647e-04, std=6.764530e-04
+2025-10-25 15:35:32,187 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,187 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,187 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,187 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,187 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,187 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,189 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,189 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,189 - INFO -   Y audio shape: (145920,), range: [-0.056797, 0.048883]
+2025-10-25 15:35:32,194 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,194 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,194 - INFO - Original Y magnitude stats: mean=4.041461e-04, std=6.662898e-04
+2025-10-25 15:35:32,194 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,194 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,194 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,194 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,194 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,194 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,196 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,196 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,196 - INFO -   Y audio shape: (145920,), range: [-0.054158, 0.052293]
+2025-10-25 15:35:32,200 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,200 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,201 - INFO - Original Y magnitude stats: mean=4.033957e-04, std=6.644736e-04
+2025-10-25 15:35:32,201 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,201 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,201 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,201 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,201 - INFO - X energy retained: 0.991
+2025-10-25 15:35:32,202 - INFO - Audio energy scaling: X=0.991, Y=1.000
+2025-10-25 15:35:32,203 - INFO - Processing angle_105...
+2025-10-25 15:35:32,204 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,204 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,204 - INFO -   Y audio shape: (145920,), range: [-0.061813, 0.054335]
+2025-10-25 15:35:32,208 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,208 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,208 - INFO - Original Y magnitude stats: mean=3.983926e-04, std=6.827021e-04
+2025-10-25 15:35:32,208 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,208 - INFO - Y values below threshold 1.00e-05: 2.1%
+2025-10-25 15:35:32,208 - INFO - VAD mask applied: 97.9% time-frequency points retained
+2025-10-25 15:35:32,209 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,209 - INFO - X energy retained: 0.983
+2025-10-25 15:35:32,209 - INFO - Audio energy scaling: X=0.983, Y=1.000
+2025-10-25 15:35:32,210 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,210 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,210 - INFO -   Y audio shape: (145920,), range: [-0.065053, 0.057012]
+2025-10-25 15:35:32,214 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,215 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,215 - INFO - Original Y magnitude stats: mean=3.936972e-04, std=6.739867e-04
+2025-10-25 15:35:32,215 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,215 - INFO - Y values below threshold 1.00e-05: 2.3%
+2025-10-25 15:35:32,215 - INFO - VAD mask applied: 97.7% time-frequency points retained
+2025-10-25 15:35:32,215 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,215 - INFO - X energy retained: 0.981
+2025-10-25 15:35:32,215 - INFO - Audio energy scaling: X=0.981, Y=1.000
+2025-10-25 15:35:32,217 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,217 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,217 - INFO -   Y audio shape: (145920,), range: [-0.070757, 0.061032]
+2025-10-25 15:35:32,221 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,221 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,222 - INFO - Original Y magnitude stats: mean=3.922596e-04, std=6.685992e-04
+2025-10-25 15:35:32,222 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,222 - INFO - Y values below threshold 1.00e-05: 2.3%
+2025-10-25 15:35:32,222 - INFO - VAD mask applied: 97.7% time-frequency points retained
+2025-10-25 15:35:32,222 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,222 - INFO - X energy retained: 0.981
+2025-10-25 15:35:32,222 - INFO - Audio energy scaling: X=0.981, Y=1.000
+2025-10-25 15:35:32,223 - INFO - Processing angle_110...
+2025-10-25 15:35:32,224 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,224 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,224 - INFO -   Y audio shape: (145920,), range: [-0.062919, 0.051242]
+2025-10-25 15:35:32,228 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,228 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,228 - INFO - Original Y magnitude stats: mean=3.976503e-04, std=7.248906e-04
+2025-10-25 15:35:32,228 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,228 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,228 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,228 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,228 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,229 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,230 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,230 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,230 - INFO -   Y audio shape: (145920,), range: [-0.056477, 0.059822]
+2025-10-25 15:35:32,234 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,234 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,234 - INFO - Original Y magnitude stats: mean=3.905108e-04, std=7.130691e-04
+2025-10-25 15:35:32,234 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,234 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,234 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,234 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,234 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,234 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,236 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,236 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,236 - INFO -   Y audio shape: (145920,), range: [-0.055509, 0.066033]
+2025-10-25 15:35:32,240 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,240 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,241 - INFO - Original Y magnitude stats: mean=3.897137e-04, std=7.114077e-04
+2025-10-25 15:35:32,241 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,241 - INFO - Y values below threshold 1.00e-05: 1.5%
+2025-10-25 15:35:32,241 - INFO - VAD mask applied: 98.5% time-frequency points retained
+2025-10-25 15:35:32,241 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,241 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,241 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,242 - INFO - Processing angle_115...
+2025-10-25 15:35:32,243 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,243 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,243 - INFO -   Y audio shape: (145920,), range: [-0.059551, 0.053973]
+2025-10-25 15:35:32,247 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,247 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,248 - INFO - Original Y magnitude stats: mean=3.646962e-04, std=6.681225e-04
+2025-10-25 15:35:32,248 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,248 - INFO - Y values below threshold 1.00e-05: 0.8%
+2025-10-25 15:35:32,248 - INFO - VAD mask applied: 99.2% time-frequency points retained
+2025-10-25 15:35:32,248 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,248 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,248 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,250 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,250 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,250 - INFO -   Y audio shape: (145920,), range: [-0.057005, 0.046176]
+2025-10-25 15:35:32,254 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,254 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,254 - INFO - Original Y magnitude stats: mean=3.588615e-04, std=6.587533e-04
+2025-10-25 15:35:32,254 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,254 - INFO - Y values below threshold 1.00e-05: 0.8%
+2025-10-25 15:35:32,254 - INFO - VAD mask applied: 99.2% time-frequency points retained
+2025-10-25 15:35:32,254 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,254 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,254 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,256 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,256 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,256 - INFO -   Y audio shape: (145920,), range: [-0.050987, 0.056102]
+2025-10-25 15:35:32,259 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,259 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,260 - INFO - Original Y magnitude stats: mean=3.577134e-04, std=6.546444e-04
+2025-10-25 15:35:32,260 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,260 - INFO - Y values below threshold 1.00e-05: 0.7%
+2025-10-25 15:35:32,260 - INFO - VAD mask applied: 99.3% time-frequency points retained
+2025-10-25 15:35:32,260 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,260 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,260 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,261 - INFO - Processing angle_120...
+2025-10-25 15:35:32,262 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,262 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,262 - INFO -   Y audio shape: (145920,), range: [-0.044096, 0.043335]
+2025-10-25 15:35:32,265 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,265 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,266 - INFO - Original Y magnitude stats: mean=3.167088e-04, std=4.770351e-04
+2025-10-25 15:35:32,266 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,266 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,266 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,266 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,266 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,266 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,267 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,267 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,267 - INFO -   Y audio shape: (145920,), range: [-0.047768, 0.039771]
+2025-10-25 15:35:32,272 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,272 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,272 - INFO - Original Y magnitude stats: mean=3.129423e-04, std=4.714175e-04
+2025-10-25 15:35:32,272 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,272 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,272 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,272 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,272 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,272 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,274 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,274 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,274 - INFO -   Y audio shape: (145920,), range: [-0.042977, 0.038763]
+2025-10-25 15:35:32,278 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,278 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,279 - INFO - Original Y magnitude stats: mean=3.130500e-04, std=4.702995e-04
+2025-10-25 15:35:32,279 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,279 - INFO - Y values below threshold 1.00e-05: 0.7%
+2025-10-25 15:35:32,279 - INFO - VAD mask applied: 99.3% time-frequency points retained
+2025-10-25 15:35:32,279 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,279 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,279 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,280 - INFO - Processing angle_125...
+2025-10-25 15:35:32,281 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,281 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,281 - INFO -   Y audio shape: (145920,), range: [-0.049649, 0.041749]
+2025-10-25 15:35:32,286 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,286 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,286 - INFO - Original Y magnitude stats: mean=2.739854e-04, std=4.295427e-04
+2025-10-25 15:35:32,286 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,286 - INFO - Y values below threshold 1.00e-05: 0.8%
+2025-10-25 15:35:32,286 - INFO - VAD mask applied: 99.2% time-frequency points retained
+2025-10-25 15:35:32,286 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,286 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,286 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,288 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,288 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,288 - INFO -   Y audio shape: (145920,), range: [-0.044129, 0.037464]
+2025-10-25 15:35:32,291 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,291 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,292 - INFO - Original Y magnitude stats: mean=2.701452e-04, std=4.221592e-04
+2025-10-25 15:35:32,292 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,292 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,292 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,292 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,292 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,292 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,293 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,293 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,294 - INFO -   Y audio shape: (145920,), range: [-0.042707, 0.042262]
+2025-10-25 15:35:32,298 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,298 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,298 - INFO - Original Y magnitude stats: mean=2.693665e-04, std=4.194055e-04
+2025-10-25 15:35:32,298 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,298 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,298 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,298 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,298 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,298 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,300 - INFO - Processing angle_130...
+2025-10-25 15:35:32,301 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,301 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,301 - INFO -   Y audio shape: (145920,), range: [-0.042681, 0.035966]
+2025-10-25 15:35:32,305 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,305 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,305 - INFO - Original Y magnitude stats: mean=2.868715e-04, std=3.706279e-04
+2025-10-25 15:35:32,305 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,305 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,305 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,305 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,305 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,306 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,307 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,307 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,307 - INFO -   Y audio shape: (145920,), range: [-0.039128, 0.047251]
+2025-10-25 15:35:32,311 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,311 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,312 - INFO - Original Y magnitude stats: mean=2.828280e-04, std=3.667765e-04
+2025-10-25 15:35:32,312 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,312 - INFO - Y values below threshold 1.00e-05: 1.5%
+2025-10-25 15:35:32,312 - INFO - VAD mask applied: 98.5% time-frequency points retained
+2025-10-25 15:35:32,312 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,312 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,312 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,314 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,314 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,314 - INFO -   Y audio shape: (145920,), range: [-0.053740, 0.039467]
+2025-10-25 15:35:32,318 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,318 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,318 - INFO - Original Y magnitude stats: mean=2.828088e-04, std=3.668485e-04
+2025-10-25 15:35:32,318 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,318 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,318 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,318 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,318 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,319 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,320 - INFO - Processing angle_135...
+2025-10-25 15:35:32,321 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,321 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,321 - INFO -   Y audio shape: (145920,), range: [-0.038133, 0.038445]
+2025-10-25 15:35:32,324 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,324 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,325 - INFO - Original Y magnitude stats: mean=2.701330e-04, std=3.850105e-04
+2025-10-25 15:35:32,325 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,325 - INFO - Y values below threshold 1.00e-05: 1.6%
+2025-10-25 15:35:32,325 - INFO - VAD mask applied: 98.4% time-frequency points retained
+2025-10-25 15:35:32,325 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,325 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,325 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,327 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,327 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,327 - INFO -   Y audio shape: (145920,), range: [-0.036646, 0.042700]
+2025-10-25 15:35:32,330 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,330 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,331 - INFO - Original Y magnitude stats: mean=2.680249e-04, std=3.807022e-04
+2025-10-25 15:35:32,331 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,331 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,331 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,331 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,331 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,331 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,334 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,334 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,334 - INFO -   Y audio shape: (145920,), range: [-0.035983, 0.040434]
+2025-10-25 15:35:32,337 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,337 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,338 - INFO - Original Y magnitude stats: mean=2.666407e-04, std=3.792368e-04
+2025-10-25 15:35:32,338 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,338 - INFO - Y values below threshold 1.00e-05: 1.8%
+2025-10-25 15:35:32,338 - INFO - VAD mask applied: 98.2% time-frequency points retained
+2025-10-25 15:35:32,338 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,338 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,338 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,339 - INFO - Processing angle_140...
+2025-10-25 15:35:32,340 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,340 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,340 - INFO -   Y audio shape: (145920,), range: [-0.029014, 0.029306]
+2025-10-25 15:35:32,344 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,345 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,345 - INFO - Original Y magnitude stats: mean=2.436754e-04, std=3.197296e-04
+2025-10-25 15:35:32,345 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,345 - INFO - Y values below threshold 1.00e-05: 1.5%
+2025-10-25 15:35:32,345 - INFO - VAD mask applied: 98.5% time-frequency points retained
+2025-10-25 15:35:32,345 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,345 - INFO - X energy retained: 0.986
+2025-10-25 15:35:32,345 - INFO - Audio energy scaling: X=0.986, Y=1.000
+2025-10-25 15:35:32,347 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,347 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,347 - INFO -   Y audio shape: (145920,), range: [-0.033817, 0.030762]
+2025-10-25 15:35:32,351 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,351 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,351 - INFO - Original Y magnitude stats: mean=2.410547e-04, std=3.152275e-04
+2025-10-25 15:35:32,351 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,351 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,352 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,352 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,352 - INFO - X energy retained: 0.989
+2025-10-25 15:35:32,352 - INFO - Audio energy scaling: X=0.989, Y=1.000
+2025-10-25 15:35:32,354 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,354 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,354 - INFO -   Y audio shape: (145920,), range: [-0.031889, 0.029712]
+2025-10-25 15:35:32,357 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,358 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,358 - INFO - Original Y magnitude stats: mean=2.407882e-04, std=3.146916e-04
+2025-10-25 15:35:32,358 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,358 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,358 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,358 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,358 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,358 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,359 - INFO - Processing angle_145...
+2025-10-25 15:35:32,360 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,360 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,360 - INFO -   Y audio shape: (145920,), range: [-0.036692, 0.035193]
+2025-10-25 15:35:32,364 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,365 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,365 - INFO - Original Y magnitude stats: mean=2.037716e-04, std=2.766730e-04
+2025-10-25 15:35:32,365 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,365 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,365 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,365 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,365 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,366 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,368 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,368 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,368 - INFO -   Y audio shape: (145920,), range: [-0.037426, 0.034145]
+2025-10-25 15:35:32,372 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,372 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,373 - INFO - Original Y magnitude stats: mean=2.013835e-04, std=2.729780e-04
+2025-10-25 15:35:32,373 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,373 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,373 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,373 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,373 - INFO - X energy retained: 0.991
+2025-10-25 15:35:32,373 - INFO - Audio energy scaling: X=0.991, Y=1.000
+2025-10-25 15:35:32,375 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,375 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,375 - INFO -   Y audio shape: (145920,), range: [-0.037497, 0.034108]
+2025-10-25 15:35:32,379 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,379 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,379 - INFO - Original Y magnitude stats: mean=2.017288e-04, std=2.729334e-04
+2025-10-25 15:35:32,379 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,379 - INFO - Y values below threshold 1.00e-05: 1.8%
+2025-10-25 15:35:32,379 - INFO - VAD mask applied: 98.2% time-frequency points retained
+2025-10-25 15:35:32,379 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,379 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,379 - INFO - Audio energy scaling: X=0.990, Y=0.999
+2025-10-25 15:35:32,380 - INFO - Processing angle_15...
+2025-10-25 15:35:32,381 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,381 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,381 - INFO -   Y audio shape: (145920,), range: [-0.042456, 0.034567]
+2025-10-25 15:35:32,385 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,385 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,386 - INFO - Original Y magnitude stats: mean=2.216306e-04, std=2.885362e-04
+2025-10-25 15:35:32,386 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,386 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,386 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,386 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,386 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,386 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,388 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,388 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,388 - INFO -   Y audio shape: (145920,), range: [-0.046960, 0.044150]
+2025-10-25 15:35:32,391 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,391 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,392 - INFO - Original Y magnitude stats: mean=2.203297e-04, std=2.844229e-04
+2025-10-25 15:35:32,392 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,392 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,392 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,392 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,392 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,392 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,394 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,394 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,394 - INFO -   Y audio shape: (145920,), range: [-0.061713, 0.056280]
+2025-10-25 15:35:32,398 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,398 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,399 - INFO - Original Y magnitude stats: mean=2.192888e-04, std=2.841879e-04
+2025-10-25 15:35:32,399 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,399 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,399 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,399 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,399 - INFO - X energy retained: 0.989
+2025-10-25 15:35:32,399 - INFO - Audio energy scaling: X=0.989, Y=1.000
+2025-10-25 15:35:32,400 - INFO - Processing angle_150...
+2025-10-25 15:35:32,401 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,401 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,401 - INFO -   Y audio shape: (145920,), range: [-0.034749, 0.036345]
+2025-10-25 15:35:32,405 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,405 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,405 - INFO - Original Y magnitude stats: mean=2.145221e-04, std=2.951493e-04
+2025-10-25 15:35:32,405 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,405 - INFO - Y values below threshold 1.00e-05: 2.3%
+2025-10-25 15:35:32,405 - INFO - VAD mask applied: 97.7% time-frequency points retained
+2025-10-25 15:35:32,405 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,405 - INFO - X energy retained: 0.983
+2025-10-25 15:35:32,405 - INFO - Audio energy scaling: X=0.983, Y=0.999
+2025-10-25 15:35:32,407 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,407 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,407 - INFO -   Y audio shape: (145920,), range: [-0.033174, 0.030839]
+2025-10-25 15:35:32,411 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,411 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,411 - INFO - Original Y magnitude stats: mean=2.117908e-04, std=2.910819e-04
+2025-10-25 15:35:32,411 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,411 - INFO - Y values below threshold 1.00e-05: 2.8%
+2025-10-25 15:35:32,412 - INFO - VAD mask applied: 97.2% time-frequency points retained
+2025-10-25 15:35:32,412 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,412 - INFO - X energy retained: 0.981
+2025-10-25 15:35:32,412 - INFO - Audio energy scaling: X=0.981, Y=0.999
+2025-10-25 15:35:32,414 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,414 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,414 - INFO -   Y audio shape: (145920,), range: [-0.034406, 0.032830]
+2025-10-25 15:35:32,418 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,418 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,418 - INFO - Original Y magnitude stats: mean=2.115945e-04, std=2.900144e-04
+2025-10-25 15:35:32,418 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,418 - INFO - Y values below threshold 1.00e-05: 1.7%
+2025-10-25 15:35:32,419 - INFO - VAD mask applied: 98.3% time-frequency points retained
+2025-10-25 15:35:32,419 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,419 - INFO - X energy retained: 0.983
+2025-10-25 15:35:32,419 - INFO - Audio energy scaling: X=0.983, Y=0.999
+2025-10-25 15:35:32,420 - INFO - Processing angle_155...
+2025-10-25 15:35:32,420 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,420 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,421 - INFO -   Y audio shape: (145920,), range: [-0.036100, 0.035200]
+2025-10-25 15:35:32,425 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,425 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,425 - INFO - Original Y magnitude stats: mean=2.546627e-04, std=3.007351e-04
+2025-10-25 15:35:32,425 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,425 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,425 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,425 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,425 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,425 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,427 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,427 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,427 - INFO -   Y audio shape: (145920,), range: [-0.043271, 0.042106]
+2025-10-25 15:35:32,431 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,431 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,431 - INFO - Original Y magnitude stats: mean=2.519045e-04, std=2.972679e-04
+2025-10-25 15:35:32,431 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,431 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,431 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,431 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,431 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,431 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,433 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,433 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,433 - INFO -   Y audio shape: (145920,), range: [-0.037311, 0.034878]
+2025-10-25 15:35:32,437 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,437 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,438 - INFO - Original Y magnitude stats: mean=2.504817e-04, std=2.963369e-04
+2025-10-25 15:35:32,438 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,438 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,438 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,438 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,438 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,438 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,439 - INFO - Processing angle_160...
+2025-10-25 15:35:32,440 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,440 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,440 - INFO -   Y audio shape: (145920,), range: [-0.067885, 0.057371]
+2025-10-25 15:35:32,445 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,445 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,445 - INFO - Original Y magnitude stats: mean=3.717924e-04, std=5.845493e-04
+2025-10-25 15:35:32,445 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,445 - INFO - Y values below threshold 1.00e-05: 1.7%
+2025-10-25 15:35:32,445 - INFO - VAD mask applied: 98.3% time-frequency points retained
+2025-10-25 15:35:32,445 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,446 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,446 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,448 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,448 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,448 - INFO -   Y audio shape: (145920,), range: [-0.060984, 0.063394]
+2025-10-25 15:35:32,451 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,451 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,452 - INFO - Original Y magnitude stats: mean=3.677056e-04, std=5.787187e-04
+2025-10-25 15:35:32,452 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,452 - INFO - Y values below threshold 1.00e-05: 1.7%
+2025-10-25 15:35:32,452 - INFO - VAD mask applied: 98.3% time-frequency points retained
+2025-10-25 15:35:32,452 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,452 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,452 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,454 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,454 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,454 - INFO -   Y audio shape: (145920,), range: [-0.063408, 0.059618]
+2025-10-25 15:35:32,457 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,457 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,458 - INFO - Original Y magnitude stats: mean=3.678551e-04, std=5.806260e-04
+2025-10-25 15:35:32,458 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,458 - INFO - Y values below threshold 1.00e-05: 1.6%
+2025-10-25 15:35:32,458 - INFO - VAD mask applied: 98.4% time-frequency points retained
+2025-10-25 15:35:32,458 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,458 - INFO - X energy retained: 0.989
+2025-10-25 15:35:32,458 - INFO - Audio energy scaling: X=0.989, Y=1.000
+2025-10-25 15:35:32,459 - INFO - Processing angle_165...
+2025-10-25 15:35:32,460 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,460 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,460 - INFO -   Y audio shape: (145920,), range: [-0.071473, 0.065635]
+2025-10-25 15:35:32,465 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,465 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,465 - INFO - Original Y magnitude stats: mean=3.711338e-04, std=5.907082e-04
+2025-10-25 15:35:32,465 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,465 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,465 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,465 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,465 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,465 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,467 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,467 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,467 - INFO -   Y audio shape: (145920,), range: [-0.073588, 0.064527]
+2025-10-25 15:35:32,471 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,471 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,471 - INFO - Original Y magnitude stats: mean=3.639018e-04, std=5.774645e-04
+2025-10-25 15:35:32,471 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,471 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,471 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,471 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,471 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,471 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,473 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,473 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,473 - INFO -   Y audio shape: (145920,), range: [-0.072199, 0.068959]
+2025-10-25 15:35:32,477 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,477 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,478 - INFO - Original Y magnitude stats: mean=3.639083e-04, std=5.746177e-04
+2025-10-25 15:35:32,478 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,478 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,478 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,478 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,478 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,478 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,479 - INFO - Processing angle_170...
+2025-10-25 15:35:32,480 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,480 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,480 - INFO -   Y audio shape: (145920,), range: [-0.072757, 0.065685]
+2025-10-25 15:35:32,484 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,484 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,484 - INFO - Original Y magnitude stats: mean=4.436501e-04, std=7.622101e-04
+2025-10-25 15:35:32,484 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,484 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,484 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,484 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,484 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,485 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,486 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,486 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,486 - INFO -   Y audio shape: (145920,), range: [-0.068282, 0.067401]
+2025-10-25 15:35:32,490 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,490 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,491 - INFO - Original Y magnitude stats: mean=4.375121e-04, std=7.515623e-04
+2025-10-25 15:35:32,491 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,491 - INFO - Y values below threshold 1.00e-05: 0.7%
+2025-10-25 15:35:32,491 - INFO - VAD mask applied: 99.3% time-frequency points retained
+2025-10-25 15:35:32,491 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,491 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,491 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,492 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,492 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,492 - INFO -   Y audio shape: (145920,), range: [-0.063868, 0.065157]
+2025-10-25 15:35:32,497 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,497 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,497 - INFO - Original Y magnitude stats: mean=4.360510e-04, std=7.518820e-04
+2025-10-25 15:35:32,497 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,497 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,497 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,497 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,497 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,497 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,499 - INFO - Processing angle_175...
+2025-10-25 15:35:32,499 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,499 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,499 - INFO -   Y audio shape: (145920,), range: [-0.068229, 0.067141]
+2025-10-25 15:35:32,503 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,503 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,504 - INFO - Original Y magnitude stats: mean=4.791695e-04, std=8.110651e-04
+2025-10-25 15:35:32,504 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,504 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,504 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,504 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,504 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,504 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,506 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,506 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,506 - INFO -   Y audio shape: (145920,), range: [-0.074044, 0.068596]
+2025-10-25 15:35:32,510 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,510 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,510 - INFO - Original Y magnitude stats: mean=4.769899e-04, std=8.026256e-04
+2025-10-25 15:35:32,510 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,510 - INFO - Y values below threshold 1.00e-05: 0.5%
+2025-10-25 15:35:32,510 - INFO - VAD mask applied: 99.5% time-frequency points retained
+2025-10-25 15:35:32,510 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,510 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,510 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,512 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,512 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,512 - INFO -   Y audio shape: (145920,), range: [-0.069799, 0.069995]
+2025-10-25 15:35:32,516 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,516 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,517 - INFO - Original Y magnitude stats: mean=4.735254e-04, std=8.019455e-04
+2025-10-25 15:35:32,517 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,517 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,517 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,517 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,517 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,517 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,518 - INFO - Processing angle_180...
+2025-10-25 15:35:32,520 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,520 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,520 - INFO -   Y audio shape: (145920,), range: [-0.058428, 0.067276]
+2025-10-25 15:35:32,524 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,524 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,524 - INFO - Original Y magnitude stats: mean=4.677754e-04, std=6.527695e-04
+2025-10-25 15:35:32,524 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,524 - INFO - Y values below threshold 1.00e-05: 0.4%
+2025-10-25 15:35:32,524 - INFO - VAD mask applied: 99.6% time-frequency points retained
+2025-10-25 15:35:32,524 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,524 - INFO - X energy retained: 0.998
+2025-10-25 15:35:32,524 - INFO - Audio energy scaling: X=0.998, Y=1.000
+2025-10-25 15:35:32,526 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,526 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,526 - INFO -   Y audio shape: (145920,), range: [-0.073238, 0.061300]
+2025-10-25 15:35:32,531 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,531 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,531 - INFO - Original Y magnitude stats: mean=4.609642e-04, std=6.396982e-04
+2025-10-25 15:35:32,531 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,531 - INFO - Y values below threshold 1.00e-05: 0.3%
+2025-10-25 15:35:32,532 - INFO - VAD mask applied: 99.7% time-frequency points retained
+2025-10-25 15:35:32,532 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,532 - INFO - X energy retained: 0.998
+2025-10-25 15:35:32,532 - INFO - Audio energy scaling: X=0.998, Y=1.000
+2025-10-25 15:35:32,533 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,533 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,533 - INFO -   Y audio shape: (145920,), range: [-0.060926, 0.057439]
+2025-10-25 15:35:32,537 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,537 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,538 - INFO - Original Y magnitude stats: mean=4.610485e-04, std=6.410423e-04
+2025-10-25 15:35:32,538 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,538 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,538 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,538 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,538 - INFO - X energy retained: 0.998
+2025-10-25 15:35:32,538 - INFO - Audio energy scaling: X=0.998, Y=1.000
+2025-10-25 15:35:32,539 - INFO - Processing angle_20...
+2025-10-25 15:35:32,540 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,541 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,541 - INFO -   Y audio shape: (145920,), range: [-0.033834, 0.032266]
+2025-10-25 15:35:32,544 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,545 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,545 - INFO - Original Y magnitude stats: mean=2.187514e-04, std=2.282261e-04
+2025-10-25 15:35:32,545 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,545 - INFO - Y values below threshold 1.00e-05: 0.5%
+2025-10-25 15:35:32,545 - INFO - VAD mask applied: 99.5% time-frequency points retained
+2025-10-25 15:35:32,545 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,545 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,545 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,547 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,547 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,547 - INFO -   Y audio shape: (145920,), range: [-0.033065, 0.037589]
+2025-10-25 15:35:32,551 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,551 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,552 - INFO - Original Y magnitude stats: mean=2.160131e-04, std=2.248777e-04
+2025-10-25 15:35:32,552 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,552 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,552 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,552 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,552 - INFO - X energy retained: 0.998
+2025-10-25 15:35:32,552 - INFO - Audio energy scaling: X=0.998, Y=1.000
+2025-10-25 15:35:32,553 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,553 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,553 - INFO -   Y audio shape: (145920,), range: [-0.031114, 0.028705]
+2025-10-25 15:35:32,557 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,557 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,558 - INFO - Original Y magnitude stats: mean=2.160797e-04, std=2.247545e-04
+2025-10-25 15:35:32,558 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,558 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,558 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,558 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,558 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,558 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,559 - INFO - Processing angle_25...
+2025-10-25 15:35:32,560 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,560 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,560 - INFO -   Y audio shape: (145920,), range: [-0.035440, 0.044088]
+2025-10-25 15:35:32,564 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,564 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,565 - INFO - Original Y magnitude stats: mean=2.399270e-04, std=3.327886e-04
+2025-10-25 15:35:32,565 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,565 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,565 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,565 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,565 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,565 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,567 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,567 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,567 - INFO -   Y audio shape: (145920,), range: [-0.040563, 0.043084]
+2025-10-25 15:35:32,571 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,571 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,571 - INFO - Original Y magnitude stats: mean=2.374247e-04, std=3.290610e-04
+2025-10-25 15:35:32,571 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,571 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,571 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,571 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,571 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,571 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,573 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,573 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,573 - INFO -   Y audio shape: (145920,), range: [-0.046804, 0.037726]
+2025-10-25 15:35:32,577 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,577 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,578 - INFO - Original Y magnitude stats: mean=2.372894e-04, std=3.289549e-04
+2025-10-25 15:35:32,578 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,578 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,578 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,578 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,578 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,578 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,579 - INFO - Processing angle_30...
+2025-10-25 15:35:32,580 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,580 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,580 - INFO -   Y audio shape: (145920,), range: [-0.053816, 0.047862]
+2025-10-25 15:35:32,584 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,584 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,585 - INFO - Original Y magnitude stats: mean=2.297715e-04, std=3.939351e-04
+2025-10-25 15:35:32,585 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,585 - INFO - Y values below threshold 1.00e-05: 2.4%
+2025-10-25 15:35:32,585 - INFO - VAD mask applied: 97.6% time-frequency points retained
+2025-10-25 15:35:32,585 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,585 - INFO - X energy retained: 0.986
+2025-10-25 15:35:32,585 - INFO - Audio energy scaling: X=0.986, Y=0.999
+2025-10-25 15:35:32,587 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,587 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,587 - INFO -   Y audio shape: (145920,), range: [-0.049739, 0.043106]
+2025-10-25 15:35:32,591 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,591 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,591 - INFO - Original Y magnitude stats: mean=2.275851e-04, std=3.883288e-04
+2025-10-25 15:35:32,591 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,591 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,591 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,591 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,591 - INFO - X energy retained: 0.982
+2025-10-25 15:35:32,592 - INFO - Audio energy scaling: X=0.982, Y=0.999
+2025-10-25 15:35:32,593 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,594 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,594 - INFO -   Y audio shape: (145920,), range: [-0.069376, 0.055533]
+2025-10-25 15:35:32,597 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,597 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,598 - INFO - Original Y magnitude stats: mean=2.296586e-04, std=3.929388e-04
+2025-10-25 15:35:32,598 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,598 - INFO - Y values below threshold 1.00e-05: 2.4%
+2025-10-25 15:35:32,598 - INFO - VAD mask applied: 97.6% time-frequency points retained
+2025-10-25 15:35:32,598 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,598 - INFO - X energy retained: 0.985
+2025-10-25 15:35:32,598 - INFO - Audio energy scaling: X=0.985, Y=0.999
+2025-10-25 15:35:32,600 - INFO - Processing angle_35...
+2025-10-25 15:35:32,600 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,600 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,600 - INFO -   Y audio shape: (145920,), range: [-0.034357, 0.030774]
+2025-10-25 15:35:32,604 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,605 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,605 - INFO - Original Y magnitude stats: mean=2.425036e-04, std=3.891899e-04
+2025-10-25 15:35:32,605 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,605 - INFO - Y values below threshold 1.00e-05: 1.0%
+2025-10-25 15:35:32,605 - INFO - VAD mask applied: 99.0% time-frequency points retained
+2025-10-25 15:35:32,605 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,605 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,605 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,606 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,606 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,606 - INFO -   Y audio shape: (145920,), range: [-0.031263, 0.031284]
+2025-10-25 15:35:32,611 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,611 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,612 - INFO - Original Y magnitude stats: mean=2.414118e-04, std=3.860511e-04
+2025-10-25 15:35:32,612 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,612 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,612 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,612 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,612 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,612 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,614 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,614 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,614 - INFO -   Y audio shape: (145920,), range: [-0.037494, 0.038034]
+2025-10-25 15:35:32,618 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,618 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,619 - INFO - Original Y magnitude stats: mean=2.414217e-04, std=3.869139e-04
+2025-10-25 15:35:32,619 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,619 - INFO - Y values below threshold 1.00e-05: 1.8%
+2025-10-25 15:35:32,619 - INFO - VAD mask applied: 98.2% time-frequency points retained
+2025-10-25 15:35:32,619 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,619 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,619 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,621 - INFO - Processing angle_40...
+2025-10-25 15:35:32,621 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,621 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,621 - INFO -   Y audio shape: (145920,), range: [-0.037360, 0.035517]
+2025-10-25 15:35:32,626 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,626 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,626 - INFO - Original Y magnitude stats: mean=2.279423e-04, std=3.155706e-04
+2025-10-25 15:35:32,626 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,626 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,626 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,627 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,627 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,627 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,628 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,628 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,628 - INFO -   Y audio shape: (145920,), range: [-0.035196, 0.034557]
+2025-10-25 15:35:32,633 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,633 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,633 - INFO - Original Y magnitude stats: mean=2.256151e-04, std=3.134845e-04
+2025-10-25 15:35:32,633 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,633 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,633 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,633 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,633 - INFO - X energy retained: 0.991
+2025-10-25 15:35:32,633 - INFO - Audio energy scaling: X=0.991, Y=1.000
+2025-10-25 15:35:32,635 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,635 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,635 - INFO -   Y audio shape: (145920,), range: [-0.042371, 0.035487]
+2025-10-25 15:35:32,642 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,642 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,643 - INFO - Original Y magnitude stats: mean=2.252604e-04, std=3.133385e-04
+2025-10-25 15:35:32,643 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,643 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,643 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,643 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,643 - INFO - X energy retained: 0.990
+2025-10-25 15:35:32,643 - INFO - Audio energy scaling: X=0.990, Y=1.000
+2025-10-25 15:35:32,644 - INFO - Processing angle_45...
+2025-10-25 15:35:32,646 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,646 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,646 - INFO -   Y audio shape: (145920,), range: [-0.042404, 0.045256]
+2025-10-25 15:35:32,650 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,650 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,651 - INFO - Original Y magnitude stats: mean=2.262997e-04, std=4.074239e-04
+2025-10-25 15:35:32,651 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,651 - INFO - Y values below threshold 1.00e-05: 2.5%
+2025-10-25 15:35:32,651 - INFO - VAD mask applied: 97.5% time-frequency points retained
+2025-10-25 15:35:32,652 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,652 - INFO - X energy retained: 0.985
+2025-10-25 15:35:32,652 - INFO - Audio energy scaling: X=0.985, Y=0.999
+2025-10-25 15:35:32,654 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,654 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,654 - INFO -   Y audio shape: (145920,), range: [-0.033865, 0.041156]
+2025-10-25 15:35:32,658 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,659 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,659 - INFO - Original Y magnitude stats: mean=2.242915e-04, std=4.028323e-04
+2025-10-25 15:35:32,659 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,659 - INFO - Y values below threshold 1.00e-05: 2.6%
+2025-10-25 15:35:32,659 - INFO - VAD mask applied: 97.4% time-frequency points retained
+2025-10-25 15:35:32,659 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,659 - INFO - X energy retained: 0.985
+2025-10-25 15:35:32,659 - INFO - Audio energy scaling: X=0.985, Y=0.999
+2025-10-25 15:35:32,661 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,661 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,661 - INFO -   Y audio shape: (145920,), range: [-0.039149, 0.038762]
+2025-10-25 15:35:32,665 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,665 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,665 - INFO - Original Y magnitude stats: mean=2.259714e-04, std=4.035643e-04
+2025-10-25 15:35:32,665 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,665 - INFO - Y values below threshold 1.00e-05: 1.8%
+2025-10-25 15:35:32,665 - INFO - VAD mask applied: 98.2% time-frequency points retained
+2025-10-25 15:35:32,665 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,665 - INFO - X energy retained: 0.985
+2025-10-25 15:35:32,665 - INFO - Audio energy scaling: X=0.985, Y=0.999
+2025-10-25 15:35:32,666 - INFO - Processing angle_5...
+2025-10-25 15:35:32,667 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,667 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,667 - INFO -   Y audio shape: (145920,), range: [-0.076774, 0.061200]
+2025-10-25 15:35:32,672 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,672 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,672 - INFO - Original Y magnitude stats: mean=4.024404e-04, std=7.685029e-04
+2025-10-25 15:35:32,672 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,672 - INFO - Y values below threshold 1.00e-05: 0.5%
+2025-10-25 15:35:32,672 - INFO - VAD mask applied: 99.5% time-frequency points retained
+2025-10-25 15:35:32,672 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,672 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,673 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,674 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,674 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,674 - INFO -   Y audio shape: (145920,), range: [-0.072137, 0.061093]
+2025-10-25 15:35:32,678 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,678 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,678 - INFO - Original Y magnitude stats: mean=3.972866e-04, std=7.562859e-04
+2025-10-25 15:35:32,679 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,679 - INFO - Y values below threshold 1.00e-05: 0.8%
+2025-10-25 15:35:32,679 - INFO - VAD mask applied: 99.2% time-frequency points retained
+2025-10-25 15:35:32,679 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,679 - INFO - X energy retained: 0.997
+2025-10-25 15:35:32,679 - INFO - Audio energy scaling: X=0.997, Y=1.000
+2025-10-25 15:35:32,684 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,684 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,685 - INFO -   Y audio shape: (145920,), range: [-0.074209, 0.063926]
+2025-10-25 15:35:32,689 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,689 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,689 - INFO - Original Y magnitude stats: mean=3.970705e-04, std=7.508599e-04
+2025-10-25 15:35:32,689 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,689 - INFO - Y values below threshold 1.00e-05: 0.4%
+2025-10-25 15:35:32,690 - INFO - VAD mask applied: 99.6% time-frequency points retained
+2025-10-25 15:35:32,690 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,690 - INFO - X energy retained: 0.996
+2025-10-25 15:35:32,690 - INFO - Audio energy scaling: X=0.996, Y=1.000
+2025-10-25 15:35:32,691 - INFO - Processing angle_50...
+2025-10-25 15:35:32,693 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,693 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,693 - INFO -   Y audio shape: (145920,), range: [-0.042524, 0.036347]
+2025-10-25 15:35:32,697 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,697 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,698 - INFO - Original Y magnitude stats: mean=2.200820e-04, std=4.265074e-04
+2025-10-25 15:35:32,698 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,698 - INFO - Y values below threshold 1.00e-05: 3.4%
+2025-10-25 15:35:32,698 - INFO - VAD mask applied: 96.6% time-frequency points retained
+2025-10-25 15:35:32,698 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,698 - INFO - X energy retained: 0.981
+2025-10-25 15:35:32,698 - INFO - Audio energy scaling: X=0.981, Y=0.999
+2025-10-25 15:35:32,699 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,699 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,700 - INFO -   Y audio shape: (145920,), range: [-0.048226, 0.040917]
+2025-10-25 15:35:32,704 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,704 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,704 - INFO - Original Y magnitude stats: mean=2.194982e-04, std=4.252376e-04
+2025-10-25 15:35:32,704 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,704 - INFO - Y values below threshold 1.00e-05: 4.0%
+2025-10-25 15:35:32,704 - INFO - VAD mask applied: 96.0% time-frequency points retained
+2025-10-25 15:35:32,704 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,704 - INFO - X energy retained: 0.978
+2025-10-25 15:35:32,705 - INFO - Audio energy scaling: X=0.978, Y=0.999
+2025-10-25 15:35:32,707 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,707 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,707 - INFO -   Y audio shape: (145920,), range: [-0.068533, 0.066525]
+2025-10-25 15:35:32,710 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,710 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,711 - INFO - Original Y magnitude stats: mean=2.182547e-04, std=4.197586e-04
+2025-10-25 15:35:32,711 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,711 - INFO - Y values below threshold 1.00e-05: 3.0%
+2025-10-25 15:35:32,711 - INFO - VAD mask applied: 97.0% time-frequency points retained
+2025-10-25 15:35:32,711 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,711 - INFO - X energy retained: 0.979
+2025-10-25 15:35:32,711 - INFO - Audio energy scaling: X=0.979, Y=0.999
+2025-10-25 15:35:32,712 - INFO - Processing angle_55...
+2025-10-25 15:35:32,713 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,713 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,713 - INFO -   Y audio shape: (145920,), range: [-0.043191, 0.036368]
+2025-10-25 15:35:32,717 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,717 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,718 - INFO - Original Y magnitude stats: mean=2.569660e-04, std=4.635800e-04
+2025-10-25 15:35:32,718 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,718 - INFO - Y values below threshold 1.00e-05: 2.0%
+2025-10-25 15:35:32,718 - INFO - VAD mask applied: 98.0% time-frequency points retained
+2025-10-25 15:35:32,718 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,718 - INFO - X energy retained: 0.982
+2025-10-25 15:35:32,718 - INFO - Audio energy scaling: X=0.982, Y=0.999
+2025-10-25 15:35:32,720 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,720 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,720 - INFO -   Y audio shape: (145920,), range: [-0.046819, 0.042834]
+2025-10-25 15:35:32,723 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,723 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,724 - INFO - Original Y magnitude stats: mean=2.541768e-04, std=4.606436e-04
+2025-10-25 15:35:32,724 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,724 - INFO - Y values below threshold 1.00e-05: 2.6%
+2025-10-25 15:35:32,724 - INFO - VAD mask applied: 97.4% time-frequency points retained
+2025-10-25 15:35:32,724 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,724 - INFO - X energy retained: 0.982
+2025-10-25 15:35:32,724 - INFO - Audio energy scaling: X=0.982, Y=0.999
+2025-10-25 15:35:32,726 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,726 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,726 - INFO -   Y audio shape: (145920,), range: [-0.042525, 0.042711]
+2025-10-25 15:35:32,730 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,730 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,731 - INFO - Original Y magnitude stats: mean=2.549575e-04, std=4.615223e-04
+2025-10-25 15:35:32,731 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,731 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,731 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,731 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,731 - INFO - X energy retained: 0.982
+2025-10-25 15:35:32,731 - INFO - Audio energy scaling: X=0.982, Y=0.999
+2025-10-25 15:35:32,733 - INFO - Processing angle_60...
+2025-10-25 15:35:32,734 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,734 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,734 - INFO -   Y audio shape: (145920,), range: [-0.047862, 0.048211]
+2025-10-25 15:35:32,738 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,738 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,738 - INFO - Original Y magnitude stats: mean=2.703518e-04, std=4.471347e-04
+2025-10-25 15:35:32,738 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,738 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,738 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,739 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,739 - INFO - X energy retained: 0.994
+2025-10-25 15:35:32,739 - INFO - Audio energy scaling: X=0.994, Y=1.000
+2025-10-25 15:35:32,740 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,740 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,740 - INFO -   Y audio shape: (145920,), range: [-0.051111, 0.044664]
+2025-10-25 15:35:32,744 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,744 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,744 - INFO - Original Y magnitude stats: mean=2.679408e-04, std=4.411160e-04
+2025-10-25 15:35:32,744 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,744 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,744 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,745 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,745 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,745 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,747 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,747 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,747 - INFO -   Y audio shape: (145920,), range: [-0.043079, 0.040426]
+2025-10-25 15:35:32,751 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,752 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,752 - INFO - Original Y magnitude stats: mean=2.670457e-04, std=4.398966e-04
+2025-10-25 15:35:32,752 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,752 - INFO - Y values below threshold 1.00e-05: 0.8%
+2025-10-25 15:35:32,752 - INFO - VAD mask applied: 99.2% time-frequency points retained
+2025-10-25 15:35:32,752 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,752 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,752 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,753 - INFO - Processing angle_65...
+2025-10-25 15:35:32,755 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,755 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,755 - INFO -   Y audio shape: (145920,), range: [-0.050808, 0.036694]
+2025-10-25 15:35:32,758 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,759 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,759 - INFO - Original Y magnitude stats: mean=2.200635e-04, std=3.005393e-04
+2025-10-25 15:35:32,759 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,759 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,759 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,759 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,759 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,759 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,761 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,761 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,761 - INFO -   Y audio shape: (145920,), range: [-0.055773, 0.052501]
+2025-10-25 15:35:32,766 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,766 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,766 - INFO - Original Y magnitude stats: mean=2.178577e-04, std=2.969406e-04
+2025-10-25 15:35:32,766 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,766 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,766 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,766 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,766 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,766 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,769 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,769 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,769 - INFO -   Y audio shape: (145920,), range: [-0.044580, 0.041583]
+2025-10-25 15:35:32,773 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,773 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,774 - INFO - Original Y magnitude stats: mean=2.178900e-04, std=2.994126e-04
+2025-10-25 15:35:32,774 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,774 - INFO - Y values below threshold 1.00e-05: 1.3%
+2025-10-25 15:35:32,774 - INFO - VAD mask applied: 98.7% time-frequency points retained
+2025-10-25 15:35:32,774 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,774 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,774 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,775 - INFO - Processing angle_70...
+2025-10-25 15:35:32,776 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,776 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,776 - INFO -   Y audio shape: (145920,), range: [-0.045161, 0.040649]
+2025-10-25 15:35:32,780 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,780 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,781 - INFO - Original Y magnitude stats: mean=2.498003e-04, std=4.411796e-04
+2025-10-25 15:35:32,781 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,781 - INFO - Y values below threshold 1.00e-05: 5.5%
+2025-10-25 15:35:32,781 - INFO - VAD mask applied: 94.5% time-frequency points retained
+2025-10-25 15:35:32,781 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,781 - INFO - X energy retained: 0.952
+2025-10-25 15:35:32,781 - INFO - Audio energy scaling: X=0.952, Y=0.999
+2025-10-25 15:35:32,783 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,783 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,783 - INFO -   Y audio shape: (145920,), range: [-0.041446, 0.037828]
+2025-10-25 15:35:32,786 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,787 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,787 - INFO - Original Y magnitude stats: mean=2.484671e-04, std=4.385590e-04
+2025-10-25 15:35:32,787 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,787 - INFO - Y values below threshold 1.00e-05: 6.0%
+2025-10-25 15:35:32,787 - INFO - VAD mask applied: 94.0% time-frequency points retained
+2025-10-25 15:35:32,787 - INFO - Y energy retained: 0.998
+2025-10-25 15:35:32,787 - INFO - X energy retained: 0.953
+2025-10-25 15:35:32,787 - INFO - Audio energy scaling: X=0.953, Y=0.998
+2025-10-25 15:35:32,789 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,789 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,789 - INFO -   Y audio shape: (145920,), range: [-0.041192, 0.044434]
+2025-10-25 15:35:32,793 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,793 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,793 - INFO - Original Y magnitude stats: mean=2.484450e-04, std=4.385048e-04
+2025-10-25 15:35:32,794 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,794 - INFO - Y values below threshold 1.00e-05: 5.1%
+2025-10-25 15:35:32,794 - INFO - VAD mask applied: 94.9% time-frequency points retained
+2025-10-25 15:35:32,794 - INFO - Y energy retained: 0.999
+2025-10-25 15:35:32,794 - INFO - X energy retained: 0.954
+2025-10-25 15:35:32,794 - INFO - Audio energy scaling: X=0.954, Y=0.999
+2025-10-25 15:35:32,795 - INFO - Processing angle_75...
+2025-10-25 15:35:32,797 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,797 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,797 - INFO -   Y audio shape: (145920,), range: [-0.051116, 0.042334]
+2025-10-25 15:35:32,801 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,801 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,802 - INFO - Original Y magnitude stats: mean=3.057202e-04, std=5.889539e-04
+2025-10-25 15:35:32,802 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,802 - INFO - Y values below threshold 1.00e-05: 1.7%
+2025-10-25 15:35:32,802 - INFO - VAD mask applied: 98.3% time-frequency points retained
+2025-10-25 15:35:32,802 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,802 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,802 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,803 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,803 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,803 - INFO -   Y audio shape: (145920,), range: [-0.045485, 0.041179]
+2025-10-25 15:35:32,807 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,807 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,807 - INFO - Original Y magnitude stats: mean=3.040798e-04, std=5.860285e-04
+2025-10-25 15:35:32,807 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,807 - INFO - Y values below threshold 1.00e-05: 2.2%
+2025-10-25 15:35:32,807 - INFO - VAD mask applied: 97.8% time-frequency points retained
+2025-10-25 15:35:32,807 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,807 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,808 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,809 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,809 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,809 - INFO -   Y audio shape: (145920,), range: [-0.045642, 0.043008]
+2025-10-25 15:35:32,814 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,814 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,814 - INFO - Original Y magnitude stats: mean=3.038459e-04, std=5.858009e-04
+2025-10-25 15:35:32,814 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,814 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,814 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,814 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,814 - INFO - X energy retained: 0.987
+2025-10-25 15:35:32,814 - INFO - Audio energy scaling: X=0.987, Y=1.000
+2025-10-25 15:35:32,816 - INFO - Processing angle_80...
+2025-10-25 15:35:32,817 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,817 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,817 - INFO -   Y audio shape: (145920,), range: [-0.081182, 0.059737]
+2025-10-25 15:35:32,821 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,821 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,822 - INFO - Original Y magnitude stats: mean=4.317173e-04, std=8.110439e-04
+2025-10-25 15:35:32,822 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,822 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,822 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,822 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,822 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,822 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,824 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,824 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,824 - INFO -   Y audio shape: (145920,), range: [-0.074346, 0.063422]
+2025-10-25 15:35:32,828 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,828 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,828 - INFO - Original Y magnitude stats: mean=4.282516e-04, std=8.008546e-04
+2025-10-25 15:35:32,828 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,828 - INFO - Y values below threshold 1.00e-05: 0.9%
+2025-10-25 15:35:32,828 - INFO - VAD mask applied: 99.1% time-frequency points retained
+2025-10-25 15:35:32,828 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,828 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,829 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,830 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,830 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,831 - INFO -   Y audio shape: (145920,), range: [-0.066336, 0.071889]
+2025-10-25 15:35:32,834 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,835 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,835 - INFO - Original Y magnitude stats: mean=4.267066e-04, std=7.950722e-04
+2025-10-25 15:35:32,835 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,835 - INFO - Y values below threshold 1.00e-05: 1.1%
+2025-10-25 15:35:32,835 - INFO - VAD mask applied: 98.9% time-frequency points retained
+2025-10-25 15:35:32,835 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,835 - INFO - X energy retained: 0.993
+2025-10-25 15:35:32,835 - INFO - Audio energy scaling: X=0.993, Y=1.000
+2025-10-25 15:35:32,837 - INFO - Processing angle_85...
+2025-10-25 15:35:32,838 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,838 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,838 - INFO -   Y audio shape: (145920,), range: [-0.056605, 0.056383]
+2025-10-25 15:35:32,842 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,842 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,843 - INFO - Original Y magnitude stats: mean=4.408442e-04, std=7.421928e-04
+2025-10-25 15:35:32,843 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,843 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,843 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,843 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,843 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,843 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,844 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,844 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,844 - INFO -   Y audio shape: (145920,), range: [-0.061260, 0.049995]
+2025-10-25 15:35:32,849 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,849 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,849 - INFO - Original Y magnitude stats: mean=4.348547e-04, std=7.272627e-04
+2025-10-25 15:35:32,849 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,849 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,849 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,849 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,849 - INFO - X energy retained: 0.992
+2025-10-25 15:35:32,849 - INFO - Audio energy scaling: X=0.992, Y=1.000
+2025-10-25 15:35:32,852 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,852 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,852 - INFO -   Y audio shape: (145920,), range: [-0.056958, 0.060376]
+2025-10-25 15:35:32,856 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,856 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,856 - INFO - Original Y magnitude stats: mean=4.345191e-04, std=7.199934e-04
+2025-10-25 15:35:32,856 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,856 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,856 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,856 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,856 - INFO - X energy retained: 0.991
+2025-10-25 15:35:32,856 - INFO - Audio energy scaling: X=0.991, Y=1.000
+2025-10-25 15:35:32,858 - INFO - Processing angle_90...
+2025-10-25 15:35:32,858 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,858 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,859 - INFO -   Y audio shape: (145920,), range: [-0.055484, 0.050431]
+2025-10-25 15:35:32,863 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,863 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,863 - INFO - Original Y magnitude stats: mean=3.358949e-04, std=6.104169e-04
+2025-10-25 15:35:32,863 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,863 - INFO - Y values below threshold 1.00e-05: 0.7%
+2025-10-25 15:35:32,863 - INFO - VAD mask applied: 99.3% time-frequency points retained
+2025-10-25 15:35:32,863 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,863 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,864 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,870 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,870 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,870 - INFO -   Y audio shape: (145920,), range: [-0.070022, 0.055701]
+2025-10-25 15:35:32,874 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,874 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,875 - INFO - Original Y magnitude stats: mean=3.334288e-04, std=6.014890e-04
+2025-10-25 15:35:32,875 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,875 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,875 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,875 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,875 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,875 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,877 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,877 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,877 - INFO -   Y audio shape: (145920,), range: [-0.059793, 0.052861]
+2025-10-25 15:35:32,881 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,881 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,882 - INFO - Original Y magnitude stats: mean=3.334527e-04, std=6.013016e-04
+2025-10-25 15:35:32,882 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,882 - INFO - Y values below threshold 1.00e-05: 0.6%
+2025-10-25 15:35:32,882 - INFO - VAD mask applied: 99.4% time-frequency points retained
+2025-10-25 15:35:32,882 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,882 - INFO - X energy retained: 0.995
+2025-10-25 15:35:32,882 - INFO - Audio energy scaling: X=0.995, Y=1.000
+2025-10-25 15:35:32,883 - INFO - Processing angle_95...
+2025-10-25 15:35:32,884 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,884 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,884 - INFO -   Y audio shape: (145920,), range: [-0.057876, 0.059328]
+2025-10-25 15:35:32,888 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,888 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,888 - INFO - Original Y magnitude stats: mean=4.516846e-04, std=7.531257e-04
+2025-10-25 15:35:32,888 - INFO - Original X magnitude stats: mean=6.078750e-03, std=3.299912e-03
+2025-10-25 15:35:32,888 - INFO - Y values below threshold 1.00e-05: 1.2%
+2025-10-25 15:35:32,888 - INFO - VAD mask applied: 98.8% time-frequency points retained
+2025-10-25 15:35:32,888 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,888 - INFO - X energy retained: 0.989
+2025-10-25 15:35:32,888 - INFO - Audio energy scaling: X=0.989, Y=1.000
+2025-10-25 15:35:32,890 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,890 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446655]
+2025-10-25 15:35:32,890 - INFO -   Y audio shape: (145920,), range: [-0.063236, 0.052412]
+2025-10-25 15:35:32,894 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,894 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,895 - INFO - Original Y magnitude stats: mean=4.458044e-04, std=7.449616e-04
+2025-10-25 15:35:32,895 - INFO - Original X magnitude stats: mean=6.083817e-03, std=3.296814e-03
+2025-10-25 15:35:32,895 - INFO - Y values below threshold 1.00e-05: 1.4%
+2025-10-25 15:35:32,895 - INFO - VAD mask applied: 98.6% time-frequency points retained
+2025-10-25 15:35:32,895 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,895 - INFO - X energy retained: 0.988
+2025-10-25 15:35:32,895 - INFO - Audio energy scaling: X=0.988, Y=1.000
+2025-10-25 15:35:32,897 - INFO - Starting synchronized X-Y VAD processing:
+2025-10-25 15:35:32,897 - INFO -   X audio shape: (145920,), range: [-0.446686, 0.446686]
+2025-10-25 15:35:32,897 - INFO -   Y audio shape: (145920,), range: [-0.058033, 0.053331]
+2025-10-25 15:35:32,902 - INFO - Spectrogram shapes: X=(1025, 96), Y=(1025, 96)
+2025-10-25 15:35:32,902 - INFO - Filtered spectrogram shapes: X=(116, 96), Y=(116, 96)
+2025-10-25 15:35:32,902 - INFO - Original Y magnitude stats: mean=4.454125e-04, std=7.466329e-04
+2025-10-25 15:35:32,902 - INFO - Original X magnitude stats: mean=6.089183e-03, std=3.295978e-03
+2025-10-25 15:35:32,902 - INFO - Y values below threshold 1.00e-05: 1.9%
+2025-10-25 15:35:32,902 - INFO - VAD mask applied: 98.1% time-frequency points retained
+2025-10-25 15:35:32,902 - INFO - Y energy retained: 1.000
+2025-10-25 15:35:32,902 - INFO - X energy retained: 0.989
+2025-10-25 15:35:32,902 - INFO - Audio energy scaling: X=0.989, Y=1.000
+2025-10-25 15:35:32,903 - INFO - Synchronized X-Y VAD processing complete:
+2025-10-25 15:35:32,903 - INFO -   Files processed: 111
+2025-10-25 15:35:32,903 - INFO -   Common angles: 37
+2025-10-25 15:35:32,903 - INFO -   Average X energy retained: 0.990
+2025-10-25 15:35:32,903 - INFO -   Average Y energy retained: 1.000
+2025-10-25 15:35:32,903 - INFO -   Synchronization success rate: 100.0%
+
+======================================================================
+SYNCHRONIZED X-Y SPECTROGRAM VAD PROCESSING SUMMARY
+======================================================================
+X input directory: /Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge_for_vad
+Y input directory: /Users/sbplab/LDV-data-processed/white_noise_irregularbox_data_no_edge
+X output directory: /Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge_sync_vad_irregularbox
+Y output directory: /Users/sbplab/LDV-data-processed/white_noise_irregularbox_data_no_edge_sync_vad
+VAD threshold: 1.00e-05
+VAD method: soft
+Files processed: 111
+Common angles: 37
+Average X energy retained: 99.0%
+Average Y energy retained: 100.0%
+Synchronization success rate: 100.0%
+
+Ready for NMF reconstruction testing with synchronized VAD-processed X-Y data!
