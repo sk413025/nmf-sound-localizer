@@ -309,7 +309,7 @@ class FullTransformerRoutedSoftOMP(nn.Module):
     def __init__(self, F: int, E: int, M: int, d: int = None, nhead: int = 8, nlayers: int = 1,
                  steps: int = 6, top_e: int = 2, L: int = 2,
                  tau_e: float = 0.5, tau_a: float = 0.2, eta: float = 0.5,
-                 routing: str = 'gumbel'):
+                 routing: str = 'gumbel', routing_mode: str = 'qk', hybrid_alpha: float = 0.5):
         super().__init__()
         self.F, self.E, self.M = F, E, M
         self.P = E * M
@@ -321,6 +321,10 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         self.tau_a = nn.Parameter(torch.tensor(float(tau_a)))
         self.eta = nn.Parameter(torch.tensor(float(eta)))
         self.routing = routing
+        # Routing score source: 'qk' (Transformer QK), 'g' (physics correlation), 'hybrid' (blend)
+        assert routing_mode in ('qk', 'g', 'hybrid')
+        self.routing_mode = routing_mode
+        self.hybrid_alpha = float(hybrid_alpha)
         
         # Token projections + type embeddings
         self.P_R = nn.Linear(F, self.d, bias=False)
@@ -405,12 +409,30 @@ class FullTransformerRoutedSoftOMP(nn.Module):
             h_R = H[0]  # (d,)
             H_D = H[1:]  # (P, d)
             
-            # Compute scores
-            scores_atoms = (self.Wk(H_D) @ self.Wq(h_R)) / math.sqrt(self.d)  # (P,)
-            scores_atoms = scores_atoms.reshape(self.E, self.M)  # (E, M)
-            
-            # Expert-level scores (L2 pooling over atoms)
-            scores_expert = torch.sqrt((scores_atoms.abs() ** 2).sum(dim=1) + 1e-12)  # (E,)
+            # Compute QK scores from Transformer
+            qk_atoms = (self.Wk(H_D) @ self.Wq(h_R)) / math.sqrt(self.d)  # (P,)
+            qk_atoms = qk_atoms.reshape(self.E, self.M)  # (E, M)
+            qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)  # (E,)
+
+            # Compute physics correlation scores from g = D^T r
+            g_vec_all = (D.T @ r)  # (P,)
+            g_atoms = g_vec_all.reshape(self.E, self.M)
+            g_expert = torch.sqrt((g_atoms ** 2).sum(dim=1) + 1e-12)  # (E,)
+
+            # Choose routing score source
+            if self.routing_mode == 'qk':
+                scores_atoms = qk_atoms
+                scores_expert = qk_expert
+            elif self.routing_mode == 'g':
+                scores_atoms = g_atoms
+                scores_expert = g_expert
+            else:  # hybrid
+                # Normalize both to unit norm before blending
+                def _norm(x, dim=None):
+                    n = x.norm(dim=dim, keepdim=True) if dim is not None else x.norm()
+                    return x / (n + 1e-12)
+                scores_atoms = self.hybrid_alpha * _norm(g_atoms, dim=None) + (1.0 - self.hybrid_alpha) * _norm(qk_atoms, dim=None)
+                scores_expert = self.hybrid_alpha * _norm(g_expert) + (1.0 - self.hybrid_alpha) * _norm(qk_expert)
             
             if train_mode:
                 # Soft routing
@@ -427,7 +449,7 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                         'scores_expert': scores_expert.detach(),
                         'w_e': w_e.detach(),
                     }
-                g = (D.T @ r)  # (P,) gradient-like signal
+                g = g_vec_all  # (P,) gradient-like signal from above
                 # Remove .item() on eta to keep it learnable / schedulable
                 x = x + self.eta * (w_all * g)
             else:
@@ -754,6 +776,11 @@ def main():
                         help='Monotonicity loss weight (default: 0.2)')
     parser.add_argument('--gamma', type=float, default=0.5,
                         help='Classification loss weight (default: 0.5)')
+    # Routing source selection
+    parser.add_argument('--routing_mode', type=str, default='qk', choices=['qk', 'g', 'hybrid'],
+                        help="Routing score source: 'qk' (Transformer QK), 'g' (physics correlation), 'hybrid' (blend)")
+    parser.add_argument('--hybrid_alpha', type=float, default=0.5,
+                        help='Hybrid blend weight for g (0..1); 1.0 = pure g, 0.0 = pure qk')
     # Routing temperature annealing
     parser.add_argument('--tau_e_start', type=float, default=1.0,
                         help='Initial expert temperature for routing (default: 1.0)')
@@ -864,7 +891,8 @@ def main():
     model = FullTransformerRoutedSoftOMP(
         F=F, E=E, M=M, d=d, nhead=nhead, nlayers=args.nlayers,
         steps=args.steps, top_e=args.top_e, L=args.top_l,
-        tau_e=0.5, tau_a=0.2, eta=0.5, routing='gumbel'
+        tau_e=0.5, tau_a=0.2, eta=0.5, routing='gumbel',
+        routing_mode=args.routing_mode, hybrid_alpha=args.hybrid_alpha
     ).to(args.device)
     
     print(f"\nModel architecture:")
@@ -875,6 +903,7 @@ def main():
     print(f"  P (total atoms): {E * M}")
     print(f"  nhead: {nhead}")
     print(f"  nlayers: {args.nlayers}")
+    print(f"  routing_mode: {args.routing_mode} (hybrid_alpha={args.hybrid_alpha if args.routing_mode=='hybrid' else 'n/a'})")
     print(f"  Total parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"  Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
     
