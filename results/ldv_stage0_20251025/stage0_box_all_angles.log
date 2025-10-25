@@ -1,0 +1,366 @@
+✅ 已扩展角度映射: 支持 37 个角度
+載入數據集配置...
+可用材料: ['box', 'IrregularBox']
+可用角度: ['000', '005', '010', '015', '020', '025', '030', '035', '040', '045', '050', '055', '060', '065', '070', '075', '080', '085', '090', '095', '100', '105', '110', '115', '120', '125', '130', '135', '140', '145', '150', '155', '160', '165', '170', '175', '180']
+從標準檔案提取音頻間隔...
+標準檔案採樣率: 48000 Hz
+檢測到 541 個音頻間隔
+白噪音間隔 538: 時長 3.04秒
+白噪音間隔 539: 時長 3.04秒
+白噪音間隔 540: 時長 3.04秒
+
+開始創建 box 材料的 NMF 數據集...
+LDV 錄製數據輸出目錄: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge
+原始音檔輸出目錄: /Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge
+
+提取原始白噪音片段...
+載入標準檔案: standard_file.wav
+  原始白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  原始白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  原始白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存原始音檔: original_clip_000.npy & original_clip_000.wav
+  保存原始音檔: original_clip_001.npy & original_clip_001.wav
+  保存原始音檔: original_clip_002.npy & original_clip_002.wav
+
+處理 37 個 LDV 錄製角度...
+
+處理角度 000° -> angle_0/
+載入檔案: box_deg000_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 005° -> angle_5/
+載入檔案: box_deg005_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 010° -> angle_10/
+載入檔案: box_deg010_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 015° -> angle_15/
+載入檔案: box_deg015_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 020° -> angle_20/
+載入檔案: box_deg020_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 025° -> angle_25/
+載入檔案: box_deg025_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 030° -> angle_30/
+載入檔案: box_deg030_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 035° -> angle_35/
+載入檔案: box_deg035_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 040° -> angle_40/
+載入檔案: box_deg040_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 045° -> angle_45/
+載入檔案: box_deg045_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 050° -> angle_50/
+載入檔案: box_deg050_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 055° -> angle_55/
+載入檔案: box_deg055_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 060° -> angle_60/
+載入檔案: box_deg060_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 065° -> angle_65/
+載入檔案: box_deg065_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 070° -> angle_70/
+載入檔案: box_deg070_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 075° -> angle_75/
+載入檔案: box_deg075_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 080° -> angle_80/
+載入檔案: box_deg080_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 085° -> angle_85/
+載入檔案: box_deg085_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 090° -> angle_90/
+載入檔案: box_deg090_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 095° -> angle_95/
+載入檔案: box_deg095_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 100° -> angle_100/
+載入檔案: box_deg100_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 105° -> angle_105/
+載入檔案: box_deg105_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 110° -> angle_110/
+載入檔案: box_deg110_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 115° -> angle_115/
+載入檔案: box_deg115_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 120° -> angle_120/
+載入檔案: box_deg120_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 125° -> angle_125/
+載入檔案: box_deg125_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 130° -> angle_130/
+載入檔案: box_deg130_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 135° -> angle_135/
+載入檔案: box_deg135_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 140° -> angle_140/
+載入檔案: box_deg140_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 145° -> angle_145/
+載入檔案: box_deg145_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 150° -> angle_150/
+載入檔案: box_deg150_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 155° -> angle_155/
+載入檔案: box_deg155_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 160° -> angle_160/
+載入檔案: box_deg160_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 165° -> angle_165/
+載入檔案: box_deg165_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 170° -> angle_170/
+載入檔案: box_deg170_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 175° -> angle_175/
+載入檔案: box_deg175_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+處理角度 180° -> angle_180/
+載入檔案: box_deg180_segment2_complete.wav
+  白噪音片段 1: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 2: 3.04秒, 145920 個樣本 （無邊緣處理）
+  白噪音片段 3: 3.04秒, 145920 個樣本 （無邊緣處理）
+  保存: clip_000.npy & clip_000.wav
+  保存: clip_001.npy & clip_001.wav
+  保存: clip_002.npy & clip_002.wav
+
+數據集創建完成!
+LDV 錄製數據輸出目錄: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge
+LDV 元數據: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge/metadata.json
+原始音檔輸出目錄: /Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge
+原始音檔元數據: /Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge/metadata.json
+
+✅ 转换完成!

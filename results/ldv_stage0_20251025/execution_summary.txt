@@ -1,0 +1,30 @@
+Stage 0: LDV-data WAV → NPY Conversion
+执行时间: 2025-10-25 15:10:28 - 15:11:39
+总时长: ~71 秒
+
+输入数据:
+- 源路径: ~/LDV-data/
+- WAV 文件: 196 个 (31 GB)
+- 材料: box, IrregularBox
+- 角度: 0°-180° (每 5°, 共 37 个)
+- standard_file.wav: 169 MB (来自 20250709 数据集)
+
+处理配置:
+- 转换脚本: ldv_converter_all_angles.py (扩展版，支持全部 37 个角度)
+- 白噪音段索引: [538, 539, 540]
+- 边缘处理: 无 (no_edge)
+- 采样率: 48000 Hz
+- 每段时长: ~3.04 秒
+
+输出数据:
+- 输出路径: ~/LDV-data-processed/
+- Original: 3 个 clip (参考白噪音)
+- Box: 37 angles × 3 clips = 111 个 NPY 文件
+- IrregularBox: 37 angles × 3 clips = 111 个 NPY 文件
+- 总计: 225 个 NPY 文件
+- 磁盘使用: 189 MB
+
+关键改进:
+- 相比 20250709: 角度数 17 → 37 (2.2× 提升)
+- 角度覆盖: 30°-150° (不连续) → 0°-180° (连续, 每 5°)
+- 文件数: 105 → 225 (2.1× 提升)
