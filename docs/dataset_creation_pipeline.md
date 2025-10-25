@@ -1,8 +1,13 @@
 # Dataset Creation Pipeline - Complete Data Lineage Documentation
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-10-24  
+**Document Version**: 1.1  
+**Last Updated**: 2025-10-25  
 **Status**: Complete data lineage from raw recordings to training datasets
+
+**Recent Updates**:
+- Verified all source files accessible on local system
+- Documented expanded LDV-data dataset (37 angles vs 17)
+- Confirmed script locations and file sizes
 
 ---
 
@@ -106,15 +111,24 @@ Current: Training & Test Datasets + H Matrix + USM Model
 
 ```
 /Users/sbplab/jiawei/datasets/20250709/20250709/
-├── 20250709_test_log.txt              # Dataset configuration JSON
-├── standard_file.wav                   # Original playback signal (X)
+├── 20250709_test_log.txt              # Dataset configuration JSON (841 B)
+├── standard_file.wav                   # Original playback signal (169 MB)
+├── readme.ipynb                        # Processing documentation (349 KB)
 └── complete/
+    ├── box_deg030_segment1_complete.wav
     ├── box_deg030_segment2_complete.wav
+    ├── box_deg045_segment1_complete.wav
     ├── box_deg045_segment2_complete.wav
+    ├── box_deg080_segment1_complete.wav
     ├── box_deg080_segment2_complete.wav
-    ├── ... (17 angles total)
+    ├── ... (17 angles × 2 segments = 34 files, plus additional files)
     └── box_deg150_segment2_complete.wav
+
+Total: 68 files in complete/ directory
+Verified: 2025-10-25 (all files accessible)
 ```
+
+**Note**: A newer, expanded dataset exists at `~/LDV-data/` with 37 angles (0°-180° every 5°) and 196 WAV files. See Appendix for details.
 
 ### Why White Noise?
 
@@ -179,8 +193,11 @@ White noise is ideal for transfer function estimation:
 ### Conversion Script
 
 **Location**: `/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py`  
+**Size**: 19 KB  
+**Date**: 2025-08-18  
 **Language**: Python 3  
-**Dependencies**: librosa, soundfile, numpy
+**Dependencies**: librosa, soundfile, numpy  
+**Status**: ✅ File exists and is accessible (verified 2025-10-25)
 
 ### Conversion Process
 
@@ -1217,7 +1234,87 @@ assert data.min() >= -1e-6 and data.max() <= 1.0 + 1e-6
 
 ---
 
-## Appendix: Technical Details
+## Appendix A: LDV-data Expanded Dataset
+
+### Overview
+
+A newer, more comprehensive LDV dataset is available with significantly expanded angular coverage.
+
+**Location**: `~/LDV-data/`  
+**Date**: Transferred 2025-10-25 from server 120.126.51.8  
+**Size**: 23 GB compressed, 31 GB uncompressed
+
+### Comparison with 20250709 Dataset
+
+| Feature | 20250709 Dataset | LDV-data Dataset | Improvement |
+|---------|-----------------|------------------|-------------|
+| **Total Files** | 68 files | 196 files | **2.9× more** |
+| **Angles** | 17 angles | 37 angles | **2.2× more** |
+| **Angular Range** | 30°-150° (irregular) | 0°-180° (regular 5°) | **Full hemisphere** |
+| **segment2 Files** | 17 files | 49 files | **2.9× more** |
+| **standard_file.wav** | ✅ 169 MB | ❌ Missing* | *Copy from 20250709 |
+| **test_log.txt** | ✅ 841 B | ❌ Missing* | *Copy from 20250709 |
+
+### Directory Structure
+
+```
+~/LDV-data/
+└── complete/                          (196 WAV files)
+    ├── box_deg000_segment1_complete.wav
+    ├── box_deg000_segment2_complete.wav
+    ├── box_deg005_segment1_complete.wav
+    ├── box_deg005_segment2_complete.wav
+    ├── ... (every 5° from 0° to 180°)
+    ├── box_deg180_segment1_complete.wav
+    └── box_deg180_segment2_complete.wav
+```
+
+### Angular Coverage
+
+**20250709**: 030, 045, 080, 085, 090, 095, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150 (17 angles)
+
+**LDV-data**: 000, 005, 010, 015, 020, 025, 030, 035, 040, 045, 050, 055, 060, 065, 070, 075, 080, 085, 090, 095, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180 (37 angles)
+
+### Preparation for Processing
+
+```bash
+# Step 1: Copy standard_file.wav
+cp /Users/sbplab/jiawei/datasets/20250709/20250709/standard_file.wav \
+   ~/LDV-data/standard_file.wav
+
+# Step 2: Create LDV-data_test_log.txt with expanded angle list
+# (Copy from 20250709 and update "deg" field to include all 37 angles)
+
+# Step 3: Verify
+ls -lh ~/LDV-data/standard_file.wav ~/LDV-data/LDV-data_test_log.txt
+```
+
+### Processing LDV-data
+
+Follow Stage 0-5 pipeline with LDV-data path:
+
+```bash
+# Stage 0: WAV → NPY
+python /Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py \
+  --dataset_path ~/LDV-data \
+  --material box \
+  --output_dir ~/datasets/ldv_data_output \
+  --verify
+
+# Expected output: 37 angles × 3 clips = 111 NPY files per dataset
+# Continue with Stage 1-5 as documented
+```
+
+### Benefits
+
+1. **Higher Angular Resolution**: 5° uniform spacing
+2. **Extended Coverage**: Full 0°-180° hemisphere  
+3. **Better H Matrix**: 37 angles vs 17
+4. **Improved Generalization**: More training diversity
+
+---
+
+## Appendix B: Technical Details
 
 ### A. STFT Parameters
 
@@ -1643,6 +1740,7 @@ Stage 3 Normalized NPY → STFT → Band Limit → Concatenate → NMF → USM (
 |---------|------|--------|---------|
 | 1.0 | 2025-10-24 | AI Assistant | Initial complete documentation |
 | 1.1 | 2025-10-24 | AI Assistant | Added USM training documentation (Section I) |
+| 1.2 | 2025-10-25 | AI Assistant | Verified all source files; Added LDV-data expanded dataset (Appendix A) |
 
 ---
 
