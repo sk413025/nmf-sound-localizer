@@ -124,6 +124,12 @@ class NMFLocalizationPipeline:
         if data_pack is None or not data_pack.speaker_data:
             raise ValueError("No speaker data available for USM training")
         
+        # Skip training if USM model is already loaded
+        if self.usm_model is not None:
+            logger.info("=== USM Already Loaded - Skipping Training ===")
+            logger.info(f"Using pre-loaded USM dictionary: {self.usm_model.shape}")
+            return self.usm_model
+        
         logger.info("=== USM Training ===")
         logger.info(f"Speakers: {len(data_pack.speaker_data)}")
         logger.info(f"Beta divergence: {self.config.beta}")

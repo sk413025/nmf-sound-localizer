@@ -41,6 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
     # Optional separate data sources for USM training vs testing
     p.add_argument('--usm-data-root', type=str, default=None, help='Root of USM training dataset (if different from speech-data-root)')
     p.add_argument('--test-data-root', type=str, default=None, help='Root of test dataset (if different from speech-data-root)')
+    p.add_argument('--usm-path', type=str, default=None, help='Path to pre-trained USM model .pth file (optional, skips USM training)')
+    p.add_argument('--use-all-angles-for-usm', action='store_true', help='Use all angles for USM training (default: only 90deg)')
 
     # NMF / evaluation parameters
     p.add_argument('--beta', type=float, default=0.0, help='Beta divergence (0: IS, 1: KL, 2: L2)')
@@ -110,10 +112,20 @@ def main() -> int:
         tolerance_degrees=args.tolerance_degrees,
         n_test_examples=args.n_test_examples,
         device=args.device,
+        use_90deg_only=not args.use_all_angles_for_usm,  # Disable 90deg-only if flag set
     )
 
     # Run pipeline with pre-computed TFs and separate USM/test data
     pipeline = NMFLocalizationPipeline(config)
+    
+    # Load pre-trained USM if provided
+    usm_path = Path(args.usm_path) if args.usm_path else None
+    if usm_path and usm_path.exists():
+        logger.info(f"=== USING PRE-TRAINED USM ===")
+        logger.info(f"USM model: {usm_path}")
+        pipeline.usm_trainer.load_model(str(usm_path))
+        pipeline.usm_model = pipeline.usm_trainer.W  # Access W attribute directly
+        logger.info(f"USM loaded: shape {pipeline.usm_model.shape}")
     
     # Log data source configuration
     if test_root != usm_root:
