@@ -140,11 +140,11 @@ def reduce_frequency_pca(H: torch.Tensor, W: torch.Tensor, n_components: int = 6
     H_pca = HW_pca[:, :E]  # (n_components, 37)
     W_pca = HW_pca[:, E:]  # (n_components, 8)
     
-    # Convert to tensors and normalize
+    # Convert to tensors (NO normalization to preserve magnitude diversity!)
     H_pca = torch.from_numpy(H_pca).float()
     W_pca = torch.from_numpy(W_pca).float()
-    H_pca = H_pca / (H_pca.norm(dim=0, keepdim=True) + 1e-12)
-    W_pca = W_pca / (W_pca.norm(dim=0, keepdim=True) + 1e-12)
+    # NOTE: DO NOT normalize! Normalization destroys magnitude differences
+    # between angles, making adjacent angles indistinguishable (μ_max→1)
     
     # Compute explained variance
     var_explained = pca.explained_variance_ratio_.sum()
@@ -295,10 +295,14 @@ def load_ldv_samples(dataset_root: str, H_pca: torch.Tensor, W_pca: torch.Tensor
             y_torch = torch.from_numpy(y_avg).float()
             y_torch = y_torch / (y_torch.norm() + 1e-12)
             
-            # Apply PCA projection (same as H, W)
-            y_pca = pca.transform(y_torch.cpu().numpy().reshape(1, -1))[0]  # (n_components,)
-            y_pca = torch.from_numpy(y_pca).float()
-            y_pca = y_pca / (y_pca.norm() + 1e-12)
+            # Apply PCA projection only if pca_model is provided
+            if pca is not None:
+                y_pca = pca.transform(y_torch.cpu().numpy().reshape(1, -1))[0]  # (n_components,)
+                y_pca = torch.from_numpy(y_pca).float()
+                y_pca = y_pca / (y_pca.norm() + 1e-12)
+            else:
+                # No PCA: use original frequency dimension
+                y_pca = y_torch  # Already normalized
             
             Y_list.append(y_pca)
             labels.append(angle_idx)
@@ -711,8 +715,8 @@ def main():
                         help='Number of attention heads (default: 3, must divide pca_dim)')
     parser.add_argument('--nlayers', type=int, default=1,
                         help='Number of Transformer layers (default: 1)')
-    parser.add_argument('--steps', type=int, default=6,
-                        help='Number of OMP steps (default: 6)')
+    parser.add_argument('--steps', type=int, default=2,
+                        help='Number of OMP steps (default: 2, reduced from 6 to lower task difficulty)')
     parser.add_argument('--top_e', type=int, default=2,
                         help='Top-K experts during inference (default: 2)')
     parser.add_argument('--top_l', type=int, default=2,
@@ -765,13 +769,20 @@ def main():
     # Reduce atoms (50 → 8)
     W_reduced, kmeans_labels, kmeans_model = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
     
-    # Reduce frequency (346 → 64)
-    H_pca, W_pca, pca_model = reduce_frequency_pca(H_raw, W_reduced, n_components=args.pca_dim)
+    # Apply PCA for dimensionality reduction (but without normalization to preserve angle discriminability)
+    # Max PCA components is limited by min(n_samples, n_features) = min(45, 346) = 45
+    actual_pca_dim = min(args.pca_dim, H_raw.shape[0], H_raw.shape[1] + W_reduced.shape[1])
+    print(f"\n=== Applying PCA (WITHOUT normalization) ===")
+    print(f"Target PCA dimension: {args.pca_dim}")
+    print(f"Actual PCA dimension: {actual_pca_dim} (limited by min(n_samples, n_features))")
+    print(f"Rationale: Use PCA for speed, but skip normalization to preserve magnitude diversity")
+    
+    H_pca, W_pca, pca_model = reduce_frequency_pca(H_raw, W_reduced, n_components=actual_pca_dim)
     
     # Build dictionary
     D, idx2angle = build_dictionary(H_pca, W_pca, angles)
     
-    # Load samples
+    # Load samples (no PCA transformation needed)
     Y_samples, labels, metadata = load_ldv_samples(
         args.dataset_root, H_pca, W_pca, pca_model, angles, device='cpu'
     )
@@ -787,12 +798,27 @@ def main():
     print("STEP 2: Model Initialization")
     print("=" * 80)
     
-    F = args.pca_dim
+    F = H_pca.shape[0]  # Use actual frequency dimension (346, not pca_dim)
     E = len(angles)  # 37
     M = args.n_atoms  # 8
     
+    # Adjust nhead to divide F
+    # F=346, find divisors: 1, 2, 173, 346
+    # Use nhead=2 (346/2=173 is reasonable)
+    if args.nhead is None or F % args.nhead != 0:
+        # Find a suitable divisor of F
+        for candidate in [2, 1]:  # Try 2 first, then 1
+            if F % candidate == 0:
+                nhead = candidate
+                break
+        else:
+            nhead = 1
+        print(f"  Auto-adjusted nhead to {nhead} (must divide F={F})")
+    else:
+        nhead = args.nhead
+    
     model = FullTransformerRoutedSoftOMP(
-        F=F, E=E, M=M, d=F, nhead=args.nhead, nlayers=args.nlayers,
+        F=F, E=E, M=M, d=F, nhead=nhead, nlayers=args.nlayers,
         steps=args.steps, top_e=args.top_e, L=args.top_l,
         tau_e=0.5, tau_a=0.2, eta=0.5, routing='gumbel'
     ).to(args.device)
@@ -803,7 +829,7 @@ def main():
     print(f"  M (atoms/expert): {M}")
     print(f"  P (total atoms): {E * M}")
     print(f"  d_model: {F}")
-    print(f"  nhead: {args.nhead}")
+    print(f"  nhead: {nhead}")
     print(f"  nlayers: {args.nlayers}")
     print(f"  Total parameters: {sum(p.numel() for p in model.parameters()):,}")
     print(f"  Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
