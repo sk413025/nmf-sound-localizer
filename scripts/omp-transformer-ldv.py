@@ -464,7 +464,8 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 opt: torch.optim.Optimizer, idx2angle: List[Tuple[float, int]],
                 batch_size: int = 16, device='cpu',
                 alpha: float = 1.0, beta: float = 0.2, gamma: float = 0.5,
-                epoch: int | None = None, diag_path: str | None = None, diag_subset: int = 16):
+                epoch: int | None = None, diag_path: str | None = None, diag_subset: int = 16,
+                teacher_warmup_epochs: int = 0, teacher_weight: float = 0.0):
     """
     Train for one epoch on real LDV data.
     
@@ -490,6 +491,7 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
     rec_losses = []
     mono_losses = []
     class_losses = []
+    teacher_losses = []
     total_losses = []
     
     # Diagnostics accumulators (subset)
@@ -510,6 +512,7 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         rec_loss = 0.0
         mono_loss = 0.0
         class_loss = 0.0
+        teacher_loss = 0.0
         
         for b in range(yb.size(0)):
             # Forward pass
@@ -531,6 +534,13 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
             x_by_expert = x_hat.reshape(model.E, model.M).abs().sum(dim=1)  # (E,)
             logits = x_by_expert
             class_loss = class_loss + F.cross_entropy(logits.unsqueeze(0), lb[b].unsqueeze(0))
+
+            # Optional teacher warm-up: supervise per-angle logits with |g|-based teacher
+            if (epoch is not None) and (teacher_weight > 0.0) and (epoch < teacher_warmup_epochs):
+                g_vec_tw = (D.to(device).T @ yb[b])
+                g_energy_tw = g_vec_tw.abs().view(model.E, model.M).sum(dim=1)
+                teacher_label = torch.argmax(g_energy_tw)
+                teacher_loss = teacher_loss + F.cross_entropy(logits.unsqueeze(0), teacher_label.unsqueeze(0))
 
             # Diagnostics: teacher (|g|) vs QK alignment on a small subset
             if model.enable_diag:
@@ -564,9 +574,10 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         rec_loss /= yb.size(0)
         mono_loss /= yb.size(0)
         class_loss /= yb.size(0)
+        teacher_loss = (teacher_loss / yb.size(0)) if (teacher_weight > 0.0 and epoch is not None and epoch < teacher_warmup_epochs) else 0.0
         
         # Total loss
-        loss = alpha * rec_loss + beta * mono_loss + gamma * class_loss
+        loss = alpha * rec_loss + beta * mono_loss + gamma * class_loss + (teacher_weight * teacher_loss if isinstance(teacher_loss, torch.Tensor) else 0.0)
         
         # Backward
         opt.zero_grad()
@@ -597,6 +608,7 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         mono_losses.append(mono_loss.item())
         class_losses.append(class_loss.item())
         total_losses.append(loss.item())
+        teacher_losses.append(float(teacher_loss.item()) if isinstance(teacher_loss, torch.Tensor) else 0.0)
     
     # Persist per-epoch diagnostics JSONL
     if diag_path is not None and epoch is not None:
@@ -606,6 +618,7 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 'rec_loss': float(np.mean(rec_losses)) if rec_losses else None,
                 'mono_loss': float(np.mean(mono_losses)) if mono_losses else None,
                 'class_loss': float(np.mean(class_losses)) if class_losses else None,
+                'teacher_loss': float(np.mean(teacher_losses)) if teacher_losses else None,
                 'total_loss': float(np.mean(total_losses)) if total_losses else None,
                 'teacher_samples': int(diag_seen),
                 'teacher_acc_subset': float(teacher_correct / max(1, diag_seen)),
@@ -629,6 +642,7 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         'mono_loss': np.mean(mono_losses),
         'class_loss': np.mean(class_losses),
         'total_loss': np.mean(total_losses),
+        'teacher_loss': float(np.mean(teacher_losses)) if teacher_losses else 0.0,
         'teacher_acc_subset': (teacher_correct / max(1, diag_seen)) if diag_seen > 0 else None,
         'qk_g_corr_pearson_mean': (float(np.mean(qk_g_corrs)) if qk_g_corrs else None)
     }
@@ -740,6 +754,22 @@ def main():
                         help='Monotonicity loss weight (default: 0.2)')
     parser.add_argument('--gamma', type=float, default=0.5,
                         help='Classification loss weight (default: 0.5)')
+    # Routing temperature annealing
+    parser.add_argument('--tau_e_start', type=float, default=1.0,
+                        help='Initial expert temperature for routing (default: 1.0)')
+    parser.add_argument('--tau_e_end', type=float, default=0.2,
+                        help='Final expert temperature for routing (default: 0.2)')
+    parser.add_argument('--tau_a_start', type=float, default=1.0,
+                        help='Initial atom temperature for routing (default: 1.0)')
+    parser.add_argument('--tau_a_end', type=float, default=0.2,
+                        help='Final atom temperature for routing (default: 0.2)')
+    parser.add_argument('--tau_anneal_epochs', type=int, default=30,
+                        help='Epochs over which to anneal temperatures linearly (default: 30)')
+    # Teacher warm-up
+    parser.add_argument('--teacher_warmup_epochs', type=int, default=10,
+                        help='Number of initial epochs to include teacher CE from |g| per-angle (default: 10)')
+    parser.add_argument('--teacher_weight', type=float, default=0.5,
+                        help='Weight of teacher CE loss during warm-up (default: 0.5)')
     
     # Output
     parser.add_argument('--out_dir', type=str, default=None,
@@ -867,11 +897,20 @@ def main():
     best_epoch = 0
     
     for epoch in range(args.epochs):
+        # Temperature annealing (linear)
+        if args.tau_anneal_epochs > 0:
+            t = min(1.0, epoch / float(max(1, args.tau_anneal_epochs)))
+            tau_e_cur = args.tau_e_start + t * (args.tau_e_end - args.tau_e_start)
+            tau_a_cur = args.tau_a_start + t * (args.tau_a_end - args.tau_a_start)
+            with torch.no_grad():
+                model.tau_e.data.fill_(float(tau_e_cur))
+                model.tau_a.data.fill_(float(tau_a_cur))
         metrics = train_epoch(
             model, D, Y_samples, labels, opt, idx2angle,
             batch_size=args.batch_size, device=args.device,
             alpha=args.alpha, beta=args.beta, gamma=args.gamma,
-            epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=16
+            epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=16,
+            teacher_warmup_epochs=args.teacher_warmup_epochs, teacher_weight=args.teacher_weight
         )
         
         train_history.append(metrics)

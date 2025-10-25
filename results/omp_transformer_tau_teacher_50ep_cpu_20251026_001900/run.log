@@ -1,0 +1,214 @@
+================================================================================
+Transformer Routed Soft-OMP with Real LDV Data
+================================================================================
+Output directory: results/omp_transformer_tau_teacher_50ep_cpu_20251026_001900
+
+================================================================================
+STEP 1: Data Loading and Preprocessing
+================================================================================
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: doa_normalized_config_c_corrected/models/usm.pth
+Raw data loaded:
+  H shape: torch.Size([346, 37]), range: [0.000677, 0.148538]
+  W shape: torch.Size([346, 50]), range: [0.000000, 0.210976]
+  Angles: 37 total, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+
+=== Atom Reduction via K-means ===
+Input: W shape torch.Size([346, 50]) (346 freq bins × 50 atoms)
+Target: 8 clusters
+K-means completed:
+  Centroids shape: torch.Size([346, 8])
+  Cluster sizes: [1, 3, 3, 1, 1, 1, 1, 39]
+  Reconstruction error: 1.6212 (162.12%)
+
+=== Using Full Frequency Resolution (NO PCA) ===
+H shape: torch.Size([346, 37])
+W shape: torch.Size([346, 8])
+Rationale: PCA may discard low-variance but high-discriminability features
+           Greedy achieves 83.8% with F=346; test if Transformer needs full info too
+
+=== Building Dictionary ===
+Dictionary built:
+  Shape: torch.Size([346, 296]) (F=346, P=296)
+  Mutual coherence μ_max: 0.9954
+  Mutual coherence μ_mean: 0.4474
+  Index mapping: 296 entries
+
+=== Loading LDV Samples with DoADataset ===
+Dataset root: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized
+DoADataset created:
+  Total samples: 111
+  Angles: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz
+  Using scipy.signal.stft with DC offset removal
+
+Loaded samples:
+  Y_samples: torch.Size([111, 346])
+  Labels: torch.Size([111]), unique angles: 37
+  Metadata: 111 entries
+Dataset fingerprint (MD5): 713c0635878a04b32f4ee30208904d11
+  Computed from 111 .npy files
+
+================================================================================
+STEP 2: Model Initialization
+================================================================================
+
+=== Parameter Reduction Strategy ===
+  Input frequency dimension F: 346
+  Transformer embedding dimension d: 64
+  Ratio d/F: 0.185
+  Token projection size: 2 × (346 × 64) = 44,288 parameters
+  (vs naive F×F: 2 × (346 × 346) = 239,432 parameters)
+  Parameter reduction: 81.5%
+
+Model architecture:
+  F (input freq dim): 346
+  d_model (embedding dim): 64
+  E (experts/angles): 37
+  M (atoms/expert): 8
+  P (total atoms): 296
+  nhead: 2
+  nlayers: 1
+  Total parameters: 102,595
+  Trainable parameters: 102,595
+
+================================================================================
+STEP 3: Training
+================================================================================
+Epoch   1/50: loss=3.6121 rec=0.0015 mono=0.0000 class=3.6106 acc=0.054 teach=1.000 align=0.079 tau_e=1.000 tau_a=1.000 eta=0.509
+Epoch   2/50: loss=3.6080 rec=0.0014 mono=0.0000 class=3.6066
+Epoch   3/50: loss=3.6114 rec=0.0014 mono=0.0000 class=3.6100
+Epoch   4/50: loss=3.6120 rec=0.0014 mono=0.0000 class=3.6106
+Epoch   5/50: loss=3.6048 rec=0.0014 mono=0.0000 class=3.6034
+Epoch   6/50: loss=3.6028 rec=0.0014 mono=0.0000 class=3.6013
+Epoch   7/50: loss=3.6032 rec=0.0014 mono=0.0000 class=3.6018
+Epoch   8/50: loss=3.6118 rec=0.0014 mono=0.0000 class=3.6105
+Epoch   9/50: loss=3.6157 rec=0.0014 mono=0.0000 class=3.6143
+Epoch  10/50: loss=3.6011 rec=0.0014 mono=0.0000 class=3.5997 acc=0.054 teach=1.000 align=-0.011 tau_e=0.760 tau_a=0.760 eta=0.582
+Epoch  11/50: loss=1.8077 rec=0.0014 mono=0.0000 class=3.6126
+Epoch  12/50: loss=1.8080 rec=0.0013 mono=0.0000 class=3.6134
+Epoch  13/50: loss=1.8075 rec=0.0013 mono=0.0000 class=3.6123
+Epoch  14/50: loss=1.8049 rec=0.0014 mono=0.0000 class=3.6071
+Epoch  15/50: loss=1.8062 rec=0.0013 mono=0.0000 class=3.6098
+Epoch  16/50: loss=1.8038 rec=0.0014 mono=0.0000 class=3.6049
+Epoch  17/50: loss=1.8054 rec=0.0014 mono=0.0000 class=3.6081
+Epoch  18/50: loss=1.8034 rec=0.0014 mono=0.0000 class=3.6041
+Epoch  19/50: loss=1.8046 rec=0.0013 mono=0.0000 class=3.6066
+Epoch  20/50: loss=1.8058 rec=0.0014 mono=0.0000 class=3.6088 acc=0.027 teach=1.000 align=0.026 tau_e=0.493 tau_a=0.493 eta=0.614
+Epoch  21/50: loss=1.8074 rec=0.0014 mono=0.0000 class=3.6121
+Epoch  22/50: loss=1.8038 rec=0.0014 mono=0.0000 class=3.6049
+Epoch  23/50: loss=1.8003 rec=0.0014 mono=0.0000 class=3.5977
+Epoch  24/50: loss=1.8090 rec=0.0014 mono=0.0000 class=3.6152
+Epoch  25/50: loss=1.8104 rec=0.0014 mono=0.0000 class=3.6180
+Epoch  26/50: loss=1.8046 rec=0.0014 mono=0.0000 class=3.6063
+Epoch  27/50: loss=1.8021 rec=0.0015 mono=0.0000 class=3.6012
+Epoch  28/50: loss=1.8097 rec=0.0015 mono=0.0000 class=3.6166
+Epoch  29/50: loss=1.8068 rec=0.0015 mono=0.0000 class=3.6106
+Epoch  30/50: loss=1.8072 rec=0.0015 mono=0.0000 class=3.6115 acc=0.054 teach=1.000 align=0.015 tau_e=0.227 tau_a=0.227 eta=0.629
+Epoch  31/50: loss=1.8017 rec=0.0014 mono=0.0000 class=3.6006
+Epoch  32/50: loss=1.8062 rec=0.0014 mono=0.0000 class=3.6096
+Epoch  33/50: loss=1.8096 rec=0.0015 mono=0.0000 class=3.6163
+Epoch  34/50: loss=1.8047 rec=0.0015 mono=0.0000 class=3.6065
+Epoch  35/50: loss=1.8009 rec=0.0014 mono=0.0000 class=3.5989
+Epoch  36/50: loss=1.8077 rec=0.0014 mono=0.0000 class=3.6126
+Epoch  37/50: loss=1.8084 rec=0.0014 mono=0.0000 class=3.6140
+Epoch  38/50: loss=1.8022 rec=0.0014 mono=0.0000 class=3.6016
+Epoch  39/50: loss=1.8087 rec=0.0014 mono=0.0000 class=3.6145
+Epoch  40/50: loss=1.7908 rec=0.0014 mono=0.0000 class=3.5789 acc=0.000 teach=1.000 align=-0.038 tau_e=0.200 tau_a=0.200 eta=0.654
+Epoch  41/50: loss=1.8082 rec=0.0014 mono=0.0000 class=3.6136
+Epoch  42/50: loss=1.8058 rec=0.0014 mono=0.0000 class=3.6088
+Epoch  43/50: loss=1.8080 rec=0.0014 mono=0.0000 class=3.6131
+Epoch  44/50: loss=1.8052 rec=0.0014 mono=0.0000 class=3.6077
+Epoch  45/50: loss=1.8106 rec=0.0014 mono=0.0000 class=3.6183
+Epoch  46/50: loss=1.8066 rec=0.0014 mono=0.0000 class=3.6103
+Epoch  47/50: loss=1.8086 rec=0.0014 mono=0.0000 class=3.6143
+Epoch  48/50: loss=1.8080 rec=0.0014 mono=0.0000 class=3.6132
+Epoch  49/50: loss=1.8093 rec=0.0014 mono=0.0000 class=3.6157
+Epoch  50/50: loss=1.8077 rec=0.0014 mono=0.0000 class=3.6126 acc=0.054 teach=1.000 align=0.002 tau_e=0.200 tau_a=0.200 eta=0.644
+
+================================================================================
+STEP 4: Final Evaluation
+================================================================================
+
+Final Results (Best model from epoch 1):
+  Overall accuracy: 0.054 (5.4%)
+  Baseline (commit b573aa6): 0.838 (83.8%)
+
+Per-angle accuracy:
+  Angle   0°: 0.000 (  0.0%) - 3 samples
+  Angle   5°: 0.000 (  0.0%) - 3 samples
+  Angle  10°: 0.000 (  0.0%) - 3 samples
+  Angle  15°: 0.000 (  0.0%) - 3 samples
+  Angle  20°: 0.000 (  0.0%) - 3 samples
+  Angle  25°: 0.000 (  0.0%) - 3 samples
+  Angle  30°: 1.000 (100.0%) - 3 samples
+  Angle  35°: 0.000 (  0.0%) - 3 samples
+  Angle  40°: 0.000 (  0.0%) - 3 samples
+  Angle  45°: 0.000 (  0.0%) - 3 samples
+  Angle  50°: 0.000 (  0.0%) - 3 samples
+  Angle  55°: 0.000 (  0.0%) - 3 samples
+  Angle  60°: 0.000 (  0.0%) - 3 samples
+  Angle  65°: 0.000 (  0.0%) - 3 samples
+  Angle  70°: 0.000 (  0.0%) - 3 samples
+  Angle  75°: 0.000 (  0.0%) - 3 samples
+  Angle  80°: 0.000 (  0.0%) - 3 samples
+  Angle  85°: 0.000 (  0.0%) - 3 samples
+  Angle  90°: 0.000 (  0.0%) - 3 samples
+  Angle  95°: 0.000 (  0.0%) - 3 samples
+  Angle 100°: 0.000 (  0.0%) - 3 samples
+  Angle 105°: 0.000 (  0.0%) - 3 samples
+  Angle 110°: 0.000 (  0.0%) - 3 samples
+  Angle 115°: 0.000 (  0.0%) - 3 samples
+  Angle 120°: 0.000 (  0.0%) - 3 samples
+  Angle 125°: 0.000 (  0.0%) - 3 samples
+  Angle 130°: 0.000 (  0.0%) - 3 samples
+  Angle 135°: 1.000 (100.0%) - 3 samples
+  Angle 140°: 0.000 (  0.0%) - 3 samples
+  Angle 145°: 0.000 (  0.0%) - 3 samples
+  Angle 150°: 0.000 (  0.0%) - 3 samples
+  Angle 155°: 0.000 (  0.0%) - 3 samples
+  Angle 160°: 0.000 (  0.0%) - 3 samples
+  Angle 165°: 0.000 (  0.0%) - 3 samples
+  Angle 170°: 0.000 (  0.0%) - 3 samples
+  Angle 175°: 0.000 (  0.0%) - 3 samples
+  Angle 180°: 0.000 (  0.0%) - 3 samples
+
+Problematic angles from baseline:
+   15°: 0.000 (STILL PROBLEMATIC)
+   35°: 0.000 (STILL PROBLEMATIC)
+   50°: 0.000 (STILL PROBLEMATIC)
+   70°: 0.000 (STILL PROBLEMATIC)
+  105°: 0.000 (STILL PROBLEMATIC)
+  120°: 0.000 (STILL PROBLEMATIC)
+
+================================================================================
+STEP 5: Visualization
+================================================================================
+Saved figure: results/omp_transformer_tau_teacher_50ep_cpu_20251026_001900/results.png
+
+================================================================================
+STEP 6: Saving Results
+================================================================================
+All results saved to: results/omp_transformer_tau_teacher_50ep_cpu_20251026_001900
+
+================================================================================
+DONE
+================================================================================
+
+/Users/sbplab/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/qn/5145q64554qf0r2sm6g4xt4h0000gn/T/matplotlib-j7ws2llq because there was an issue with the default path (/Users/sbplab/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Matplotlib is building the font cache; this may take a moment.
+/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/omp-transformer-ldv.py:453: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  res_curve.append(float(torch.norm(r)))
+
