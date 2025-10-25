@@ -4,7 +4,8 @@
 Transformer Routed Soft-OMP with Real LDV Data
 - Uses real H matrix (37 angles, Original→Box transfer functions)
 - Uses real W matrix (50-atom USM from 111 speakers)
-- Preprocessing: K-means atom reduction (50→8) + PCA frequency reduction (346→64)
+- Preprocessing: K-means atom reduction (50→8), NO PCA (use full F=346)
+- Parameter reduction: d_model < F to reduce Transformer parameters
 - Training: Reconstruction + monotonicity + angle classification
 - Evaluation: Compare with greedy Soft-OMP baseline (83.8% accuracy)
 
@@ -22,8 +23,10 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 from datetime import datetime
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
 from scipy import signal as scipy_signal
+
+# Import DoADataset for proper STFT processing (matches b573aa6)
+from doa_rl.data import DoADataset, create_dataloader
 
 torch.manual_seed(42)
 np.random.seed(42)
@@ -98,66 +101,6 @@ def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int 
     return W_reduced, labels, kmeans
 
 
-def reduce_frequency_pca(H: torch.Tensor, W: torch.Tensor, n_components: int = 64, random_state: int = 42):
-    """
-    Reduce frequency dimension from 346 → n_components using PCA on [H | W].
-    
-    Args:
-        H: (F, E) where F=346, E=37 angles
-        W: (F, M) where F=346, M=8 atoms (after K-means)
-        n_components: Target frequency dimension (default: 64)
-    
-    Returns:
-        H_pca: (n_components, E)
-        W_pca: (n_components, M)
-        pca: fitted PCA object
-    """
-    print(f"\n=== Frequency Reduction via PCA ===")
-    print(f"Input: H {H.shape}, W {W.shape}")
-    
-    # Concatenate for joint PCA
-    HW = torch.cat([H, W], dim=1).cpu().numpy()  # (346, 37+8=45)
-    print(f"Joint matrix [H|W]: {HW.shape}")
-    
-    # Adjust n_components if necessary (must be <= min(n_samples, n_features))
-    n_samples_pca = HW.shape[1]  # 45 (angles + atoms)
-    n_features_pca = HW.shape[0]  # 346 (freq bins)
-    max_components = min(n_samples_pca, n_features_pca)
-    
-    if n_components > max_components:
-        print(f"  WARNING: n_components={n_components} > max_components={max_components}")
-        print(f"  Adjusting to n_components={max_components}")
-        n_components = max_components
-    
-    print(f"Target: {n_components} frequency components")
-    
-    # PCA on transposed data (samples are angles+atoms)
-    pca = PCA(n_components=n_components, random_state=random_state)
-    HW_pca = pca.fit_transform(HW.T).T  # (n_components, 45)
-    
-    # Split back
-    E = H.shape[1]  # 37
-    H_pca = HW_pca[:, :E]  # (n_components, 37)
-    W_pca = HW_pca[:, E:]  # (n_components, 8)
-    
-    # Convert to tensors (NO normalization to preserve magnitude diversity!)
-    H_pca = torch.from_numpy(H_pca).float()
-    W_pca = torch.from_numpy(W_pca).float()
-    # NOTE: DO NOT normalize! Normalization destroys magnitude differences
-    # between angles, making adjacent angles indistinguishable (μ_max→1)
-    
-    # Compute explained variance
-    var_explained = pca.explained_variance_ratio_.sum()
-    
-    print(f"PCA completed:")
-    print(f"  H_pca shape: {H_pca.shape}")
-    print(f"  W_pca shape: {W_pca.shape}")
-    print(f"  Variance explained: {var_explained:.4f} ({var_explained*100:.2f}%)")
-    print(f"  Top 5 components: {pca.explained_variance_ratio_[:5]}")
-    
-    return H_pca, W_pca, pca
-
-
 def build_dictionary(H: torch.Tensor, W: torch.Tensor, angles: np.ndarray):
     """
     Build dictionary D = H ⊙ W (outer product over all combinations).
@@ -203,123 +146,80 @@ def build_dictionary(H: torch.Tensor, W: torch.Tensor, angles: np.ndarray):
     return D, idx2angle
 
 
-def load_ldv_samples(dataset_root: str, H_pca: torch.Tensor, W_pca: torch.Tensor, 
-                     pca: PCA, angles_target: np.ndarray, device='cpu'):
+def load_ldv_samples(dataset_root: str, H: torch.Tensor, W: torch.Tensor, 
+                     angles_target: np.ndarray, device='cpu'):
     """
-    Load all LDV samples (37 angles × 3 clips = 111 samples).
-    Apply same STFT processing as H estimation, then PCA projection.
+    Load all LDV samples using DoADataset (matching b573aa6 STFT processing).
+    
+    CRITICAL: Uses DoADataset with scipy.signal.stft (DC offset removal, detrend='constant')
+    instead of custom torch.stft to ensure 83.8% greedy baseline accuracy.
     
     Args:
-        dataset_root: Path to white_noise_box_data_no_edge_sync_vad/
-        H_pca: (F_pca, E) PCA-reduced H for reference
-        W_pca: (F_pca, M) PCA-reduced W for reference
-        pca: Fitted PCA object from preprocessing
+        dataset_root: Path to white_noise_box_data_no_edge_sync_vad_normalized/
+        H: (F, E) where F=346, E=37 angles (NO PCA)
+        W: (F, M) where F=346, M=8 atoms (NO PCA)
         angles_target: (37,) Expected angles array
         
     Returns:
-        Y_samples: (N, F_pca) where N=111, F_pca=45
+        Y_samples: (N, F) where N=111, F=346 (full frequency resolution)
         labels: (N,) angle indices (0-36)
         metadata: List of dicts with angle_deg, clip_id, file_path
     """
-    print(f"\n=== Loading LDV Samples ===")
+    print(f"\n=== Loading LDV Samples with DoADataset ===")
     print(f"Dataset root: {dataset_root}")
     
-    root = Path(dataset_root)
-    if not root.exists():
-        raise FileNotFoundError(f"Dataset root not found: {dataset_root}")
+    # Create DoADataset (SAME as b573aa6 greedy evaluation)
+    angles_list = angles_target.tolist()
+    dataset = DoADataset(
+        root=dataset_root,
+        angles=angles_list,
+        fs=16000,
+        n_fft=2048,
+        window='hann',
+        freq_min=300.0,
+        freq_max=3000.0
+    )
     
-    # STFT parameters (matching H estimation from commit dd1e20d)
-    # From H matrix metadata: nperseg=2048, noverlap=1536, fs=16000
-    fs = 16000
-    n_fft = 2048
-    hop_length = 512  # noverlap = 2048 - 512 = 1536
-    freq_min = 300
-    freq_max = 3000
+    print(f"DoADataset created:")
+    print(f"  Total samples: {len(dataset)}")
+    print(f"  Angles: {angles_list}")
+    print(f"  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz")
+    print(f"  Using scipy.signal.stft with DC offset removal")
     
-    print(f"STFT parameters (matching H matrix):")
-    print(f"  fs: {fs}, n_fft: {n_fft}, hop_length: {hop_length}")
-    print(f"  noverlap: {n_fft - hop_length}")
-    print(f"  Frequency band: [{freq_min}, {freq_max}] Hz")
-    
+    # Load all samples
     Y_list = []
     labels = []
     metadata = []
     
-    angle_dirs = sorted([d for d in root.iterdir() if d.is_dir() and d.name.startswith('angle_')])
-    print(f"Found {len(angle_dirs)} angle directories")
+    dataloader = create_dataloader(dataset, batch_size=1, shuffle=False)
     
-    for angle_dir in angle_dirs:
-        # Parse angle from directory name
-        angle_str = angle_dir.name.split('_')[1]
-        angle_deg = int(angle_str)
+    for batch in dataloader:
+        Y = batch['Y'][0]  # (F, N) where F=346, N=time frames
+        angle_deg = float(batch['angle_deg'][0])
+        angle_idx = int(batch['angle_index'][0])
+        path = batch['path'][0]
         
-        # Find corresponding index in angles_target
-        angle_idx = np.where(angles_target == angle_deg)[0]
-        if len(angle_idx) == 0:
-            print(f"  WARNING: Angle {angle_deg}° not in target angles, skipping")
-            continue
-        angle_idx = angle_idx[0]
+        # Time-average to get single spectrum (matching b573aa6)
+        y = Y.mean(dim=1)  # (F,) where F=346
         
-        # Load all .npy files in this directory
-        npy_files = sorted(angle_dir.glob('*.npy'))
+        # Normalize
+        y = y / (y.norm() + 1e-12)
         
-        for npy_file in npy_files:
-            # Load audio waveform
-            audio = np.load(npy_file)  # (T,) time-domain signal
-            
-            # Compute STFT
-            freqs, times, Zxx = scipy_signal.stft(
-                audio,
-                fs=fs,
-                nperseg=n_fft,
-                noverlap=n_fft - hop_length,
-                window='hann'
-            )
-            
-            # Get magnitude
-            magnitude = np.abs(Zxx)  # (freq_bins, time_frames)
-            
-            # Apply frequency band mask [300, 3000] Hz
-            freq_mask = (freqs >= freq_min) & (freqs <= freq_max)
-            magnitude_band = magnitude[freq_mask, :]  # Should be (346, time_frames)
-            
-            if magnitude_band.shape[0] != 346:
-                print(f"  WARNING: Expected 346 freq bins, got {magnitude_band.shape[0]} for {npy_file}")
-                print(f"  Frequency range: {freqs[freq_mask].min():.1f} - {freqs[freq_mask].max():.1f} Hz")
-                continue
-            
-            # Time-average to get single spectrum per sample
-            y_avg = magnitude_band.mean(axis=1)  # (346,)
-            
-            # Normalize
-            y_torch = torch.from_numpy(y_avg).float()
-            y_torch = y_torch / (y_torch.norm() + 1e-12)
-            
-            # Apply PCA projection only if pca_model is provided
-            if pca is not None:
-                y_pca = pca.transform(y_torch.cpu().numpy().reshape(1, -1))[0]  # (n_components,)
-                y_pca = torch.from_numpy(y_pca).float()
-                y_pca = y_pca / (y_pca.norm() + 1e-12)
-            else:
-                # No PCA: use original frequency dimension
-                y_pca = y_torch  # Already normalized
-            
-            Y_list.append(y_pca)
-            labels.append(angle_idx)
-            metadata.append({
-                'angle_deg': angle_deg,
-                'angle_idx': angle_idx,
-                'clip_id': npy_file.stem,
-                'file_path': str(npy_file)
-            })
+        # Use full frequency resolution (NO PCA projection)
+        y_final = y.to(device)
         
-        if len(npy_files) > 0:
-            print(f"  Angle {angle_deg:3d}° (index {angle_idx:2d}): {len(npy_files)} clips loaded")
+        Y_list.append(y_final)
+        labels.append(angle_idx)
+        metadata.append({
+            'angle_deg': angle_deg,
+            'angle_idx': angle_idx,
+            'path': path
+        })
     
     if len(Y_list) == 0:
-        raise ValueError("No samples loaded! Check dataset_root and frequency band parameters.")
+        raise ValueError("No samples loaded! Check dataset_root and angles.")
     
-    Y_samples = torch.stack(Y_list).to(device)  # (N, F_pca)
+    Y_samples = torch.stack(Y_list, dim=0)  # (N, F_pca)
     labels = torch.tensor(labels, dtype=torch.long).to(device)  # (N,)
     
     print(f"\nLoaded samples:")
@@ -707,12 +607,12 @@ def main():
     # Preprocessing
     parser.add_argument('--n_atoms', type=int, default=8,
                         help='Number of atoms after K-means clustering (default: 8)')
-    parser.add_argument('--pca_dim', type=int, default=45,
-                        help='Frequency dimension after PCA (default: 45, max=37+n_atoms)')
     
     # Model architecture
-    parser.add_argument('--nhead', type=int, default=3,
-                        help='Number of attention heads (default: 3, must divide pca_dim)')
+    parser.add_argument('--d_model', type=int, default=64,
+                        help='Transformer embedding dimension (default: 64, must be < F=346 to reduce parameters)')
+    parser.add_argument('--nhead', type=int, default=2,
+                        help='Number of attention heads (default: 2, must divide d_model)')
     parser.add_argument('--nlayers', type=int, default=1,
                         help='Number of Transformer layers (default: 1)')
     parser.add_argument('--steps', type=int, default=2,
@@ -769,22 +669,22 @@ def main():
     # Reduce atoms (50 → 8)
     W_reduced, kmeans_labels, kmeans_model = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
     
-    # Apply PCA for dimensionality reduction (but without normalization to preserve angle discriminability)
-    # Max PCA components is limited by min(n_samples, n_features) = min(45, 346) = 45
-    actual_pca_dim = min(args.pca_dim, H_raw.shape[0], H_raw.shape[1] + W_reduced.shape[1])
-    print(f"\n=== Applying PCA (WITHOUT normalization) ===")
-    print(f"Target PCA dimension: {args.pca_dim}")
-    print(f"Actual PCA dimension: {actual_pca_dim} (limited by min(n_samples, n_features))")
-    print(f"Rationale: Use PCA for speed, but skip normalization to preserve magnitude diversity")
+    # NO PCA - use full frequency resolution (F=346)
+    print(f"\n=== Using Full Frequency Resolution (NO PCA) ===")
+    print(f"H shape: {H_raw.shape}")  # (346, 37)
+    print(f"W shape: {W_reduced.shape}")  # (346, 8)
+    print(f"Rationale: PCA may discard low-variance but high-discriminability features")
+    print(f"           Greedy achieves 83.8% with F=346; test if Transformer needs full info too")
     
-    H_pca, W_pca, pca_model = reduce_frequency_pca(H_raw, W_reduced, n_components=actual_pca_dim)
+    H_final = H_raw
+    W_final = W_reduced
     
     # Build dictionary
-    D, idx2angle = build_dictionary(H_pca, W_pca, angles)
+    D, idx2angle = build_dictionary(H_final, W_final, angles)
     
-    # Load samples (no PCA transformation needed)
+    # Load samples
     Y_samples, labels, metadata = load_ldv_samples(
-        args.dataset_root, H_pca, W_pca, pca_model, angles, device='cpu'
+        args.dataset_root, H_final, W_final, angles, device='cpu'
     )
     
     # Compute dataset fingerprint
@@ -798,37 +698,46 @@ def main():
     print("STEP 2: Model Initialization")
     print("=" * 80)
     
-    F = H_pca.shape[0]  # Use actual frequency dimension (346, not pca_dim)
+    F = H_final.shape[0]  # Full frequency dimension: 346
     E = len(angles)  # 37
     M = args.n_atoms  # 8
+    d = args.d_model  # 64 (default)
     
-    # Adjust nhead to divide F
-    # F=346, find divisors: 1, 2, 173, 346
-    # Use nhead=2 (346/2=173 is reasonable)
-    if args.nhead is None or F % args.nhead != 0:
-        # Find a suitable divisor of F
-        for candidate in [2, 1]:  # Try 2 first, then 1
-            if F % candidate == 0:
+    # Adjust nhead to divide d_model (not F)
+    # d=64, divisors: 1, 2, 4, 8, 16, 32, 64
+    # Use nhead=2 by default
+    if args.d_model % args.nhead != 0:
+        # Find a suitable divisor of d_model
+        for candidate in [2, 4, 8, 1]:
+            if args.d_model % candidate == 0:
                 nhead = candidate
                 break
         else:
             nhead = 1
-        print(f"  Auto-adjusted nhead to {nhead} (must divide F={F})")
+        print(f"  Auto-adjusted nhead to {nhead} (must divide d_model={args.d_model})")
     else:
         nhead = args.nhead
     
+    print(f"\n=== Parameter Reduction Strategy ===")
+    print(f"  Input frequency dimension F: {F}")
+    print(f"  Transformer embedding dimension d: {d}")
+    print(f"  Ratio d/F: {d/F:.3f}")
+    print(f"  Token projection size: 2 × ({F} × {d}) = {2*F*d:,} parameters")
+    print(f"  (vs naive F×F: 2 × ({F} × {F}) = {2*F*F:,} parameters)")
+    print(f"  Parameter reduction: {100*(1 - d/F):.1f}%")
+    
     model = FullTransformerRoutedSoftOMP(
-        F=F, E=E, M=M, d=F, nhead=nhead, nlayers=args.nlayers,
+        F=F, E=E, M=M, d=d, nhead=nhead, nlayers=args.nlayers,
         steps=args.steps, top_e=args.top_e, L=args.top_l,
         tau_e=0.5, tau_a=0.2, eta=0.5, routing='gumbel'
     ).to(args.device)
     
-    print(f"Model architecture:")
-    print(f"  F (freq dim): {F}")
+    print(f"\nModel architecture:")
+    print(f"  F (input freq dim): {F}")
+    print(f"  d_model (embedding dim): {d}")
     print(f"  E (experts/angles): {E}")
     print(f"  M (atoms/expert): {M}")
     print(f"  P (total atoms): {E * M}")
-    print(f"  d_model: {F}")
     print(f"  nhead: {nhead}")
     print(f"  nlayers: {args.nlayers}")
     print(f"  Total parameters: {sum(p.numel() for p in model.parameters()):,}")
@@ -1013,15 +922,14 @@ def main():
     with open(os.path.join(args.out_dir, 'code_state.json'), 'w') as f:
         json.dump(code_state, f, indent=2)
     
-    # Save preprocessing artifacts
+    # Save preprocessing artifacts (NO PCA)
     torch.save({
-        'H_pca': H_pca,
-        'W_pca': W_pca,
+        'H': H_final,
+        'W': W_final,
         'D': D,
         'idx2angle': idx2angle,
         'angles': angles,
-        'kmeans_labels': kmeans_labels,
-        'pca': pca_model
+        'kmeans_labels': kmeans_labels
     }, os.path.join(args.out_dir, 'preprocessing.pth'))
     
     print(f"All results saved to: {args.out_dir}")
