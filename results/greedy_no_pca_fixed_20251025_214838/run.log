@@ -1,0 +1,38 @@
+Output directory: results/greedy_no_pca_fixed_20251025_214838
+Device: cpu
+Loading H from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+  H shape: torch.Size([346, 37]), range: [0.001, 0.149]
+Loading W from: doa_normalized_config_c_corrected/models/usm.pth
+  W shape: torch.Size([346, 50]), range: [0.000, 0.211]
+
+Loading dataset from: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized
+STFT: n_fft=2048, hop_length=512, fs=16000
+Band: [300, 3000]Hz -> 346 freq bins
+Loaded 111 samples from 37 angles
+Y_samples shape: torch.Size([111, 346]), labels shape: torch.Size([111])
+
+Dictionary: D shape torch.Size([346, 1850])
+  Mutual coherence: μ_max=0.9977, μ_mean=0.2978
+
+Model configuration:
+  F=346, E=37, M=50, P=1850
+  steps=6, top_e=2, L=2
+
+Model: TrainableRoutedSoftOMP
+  Parameters: 478867
+
+Evaluating 111 samples with greedy selection...
+
+Greedy Evaluation Results:
+  Overall Accuracy: 2.7% (3/111)
+  Per-angle accuracy range: [0.0%, 100.0%]
+  Problematic angles (<50%): [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
+
+Results saved to: results/greedy_no_pca_fixed_20251025_214838/greedy_results.json
+
+============================================================
+Greedy Soft-OMP Evaluation Complete!
+Overall Accuracy: 2.7%
+Expected (b573aa6 baseline): ~83.8%
+============================================================
+
