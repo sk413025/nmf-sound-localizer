@@ -406,6 +406,7 @@ class FullTransformerRoutedSoftOMP(nn.Module):
             
             if train_mode:
                 # Soft routing
+                # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
                 w_e = self._soft_picker(scores_expert, self.tau_e, self.routing, hard=False)  # (E,)
                 w_all = torch.zeros(self.E, self.M, device=D.device)
                 for e in range(self.E):
@@ -413,7 +414,8 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                     w_all[e] = w_e[e] * w_a_e
                 w_all = w_all.reshape(-1)  # (P,)
                 g = (D.T @ r)  # (P,) gradient-like signal
-                x = x + float(self.eta.item()) * (w_all * g)
+                # Remove .item() on eta to keep it learnable / schedulable
+                x = x + self.eta * (w_all * g)
             else:
                 # Hard routing
                 kE = min(self.top_e, self.E)
@@ -426,7 +428,7 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 chosen_idx = list(dict.fromkeys(chosen_idx))
                 if len(chosen_idx) > 0:
                     g = (D.T @ r)
-                    x[chosen_idx] = x[chosen_idx] + float(self.eta.item()) * g[chosen_idx]
+                    x[chosen_idx] = x[chosen_idx] + self.eta * g[chosen_idx]
             
             # Update residual
             r = y - D @ x
@@ -496,9 +498,9 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
             mono_loss = mono_loss + torch.relu(diffs).sum()
             
             # Classification loss: predict angle from x_hat
-            # Aggregate x by expert (angle)
-            x_by_expert = x_hat.reshape(model.E, model.M).sum(dim=1)  # (E,)
-            logits = x_by_expert  # Use expert activations as logits
+            # IMPORTANT: avoid sign cancellation — use magnitude aggregation like the greedy baseline
+            x_by_expert = x_hat.reshape(model.E, model.M).abs().sum(dim=1)  # (E,)
+            logits = x_by_expert
             class_loss = class_loss + F.cross_entropy(logits.unsqueeze(0), lb[b].unsqueeze(0))
         
         # Average over batch
@@ -550,8 +552,8 @@ def evaluate(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         y = Y_samples[i].to(device)
         x_hat, r_curve = model(y, D.to(device), train_mode=False)
         
-        # Predict angle from x_hat
-        x_by_expert = x_hat.reshape(E, model.M).sum(dim=1)  # (E,)
+        # Predict angle from x_hat (magnitude aggregation to avoid sign cancellation)
+        x_by_expert = x_hat.reshape(E, model.M).abs().sum(dim=1)  # (E,)
         pred_idx = x_by_expert.argmax().item()
         predictions.append(pred_idx)
         residuals.append(r_curve)
