@@ -439,15 +439,20 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
                 w_e = self._soft_picker(scores_expert, self.tau_e, self.routing, hard=False)  # (E,)
                 w_all = torch.zeros(self.E, self.M, device=D.device)
+                w_a_list = []  # Collect w_a for all experts
                 for e in range(self.E):
                     w_a_e = self._soft_picker(scores_atoms[e].abs(), self.tau_a, self.routing, hard=False)
                     w_all[e] = w_e[e] * w_a_e
+                    w_a_list.append(w_a_e.detach())
                 w_all = w_all.reshape(-1)  # (P,)
                 # Snapshot diagnostics at step 0
                 if self.enable_diag and step == 0:
                     self.last_diag = {
                         'scores_expert': scores_expert.detach(),
+                        'scores_atoms': scores_atoms.detach(),  # NEW: for distribution analysis
                         'w_e': w_e.detach(),
+                        'w_a_list': w_a_list,  # NEW: for w_a entropy
+                        'g_vec': g_vec_all.detach(),  # NEW: for g statistics
                     }
                 g = g_vec_all  # (P,) gradient-like signal from above
                 # Remove .item() on eta to keep it learnable / schedulable
@@ -523,6 +528,10 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
     qk_g_corrs = []
     qk_top1_matches = 0
     w_e_entropies = []
+    # NEW: Enhanced diagnostics for hypothesis verification
+    g_stats_list = []  # g distribution statistics
+    scores_stats_list = []  # scores distribution statistics
+    w_a_entropies = []  # atom-level routing entropy
 
     for start_idx in range(0, N, batch_size):
         end_idx = min(start_idx + batch_size, N)
@@ -591,6 +600,50 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                     pe = torch.clamp(w_e, min=1e-12)
                     ent = float((-pe * pe.log()).sum().item())
                     w_e_entropies.append(ent)
+                
+                # NEW: Collect g statistics
+                if model.last_diag is not None and 'g_vec' in model.last_diag:
+                    g_vec_diag = model.last_diag['g_vec'].to(device)
+                    g_abs = g_vec_diag.abs()
+                    g_stats = {
+                        'g_min': float(g_abs.min().item()),
+                        'g_max': float(g_abs.max().item()),
+                        'g_mean': float(g_abs.mean().item()),
+                        'g_std': float(g_abs.std().item()),
+                        'g_p50': float(g_abs.median().item()),
+                        'g_p95': float(torch.quantile(g_abs, 0.95).item()),
+                        'g_p99': float(torch.quantile(g_abs, 0.99).item()),
+                        'g_near_zero_ratio': float((g_abs < 0.01).float().mean().item()),
+                        'g_top10_mean': float(torch.topk(g_abs, k=min(10, g_abs.numel())).values.mean().item()),
+                    }
+                    g_stats_list.append(g_stats)
+                
+                # NEW: Collect scores statistics
+                if model.last_diag is not None and 'scores_atoms' in model.last_diag and 'scores_expert' in model.last_diag:
+                    scores_atoms_diag = model.last_diag['scores_atoms'].to(device)
+                    scores_expert_diag = model.last_diag['scores_expert'].to(device)
+                    scores_stats = {
+                        'scores_atoms_min': float(scores_atoms_diag.min().item()),
+                        'scores_atoms_max': float(scores_atoms_diag.max().item()),
+                        'scores_atoms_mean': float(scores_atoms_diag.mean().item()),
+                        'scores_atoms_std': float(scores_atoms_diag.std().item()),
+                        'scores_expert_min': float(scores_expert_diag.min().item()),
+                        'scores_expert_max': float(scores_expert_diag.max().item()),
+                        'scores_expert_mean': float(scores_expert_diag.mean().item()),
+                        'scores_expert_std': float(scores_expert_diag.std().item()),
+                    }
+                    scores_stats_list.append(scores_stats)
+                
+                # NEW: Collect w_a entropy (atom-level routing)
+                if model.last_diag is not None and 'w_a_list' in model.last_diag:
+                    w_a_list_diag = model.last_diag['w_a_list']
+                    entropies = []
+                    for w_a in w_a_list_diag:
+                        pe = torch.clamp(w_a, min=1e-12)
+                        ent = float((-pe * pe.log()).sum().item())
+                        entropies.append(ent)
+                    w_a_entropy_mean = float(np.mean(entropies)) if entropies else 0.0
+                    w_a_entropies.append(w_a_entropy_mean)
         
         # Average over batch
         rec_loss /= yb.size(0)
@@ -621,6 +674,12 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
             'tau_a': _gn(model.tau_a),
             'eta': _gn(model.eta),
             'encoder': float(sum((p.grad.norm().item() for p in model.encoder.parameters() if p.grad is not None), 0.0)),
+        }
+        # NEW: Direct parameter norms for H2 verification
+        param_norms = {
+            'Wq': float(model.Wq.weight.norm().item()),
+            'Wk': float(model.Wk.weight.norm().item()),
+            'encoder': float(sum(p.norm().item() for p in model.encoder.parameters())),
         }
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         opt.step()
@@ -653,6 +712,11 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 'tau_a': float(model.tau_a.item()) if isinstance(model.tau_a, torch.Tensor) else None,
                 'eta': float(model.eta.item()) if isinstance(model.eta, torch.Tensor) else None,
                 'grad_norms': grad_norms,
+                'param_norms': param_norms,  # NEW: Direct parameter norms
+                # NEW: Enhanced diagnostics for hypothesis verification
+                'w_a_entropy_mean': float(np.mean(w_a_entropies)) if w_a_entropies else None,
+                'g_stats': {k: float(np.mean([d[k] for d in g_stats_list])) for k in g_stats_list[0].keys()} if g_stats_list else None,
+                'scores_stats': {k: float(np.mean([d[k] for d in scores_stats_list])) for k in scores_stats_list[0].keys()} if scores_stats_list else None,
             }
             with open(diag_path, 'a') as f:
                 f.write(json.dumps(rec) + "\n")
