@@ -926,6 +926,11 @@ def main():
     best_epoch = 0
     
     for epoch in range(args.epochs):
+        # Snapshot parameters to compute per-epoch parameter deltas after updates
+        prev_Wq = model.Wq.weight.detach().clone()
+        prev_Wk = model.Wk.weight.detach().clone()
+        prev_encoder = [p.detach().clone() for p in model.encoder.parameters() if p.requires_grad]
+
         # Temperature annealing (linear)
         if args.tau_anneal_epochs > 0:
             t = min(1.0, epoch / float(max(1, args.tau_anneal_epochs)))
@@ -938,11 +943,26 @@ def main():
             model, D, Y_samples, labels, opt, idx2angle,
             batch_size=args.batch_size, device=args.device,
             alpha=args.alpha, beta=args.beta, gamma=args.gamma,
-            epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=16,
+            epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=10**9,
             teacher_warmup_epochs=args.teacher_warmup_epochs, teacher_weight=args.teacher_weight
         )
-        
+
         train_history.append(metrics)
+
+        # Compute parameter deltas (L2) for Wq/Wk/encoder and append to diagnostics
+        try:
+            wq_delta = float((model.Wq.weight.detach() - prev_Wq).norm().item())
+            wk_delta = float((model.Wk.weight.detach() - prev_Wk).norm().item())
+            enc_delta_sq = 0.0
+            for p, p_prev in zip([p for p in model.encoder.parameters() if p.requires_grad], prev_encoder):
+                d = p.detach() - p_prev
+                enc_delta_sq += float((d.norm().item()) ** 2)
+            enc_delta = float(enc_delta_sq ** 0.5)
+            with open(os.path.join(args.out_dir, 'diagnostics.jsonl'), 'a') as f:
+                f.write(json.dumps({'epoch': int(epoch) + 1,
+                                    'param_delta': {'Wq': wq_delta, 'Wk': wk_delta, 'encoder': enc_delta}}) + "\n")
+        except Exception:
+            pass
         
         # Evaluate every 10 epochs
         if (epoch + 1) % 10 == 0 or epoch == 0:

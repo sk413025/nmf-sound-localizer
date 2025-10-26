@@ -1,0 +1,175 @@
+================================================================================
+Transformer Routed Soft-OMP with Real LDV Data
+================================================================================
+Output directory: results/omp_transformer_hybrid_diag_10ep_cpu_20251026_082520
+
+================================================================================
+STEP 1: Data Loading and Preprocessing
+================================================================================
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: doa_normalized_config_c_corrected/models/usm.pth
+Raw data loaded:
+  H shape: torch.Size([346, 37]), range: [0.000677, 0.148538]
+  W shape: torch.Size([346, 50]), range: [0.000000, 0.210976]
+  Angles: 37 total, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+
+=== Atom Reduction via K-means ===
+Input: W shape torch.Size([346, 50]) (346 freq bins × 50 atoms)
+Target: 8 clusters
+K-means completed:
+  Centroids shape: torch.Size([346, 8])
+  Cluster sizes: [1, 3, 3, 1, 1, 1, 1, 39]
+  Reconstruction error: 1.6212 (162.12%)
+
+=== Using Full Frequency Resolution (NO PCA) ===
+H shape: torch.Size([346, 37])
+W shape: torch.Size([346, 8])
+Rationale: PCA may discard low-variance but high-discriminability features
+           Greedy achieves 83.8% with F=346; test if Transformer needs full info too
+
+=== Building Dictionary ===
+Dictionary built:
+  Shape: torch.Size([346, 296]) (F=346, P=296)
+  Mutual coherence μ_max: 0.9954
+  Mutual coherence μ_mean: 0.4474
+  Index mapping: 296 entries
+
+=== Loading LDV Samples with DoADataset ===
+Dataset root: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized
+DoADataset created:
+  Total samples: 111
+  Angles: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz
+  Using scipy.signal.stft with DC offset removal
+
+Loaded samples:
+  Y_samples: torch.Size([111, 346])
+  Labels: torch.Size([111]), unique angles: 37
+  Metadata: 111 entries
+Dataset fingerprint (MD5): 713c0635878a04b32f4ee30208904d11
+  Computed from 111 .npy files
+
+================================================================================
+STEP 2: Model Initialization
+================================================================================
+
+=== Parameter Reduction Strategy ===
+  Input frequency dimension F: 346
+  Transformer embedding dimension d: 64
+  Ratio d/F: 0.185
+  Token projection size: 2 × (346 × 64) = 44,288 parameters
+  (vs naive F×F: 2 × (346 × 346) = 239,432 parameters)
+  Parameter reduction: 81.5%
+
+Model architecture:
+  F (input freq dim): 346
+  d_model (embedding dim): 64
+  E (experts/angles): 37
+  M (atoms/expert): 8
+  P (total atoms): 296
+  nhead: 2
+  nlayers: 1
+  routing_mode: hybrid (hybrid_alpha=0.8)
+  Total parameters: 102,595
+  Trainable parameters: 102,595
+
+================================================================================
+STEP 3: Training
+================================================================================
+Epoch   1/10: loss=3.6120 rec=0.0015 mono=0.0000 class=3.6106 acc=1.000 teach=1.000 align=0.984 tau_e=1.000 tau_a=1.000 eta=0.511
+Epoch   2/10: loss=3.6076 rec=0.0014 mono=0.0000 class=3.6062
+Epoch   3/10: loss=3.6107 rec=0.0014 mono=0.0000 class=3.6092
+Epoch   4/10: loss=3.6121 rec=0.0014 mono=0.0000 class=3.6107
+Epoch   5/10: loss=3.6060 rec=0.0014 mono=0.0000 class=3.6046
+Epoch   6/10: loss=3.6013 rec=0.0014 mono=0.0000 class=3.5999
+Epoch   7/10: loss=3.6014 rec=0.0013 mono=0.0000 class=3.6000
+Epoch   8/10: loss=3.6117 rec=0.0013 mono=0.0000 class=3.6104
+Epoch   9/10: loss=3.6142 rec=0.0014 mono=0.0000 class=3.6129
+Epoch  10/10: loss=3.6061 rec=0.0014 mono=0.0000 class=3.6048 acc=0.865 teach=1.000 align=0.998 tau_e=0.760 tau_a=0.760 eta=0.586
+
+================================================================================
+STEP 4: Final Evaluation
+================================================================================
+
+Final Results (Best model from epoch 1):
+  Overall accuracy: 1.000 (100.0%)
+  Baseline (commit b573aa6): 0.838 (83.8%)
+
+Per-angle accuracy:
+  Angle   0°: 1.000 (100.0%) - 3 samples
+  Angle   5°: 1.000 (100.0%) - 3 samples
+  Angle  10°: 1.000 (100.0%) - 3 samples
+  Angle  15°: 1.000 (100.0%) - 3 samples
+  Angle  20°: 1.000 (100.0%) - 3 samples
+  Angle  25°: 1.000 (100.0%) - 3 samples
+  Angle  30°: 1.000 (100.0%) - 3 samples
+  Angle  35°: 1.000 (100.0%) - 3 samples
+  Angle  40°: 1.000 (100.0%) - 3 samples
+  Angle  45°: 1.000 (100.0%) - 3 samples
+  Angle  50°: 1.000 (100.0%) - 3 samples
+  Angle  55°: 1.000 (100.0%) - 3 samples
+  Angle  60°: 1.000 (100.0%) - 3 samples
+  Angle  65°: 1.000 (100.0%) - 3 samples
+  Angle  70°: 1.000 (100.0%) - 3 samples
+  Angle  75°: 1.000 (100.0%) - 3 samples
+  Angle  80°: 1.000 (100.0%) - 3 samples
+  Angle  85°: 1.000 (100.0%) - 3 samples
+  Angle  90°: 1.000 (100.0%) - 3 samples
+  Angle  95°: 1.000 (100.0%) - 3 samples
+  Angle 100°: 1.000 (100.0%) - 3 samples
+  Angle 105°: 1.000 (100.0%) - 3 samples
+  Angle 110°: 1.000 (100.0%) - 3 samples
+  Angle 115°: 1.000 (100.0%) - 3 samples
+  Angle 120°: 1.000 (100.0%) - 3 samples
+  Angle 125°: 1.000 (100.0%) - 3 samples
+  Angle 130°: 1.000 (100.0%) - 3 samples
+  Angle 135°: 1.000 (100.0%) - 3 samples
+  Angle 140°: 1.000 (100.0%) - 3 samples
+  Angle 145°: 1.000 (100.0%) - 3 samples
+  Angle 150°: 1.000 (100.0%) - 3 samples
+  Angle 155°: 1.000 (100.0%) - 3 samples
+  Angle 160°: 1.000 (100.0%) - 3 samples
+  Angle 165°: 1.000 (100.0%) - 3 samples
+  Angle 170°: 1.000 (100.0%) - 3 samples
+  Angle 175°: 1.000 (100.0%) - 3 samples
+  Angle 180°: 1.000 (100.0%) - 3 samples
+
+Problematic angles from baseline:
+   15°: 1.000 (IMPROVED)
+   35°: 1.000 (IMPROVED)
+   50°: 1.000 (IMPROVED)
+   70°: 1.000 (IMPROVED)
+  105°: 1.000 (IMPROVED)
+  120°: 1.000 (IMPROVED)
+
+================================================================================
+STEP 5: Visualization
+================================================================================
+Saved figure: results/omp_transformer_hybrid_diag_10ep_cpu_20251026_082520/results.png
+
+================================================================================
+STEP 6: Saving Results
+================================================================================
+All results saved to: results/omp_transformer_hybrid_diag_10ep_cpu_20251026_082520
+
+================================================================================
+DONE
+================================================================================
+
+/Users/sbplab/.matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /var/folders/qn/5145q64554qf0r2sm6g4xt4h0000gn/T/matplotlib-qc1zcknx because there was an issue with the default path (/Users/sbplab/.matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Matplotlib is building the font cache; this may take a moment.
+/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py:131: UserWarning: Could not find the number of physical cores for the following reason:
+invalid literal for int() with base 10: ''
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 249, in _count_physical_cores
+    cpu_count_physical = _count_physical_cores_darwin()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/joblib/externals/loky/backend/context.py", line 318, in _count_physical_cores_darwin
+    return int(cpu_info)
+           ^^^^^^^^^^^^^
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/omp-transformer-ldv.py:475: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  res_curve.append(float(torch.norm(r)))
+
