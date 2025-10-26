@@ -101,6 +101,141 @@ def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int 
     return W_reduced, labels, kmeans
 
 
+def reduce_atoms_kcenter(W: torch.Tensor, n_clusters: int = 8):
+    """
+    Reduce W atoms using greedy k-center (farthest-first) selection under cosine distance.
+
+    Args:
+        W: (F, M_full)
+        n_clusters: number of atoms to select
+
+    Returns:
+        W_reduced: (F, n_clusters) selected atoms (from original W), L2-normalized per column
+        labels: (M_full,) assignment to nearest selected center (cosine similarity)
+        info: dict with 'selected_indices'
+    """
+    F, M_full = W.shape
+    X = W.cpu().numpy().T  # (M_full, F)
+    # Normalize rows for cosine computations
+    eps = 1e-12
+    norms = np.linalg.norm(X, axis=1, keepdims=True) + eps
+    Xn = X / norms
+    # pick first center as farthest from mean
+    mean = Xn.mean(axis=0, keepdims=False)
+    d0 = 1.0 - (Xn @ (mean / (np.linalg.norm(mean) + eps)))
+    first = int(np.argmax(d0))
+    centers_idx = [first]
+    # iterative farthest-first
+    dmin = 1.0 - (Xn @ Xn[first].T)
+    for _ in range(1, n_clusters):
+        idx = int(np.argmax(dmin))
+        centers_idx.append(idx)
+        dnew = 1.0 - (Xn @ Xn[idx].T)
+        dmin = np.minimum(dmin, dnew)
+    centers_idx = sorted(list(dict.fromkeys(centers_idx)))
+    # Build reduced W from original columns and normalize
+    W_reduced = W[:, centers_idx].clone()
+    W_reduced = W_reduced / (W_reduced.norm(dim=0, keepdim=True) + 1e-12)
+    # Assign labels to nearest center (cosine sim)
+    C = Xn[centers_idx]  # (k, F)
+    sims = Xn @ C.T  # (M_full, k)
+    labels = np.argmax(sims, axis=1)
+    # Diagnostics: reconstruction using nearest selected atom (not linear combo)
+    W_reconstructed = W_reduced[:, labels]
+    recon_error = (W - W_reconstructed).norm().item() / (W.norm().item() + 1e-12)
+    print(f"K-center completed:")
+    unique, counts = np.unique(labels, return_counts=True)
+    cluster_sizes = [0]*len(centers_idx)
+    for u, c in zip(unique.tolist(), counts.tolist()):
+        if 0 <= u < len(cluster_sizes):
+            cluster_sizes[u] = c
+    print(f"  Selected indices: {centers_idx}")
+    print(f"  Cluster sizes: {cluster_sizes}")
+    print(f"  Reconstruction (NN) error: {recon_error:.4f} ({recon_error*100:.2f}%)")
+    return W_reduced, labels, {'selected_indices': centers_idx}
+
+
+def reduce_atoms_diverse(W: torch.Tensor, n_clusters: int = 8, min_cos: float = 0.98):
+    """
+    Diversity selection with cosine max-min and separation threshold.
+
+    Picks centers greedily (farthest-first) but requires every new center to have
+    cosine similarity < min_cos to all previously selected centers. If no candidate
+    satisfies the threshold, picks the farthest anyway to ensure we reach n_clusters.
+    """
+    import numpy as np
+    F, M_full = W.shape
+    X = W.cpu().numpy().T  # (M_full, F)
+    eps = 1e-12
+    norms = np.linalg.norm(X, axis=1, keepdims=True) + eps
+    Xn = X / norms
+    # start from farthest from mean
+    mean = Xn.mean(axis=0, keepdims=False)
+    mean /= (np.linalg.norm(mean) + eps)
+    d_to_mean = 1.0 - (Xn @ mean)
+    first = int(np.argmax(d_to_mean))
+    centers_idx = [first]
+    # precompute cosine to speed up checks
+    def cos(a, b):
+        return float((a @ b))
+    # distances to current set (cosine distance = 1 - cos)
+    dmin = 1.0 - (Xn @ Xn[first].T)
+    for _ in range(1, n_clusters):
+        # candidate order by farthest-first
+        order = np.argsort(-dmin)
+        chosen = None
+        for idx in order:
+            ok = True
+            xi = Xn[idx]
+            for c in centers_idx:
+                if cos(xi, Xn[c]) >= min_cos:
+                    ok = False
+                    break
+            if ok:
+                chosen = int(idx)
+                break
+        if chosen is None:
+            # fallback: take the farthest to progress
+            chosen = int(order[0])
+        centers_idx.append(chosen)
+        # update dmin
+        dnew = 1.0 - (Xn @ Xn[chosen].T)
+        dmin = np.minimum(dmin, dnew)
+    centers_idx = sorted(list(dict.fromkeys(centers_idx)))
+    W_reduced = W[:, centers_idx].clone()
+    W_reduced = W_reduced / (W_reduced.norm(dim=0, keepdim=True) + 1e-12)
+    # assign labels to nearest center by cosine similarity
+    C = Xn[centers_idx]
+    sims = Xn @ C.T
+    labels = np.argmax(sims, axis=1)
+    # diagnostics
+    W_reconstructed = W_reduced[:, labels]
+    recon_error = (W - W_reconstructed).norm().item() / (W.norm().item() + 1e-12)
+    # cluster sizes
+    unique, counts = np.unique(labels, return_counts=True)
+    sizes = [0] * len(centers_idx)
+    for u, c in zip(unique.tolist(), counts.tolist()):
+        if 0 <= u < len(sizes):
+            sizes[u] = c
+    print("Diverse selection completed:")
+    print(f"  min_cos threshold: {min_cos}")
+    print(f"  Selected indices: {centers_idx}")
+    print(f"  Cluster sizes: {sizes}")
+    print(f"  Reconstruction (NN) error: {recon_error:.4f} ({recon_error*100:.2f}%)")
+    return W_reduced, labels, {'selected_indices': centers_idx}
+
+
+def reduce_atoms(W: torch.Tensor, mode: str = 'kmeans', n_clusters: int = 8, random_state: int = 42, min_cos: float = 0.98):
+    if mode == 'kmeans':
+        return reduce_atoms_kmeans(W, n_clusters=n_clusters, random_state=random_state)
+    elif mode == 'kcenter':
+        return reduce_atoms_kcenter(W, n_clusters=n_clusters)
+    elif mode == 'diverse':
+        return reduce_atoms_diverse(W, n_clusters=n_clusters, min_cos=float(min_cos))
+    else:
+        raise ValueError(f"Invalid atom reduce mode: {mode}")
+
+
 def build_dictionary(H: torch.Tensor, W: torch.Tensor, angles: np.ndarray):
     """
     Build dictionary D = H ⊙ W (outer product over all combinations).
@@ -250,10 +385,17 @@ def compute_dataset_fingerprint(dataset_root: str):
 # PART 1: Soft Routing Operations (from original omp-transformer.py)
 # ============================================================================
 
-def gumbel_softmax(logits: torch.Tensor, tau: float, hard: bool = False) -> torch.Tensor:
-    """Gumbel-Softmax sampling for differentiable routing."""
+def gumbel_softmax(logits: torch.Tensor, tau: torch.Tensor | float, hard: bool = False) -> torch.Tensor:
+    """Gumbel-Softmax sampling for differentiable routing.
+
+    Keeps `tau` as a tensor when provided to preserve gradient flow.
+    """
     g = -torch.log(-torch.log(torch.rand_like(logits) + 1e-12) + 1e-12)
-    y = F.softmax((logits + g) / max(tau, 1e-8), dim=-1)
+    if isinstance(tau, torch.Tensor):
+        tau_eff = tau.clamp_min(1e-8)
+    else:
+        tau_eff = max(float(tau), 1e-8)
+    y = F.softmax((logits + g) / tau_eff, dim=-1)
     if hard:
         y_hard = torch.zeros_like(y)
         y_hard.scatter_(-1, y.argmax(dim=-1, keepdim=True), 1.0)
@@ -309,7 +451,10 @@ class FullTransformerRoutedSoftOMP(nn.Module):
     def __init__(self, F: int, E: int, M: int, d: int = None, nhead: int = 8, nlayers: int = 1,
                  steps: int = 6, top_e: int = 2, L: int = 2,
                  tau_e: float = 0.5, tau_a: float = 0.2, eta: float = 0.5,
-                 routing: str = 'gumbel', routing_mode: str = 'qk', hybrid_alpha: float = 0.5):
+                 routing: str = 'gumbel', routing_mode: str = 'qk', hybrid_alpha: float = 0.5,
+                 routing_e: str | None = None, routing_a: str | None = None,
+                 score_norm_mode: str = 'none', score_reg_weight: float = 0.0,
+                 expert_agg: str = 'l2'):
         super().__init__()
         self.F, self.E, self.M = F, E, M
         self.P = E * M
@@ -320,12 +465,22 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         self.tau_e = nn.Parameter(torch.tensor(float(tau_e)))
         self.tau_a = nn.Parameter(torch.tensor(float(tau_a)))
         self.eta = nn.Parameter(torch.tensor(float(eta)))
-        self.routing = routing
+        # Routing activations
+        self.routing = routing  # backward-compat (unused after split)
+        self.routing_e = routing_e if routing_e is not None else routing
+        self.routing_a = routing_a if routing_a is not None else routing
         # Routing score source: 'qk' (Transformer QK), 'g' (physics correlation), 'hybrid' (blend)
         assert routing_mode in ('qk', 'g', 'hybrid')
         self.routing_mode = routing_mode
         self.hybrid_alpha = float(hybrid_alpha)
-        
+        # Score normalization and regularization controls
+        assert score_norm_mode in ('none', 'std')
+        self.score_norm_mode = score_norm_mode
+        self.score_reg_weight = float(score_reg_weight)
+        # Expert aggregation mode for QK → expert scores
+        assert expert_agg in ('l2', 'max', 'mean_relu')
+        self.expert_agg = expert_agg
+
         # Token projections + type embeddings
         self.P_R = nn.Linear(F, self.d, bias=False)
         self.P_D = nn.Linear(F, self.d, bias=False)
@@ -333,6 +488,13 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         nn.init.eye_(self.P_D.weight) if self.d == F else nn.init.xavier_uniform_(self.P_D.weight)
         self.type_R = nn.Parameter(torch.randn(self.d))
         self.type_D = nn.Parameter(torch.randn(self.d))
+        # Signal-preserving toggles (configured from CLI in main)
+        self.no_type_bias: bool = False
+        self.encoder_identity: bool = False
+        self.single_gate_expert: bool = False
+        self.score_center_atoms: bool = False
+        self.score_center_expert: bool = False
+        self.d_can_attend_r: bool = False
         
         # TransformerEncoder
         enc_layer = nn.TransformerEncoderLayer(
@@ -351,8 +513,12 @@ class FullTransformerRoutedSoftOMP(nn.Module):
     
     def _build_tokens(self, r: torch.Tensor, D: torch.Tensor):
         """Build token sequence: [Residual; Dictionary atoms]."""
-        t_R = self.P_R(r) + self.type_R  # (d,)
-        T_D = self.P_D(D.T) + self.type_D  # (P, d)
+        if self.no_type_bias:
+            t_R = self.P_R(r)
+            T_D = self.P_D(D.T)
+        else:
+            t_R = self.P_R(r) + self.type_R  # (d,)
+            T_D = self.P_D(D.T) + self.type_D  # (P, d)
         T = torch.cat([t_R[None, :], T_D], dim=0)  # (1+P, d)
         return T
     
@@ -366,16 +532,20 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         mask[0, :] = 0.0  # R attends to all
         for j in range(1, S):
             mask[j, j] = 0.0  # D_j attends to itself
+            if self.d_can_attend_r:
+                mask[j, 0] = 0.0  # allow D_j to attend R
         return mask
     
     def _soft_picker(self, logits: torch.Tensor, tau: torch.Tensor, mode: str, hard: bool):
         """Apply soft routing function."""
         if mode == 'gumbel':
-            return gumbel_softmax(logits, tau=float(tau.item()), hard=hard)
+            return gumbel_softmax(logits, tau=tau, hard=hard)
         elif mode == 'entmax':
             return entmax15(logits, dim=-1)
+        elif mode == 'sparsemax':
+            return sparsemax(logits, dim=-1)
         else:
-            return F.softmax(logits / max(float(tau.item()), 1e-8), dim=-1)
+            return F.softmax(logits / tau.clamp_min(1e-8), dim=-1)
     
     def forward(self, y: torch.Tensor, D: torch.Tensor, train_mode: bool = True):
         """
@@ -398,13 +568,20 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         # reset diagnostics snapshot each call
         if self.enable_diag:
             self.last_diag = None
+        # expose non-detached tensors for training supervision
+        self.last_outputs = None
+        _res_norms_t: list[torch.Tensor] = []
+        _scores_expert_steps: list[torch.Tensor] = []
 
         for step in range(self.steps):
             # Build tokens and apply Transformer
             T = self._build_tokens(r, D)  # (1+P, d)
             S = T.size(0)
             mask = self._make_mask(S).to(T.device)
-            H = self.encoder(T, mask=mask)  # (1+P, d)
+            if self.encoder_identity:
+                H = T
+            else:
+                H = self.encoder(T, mask=mask)  # (1+P, d)
             
             h_R = H[0]  # (d,)
             H_D = H[1:]  # (P, d)
@@ -412,7 +589,12 @@ class FullTransformerRoutedSoftOMP(nn.Module):
             # Compute QK scores from Transformer
             qk_atoms = (self.Wk(H_D) @ self.Wq(h_R)) / math.sqrt(self.d)  # (P,)
             qk_atoms = qk_atoms.reshape(self.E, self.M)  # (E, M)
-            qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)  # (E,)
+            if self.expert_agg == 'l2':
+                qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)  # (E,)
+            elif self.expert_agg == 'max':
+                qk_expert = qk_atoms.abs().max(dim=1).values
+            else:  # 'mean_relu'
+                qk_expert = F.relu(qk_atoms).mean(dim=1)
 
             # Compute physics correlation scores from g = D^T r
             g_vec_all = (D.T @ r)  # (P,)
@@ -433,27 +615,51 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                     return x / (n + 1e-12)
                 scores_atoms = self.hybrid_alpha * _norm(g_atoms, dim=None) + (1.0 - self.hybrid_alpha) * _norm(qk_atoms, dim=None)
                 scores_expert = self.hybrid_alpha * _norm(g_expert) + (1.0 - self.hybrid_alpha) * _norm(qk_expert)
+            # Optional: score normalization to increase contrast and stability
+            if self.score_norm_mode == 'std':
+                # standardize expert and atom scores separately (global stats)
+                se_mean, se_std = scores_expert.mean(), scores_expert.std()
+                scores_expert = (scores_expert - se_mean) / (se_std + 1e-8)
+                sa_mean, sa_std = scores_atoms.mean(), scores_atoms.std()
+                scores_atoms = (scores_atoms - sa_mean) / (sa_std + 1e-8)
+            # Optional: explicit centering to reduce common-mode terms
+            if self.score_center_expert:
+                scores_expert = scores_expert - scores_expert.mean()
+            if self.score_center_atoms:
+                scores_atoms = scores_atoms - scores_atoms.mean(dim=1, keepdim=True)
             
             if train_mode:
                 # Soft routing
                 # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
-                w_e = self._soft_picker(scores_expert, self.tau_e, self.routing, hard=False)  # (E,)
+                w_e = self._soft_picker(scores_expert, self.tau_e, self.routing_e, hard=False)  # (E,)
                 w_all = torch.zeros(self.E, self.M, device=D.device)
                 w_a_list = []  # Collect w_a for all experts
                 for e in range(self.E):
-                    w_a_e = self._soft_picker(scores_atoms[e].abs(), self.tau_a, self.routing, hard=False)
+                    if self.single_gate_expert:
+                        w_a_e = torch.ones(self.M, device=D.device)
+                    else:
+                        w_a_e = self._soft_picker(scores_atoms[e].abs(), self.tau_a, self.routing_a, hard=False)
                     w_all[e] = w_e[e] * w_a_e
                     w_a_list.append(w_a_e.detach())
                 w_all = w_all.reshape(-1)  # (P,)
-                # Snapshot diagnostics at step 0
+                # Save diagnostics (detached) and training-useful tensors (non-detached)
+                if self.last_diag is None:
+                    self.last_diag = {}
+                self.last_diag['scores_expert'] = scores_expert.detach()
                 if self.enable_diag and step == 0:
-                    self.last_diag = {
-                        'scores_expert': scores_expert.detach(),
-                        'scores_atoms': scores_atoms.detach(),  # NEW: for distribution analysis
+                    self.last_diag.update({
+                        'scores_atoms': scores_atoms.detach(),
                         'w_e': w_e.detach(),
-                        'w_a_list': w_a_list,  # NEW: for w_a entropy
-                        'g_vec': g_vec_all.detach(),  # NEW: for g statistics
+                        'w_a_list': w_a_list,
+                        'g_vec': g_vec_all.detach(),
+                    })
+                if step == 0:
+                    self.last_outputs = {
+                        'scores_expert': scores_expert,
+                        'scores_atoms': scores_atoms,
+                        'w_e': w_e,
                     }
+                _scores_expert_steps.append(scores_expert)
                 g = g_vec_all  # (P,) gradient-like signal from above
                 # Remove .item() on eta to keep it learnable / schedulable
                 x = x + self.eta * (w_all * g)
@@ -467,18 +673,30 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                     chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
                     chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
                 chosen_idx = list(dict.fromkeys(chosen_idx))
-                if self.enable_diag and step == 0:
-                    self.last_diag = {
-                        'scores_expert': scores_expert.detach(),
-                    }
+                if step == 0:
+                    if self.last_diag is None:
+                        self.last_diag = {}
+                    self.last_diag['scores_expert'] = scores_expert.detach()
                 if len(chosen_idx) > 0:
                     g = (D.T @ r)
                     x[chosen_idx] = x[chosen_idx] + self.eta * g[chosen_idx]
             
-            # Update residual
+            # Update residual and track norms for mono loss (keep tensor for gradients)
             r = y - D @ x
-            res_curve.append(float(torch.norm(r)))
+            res_norm = torch.norm(r)
+            _res_norms_t.append(res_norm)
+            res_curve.append(float(res_norm.detach()))
         
+        # Attach residual norms tensor sequence for training use
+        if self.last_outputs is None:
+            self.last_outputs = {}
+        self.last_outputs['res_norms_t'] = torch.stack(_res_norms_t, dim=0) if _res_norms_t else torch.tensor([], device=D.device)
+        if _scores_expert_steps:
+            try:
+                self.last_outputs['scores_expert_steps'] = torch.stack(_scores_expert_steps, dim=0)
+            except Exception:
+                self.last_outputs['scores_expert_steps'] = None
+
         return x, res_curve
 
 
@@ -491,6 +709,12 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 opt: torch.optim.Optimizer, idx2angle: List[Tuple[float, int]],
                 batch_size: int = 16, device='cpu',
                 alpha: float = 1.0, beta: float = 0.2, gamma: float = 0.5,
+                align_weight: float = 0.0,
+                distill_T: float = 1.0, distill_weight: float = 0.0,
+                probe_grad_split: bool = False,
+                supervise_steps: str = 'first', supervise_k: int = 1,
+                w_e_entropy_penalty: float = 0.0,
+                nce_weight: float = 0.0, nce_T: float = 1.0,
                 epoch: int | None = None, diag_path: str | None = None, diag_subset: int = 16,
                 teacher_warmup_epochs: int = 0, teacher_weight: float = 0.0):
     """
@@ -519,6 +743,15 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
     mono_losses = []
     class_losses = []
     teacher_losses = []
+    align_losses = []
+    reg_losses = []
+    ce_only_terms = []
+    align_terms = []
+    reg_terms = []
+    logits_margins = []
+    distill_terms = []
+    w_e_entropy_terms = []
+    nce_terms = []
     total_losses = []
     
     # Diagnostics accumulators (subset)
@@ -539,6 +772,8 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         
         yb = Y_samples[batch_indices].to(device)
         lb = labels[batch_indices].to(device)
+        # Negatives pool for InfoNCE: collect from previous samples in the same batch (detached)
+        neg_pool: list[torch.Tensor] = []
         
         rec_loss = 0.0
         mono_loss = 0.0
@@ -555,16 +790,68 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
             # Reconstruction loss
             rec_loss = rec_loss + F.mse_loss(y_hat, yb[b])
             
-            # Monotonicity loss
-            rc = torch.tensor(r_curve, device=device)
-            diffs = rc[1:] - rc[:-1]
-            mono_loss = mono_loss + torch.relu(diffs).sum()
+            # Monotonicity loss (use tensor norms from forward to keep gradients)
+            if getattr(model, 'last_outputs', None) is not None and 'res_norms_t' in model.last_outputs:
+                rc = model.last_outputs['res_norms_t']  # (steps,)
+                if rc.numel() > 1:
+                    diffs = rc[1:] - rc[:-1]
+                    mono_loss = mono_loss + torch.relu(diffs).sum()
+                else:
+                    mono_loss = mono_loss + torch.tensor(0.0, device=device)
+            else:
+                # Fallback (detached; should not happen)
+                rc = torch.tensor(r_curve, device=device)
+                if rc.numel() > 1:
+                    diffs = rc[1:] - rc[:-1]
+                    mono_loss = mono_loss + torch.relu(diffs).sum()
+                else:
+                    mono_loss = mono_loss + torch.tensor(0.0, device=device)
             
-            # Classification loss: predict angle from x_hat
-            # IMPORTANT: avoid sign cancellation — use magnitude aggregation like the greedy baseline
-            x_by_expert = x_hat.reshape(model.E, model.M).abs().sum(dim=1)  # (E,)
-            logits = x_by_expert
-            class_loss = class_loss + F.cross_entropy(logits.unsqueeze(0), lb[b].unsqueeze(0))
+            # Classification loss: predict angle from routing scores (NOT from x_hat)
+            # Directly supervise routing mechanism; prefer non-detached tensors from forward
+            if model.routing_mode == 'g':
+                # For g-routing, use |g| energy as ground truth scores
+                g_vec = (D.to(device).T @ yb[b])
+                logits = g_vec.abs().view(model.E, model.M).sum(dim=1)
+            else:
+                # For qk/hybrid, supervise first K steps or all steps if requested
+                logits = None
+                if getattr(model, 'last_outputs', None) is not None and 'scores_expert_steps' in model.last_outputs and model.last_outputs['scores_expert_steps'] is not None and supervise_steps in ('first', 'all'):
+                    se_steps = model.last_outputs['scores_expert_steps']  # (steps, E)
+                    if se_steps is not None and se_steps.dim() == 2 and se_steps.size(0) > 0:
+                        if supervise_steps == 'first':
+                            k = min(supervise_k, se_steps.size(0))
+                            logits = se_steps[:k].mean(dim=0)
+                        else:  # all
+                            logits = se_steps.mean(dim=0)
+                if logits is None:
+                    if getattr(model, 'last_outputs', None) is not None and 'scores_expert' in model.last_outputs:
+                        logits = model.last_outputs['scores_expert']
+                    elif model.last_diag is not None and 'scores_expert' in model.last_diag:
+                        logits = model.last_diag['scores_expert'].to(device)
+                    else:
+                        # Fallback: recompute g for safety (should not happen in normal flow)
+                        g_vec = (D.to(device).T @ yb[b])
+                        logits = g_vec.abs().view(model.E, model.M).sum(dim=1)
+
+            ce_term = F.cross_entropy(logits.unsqueeze(0), lb[b].unsqueeze(0))
+            class_loss = class_loss + ce_term
+            ce_only_terms.append(float(ce_term.item()))
+            # record margin
+            if logits.numel() >= 2:
+                top2 = torch.topk(logits, k=2).values
+                margin = float((top2[0] - top2[1]).item())
+                logits_margins.append(margin)
+
+            # Optional: score L2 regularization (controls drift/saturation)
+            if model.score_reg_weight > 0.0 and getattr(model, 'last_outputs', None) is not None:
+                se = model.last_outputs.get('scores_expert', None)
+                sa = model.last_outputs.get('scores_atoms', None)
+                if se is not None and sa is not None:
+                    reg = model.score_reg_weight * ((se ** 2).mean() + (sa ** 2).mean())
+                    reg_losses.append(float(reg.item()))
+                    class_loss = class_loss + reg
+                    reg_terms.append(float(reg.item()))
 
             # Optional teacher warm-up: supervise per-angle logits with |g|-based teacher
             if (epoch is not None) and (teacher_weight > 0.0) and (epoch < teacher_warmup_epochs):
@@ -572,6 +859,114 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 g_energy_tw = g_vec_tw.abs().view(model.E, model.M).sum(dim=1)
                 teacher_label = torch.argmax(g_energy_tw)
                 teacher_loss = teacher_loss + F.cross_entropy(logits.unsqueeze(0), teacher_label.unsqueeze(0))
+
+            # Optional: alignment loss between QK scores and |g| expert energy (physics anchoring)
+            if align_weight > 0.0 and model.routing_mode in ('qk', 'hybrid'):
+                g_vec_al = (D.to(device).T @ yb[b])
+                g_energy_al = g_vec_al.abs().view(model.E, model.M).sum(dim=1)
+                se = logits
+                se_n = se / (se.norm() + 1e-8)
+                ge_n = g_energy_al / (g_energy_al.norm() + 1e-8)
+                align = 1.0 - torch.dot(se_n, ge_n)
+                align_losses.append(float(align.item()))
+                class_loss = class_loss + align_weight * align
+                align_terms.append(float((align_weight * align).item()))
+
+            # Distillation (soft targets from |g|), only for qk/hybrid
+            if distill_weight > 0.0 and model.routing_mode in ('qk', 'hybrid'):
+                # teacher: softmax(|g|/T); student: softmax(scores_expert/T)
+                with torch.no_grad():
+                    g_vec_dist = (D.to(device).T @ yb[b])
+                    g_energy_dist = g_vec_dist.abs().view(model.E, model.M).sum(dim=1)
+                    p_teacher = F.softmax(g_energy_dist / max(distill_T, 1e-8), dim=-1)
+                p_student_log = F.log_softmax(logits / max(distill_T, 1e-8), dim=-1)
+                # batchmean on single sample equals mean over classes
+                distill = (distill_T ** 2) * F.kl_div(p_student_log, p_teacher, reduction='batchmean')
+                distill_terms.append(float(distill.item()))
+                class_loss = class_loss + distill_weight * distill
+
+            # Expert entropy penalty (encourage peaky expert routing)
+            if w_e_entropy_penalty > 0.0 and getattr(model, 'last_outputs', None) is not None and 'w_e' in model.last_outputs:
+                pe = torch.clamp(model.last_outputs['w_e'], min=1e-12)
+                H = -(pe * pe.log()).sum()
+                pen = w_e_entropy_penalty * H
+                w_e_entropy_terms.append(float(pen.item()))
+                class_loss = class_loss + pen
+
+            # Step-wise InfoNCE (anchor=step0, positive=step1), negatives from previous samples in batch
+            if nce_weight > 0.0 and getattr(model, 'last_outputs', None) is not None and 'scores_expert_steps' in model.last_outputs:
+                se_steps = model.last_outputs['scores_expert_steps']
+                if se_steps is not None and se_steps.dim() == 2 and se_steps.size(0) >= 2:
+                    eps = 1e-8
+                    a = se_steps[0]
+                    p = se_steps[1]
+                    a = a / (a.norm() + eps)
+                    p = p / (p.norm() + eps)
+                    sims = []
+                    sims.append(torch.dot(a, p) / max(nce_T, eps))
+                    # negatives: use up to 8 most recent vectors in pool
+                    if len(neg_pool) > 0:
+                        k = min(8, len(neg_pool))
+                        for z in neg_pool[-k:]:
+                            sims.append(torch.dot(a, z) / max(nce_T, eps))
+                        sims_t = torch.stack(sims, dim=0)
+                        # InfoNCE loss: -log softmax at index 0
+                        nce_loss = -F.log_softmax(sims_t, dim=0)[0]
+                        class_loss = class_loss + nce_weight * nce_loss
+                        nce_terms.append(float((nce_weight * nce_loss).item()))
+                    # add current anchor to pool for future negatives (detach to avoid graph across samples)
+                    neg_pool.append(a.detach())
+                else:
+                    # fallback: add available step0 as potential negative for later samples
+                    if se_steps is not None and se_steps.dim() == 2 and se_steps.size(0) >= 1:
+                        z = se_steps[0]
+                        z = z / (z.norm() + 1e-8)
+                        neg_pool.append(z.detach())
+            else:
+                # if not using nce, still populate pool for consistency
+                if getattr(model, 'last_outputs', None) is not None and 'scores_expert_steps' in model.last_outputs:
+                    se_steps = model.last_outputs['scores_expert_steps']
+                    if se_steps is not None and se_steps.dim() == 2 and se_steps.size(0) >= 1:
+                        z = se_steps[0]
+                        z = z / (z.norm() + 1e-8)
+                        neg_pool.append(z.detach())
+
+            # Gradient split probe (first sample only)
+            # NOTE: skip for routing_mode='g' because logits are non-learned (no grad path)
+            if probe_grad_split and start_idx == 0 and b == 0 and model.routing_mode != 'g':
+                # CE-only
+                opt.zero_grad()
+                # Recompute forward for clean graph
+                x_probe, _ = model(yb[b], D.to(device), train_mode=True)
+                y_probe = D.to(device) @ x_probe
+                # logits for probe
+                if model.routing_mode == 'g':
+                    g_vec_p = (D.to(device).T @ yb[b])
+                    logits_p = g_vec_p.abs().view(model.E, model.M).sum(dim=1)
+                else:
+                    logits_p = model.last_outputs.get('scores_expert', logits)
+                ce_only = F.cross_entropy(logits_p.unsqueeze(0), lb[b].unsqueeze(0))
+                ce_only.backward(retain_graph=True)
+                def _gnv():
+                    def _gn(param):
+                        try:
+                            return float(param.grad.norm().item()) if (param is not None and getattr(param, 'grad', None) is not None) else 0.0
+                        except Exception:
+                            return 0.0
+                    return {
+                        'Wq': _gn(model.Wq.weight),
+                        'Wk': _gn(model.Wk.weight),
+                        'encoder': float(sum((p.grad.norm().item() for p in model.encoder.parameters() if p.grad is not None), 0.0)),
+                    }
+                grad_norms_ce = _gnv()
+                opt.zero_grad()
+                # REC-only
+                x_probe2, _ = model(yb[b], D.to(device), train_mode=True)
+                y_probe2 = D.to(device) @ x_probe2
+                rec_only = F.mse_loss(y_probe2, yb[b])
+                rec_only.backward()
+                grad_norms_rec = _gnv()
+                opt.zero_grad()
 
             # Diagnostics: teacher (|g|) vs QK alignment on a small subset
             if model.enable_diag:
@@ -701,10 +1096,17 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 'class_loss': float(np.mean(class_losses)) if class_losses else None,
                 'teacher_loss': float(np.mean(teacher_losses)) if teacher_losses else None,
                 'total_loss': float(np.mean(total_losses)) if total_losses else None,
+                'class_ce_only': float(np.mean(ce_only_terms)) if ce_only_terms else None,
+                'class_align_term': float(np.mean(align_terms)) if align_terms else None,
+                'class_reg_term': float(np.mean(reg_terms)) if reg_terms else None,
+                'class_distill_term': float(np.mean(distill_terms)) if distill_terms else None,
+                'w_e_entropy_term': float(np.mean(w_e_entropy_terms)) if w_e_entropy_terms else None,
                 'teacher_samples': int(diag_seen),
                 'teacher_acc_subset': float(teacher_correct / max(1, diag_seen)),
                 'teacher_margin_p50': float(np.median(teacher_margins)) if teacher_margins else None,
                 'teacher_margin_p95': float(np.percentile(teacher_margins, 95)) if teacher_margins else None,
+                'logits_margin_p50': float(np.median(logits_margins)) if logits_margins else None,
+                'logits_margin_p95': float(np.percentile(logits_margins, 95)) if logits_margins else None,
                 'qk_g_corr_pearson_mean': float(np.mean(qk_g_corrs)) if qk_g_corrs else None,
                 'qk_top1_match_rate': float(qk_top1_matches / max(1, diag_seen)),
                 'w_e_entropy_mean': float(np.mean(w_e_entropies)) if w_e_entropies else None,
@@ -717,7 +1119,22 @@ def train_epoch(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
                 'w_a_entropy_mean': float(np.mean(w_a_entropies)) if w_a_entropies else None,
                 'g_stats': {k: float(np.mean([d[k] for d in g_stats_list])) for k in g_stats_list[0].keys()} if g_stats_list else None,
                 'scores_stats': {k: float(np.mean([d[k] for d in scores_stats_list])) for k in scores_stats_list[0].keys()} if scores_stats_list else None,
+                'align_loss': float(np.mean(align_losses)) if align_losses else None,
+                'score_reg_mean': float(np.mean(reg_losses)) if reg_losses else None,
+                'nce_term': float(np.mean(nce_terms)) if nce_terms else None,
             }
+            # Attach gradient split probe if computed
+            if probe_grad_split:
+                try:
+                    rec['grad_norms_ce'] = grad_norms_ce
+                    rec['grad_norms_rec'] = grad_norms_rec
+                    # simple ratio on Wq+Wk
+                    eps = 1e-12
+                    ce_sum = (grad_norms_ce.get('Wq', 0.0) + grad_norms_ce.get('Wk', 0.0))
+                    rec_sum = (grad_norms_rec.get('Wq', 0.0) + grad_norms_rec.get('Wk', 0.0))
+                    rec['grad_ce_rec_ratio'] = float(ce_sum / (rec_sum + eps))
+                except Exception:
+                    pass
             with open(diag_path, 'a') as f:
                 f.write(json.dumps(rec) + "\n")
         except Exception:
@@ -755,9 +1172,22 @@ def evaluate(model: FullTransformerRoutedSoftOMP, D: torch.Tensor,
         y = Y_samples[i].to(device)
         x_hat, r_curve = model(y, D.to(device), train_mode=False)
         
-        # Predict angle from x_hat (magnitude aggregation to avoid sign cancellation)
-        x_by_expert = x_hat.reshape(E, model.M).abs().sum(dim=1)  # (E,)
-        pred_idx = x_by_expert.argmax().item()
+        # Predict angle from routing scores (consistent with training)
+        # CRITICAL FIX: Use scores_expert (routing decision) not x_hat (cumulative coefficients)
+        if model.routing_mode == 'g':
+            # For g-routing, use |g| energy
+            g_vec = (D.to(device).T @ y)
+            scores = g_vec.abs().view(E, model.M).sum(dim=1)
+        else:
+            # For qk/hybrid, use scores_expert from forward pass
+            if model.last_diag is not None and 'scores_expert' in model.last_diag:
+                scores = model.last_diag['scores_expert'].cpu()
+            else:
+                # Fallback to g for safety
+                g_vec = (D.to(device).T @ y)
+                scores = g_vec.abs().view(E, model.M).sum(dim=1)
+        
+        pred_idx = scores.argmax().item()
         predictions.append(pred_idx)
         residuals.append(r_curve)
     
@@ -811,7 +1241,11 @@ def main():
     
     # Preprocessing
     parser.add_argument('--n_atoms', type=int, default=8,
-                        help='Number of atoms after K-means clustering (default: 8)')
+                        help='Number of atoms per expert after reduction (default: 8)')
+    parser.add_argument('--atom_reduce_mode', type=str, default='kmeans', choices=['kmeans', 'kcenter', 'diverse'],
+                        help='Atom reduction: kmeans (centroids), kcenter (farthest-first), or diverse (cos-sep)')
+    parser.add_argument('--atom_min_cos', type=float, default=0.98,
+                        help='Minimum cosine separation for --atom_reduce_mode diverse (default: 0.98)')
     
     # Model architecture
     parser.add_argument('--d_model', type=int, default=64,
@@ -845,6 +1279,54 @@ def main():
                         help="Routing score source: 'qk' (Transformer QK), 'g' (physics correlation), 'hybrid' (blend)")
     parser.add_argument('--hybrid_alpha', type=float, default=0.5,
                         help='Hybrid blend weight for g (0..1); 1.0 = pure g, 0.0 = pure qk')
+    # Routing activation per level
+    parser.add_argument('--routing_activation_e', type=str, default='gumbel', choices=['gumbel', 'softmax', 'entmax', 'sparsemax'],
+                        help='Activation for expert-level routing (default: gumbel)')
+    parser.add_argument('--routing_activation_a', type=str, default='gumbel', choices=['gumbel', 'softmax', 'entmax', 'sparsemax'],
+                        help='Activation for atom-level routing (default: gumbel)')
+    # Score normalization and regularization
+    parser.add_argument('--score_norm', type=str, default='none', choices=['none', 'std'],
+                        help='Normalization for routing scores before softmax (default: none)')
+    parser.add_argument('--score_reg_weight', type=float, default=0.0,
+                        help='L2 regularization weight for routing scores (default: 0.0)')
+    # Expert aggregation and cross-attention toggles
+    parser.add_argument('--expert_agg', type=str, default='l2', choices=['l2', 'max', 'mean_relu'],
+                        help='Aggregate atom scores into expert logits: l2, max, or mean_relu (default: l2)')
+    parser.add_argument('--d_can_attend_r', action='store_true',
+                        help='Allow dictionary tokens to attend the residual token (adds R to D attention)')
+    parser.add_argument('--align_weight', type=float, default=0.0,
+                        help='Weight for alignment loss between QK scores and |g| energy (default: 0.0)')
+    parser.add_argument('--probe_grad_split', action='store_true',
+                        help='If set, run CE-only and REC-only gradient probes on the first sample to log grad norms.')
+    parser.add_argument('--freeze_encoder', action='store_true',
+                        help='If set, freeze Transformer encoder parameters (no gradient)')
+    parser.add_argument('--init_qk_identity', action='store_true',
+                        help='If set and d_model==F, initialize Wq/Wk to identity for g-like scoring')
+    parser.add_argument('--distill_T', type=float, default=1.0,
+                        help='Distillation temperature T for soft targets from |g| (default: 1.0)')
+    parser.add_argument('--distill_weight', type=float, default=0.0,
+                        help='Weight for distillation KL loss (student=QK, teacher=|g|)')
+    # Signal-preserving toggles
+    parser.add_argument('--no_type_bias', action='store_true',
+                        help='Remove type_R/type_D biases from token construction')
+    parser.add_argument('--encoder_identity', action='store_true',
+                        help='Bypass Transformer encoder (identity mapping)')
+    parser.add_argument('--single_gate_expert', action='store_true',
+                        help='Use only expert-level gating (atoms uniformly weighted)')
+    parser.add_argument('--score_center_atoms', action='store_true',
+                        help='Center atom-level scores per expert before routing')
+    parser.add_argument('--score_center_expert', action='store_true',
+                        help='Center expert-level scores before routing')
+    parser.add_argument('--supervise_steps', type=str, default='first', choices=['first', 'all'],
+                        help='Supervise routing scores from first K steps or all steps (default: first)')
+    parser.add_argument('--supervise_k', type=int, default=1,
+                        help='Number of initial steps to supervise when supervise_steps=first (default: 1)')
+    parser.add_argument('--w_e_entropy_penalty', type=float, default=0.0,
+                        help='Entropy penalty weight on expert routing distribution w_e (default: 0.0)')
+    parser.add_argument('--nce_weight', type=float, default=0.0,
+                        help='Weight for step-wise InfoNCE loss (anchor=step0, positive=step1)')
+    parser.add_argument('--nce_T', type=float, default=1.0,
+                        help='Temperature for InfoNCE (default: 1.0)')
     # Routing temperature annealing
     parser.add_argument('--tau_e_start', type=float, default=1.0,
                         help='Initial expert temperature for routing (default: 1.0)')
@@ -892,8 +1374,13 @@ def main():
     # Load raw matrices
     H_raw, W_raw, angles = load_raw_ldv_matrices(args.h_path, args.w_path, device='cpu')
     
-    # Reduce atoms (50 → 8)
-    W_reduced, kmeans_labels, kmeans_model = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
+    # Reduce atoms (50 → n_atoms)
+    if args.atom_reduce_mode == 'kmeans':
+        W_reduced, kmeans_labels, kmeans_model = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
+    elif args.atom_reduce_mode == 'kcenter':
+        W_reduced, kmeans_labels, kmeans_model = reduce_atoms(W_raw, mode='kcenter', n_clusters=args.n_atoms)
+    else:  # 'diverse'
+        W_reduced, kmeans_labels, kmeans_model = reduce_atoms(W_raw, mode='diverse', n_clusters=args.n_atoms, min_cos=args.atom_min_cos)
     
     # NO PCA - use full frequency resolution (F=346)
     print(f"\n=== Using Full Frequency Resolution (NO PCA) ===")
@@ -956,8 +1443,33 @@ def main():
         F=F, E=E, M=M, d=d, nhead=nhead, nlayers=args.nlayers,
         steps=args.steps, top_e=args.top_e, L=args.top_l,
         tau_e=0.5, tau_a=0.2, eta=0.5, routing='gumbel',
-        routing_mode=args.routing_mode, hybrid_alpha=args.hybrid_alpha
+        routing_mode=args.routing_mode, hybrid_alpha=args.hybrid_alpha,
+        routing_e=args.routing_activation_e, routing_a=args.routing_activation_a,
+        score_norm_mode=args.score_norm, score_reg_weight=args.score_reg_weight
     ).to(args.device)
+
+    if args.freeze_encoder:
+        for p in model.encoder.parameters():
+            p.requires_grad = False
+        print('Freeze: encoder parameters frozen (no gradient)')
+
+    # Optional: initialize Wq/Wk to identity when d_model matches input F
+    if args.init_qk_identity and d == F:
+        with torch.no_grad():
+            if model.Wq.weight.shape[0] == model.Wq.weight.shape[1] == d:
+                model.Wq.weight.copy_(torch.eye(d, device=model.Wq.weight.device))
+            if model.Wk.weight.shape[0] == model.Wk.weight.shape[1] == d:
+                model.Wk.weight.copy_(torch.eye(d, device=model.Wk.weight.device))
+        print('Init: Wq/Wk initialized to identity (g-like start)')
+
+    # Apply signal-preserving toggles
+    model.no_type_bias = bool(getattr(args, 'no_type_bias', False))
+    model.encoder_identity = bool(getattr(args, 'encoder_identity', False))
+    model.single_gate_expert = bool(getattr(args, 'single_gate_expert', False))
+    model.score_center_atoms = bool(getattr(args, 'score_center_atoms', False))
+    model.score_center_expert = bool(getattr(args, 'score_center_expert', False))
+    model.expert_agg = getattr(args, 'expert_agg', 'l2')
+    model.d_can_attend_r = bool(getattr(args, 'd_can_attend_r', False))
     
     print(f"\nModel architecture:")
     print(f"  F (input freq dim): {F}")
@@ -1006,7 +1518,12 @@ def main():
         metrics = train_epoch(
             model, D, Y_samples, labels, opt, idx2angle,
             batch_size=args.batch_size, device=args.device,
-            alpha=args.alpha, beta=args.beta, gamma=args.gamma,
+            alpha=args.alpha, beta=args.beta, gamma=args.gamma, align_weight=args.align_weight,
+            distill_T=args.distill_T, distill_weight=args.distill_weight,
+            probe_grad_split=args.probe_grad_split,
+            supervise_steps=args.supervise_steps, supervise_k=args.supervise_k,
+            w_e_entropy_penalty=args.w_e_entropy_penalty,
+            nce_weight=args.nce_weight, nce_T=args.nce_T,
             epoch=epoch, diag_path=os.path.join(args.out_dir, 'diagnostics.jsonl'), diag_subset=10**9,
             teacher_warmup_epochs=args.teacher_warmup_epochs, teacher_weight=args.teacher_weight
         )
