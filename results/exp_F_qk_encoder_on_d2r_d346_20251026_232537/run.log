@@ -1,0 +1,158 @@
+================================================================================
+Transformer Routed Soft-OMP with Real LDV Data
+================================================================================
+Output directory: results/exp_F_qk_encoder_on_d2r_d346_20251026_232537
+
+================================================================================
+STEP 1: Data Loading and Preprocessing
+================================================================================
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: doa_normalized_config_c_corrected/models/usm.pth
+Raw data loaded:
+  H shape: torch.Size([346, 37]), range: [0.000677, 0.148538]
+  W shape: torch.Size([346, 50]), range: [0.000000, 0.210976]
+  Angles: 37 total, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+
+=== Atom Reduction via K-means ===
+Input: W shape torch.Size([346, 50]) (346 freq bins × 50 atoms)
+Target: 8 clusters
+K-means completed:
+  Centroids shape: torch.Size([346, 8])
+  Cluster sizes: [1, 3, 3, 1, 1, 1, 1, 39]
+  Reconstruction error: 1.6212 (162.12%)
+
+=== Using Full Frequency Resolution (NO PCA) ===
+H shape: torch.Size([346, 37])
+W shape: torch.Size([346, 8])
+Rationale: PCA may discard low-variance but high-discriminability features
+           Greedy achieves 83.8% with F=346; test if Transformer needs full info too
+
+=== Building Dictionary ===
+Dictionary built:
+  Shape: torch.Size([346, 296]) (F=346, P=296)
+  Mutual coherence μ_max: 0.9954
+  Mutual coherence μ_mean: 0.4474
+  Index mapping: 296 entries
+
+=== Loading LDV Samples with DoADataset ===
+Dataset root: /Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized
+DoADataset created:
+  Total samples: 111
+  Angles: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz
+  Using scipy.signal.stft with DC offset removal
+
+Loaded samples:
+  Y_samples: torch.Size([111, 346])
+  Labels: torch.Size([111]), unique angles: 37
+  Metadata: 111 entries
+Dataset fingerprint (MD5): 713c0635878a04b32f4ee30208904d11
+  Computed from 111 .npy files
+
+================================================================================
+STEP 2: Model Initialization
+================================================================================
+
+=== Parameter Reduction Strategy ===
+  Input frequency dimension F: 346
+  Transformer embedding dimension d: 346
+  Ratio d/F: 1.000
+  Token projection size: 2 × (346 × 346) = 239,432 parameters
+  (vs naive F×F: 2 × (346 × 346) = 239,432 parameters)
+  Parameter reduction: 0.0%
+
+Model architecture:
+  F (input freq dim): 346
+  d_model (embedding dim): 346
+  E (experts/angles): 37
+  M (atoms/expert): 8
+  P (total atoms): 296
+  nhead: 2
+  nlayers: 1
+  routing_mode: qk (hybrid_alpha=n/a)
+  Total parameters: 1,920,649
+  Trainable parameters: 1,920,649
+
+================================================================================
+STEP 3: Training
+================================================================================
+Epoch   1/10: loss=3.8938 rec=0.0015 mono=0.0000 class=3.8923 acc=0.027 teach=1.000 align=0.054 tau_e=0.993 tau_a=0.993 eta=0.506
+Epoch   2/10: loss=3.7621 rec=0.0015 mono=0.0000 class=3.7606
+Epoch   3/10: loss=2.8862 rec=0.0014 mono=0.0000 class=2.8848
+Epoch   4/10: loss=2.5114 rec=0.0014 mono=0.0000 class=2.5101
+Epoch   5/10: loss=2.1899 rec=0.0013 mono=0.0000 class=2.1885
+Epoch   6/10: loss=2.0266 rec=0.0013 mono=0.0000 class=2.0252
+Epoch   7/10: loss=1.7207 rec=0.0013 mono=0.0000 class=1.7194
+Epoch   8/10: loss=1.5291 rec=0.0013 mono=0.0000 class=1.5279
+Epoch   9/10: loss=1.2335 rec=0.0013 mono=0.0000 class=1.2322
+Epoch  10/10: loss=1.0196 rec=0.0012 mono=0.0000 class=1.0184 acc=0.946 teach=1.000 align=0.514 tau_e=0.753 tau_a=0.755 eta=0.558
+
+================================================================================
+STEP 4: Final Evaluation
+================================================================================
+
+Final Results (Best model from epoch 10):
+  Overall accuracy: 0.946 (94.6%)
+  Baseline (commit b573aa6): 0.838 (83.8%)
+
+Per-angle accuracy:
+  Angle   0°: 1.000 (100.0%) - 3 samples
+  Angle   5°: 1.000 (100.0%) - 3 samples
+  Angle  10°: 1.000 (100.0%) - 3 samples
+  Angle  15°: 1.000 (100.0%) - 3 samples
+  Angle  20°: 0.000 (  0.0%) - 3 samples
+  Angle  25°: 1.000 (100.0%) - 3 samples
+  Angle  30°: 1.000 (100.0%) - 3 samples
+  Angle  35°: 1.000 (100.0%) - 3 samples
+  Angle  40°: 1.000 (100.0%) - 3 samples
+  Angle  45°: 1.000 (100.0%) - 3 samples
+  Angle  50°: 1.000 (100.0%) - 3 samples
+  Angle  55°: 1.000 (100.0%) - 3 samples
+  Angle  60°: 1.000 (100.0%) - 3 samples
+  Angle  65°: 1.000 (100.0%) - 3 samples
+  Angle  70°: 1.000 (100.0%) - 3 samples
+  Angle  75°: 1.000 (100.0%) - 3 samples
+  Angle  80°: 1.000 (100.0%) - 3 samples
+  Angle  85°: 1.000 (100.0%) - 3 samples
+  Angle  90°: 1.000 (100.0%) - 3 samples
+  Angle  95°: 0.000 (  0.0%) - 3 samples
+  Angle 100°: 1.000 (100.0%) - 3 samples
+  Angle 105°: 1.000 (100.0%) - 3 samples
+  Angle 110°: 1.000 (100.0%) - 3 samples
+  Angle 115°: 1.000 (100.0%) - 3 samples
+  Angle 120°: 1.000 (100.0%) - 3 samples
+  Angle 125°: 1.000 (100.0%) - 3 samples
+  Angle 130°: 1.000 (100.0%) - 3 samples
+  Angle 135°: 1.000 (100.0%) - 3 samples
+  Angle 140°: 1.000 (100.0%) - 3 samples
+  Angle 145°: 1.000 (100.0%) - 3 samples
+  Angle 150°: 1.000 (100.0%) - 3 samples
+  Angle 155°: 1.000 (100.0%) - 3 samples
+  Angle 160°: 1.000 (100.0%) - 3 samples
+  Angle 165°: 1.000 (100.0%) - 3 samples
+  Angle 170°: 1.000 (100.0%) - 3 samples
+  Angle 175°: 1.000 (100.0%) - 3 samples
+  Angle 180°: 1.000 (100.0%) - 3 samples
+
+Problematic angles from baseline:
+   15°: 1.000 (IMPROVED)
+   35°: 1.000 (IMPROVED)
+   50°: 1.000 (IMPROVED)
+   70°: 1.000 (IMPROVED)
+  105°: 1.000 (IMPROVED)
+  120°: 1.000 (IMPROVED)
+
+================================================================================
+STEP 5: Visualization
+================================================================================
+Saved figure: results/exp_F_qk_encoder_on_d2r_d346_20251026_232537/results.png
+
+================================================================================
+STEP 6: Saving Results
+================================================================================
+All results saved to: results/exp_F_qk_encoder_on_d2r_d346_20251026_232537
+
+================================================================================
+DONE
+================================================================================
+
