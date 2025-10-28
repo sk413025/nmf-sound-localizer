@@ -41,6 +41,7 @@ import torch
 import torch.nn.functional as F
 
 from doa_rl.data import DoADataset, create_dataloader
+from sklearn.cluster import KMeans
 
 
 # -----------------------------
@@ -107,6 +108,48 @@ def reduce_atoms_kcenter(W: torch.Tensor, n_clusters: int = 8) -> Tuple[torch.Te
     sims = Xn @ Xn[centers].T
     labels = np.argmax(sims, axis=1)
     info = {"selected_indices": centers, "cluster_sizes": np.bincount(labels, minlength=len(centers)).tolist()}
+    return W_red, labels, info
+
+
+def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int = 42) -> Tuple[torch.Tensor, np.ndarray, Dict[str, Any]]:
+    """Lightweight NumPy KMeans (k-means++ init, 30 iters) over atom columns.
+    Avoids sklearn overhead; fast for M_full≈50.
+    """
+    X = W.cpu().numpy().T  # (M_full, F)
+    rng = np.random.RandomState(random_state)
+    M_full, Fdim = X.shape
+    # k-means++ init
+    centers = []
+    idx0 = int(rng.randint(M_full))
+    centers.append(X[idx0].copy())
+    for _ in range(1, n_clusters):
+        d2 = np.min([np.sum((X - c) ** 2, axis=1) for c in centers], axis=0)  # (M_full,)
+        probs = d2 / (d2.sum() + 1e-12)
+        idx = int(rng.choice(M_full, p=probs))
+        centers.append(X[idx].copy())
+    C = np.stack(centers, axis=0)  # (k, F)
+    labels = np.zeros(M_full, dtype=int)
+    for _ in range(30):
+        # Assign
+        dists = np.sum((X[:, None, :] - C[None, :, :]) ** 2, axis=2)  # (M_full, k)
+        labels = np.argmin(dists, axis=1)
+        # Update
+        newC = np.zeros_like(C)
+        for k in range(n_clusters):
+            mask = (labels == k)
+            if np.any(mask):
+                newC[k] = X[mask].mean(axis=0)
+            else:
+                # Reinit empty cluster to farthest point
+                far_idx = int(np.argmax(np.min(dists, axis=1)))
+                newC[k] = X[far_idx]
+        if np.allclose(newC, C, atol=1e-5):
+            C = newC
+            break
+        C = newC
+    W_red = torch.from_numpy(C.T).float()  # (F, k)
+    W_red = W_red / (W_red.norm(dim=0, keepdim=True) + 1e-12)
+    info = {}
     return W_red, labels, info
 
 
@@ -205,16 +248,57 @@ def _load_qk_model(d_model: int, nhead: int, nlayers: int, F: int, E: int, M: in
     spec.loader.exec_module(mod)
     ModelClass = getattr(mod, 'FullTransformerRoutedSoftOMP')
     model = ModelClass(F=F, E=E, M=M, d=d_model, nhead=nhead, nlayers=nlayers, steps=1).to(device)
-    # routing mode 'qk' by default
+    # Load weights
     state = torch.load(checkpoint_path, map_location=device, weights_only=False)
     sd = state.get('model_state_dict', state)
     missing, unexpected = model.load_state_dict(sd, strict=False)
-    if missing:
-        print(f"[QK teacher] Missing keys: {missing}")
-    if unexpected:
-        print(f"[QK teacher] Unexpected keys: {unexpected}")
+    print(f"[QK teacher] load_state_dict: missing={missing}, unexpected={unexpected}")
+    # Restore critical config flags (from fe4ef60 run)
+    model.routing_mode = 'qk'
+    model.score_norm_mode = 'std'
+    model.score_center_expert = True
+    model.score_center_atoms = True
+    model.no_type_bias = True
+    model.expert_agg = 'l2'
     model.eval()
     return model
+
+
+def _qk_scores_with_config(model, D: torch.Tensor, r: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute (qk_expert, qk_atoms) with model configuration: std norm and centering if enabled.
+    Returns:
+        qk_expert: (E,)
+        qk_atoms: (E,M)
+    """
+    E, M = model.E, model.M
+    t_R = model.P_R(r) + (model.type_R if not model.no_type_bias else 0)
+    T_D = model.P_D(D.T) + (model.type_D if not model.no_type_bias else 0)
+    T = torch.cat([t_R[None, :], T_D], dim=0)
+    mask = model._make_mask(T.size(0)).to(T.device)
+    Henc = T if model.encoder_identity else model.encoder(T, mask=mask)
+    h_R = Henc[0]
+    H_D = Henc[1:]
+    qk_atoms = (model.Wk(H_D) @ model.Wq(h_R)) / math.sqrt(model.d)  # (P,)
+    qk_atoms = qk_atoms.reshape(E, M)
+    # Aggregate expert scores
+    if model.expert_agg == 'l2':
+        qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
+    elif model.expert_agg == 'max':
+        qk_expert = qk_atoms.abs().max(dim=1).values
+    else:
+        qk_expert = F.relu(qk_atoms).mean(dim=1)
+    # Score normalization
+    if getattr(model, 'score_norm_mode', 'none') == 'std':
+        se_mean, se_std = qk_expert.mean(), qk_expert.std()
+        qk_expert = (qk_expert - se_mean) / (se_std + 1e-8)
+        sa_mean, sa_std = qk_atoms.mean(), qk_atoms.std()
+        qk_atoms = (qk_atoms - sa_mean) / (sa_std + 1e-8)
+    # Centering
+    if getattr(model, 'score_center_expert', False):
+        qk_expert = qk_expert - qk_expert.mean()
+    if getattr(model, 'score_center_atoms', False):
+        qk_atoms = qk_atoms - qk_atoms.mean(dim=1, keepdim=True)
+    return qk_expert, qk_atoms
 
 
 def main():
@@ -230,7 +314,7 @@ def main():
     ap.add_argument('--freq_max', type=float, default=3000.0)
     # Dictionary/atoms
     ap.add_argument('--n_atoms', type=int, default=8)
-    ap.add_argument('--atom_reduce_mode', type=str, default='kcenter', choices=['kcenter'])
+    ap.add_argument('--atom_reduce_mode', type=str, default='kcenter', choices=['kcenter','kmeans','diverse'])
     # Trajectory/targets
     ap.add_argument('--K', type=int, default=6)
     ap.add_argument('--rtg_target_resid', type=float, default=0.02)
@@ -267,10 +351,21 @@ def main():
     # ------------------------------------------------------------------
     H, W_full, angles = load_raw_ldv_matrices(args.h_path, args.w_path, device='cpu')
     Fdim_H, E = H.shape
-    print("\n=== Atom reduction (k-center) ===")
-    W, labels, info = reduce_atoms_kcenter(W_full, n_clusters=int(args.n_atoms))
-    print(f"Selected indices: {info['selected_indices']}")
-    print(f"Cluster sizes: {info['cluster_sizes']}")
+    if args.atom_reduce_mode == 'kcenter':
+        print("\n=== Atom reduction (k-center) ===")
+        W, labels, info = reduce_atoms_kcenter(W_full, n_clusters=int(args.n_atoms))
+        print(f"Selected indices: {info['selected_indices']}")
+        print(f"Cluster sizes: {info['cluster_sizes']}")
+    elif args.atom_reduce_mode == 'kmeans':
+        print("\n=== Atom reduction (K-means) ===")
+        W, labels, _ = reduce_atoms_kmeans(W_full, n_clusters=int(args.n_atoms), random_state=args.seed)
+        info = {'selected_indices': None, 'cluster_sizes': np.bincount(labels).tolist()}
+        print(f"Cluster sizes: {info['cluster_sizes']}")
+    else:
+        print("\n=== Atom reduction (diverse cos-sep) ===")
+        W, labels, info = reduce_atoms_diverse(W_full, n_clusters=int(args.n_atoms))
+        print(f"Selected indices: {info['selected_indices']}")
+        print(f"Cluster sizes: {info['cluster_sizes']}")
     Fdim_W, M = W.shape
     if Fdim_W != Fdim_H:
         raise RuntimeError(f"F mismatch after atom reduction: H.F={Fdim_H} vs W.F={Fdim_W}")
@@ -363,6 +458,43 @@ def main():
         print("\n=== Loading QK teacher model ===")
         qk_model = _load_qk_model(d_model=args.qk_d_model, nhead=args.qk_nhead, nlayers=args.qk_nlayers,
                                   F=F_expected, E=E, M=M, device=device, checkpoint_path=args.qk_ckpt)
+        # Log teacher config and quick eval on current D
+        print("QK teacher config:")
+        print(f"  routing_mode={qk_model.routing_mode}")
+        print(f"  score_norm_mode={qk_model.score_norm_mode}")
+        print(f"  score_center_expert={qk_model.score_center_expert}")
+        print(f"  score_center_atoms={qk_model.score_center_atoms}")
+        print(f"  no_type_bias={qk_model.no_type_bias}")
+        print(f"  expert_agg={qk_model.expert_agg}")
+        print("\n=== Teacher t=0 evaluation on dataset (current D) ===")
+        correct = 0
+        expert_counts = [0]*E
+        for batch in dl:
+            Y = batch['Y'][0]
+            angle_idx = int(batch['angle_index'][0])
+            r0 = (Y.mean(dim=1).float().to(device))
+            r0 = r0 / (r0.norm() + 1e-12)
+            qk_exp, _ = _qk_scores_with_config(qk_model, D, r0)
+            e_pred = int(qk_exp.argmax().item())
+            expert_counts[e_pred] += 1
+            if e_pred == angle_idx:
+                correct += 1
+        acc = correct / max(1, len(dataset))
+        print(f"Teacher accuracy (t=0, current D): {acc:.3f}")
+        print(f"Expert distribution: {[int(c) for c in expert_counts]}")
+        # Save to manifest
+        manifest['teacher_eval'] = {
+            'accuracy_t0_currentD': acc,
+            'expert_hist': expert_counts,
+            'config': {
+                'routing_mode': qk_model.routing_mode,
+                'score_norm_mode': qk_model.score_norm_mode,
+                'score_center_expert': qk_model.score_center_expert,
+                'score_center_atoms': qk_model.score_center_atoms,
+                'no_type_bias': qk_model.no_type_bias,
+                'expert_agg': qk_model.expert_agg,
+            }
+        }
 
     t0 = time.time()
     for i, batch in enumerate(dl):
@@ -395,25 +527,9 @@ def main():
             if args.teacher == 'g':
                 e, m, j, energy_e_max, a_score = hierarchical_pick_g(D, r, E=E, M=M)
             else:
-                # QK teacher: build tokens via model internals and compute qk scores
                 assert qk_model is not None
-                # mimic _build_tokens(r,D) and encoder
                 with torch.no_grad():
-                    t_R = qk_model.P_R(r) + (qk_model.type_R if not qk_model.no_type_bias else 0)
-                    T_D = qk_model.P_D(D.T) + (qk_model.type_D if not qk_model.no_type_bias else 0)
-                    T = torch.cat([t_R[None, :], T_D], dim=0)
-                    mask = qk_model._make_mask(T.size(0)).to(T.device)
-                    Henc = T if qk_model.encoder_identity else qk_model.encoder(T, mask=mask)
-                    h_R = Henc[0]
-                    H_D = Henc[1:]
-                    qk_atoms = (qk_model.Wk(H_D) @ qk_model.Wq(h_R)) / math.sqrt(qk_model.d)
-                    qk_atoms = qk_atoms.reshape(E, M)
-                    if qk_model.expert_agg == 'l2':
-                        qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
-                    elif qk_model.expert_agg == 'max':
-                        qk_expert = qk_atoms.abs().max(dim=1).values
-                    else:
-                        qk_expert = F.relu(qk_atoms).mean(dim=1)
+                    qk_expert, qk_atoms = _qk_scores_with_config(qk_model, D, r)
                     e = int(torch.argmax(qk_expert).item())
                     m = int(torch.argmax(qk_atoms[e].abs()).item())
                     j = e * M + m
@@ -520,6 +636,15 @@ def main():
             'nmf_localizer/utils/audio_utils.py': sha256_of_file(Path('nmf_localizer/utils/audio_utils.py')),
         }
     }
+    if qk_model is not None:
+        code_state['teacher_model_config'] = {
+            'routing_mode': qk_model.routing_mode,
+            'score_norm_mode': qk_model.score_norm_mode,
+            'score_center_expert': qk_model.score_center_expert,
+            'score_center_atoms': qk_model.score_center_atoms,
+            'no_type_bias': qk_model.no_type_bias,
+            'expert_agg': qk_model.expert_agg,
+        }
     with open(out_dir / 'code_state.json', 'w') as f:
         json.dump(code_state, f, indent=2)
 
