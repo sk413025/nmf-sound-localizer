@@ -146,8 +146,40 @@ def _load_qk_teacher_from_scripts(F: int, E: int, M: int, d_model: int, nhead: i
         print(f"[Teacher loader] Unexpected keys: {unexpected}")
     except Exception as e:
         print(f"[Teacher loader] Exception during load: {e}")
+    # Restore critical flags
+    mdl.routing_mode = 'qk'
+    mdl.score_norm_mode = 'std'
+    mdl.score_center_expert = True
+    mdl.score_center_atoms = True
+    mdl.no_type_bias = True
+    mdl.expert_agg = 'l2'
     mdl.eval()
     return mdl
+
+
+def qk_scores_with_config(model, D: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+    """Compute teacher qk_expert (E,) with its normalization/centering flags."""
+    E, M = model.E, model.M
+    t_R = model.P_R(r) + (model.type_R if not model.no_type_bias else 0)
+    T_D = model.P_D(D.T) + (model.type_D if not model.no_type_bias else 0)
+    T = torch.cat([t_R[None, :], T_D], dim=0)
+    mask = model._make_mask(T.size(0)).to(T.device)
+    Henc = T if model.encoder_identity else model.encoder(T, mask=mask)
+    h_R = Henc[0]; H_D = Henc[1:]
+    qk_atoms = (model.Wk(H_D) @ model.Wq(h_R)) / math.sqrt(model.d)
+    qk_atoms = qk_atoms.view(E, M)
+    if model.expert_agg == 'l2':
+        qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
+    elif model.expert_agg == 'max':
+        qk_expert = qk_atoms.abs().max(dim=1).values
+    else:
+        qk_expert = F.relu(qk_atoms).mean(dim=1)
+    if getattr(model, 'score_norm_mode', 'none') == 'std':
+        se_mean, se_std = qk_expert.mean(), qk_expert.std()
+        qk_expert = (qk_expert - se_mean) / (se_std + 1e-8)
+    if getattr(model, 'score_center_expert', False):
+        qk_expert = qk_expert - qk_expert.mean()
+    return qk_expert
 
 
 def recompute_r_t(y: torch.Tensor, D: torch.Tensor, actions_prev: List[int]) -> torch.Tensor:
@@ -288,6 +320,9 @@ def main():
     ap.add_argument('--teacher_d_model', type=int, default=128)
     ap.add_argument('--teacher_nhead', type=int, default=2)
     ap.add_argument('--teacher_nlayers', type=int, default=1)
+    ap.add_argument('--distill_weight', type=float, default=0.5, help='Weight for teacher qk_expert distillation')
+    ap.add_argument('--distill_T', type=float, default=1.0, help='Temperature for distillation softmax')
+    ap.add_argument('--warmup_epochs', type=int, default=2, help='Epochs to apply distillation strongly')
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir); out_dir.mkdir(parents=True, exist_ok=True)
@@ -403,8 +438,22 @@ def main():
                                                      nhead=args.teacher_nhead, nlayers=args.teacher_nlayers,
                                                      checkpoint_path=teacher_ckpt, device=device)
 
-    # Training
+    # Resume support
+    ckpt_path = out_dir / 'ckpt_latest.pth'
     hist = []
+    if ckpt_path.exists():
+        try:
+            ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+            model.load_state_dict(ckpt['model_state_dict'])
+            if 'optimizer_state_dict' in ckpt:
+                opt.load_state_dict(ckpt['optimizer_state_dict'])
+            if 'history' in ckpt:
+                hist = ckpt['history']
+            print(f"[Resume] Loaded checkpoint from {ckpt_path}")
+        except Exception as e:
+            print(f"[Resume] Failed to load checkpoint: {e}")
+
+    # Training
     for epoch in range(args.epochs):
         model.train(); total=0.0; n=0
         for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(args.batch_size):
@@ -419,11 +468,42 @@ def main():
             se_sel = se_flat.gather(1, idx.view(-1,1,1).expand(-1,1,M)).squeeze(1)  # (B*K,M)
             loss_a = F.cross_entropy(se_sel, M_b.reshape(-1))
             loss = loss_e + loss_a
+            # Optional teacher distillation on expert scores (per step)
+            if teacher_model is not None and args.distill_weight > 0.0:
+                # Build teacher logits per step from R_b using current D
+                with torch.no_grad():
+                    te_list = []
+                    for t in range(K):
+                        # average over batch for speed? keep per-sample
+                        te_t = []
+                        for b in range(R_b.size(0)):
+                            qk_exp = qk_scores_with_config(teacher_model, D.to(device), R_b[b,t])
+                            te_t.append(qk_exp)
+                        te_t = torch.stack(te_t, dim=0)  # (B,E)
+                        te_list.append(te_t)
+                    te_logits = torch.stack(te_list, dim=1)  # (B,K,E)
+                # distillation KL: student vs teacher at temperature T
+                T = max(args.distill_T, 1e-8)
+                p_teacher = F.softmax(te_logits / T, dim=-1)
+                log_p_student = F.log_softmax(scores_e / T, dim=-1)
+                kl = F.kl_div(log_p_student, p_teacher, reduction='batchmean') * (T*T)
+                # Warmup scaling
+                w = args.distill_weight if epoch < args.warmup_epochs else (0.5 * args.distill_weight)
+                loss = loss + w * kl
             opt.zero_grad(); loss.backward(retain_graph=True); opt.step()
             total += float(loss.item()); n += 1
         avg = total / max(n,1)
         print(f"Epoch {epoch+1}/{args.epochs}: loss={avg:.4f}")
-        hist.append({'epoch': epoch+1, 'loss': avg})
+        hist.append({'epoch': (hist[-1]['epoch'] + 1 if hist else 1), 'loss': avg})
+        # Save checkpoint each epoch
+        try:
+            torch.save({
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': opt.state_dict(),
+                'history': hist,
+            }, ckpt_path)
+        except Exception as e:
+            print(f"[Checkpoint] Save failed: {e}")
 
     # Simple evaluation: per-step top-1 accuracy on the training set (proxy)
     model.eval();

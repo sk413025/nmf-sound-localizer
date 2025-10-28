@@ -1,0 +1,81 @@
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans_distill
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/mdp-decision-transformer/scripts/dt_pointer_ldv.py", line 710, in <module>
+    main()
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/mdp-decision-transformer/scripts/dt_pointer_ldv.py", line 441, in main
+    qk_exp = qk_scores_with_config(teacher_model, D.to(device), R_b[b,t])
+             ^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'qk_scores_with_config' is not defined
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans_distill
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+Epoch 1/5: loss=9.4975
+Epoch 2/5: loss=9.3583
+Epoch 3/5: loss=9.2760
+Epoch 4/5: loss=7.3265
+Epoch 5/5: loss=7.2565
+Final train step-acc: expert=0.120, atom=0.356
+Teacher-forced step match: 0.089
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.027; teacher qk t=0: 0.9459459459459459; g(y): 1.000
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans_distill
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+Epoch 1/5: loss=9.5242
+Epoch 2/5: loss=9.4121
+Epoch 3/5: loss=9.3264
+Epoch 4/5: loss=7.5905
+Epoch 5/5: loss=7.5058
+Final train step-acc: expert=0.095, atom=0.065
+Teacher-forced step match: 0.000
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.027; teacher qk t=0: 0.9459459459459459; g(y): 1.000
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans_distill
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+[Resume] Loaded checkpoint from results/dt_min_qk_kmeans_distill/ckpt_latest.pth
+Epoch 1/5: loss=9.3108
+Epoch 2/5: loss=9.2411
+Epoch 3/5: loss=9.2001
+Epoch 4/5: loss=7.3092
+Epoch 5/5: loss=7.2365
+Final train step-acc: expert=0.095, atom=0.342
+Teacher-forced step match: 0.027
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.027; teacher qk t=0: 0.9459459459459459; g(y): 1.000
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans_distill
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+[Resume] Loaded checkpoint from results/dt_min_qk_kmeans_distill/ckpt_latest.pth
+Epoch 1/5: loss=8.9123
+Epoch 2/5: loss=8.8001
+Epoch 3/5: loss=8.6566
+Epoch 4/5: loss=6.8179
+Epoch 5/5: loss=6.7499
+Final train step-acc: expert=0.147, atom=0.378
+Teacher-forced step match: 0.116
+Angle acc — DT-min t=0: 0.054; DT-min t=K-1: 0.054; teacher qk t=0: 0.9459459459459459; g(y): 1.000
