@@ -1,0 +1,13 @@
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_kmeans
+Out dir: results/dt_min_qk_kmeans
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+Epoch 1/2: loss=5.6677
+Epoch 2/2: loss=5.5954
+Final train step-acc: expert=0.095, atom=0.288
+Teacher-forced step match: 0.000
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.027; teacher qk t=0: 0.02702702702702703; g(y): 1.000

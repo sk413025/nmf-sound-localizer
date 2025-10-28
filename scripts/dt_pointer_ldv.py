@@ -32,6 +32,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.cluster import KMeans
 
 from doa_rl.data import DoADataset, create_dataloader
 
@@ -85,6 +86,45 @@ def build_D(H: torch.Tensor, W: torch.Tensor, angles: List[float]) -> Tuple[torc
     return D, E, M
 
 
+def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int = 42) -> torch.Tensor:
+    """KMeans over atom columns (F,M_full) → (F,n_clusters) centroids normalized per column (sklearn precise)."""
+    X = W.cpu().numpy().T  # (M_full, F)
+    km = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=20, max_iter=300)
+    labels = km.fit_predict(X)
+    C = km.cluster_centers_  # (k,F)
+    W_red = torch.from_numpy(C.T).float()  # (F,k)
+    W_red = W_red / (W_red.norm(dim=0, keepdim=True) + 1e-12)
+    return W_red
+
+
+def reduce_atoms_kmeans_numpy(W: torch.Tensor, n_clusters: int = 8, random_state: int = 42, iters: int = 30) -> torch.Tensor:
+    """Lightweight NumPy k-means (k-means++ init) matching trajectory builder fast path."""
+    X = W.cpu().numpy().T  # (M_full, F)
+    rng = np.random.RandomState(random_state)
+    M_full = X.shape[0]
+    # k-means++ init
+    centers = []
+    idx0 = int(rng.randint(M_full))
+    centers.append(X[idx0].copy())
+    for _ in range(1, n_clusters):
+        d2 = np.min([np.sum((X - c) ** 2, axis=1) for c in centers], axis=0)
+        probs = d2 / (d2.sum() + 1e-12)
+        idx = int(rng.choice(M_full, p=probs))
+        centers.append(X[idx].copy())
+    C = np.stack(centers, axis=0)
+    for _ in range(iters):
+        dists = np.sum((X[:, None, :] - C[None, :, :]) ** 2, axis=2)
+        labels = np.argmin(dists, axis=1)
+        newC = np.stack([X[labels == k].mean(axis=0) if np.any(labels == k) else C[k] for k in range(n_clusters)], axis=0)
+        if np.allclose(newC, C, atol=1e-5):
+            C = newC
+            break
+        C = newC
+    W_red = torch.from_numpy(C.T).float()
+    W_red = W_red / (W_red.norm(dim=0, keepdim=True) + 1e-12)
+    return W_red
+
+
 def _load_qk_teacher_from_scripts(F: int, E: int, M: int, d_model: int, nhead: int, nlayers: int,
                                   checkpoint_path: str, device: torch.device):
     """Load FullTransformerRoutedSoftOMP from scripts/omp-transformer-ldv.py to compute qk_expert."""
@@ -101,9 +141,11 @@ def _load_qk_teacher_from_scripts(F: int, E: int, M: int, d_model: int, nhead: i
     try:
         state = torch.load(checkpoint_path, map_location=device, weights_only=False)
         sd = state.get('model_state_dict', state)
-        mdl.load_state_dict(sd, strict=False)
-    except Exception:
-        pass
+        missing, unexpected = mdl.load_state_dict(sd, strict=False)
+        print(f"[Teacher loader] Missing keys: {missing}")
+        print(f"[Teacher loader] Unexpected keys: {unexpected}")
+    except Exception as e:
+        print(f"[Teacher loader] Exception during load: {e}")
     mdl.eval()
     return mdl
 
@@ -124,8 +166,12 @@ class DTMinPointer(nn.Module):
         super().__init__()
         self.F, self.E, self.M = F, E, M
         self.d = d_model
-        # Residual projection
+        # Residual/Dictionary projections (align with teacher qk head semantics)
         self.P_R = nn.Linear(F, d_model, bias=False)
+        self.P_D = nn.Linear(F, d_model, bias=False)
+        # Type biases like teacher
+        self.type_R = nn.Parameter(torch.randn(d_model))
+        self.type_D = nn.Parameter(torch.randn(d_model))
         # RTG + step/budget projections
         self.proj_rtg = nn.Linear(2, d_model)
         self.proj_step = nn.Linear(2, d_model)
@@ -133,38 +179,38 @@ class DTMinPointer(nn.Module):
         # Time encoder
         enc = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, batch_first=True, dropout=0.1)
         self.encoder = nn.TransformerEncoder(enc, num_layers=nlayers)
-        # Query for pointer
+        # QK heads like teacher
         self.Wq = nn.Linear(d_model, d_model, bias=False)
-        # Keys for experts/atoms (set at runtime via register_buffer)
-        self.register_buffer('K_e', torch.empty(0))   # (E, d)
-        self.register_buffer('K_em', torch.empty(0))  # (E, M, d)
+        self.Wk = nn.Linear(d_model, d_model, bias=False)
+        # Precomputed dictionary embeddings after P_D + type_D + Wk
+        self.register_buffer('KD_em', torch.empty(0))  # (E, M, d)
 
     def set_keys_from_D(self, D: torch.Tensor):
-        # Build expert and per-atom F-vectors, then project to d_model
-        Fdim, P = D.shape
-        E = self.E; M = self.M
-        D_em = D.view(Fdim, E, M)
-        # Expert prototype as L2 aggregation over atoms
-        D_e = torch.linalg.norm(D_em, dim=2)  # (F,E)
-        K_e = D_e.T @ self.P_R.weight.T  # (E,d) using same projection matrix weight^T
-        # Atom keys
-        K_em = torch.einsum('fem,df->emd', D_em, self.P_R.weight)  # (E,M,d)
-        self.K_e = torch.nn.functional.normalize(K_e, dim=-1)
-        self.K_em = torch.nn.functional.normalize(K_em, dim=-1)
+        # Precompute dictionary token embeddings H_D ≈ Wk(P_D(D.T)+type_D) without grad
+        with torch.no_grad():
+            Fdim, P = D.shape
+            E = self.E; M = self.M
+            DD = D.T  # (P,F)
+            TD = self.P_D(DD) + self.type_D  # (P,d)
+            KD = self.Wk(TD)  # (P,d)
+            KD_em = KD.view(E, M, self.d).clone()
+            self.KD_em = KD_em  # (E,M,d)
 
     def forward(self, R_seq: torch.Tensor, RTG_seq: torch.Tensor, STEP_seq: torch.Tensor, causal_mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         # Inputs: (B,K,F), (B,K,2), (B,K,2)
         B, K, Fdim = R_seq.shape
-        r_tok = self.P_R(R_seq)                         # (B,K,d)
+        r_tok = self.P_R(R_seq) + self.type_R           # (B,K,d)
         rtg_tok = self.proj_rtg(RTG_seq)                # (B,K,d)
         step_tok = self.proj_step(STEP_seq)             # (B,K,d)
         h = self.ln(r_tok + rtg_tok + step_tok)         # (B,K,d)
         Ht = self.encoder(h, mask=causal_mask)          # (B,K,d)
         Q = self.Wq(Ht)                                 # (B,K,d)
-        # Expert scores: dot(Q, K_e)
-        scores_e = torch.einsum('bkd,ed->bke', Q, self.K_e)  # (B,K,E)
-        # Atom scores within true expert will be selected by gather at loss time
-        scores_em = torch.einsum('bkd,emd->bkem', Q, self.K_em).reshape(B, K, self.E, self.M)
+        # Teacher-like qk atoms: dot(Q, KD_em) / sqrt(d)
+        KD = self.KD_em  # (E,M,d)
+        qk = torch.einsum('bkd,emd->bkem', Q, KD) / math.sqrt(self.d)  # (B,K,E,M)
+        # Expert L2 aggregation over atoms
+        scores_e = torch.sqrt((qk.abs() ** 2).sum(dim=3) + 1e-12)      # (B,K,E)
+        scores_em = qk                                                 # (B,K,E,M)
         return scores_e, scores_em
 
 
@@ -255,7 +301,30 @@ def main():
 
     # Rebuild dataset and dictionary using manifest
     angles = manifest['angles']
-    H, W = load_H_W(manifest['h_path'], manifest['w_path'], manifest['atom_reduce']['selected_indices'], device='cpu')
+    # Load raw H/W and reconstruct reduced W according to manifest
+    H_raw = torch.load(manifest['h_path'], map_location='cpu', weights_only=False)['H'].float()
+    w_data = torch.load(manifest['w_path'], map_location='cpu', weights_only=False)
+    W_full = w_data['W'].float() if isinstance(w_data, dict) and 'W' in w_data else w_data.float()
+    ar = manifest.get('atom_reduce', {})
+    sel = ar.get('selected_indices', None)
+    mode = ar.get('mode', 'kcenter')
+    M = int(manifest.get('M', 8))
+    if sel is not None:
+        W = W_full[:, sel].clone()
+        W = W / (W.norm(dim=0, keepdim=True) + 1e-12)
+    else:
+        # Re-run reduction (for K-means case); default to KMeans numpy impl
+        impl = ar.get('kmeans_impl', 'numpy')
+        if mode == 'kmeans':
+            impl = ar.get('kmeans_impl', 'numpy')
+            if impl == 'sklearn':
+                W = reduce_atoms_kmeans(W_full, n_clusters=M, random_state=manifest.get('seed', 42))
+            else:
+                W = reduce_atoms_kmeans_numpy(W_full, n_clusters=M, random_state=manifest.get('seed', 42))
+        else:
+            # Fallback: use first M atoms normalized
+            W = W_full[:, :M].clone(); W = W / (W.norm(dim=0, keepdim=True) + 1e-12)
+    H, W = H_raw, W
     D, E, M = build_D(H, W, angles)
     Fdim = D.shape[0]
     print(f"D: F={Fdim}, E={E}, M={M}, P={E*M}")
@@ -320,6 +389,9 @@ def main():
     model.set_keys_from_D(D.to(device))
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     causal = generate_causal_mask(K, device)
+    # Freeze dictionary-side qk components to keep KD_em consistent
+    for p in [model.P_D.weight, model.Wk.weight, model.type_D]:
+        p.requires_grad_(False)
 
     # Optional teacher (for diagnostics alignment)
     teacher_ckpt = args.teacher_ckpt
@@ -514,6 +586,36 @@ def main():
     print(f"Teacher-forced step match: {step_match:.3f}")
     print(f"Angle acc — DT-min t=0: {acc_dtmin_t0:.3f}; DT-min t=K-1: {acc_dtmin_tK:.3f}; teacher qk t=0: {acc_teacher_qk}; g(y): {acc_g:.3f}")
 
+    # Optional: evaluate teacher qk t=0 using KMeans-reduced W to align with teacher training setup
+    acc_teacher_qk_km = None
+    if teacher_model is not None:
+        W_km = reduce_atoms_kmeans(W, n_clusters=M, random_state=42)
+        D_km, _, _ = build_D(H, W_km, angles)
+        correct_teach_km = 0
+        for obj in trajs:
+            angle_idx = int(obj['angle_index'])
+            y = load_y_for_path(obj['path']).to(device)
+            with torch.no_grad():
+                t_R = teacher_model.P_R(y) + (teacher_model.type_R if not teacher_model.no_type_bias else 0)
+                T_D = teacher_model.P_D(D_km.to(device).T) + (teacher_model.type_D if not teacher_model.no_type_bias else 0)
+                T = torch.cat([t_R[None,:], T_D], dim=0)
+                mask = teacher_model._make_mask(T.size(0)).to(device)
+                Henc = T if teacher_model.encoder_identity else teacher_model.encoder(T, mask=mask)
+                h_R = Henc[0]; H_D = Henc[1:]
+                qk_atoms = (teacher_model.Wk(H_D) @ teacher_model.Wq(h_R)) / math.sqrt(teacher_model.d)
+                qk_atoms = qk_atoms.view(E, M)
+                if teacher_model.expert_agg == 'l2':
+                    qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
+                elif teacher_model.expert_agg == 'max':
+                    qk_expert = qk_atoms.abs().max(dim=1).values
+                else:
+                    qk_expert = F.relu(qk_atoms).mean(dim=1)
+                e_teach = int(qk_expert.argmax().item())
+                if e_teach == angle_idx:
+                    correct_teach_km += 1
+        acc_teacher_qk_km = correct_teach_km / max(total_angles,1)
+        print(f"Teacher qk t=0 with KMeans W: {acc_teacher_qk_km:.3f}")
+
     # Aggregated per-step diagnostics
     ent_mean = (entropies_dt / np.maximum(counts_dt, 1)).tolist()
     margin_mean = (margins_dt / np.maximum(counts_dt, 1)).tolist()
@@ -526,6 +628,7 @@ def main():
              teacher_forced_step_match=step_match,
              acc_dtmin_t0=acc_dtmin_t0, acc_dtmin_tK=acc_dtmin_tK,
              acc_teacher_qk=(acc_teacher_qk if acc_teacher_qk is not None else np.nan),
+             acc_teacher_qk_km=(acc_teacher_qk_km if acc_teacher_qk_km is not None else np.nan),
              acc_g=acc_g,
              ent_mean=np.array(ent_mean), margin_mean=np.array(margin_mean),
              pearson_mean=np.array(pearson_mean), spearman_mean=np.array(spearman_mean),
