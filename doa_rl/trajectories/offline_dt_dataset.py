@@ -41,7 +41,6 @@ import torch
 import torch.nn.functional as F
 
 from doa_rl.data import DoADataset, create_dataloader
-from sklearn.cluster import KMeans
 
 
 # -----------------------------
@@ -153,17 +152,6 @@ def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int 
     return W_red, labels, info
 
 
-def reduce_atoms_kmeans_sklearn(W: torch.Tensor, n_clusters: int = 8, random_state: int = 42,
-                                n_init: int = 20, max_iter: int = 300) -> Tuple[torch.Tensor, np.ndarray, Dict[str, Any]]:
-    """Scikit-learn KMeans for precise reproduction (slower)."""
-    X = W.cpu().numpy().T  # (M_full, F)
-    km = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=n_init, max_iter=max_iter)
-    labels = km.fit_predict(X)
-    C = km.cluster_centers_  # (k, F)
-    W_red = torch.from_numpy(C.T).float()
-    W_red = W_red / (W_red.norm(dim=0, keepdim=True) + 1e-12)
-    info = {}
-    return W_red, labels, info
 
 
 def build_dictionary(H: torch.Tensor, W: torch.Tensor, angles: np.ndarray) -> Tuple[torch.Tensor, List[Tuple[float, int]]]:
@@ -328,8 +316,6 @@ def main():
     # Dictionary/atoms
     ap.add_argument('--n_atoms', type=int, default=8)
     ap.add_argument('--atom_reduce_mode', type=str, default='kcenter', choices=['kcenter','kmeans','diverse'])
-    ap.add_argument('--kmeans_impl', type=str, default='numpy', choices=['numpy','sklearn'],
-                    help='Implementation for K-means reduction (default: numpy fast). Use sklearn for precise reproduction.')
     # Trajectory/targets
     ap.add_argument('--K', type=int, default=6)
     ap.add_argument('--rtg_target_resid', type=float, default=0.02)
@@ -373,14 +359,9 @@ def main():
         print(f"Cluster sizes: {info['cluster_sizes']}")
     elif args.atom_reduce_mode == 'kmeans':
         print("\n=== Atom reduction (K-means) ===")
-        if args.kmeans_impl == 'sklearn':
-            print("  impl = sklearn (n_init=20, max_iter=300, random_state=seed)")
-            W, labels, _ = reduce_atoms_kmeans_sklearn(W_full, n_clusters=int(args.n_atoms), random_state=args.seed,
-                                                       n_init=20, max_iter=300)
-        else:
-            print("  impl = numpy (k-means++ init, iters=30)")
-            W, labels, _ = reduce_atoms_kmeans(W_full, n_clusters=int(args.n_atoms), random_state=args.seed)
-        info = {'selected_indices': None, 'cluster_sizes': np.bincount(labels).tolist(), 'kmeans_impl': args.kmeans_impl}
+        print("  impl = numpy (k-means++ init, iters=30)")
+        W, labels, _ = reduce_atoms_kmeans(W_full, n_clusters=int(args.n_atoms), random_state=args.seed)
+        info = {'selected_indices': None, 'cluster_sizes': np.bincount(labels).tolist()}
         print(f"Cluster sizes: {info['cluster_sizes']}")
     else:
         print("\n=== Atom reduction (diverse cos-sep) ===")

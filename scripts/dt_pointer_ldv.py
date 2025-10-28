@@ -351,11 +351,8 @@ def main():
         # Re-run reduction (for K-means case); default to KMeans numpy impl
         impl = ar.get('kmeans_impl', 'numpy')
         if mode == 'kmeans':
-            impl = ar.get('kmeans_impl', 'numpy')
-            if impl == 'sklearn':
-                W = reduce_atoms_kmeans(W_full, n_clusters=M, random_state=manifest.get('seed', 42))
-            else:
-                W = reduce_atoms_kmeans_numpy(W_full, n_clusters=M, random_state=manifest.get('seed', 42))
+            # Prefer fast numpy implementation when reconstructing reduced W
+            W = reduce_atoms_kmeans_numpy(W_full, n_clusters=M, random_state=manifest.get('seed', 42))
         else:
             # Fallback: use first M atoms normalized
             W = W_full[:, :M].clone(); W = W / (W.norm(dim=0, keepdim=True) + 1e-12)
