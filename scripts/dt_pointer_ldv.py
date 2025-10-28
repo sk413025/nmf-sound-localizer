@@ -85,6 +85,29 @@ def build_D(H: torch.Tensor, W: torch.Tensor, angles: List[float]) -> Tuple[torc
     return D, E, M
 
 
+def _load_qk_teacher_from_scripts(F: int, E: int, M: int, d_model: int, nhead: int, nlayers: int,
+                                  checkpoint_path: str, device: torch.device):
+    """Load FullTransformerRoutedSoftOMP from scripts/omp-transformer-ldv.py to compute qk_expert."""
+    import importlib.util
+    mod_path = Path('scripts/omp-transformer-ldv.py')
+    if not mod_path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location('omp_transformer_ldv', str(mod_path))
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    ModelClass = getattr(mod, 'FullTransformerRoutedSoftOMP')
+    mdl = ModelClass(F=F, E=E, M=M, d=d_model, nhead=nhead, nlayers=nlayers, steps=1).to(device)
+    try:
+        state = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        sd = state.get('model_state_dict', state)
+        mdl.load_state_dict(sd, strict=False)
+    except Exception:
+        pass
+    mdl.eval()
+    return mdl
+
+
 def recompute_r_t(y: torch.Tensor, D: torch.Tensor, actions_prev: List[int]) -> torch.Tensor:
     if len(actions_prev) == 0:
         return y
@@ -214,6 +237,11 @@ def main():
     ap.add_argument('--nhead', type=int, default=2)
     ap.add_argument('--nlayers', type=int, default=1)
     ap.add_argument('--device', type=str, default='cpu', choices=['cpu','mps','cuda'])
+    # Optional teacher for diagnostics alignment
+    ap.add_argument('--teacher_ckpt', type=str, default='')
+    ap.add_argument('--teacher_d_model', type=int, default=128)
+    ap.add_argument('--teacher_nhead', type=int, default=2)
+    ap.add_argument('--teacher_nlayers', type=int, default=1)
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir); out_dir.mkdir(parents=True, exist_ok=True)
@@ -293,6 +321,16 @@ def main():
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     causal = generate_causal_mask(K, device)
 
+    # Optional teacher (for diagnostics alignment)
+    teacher_ckpt = args.teacher_ckpt
+    if not teacher_ckpt and isinstance(manifest.get('qk', None), dict):
+        teacher_ckpt = manifest['qk'].get('ckpt', '')
+    teacher_model = None
+    if teacher_ckpt:
+        teacher_model = _load_qk_teacher_from_scripts(F=Fdim, E=E, M=M, d_model=args.teacher_d_model,
+                                                     nhead=args.teacher_nhead, nlayers=args.teacher_nlayers,
+                                                     checkpoint_path=teacher_ckpt, device=device)
+
     # Training
     hist = []
     for epoch in range(args.epochs):
@@ -354,14 +392,26 @@ def main():
         STEP_seq = torch.cat(STEP_list, dim=0).unsqueeze(0)
         return R_seq, RTG_seq, STEP_seq, actions
 
-    # Teacher-forced imitation angle accuracy and step match
+    # Teacher-forced imitation angle accuracy和對齊診斷（含 per-step entropy/margin/corr/top1-match）
     model.eval()
-    correct_steps=0; total_steps=0; correct_angles=0; total_angles=0
+    correct_steps=0; total_steps=0; correct_angles_t0=0; total_angles=0
     ctrl_path = (out_dir / 'controllability.jsonl').open('w')
+    # per-step aggregates
+    entropies_dt = np.zeros(K, dtype=float)
+    margins_dt = np.zeros(K, dtype=float)
+    counts_dt = np.zeros(K, dtype=float)
+    # DT-min vs teacher corr/top1 match per step
+    pearson_arr = np.zeros(K, dtype=float)
+    spearman_arr = np.zeros(K, dtype=float)
+    top1match_arr = np.zeros(K, dtype=float)
+    counts_align = np.zeros(K, dtype=float)
+    # Four accuracy tallies
+    correct_dtmin_t0=0; correct_dtmin_tK=0; correct_teacher_qk=0; correct_g=0
     for obj in trajs:
         angle_idx = int(obj['angle_index'])
         R_seq, RTG_seq, STEP_seq, actions = build_teacher_seqs(obj)
         se, sem = model(R_seq.to(device), RTG_seq.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
+        se_np = se.detach().squeeze(0).cpu().numpy()  # (K,E)
         pred_e = se.argmax(dim=-1).squeeze(0).cpu().tolist()
         # gather atom scores for predicted expert each step
         pred_m = []
@@ -375,10 +425,75 @@ def main():
             if pred_e[t] == e_t and pred_m[t] == m_t:
                 correct_steps += 1
             total_steps += 1
-        # use routing scores (last step) to predict angle (consistent with Soft‑OMP evaluate)
-        e_pred = int(se[0, -1].argmax().item())
-        if e_pred == angle_idx:
-            correct_angles += 1
+        # Per-step entropy/margin
+        for t in range(K):
+            logits = se[0,t]
+            p = torch.softmax(logits, dim=-1)
+            ent = float((-p * p.clamp_min(1e-12).log()).sum().item())
+            top2 = torch.topk(logits, k=2).values
+            margin = float((top2[0] - top2[1]).item())
+            entropies_dt[t] += ent; margins_dt[t] += margin; counts_dt[t] += 1
+        # Four accuracy variants
+        e_dt_t0 = int(se[0,0].argmax().item())
+        e_dt_tK = int(se[0,-1].argmax().item())
+        if e_dt_t0 == angle_idx: correct_dtmin_t0 += 1
+        if e_dt_tK == angle_idx: correct_dtmin_tK += 1
+        # Teacher qk head at t=0 and g-energy baseline
+        y = load_y_for_path(obj['path']).to(device)
+        if teacher_model is not None:
+            with torch.no_grad():
+                # build teacher qk_expert on r0=y
+                t_R = teacher_model.P_R(y) + (teacher_model.type_R if not teacher_model.no_type_bias else 0)
+                T_D = teacher_model.P_D(D.to(device).T) + (teacher_model.type_D if not teacher_model.no_type_bias else 0)
+                T = torch.cat([t_R[None,:], T_D], dim=0)
+                mask = teacher_model._make_mask(T.size(0)).to(device)
+                Henc = T if teacher_model.encoder_identity else teacher_model.encoder(T, mask=mask)
+                h_R = Henc[0]; H_D = Henc[1:]
+                qk_atoms = (teacher_model.Wk(H_D) @ teacher_model.Wq(h_R)) / math.sqrt(teacher_model.d)
+                qk_atoms = qk_atoms.view(E, M)
+                if teacher_model.expert_agg == 'l2':
+                    qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
+                elif teacher_model.expert_agg == 'max':
+                    qk_expert = qk_atoms.abs().max(dim=1).values
+                else:
+                    qk_expert = F.relu(qk_atoms).mean(dim=1)
+                e_teacher_qk = int(qk_expert.argmax().item())
+                if e_teacher_qk == angle_idx: correct_teacher_qk += 1
+                # Alignment per-step (compare DT-min vs teacher on same r_t)
+                for t in range(K):
+                    r_t = R_seq[0,t].to(device)
+                    t_Rt = teacher_model.P_R(r_t) + (teacher_model.type_R if not teacher_model.no_type_bias else 0)
+                    Tt = torch.cat([t_Rt[None,:], T_D], dim=0)
+                    Ht = Tt if teacher_model.encoder_identity else teacher_model.encoder(Tt, mask=mask)
+                    h_Rt = Ht[0]; H_Dt = Ht[1:]
+                    qk_atoms_t = (teacher_model.Wk(H_Dt) @ teacher_model.Wq(h_Rt)) / math.sqrt(teacher_model.d)
+                    qk_atoms_t = qk_atoms_t.view(E, M)
+                    if teacher_model.expert_agg == 'l2':
+                        qk_expert_t = torch.sqrt((qk_atoms_t.abs() ** 2).sum(dim=1) + 1e-12)
+                    elif teacher_model.expert_agg == 'max':
+                        qk_expert_t = qk_atoms_t.abs().max(dim=1).values
+                    else:
+                        qk_expert_t = F.relu(qk_atoms_t).mean(dim=1)
+                    dt_vec = se[0,t].detach().cpu().numpy()
+                    te_vec = qk_expert_t.detach().cpu().numpy()
+                    # Pearson
+                    if np.std(dt_vec) > 1e-12 and np.std(te_vec) > 1e-12:
+                        pearson = float(np.corrcoef(dt_vec, te_vec)[0,1])
+                        pearson_arr[t] += pearson; counts_align[t] += 1
+                    # Spearman (rank then Pearson)
+                    def _rank(x):
+                        order = np.argsort(x)
+                        ranks = np.empty_like(order)
+                        ranks[order] = np.arange(len(x))
+                        return ranks
+                    sp = float(np.corrcoef(_rank(dt_vec), _rank(te_vec))[0,1])
+                    spearman_arr[t] += sp
+                    # top-1 match
+                    top1match_arr[t] += 1.0 if (int(np.argmax(dt_vec)) == int(np.argmax(te_vec))) else 0.0
+        # g-energy baseline
+        g = (D.T.to(device) @ y).view(E, M).abs().sum(dim=1)
+        e_g = int(g.argmax().item())
+        if e_g == angle_idx: correct_g += 1
         total_angles += 1
         # Controllability: change RTG tokens while keeping R_seq fixed
         RTG_alt = RTG_seq.clone(); RTG_alt[:,:,0] = torch.clamp(RTG_alt[:,:,0]*0.5, min=0.0); RTG_alt[:,:,1] = torch.clamp(RTG_alt[:,:,1]+0.03, max=0.99)
@@ -392,12 +507,46 @@ def main():
         ctrl_path.write(json.dumps({'path': obj['path'], 'angle_idx': angle_idx, 'diff_steps': diff_steps})+'\n')
     ctrl_path.close()
     step_match = correct_steps / max(total_steps,1)
-    angle_acc_teacher_forced = correct_angles / max(total_angles,1)
-    print(f"Teacher-forced step match: {step_match:.3f}; angle accuracy: {angle_acc_teacher_forced:.3f}")
+    acc_dtmin_t0 = correct_dtmin_t0 / max(total_angles,1)
+    acc_dtmin_tK = correct_dtmin_tK / max(total_angles,1)
+    acc_teacher_qk = correct_teacher_qk / max(total_angles,1) if teacher_model is not None else None
+    acc_g = correct_g / max(total_angles,1)
+    print(f"Teacher-forced step match: {step_match:.3f}")
+    print(f"Angle acc — DT-min t=0: {acc_dtmin_t0:.3f}; DT-min t=K-1: {acc_dtmin_tK:.3f}; teacher qk t=0: {acc_teacher_qk}; g(y): {acc_g:.3f}")
+
+    # Aggregated per-step diagnostics
+    ent_mean = (entropies_dt / np.maximum(counts_dt, 1)).tolist()
+    margin_mean = (margins_dt / np.maximum(counts_dt, 1)).tolist()
+    pearson_mean = (pearson_arr / np.maximum(counts_align, 1)).tolist()
+    spearman_mean = (spearman_arr / np.maximum(counts_align, 1)).tolist()
+    top1match_mean = (top1match_arr / np.maximum(counts_align, 1)).tolist()
 
     # Save metrics and code_state
     np.savez(out_dir / 'metrics.npz', history=np.array(hist, dtype=object), acc_e=acc_e, acc_a=acc_a,
-             teacher_forced_step_match=step_match, teacher_forced_angle_acc=angle_acc_teacher_forced)
+             teacher_forced_step_match=step_match,
+             acc_dtmin_t0=acc_dtmin_t0, acc_dtmin_tK=acc_dtmin_tK,
+             acc_teacher_qk=(acc_teacher_qk if acc_teacher_qk is not None else np.nan),
+             acc_g=acc_g,
+             ent_mean=np.array(ent_mean), margin_mean=np.array(margin_mean),
+             pearson_mean=np.array(pearson_mean), spearman_mean=np.array(spearman_mean),
+             top1match_mean=np.array(top1match_mean))
+
+    # Write numeric diagnostics JSONL
+    with open(out_dir / 'numeric_diagnostics.jsonl', 'a') as f:
+        rec = {
+            'K': K, 'F': Fdim, 'E': E, 'M': M,
+            'teacher_forced_step_match': step_match,
+            'acc_dtmin_t0': acc_dtmin_t0, 'acc_dtmin_tK': acc_dtmin_tK,
+            'acc_teacher_qk': acc_teacher_qk, 'acc_g': acc_g,
+            'per_step': {
+                'entropy_mean': ent_mean,
+                'margin_mean': margin_mean,
+                'pearson_mean': pearson_mean,
+                'spearman_mean': spearman_mean,
+                'top1match_mean': top1match_mean,
+            }
+        }
+        f.write(json.dumps(rec) + '\n')
     code_state = {
         'git_head': os.popen('git rev-parse HEAD').read().strip(),
         'git_dirty': bool(os.popen('git diff --quiet').close()),
