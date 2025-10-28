@@ -189,6 +189,34 @@ def angle_prob_from_yhat(D: torch.Tensor, y_hat: torch.Tensor, E: int, M: int, t
 # Main routine
 # -----------------------------
 
+def _load_qk_model(d_model: int, nhead: int, nlayers: int, F: int, E: int, M: int, device: torch.device,
+                   checkpoint_path: str):
+    """Dynamically load FullTransformerRoutedSoftOMP from scripts/omp-transformer-ldv.py and restore weights.
+
+    Returns an eval() model whose internals can be used to compute QK scores step-wise.
+    """
+    import importlib.util
+    mod_path = Path('scripts/omp-transformer-ldv.py')
+    if not mod_path.exists():
+        raise FileNotFoundError(f"Cannot find {mod_path} to load QK teacher model")
+    spec = importlib.util.spec_from_file_location('omp_transformer_ldv', str(mod_path))
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    ModelClass = getattr(mod, 'FullTransformerRoutedSoftOMP')
+    model = ModelClass(F=F, E=E, M=M, d=d_model, nhead=nhead, nlayers=nlayers, steps=1).to(device)
+    # routing mode 'qk' by default
+    state = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    sd = state.get('model_state_dict', state)
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    if missing:
+        print(f"[QK teacher] Missing keys: {missing}")
+    if unexpected:
+        print(f"[QK teacher] Unexpected keys: {unexpected}")
+    model.eval()
+    return model
+
+
 def main():
     ap = argparse.ArgumentParser(description='Offline DT trajectory builder (g-teacher)')
     # Data paths
@@ -208,6 +236,12 @@ def main():
     ap.add_argument('--rtg_target_resid', type=float, default=0.02)
     ap.add_argument('--rtg_target_acc', type=float, default=0.95)
     ap.add_argument('--softmax_T', type=float, default=1.0)
+    # Teacher selection
+    ap.add_argument('--teacher', type=str, default='g', choices=['g','qk'], help='Trajectory teacher policy')
+    ap.add_argument('--qk_ckpt', type=str, default='results/exp_H_qk_encoder_on_atom_d128_20251026_233228/model_best.pth', help='Checkpoint for qk teacher')
+    ap.add_argument('--qk_d_model', type=int, default=128)
+    ap.add_argument('--qk_nhead', type=int, default=2)
+    ap.add_argument('--qk_nlayers', type=int, default=1)
     # Subset controls
     ap.add_argument('--subset_angles', type=str, default='', help='Comma-separated angles, e.g., "0,5,10"')
     ap.add_argument('--max_samples', type=int, default=0, help='Limit number of samples (0 = all)')
@@ -301,6 +335,13 @@ def main():
         'K': args.K,
         'rtg_targets': {'resid': args.rtg_target_resid, 'acc': args.rtg_target_acc},
         'softmax_T': args.softmax_T,
+        'teacher': args.teacher,
+        'qk': {
+            'ckpt': args.qk_ckpt,
+            'd_model': args.qk_d_model,
+            'nhead': args.qk_nhead,
+            'nlayers': args.qk_nlayers,
+        } if args.teacher == 'qk' else None,
         'fingerprint_md5': fingerprint,
         'npy_file_count': n_files,
         'subset_angles': subset_angles,
@@ -317,6 +358,11 @@ def main():
 
     device = torch.device(args.device)
     D = D.to(device)
+    qk_model = None
+    if args.teacher == 'qk':
+        print("\n=== Loading QK teacher model ===")
+        qk_model = _load_qk_model(d_model=args.qk_d_model, nhead=args.qk_nhead, nlayers=args.qk_nlayers,
+                                  F=F_expected, E=E, M=M, device=device, checkpoint_path=args.qk_ckpt)
 
     t0 = time.time()
     for i, batch in enumerate(dl):
@@ -345,8 +391,32 @@ def main():
         y_hat = torch.zeros_like(y)
 
         for t in range(args.K):
-            # Hierarchical pick using |g| on residual
-            e, m, j, energy_e_max, a_score = hierarchical_pick_g(D, r, E=E, M=M)
+            # Hierarchical pick
+            if args.teacher == 'g':
+                e, m, j, energy_e_max, a_score = hierarchical_pick_g(D, r, E=E, M=M)
+            else:
+                # QK teacher: build tokens via model internals and compute qk scores
+                assert qk_model is not None
+                # mimic _build_tokens(r,D) and encoder
+                with torch.no_grad():
+                    t_R = qk_model.P_R(r) + (qk_model.type_R if not qk_model.no_type_bias else 0)
+                    T_D = qk_model.P_D(D.T) + (qk_model.type_D if not qk_model.no_type_bias else 0)
+                    T = torch.cat([t_R[None, :], T_D], dim=0)
+                    mask = qk_model._make_mask(T.size(0)).to(T.device)
+                    Henc = T if qk_model.encoder_identity else qk_model.encoder(T, mask=mask)
+                    h_R = Henc[0]
+                    H_D = Henc[1:]
+                    qk_atoms = (qk_model.Wk(H_D) @ qk_model.Wq(h_R)) / math.sqrt(qk_model.d)
+                    qk_atoms = qk_atoms.reshape(E, M)
+                    if qk_model.expert_agg == 'l2':
+                        qk_expert = torch.sqrt((qk_atoms.abs() ** 2).sum(dim=1) + 1e-12)
+                    elif qk_model.expert_agg == 'max':
+                        qk_expert = qk_atoms.abs().max(dim=1).values
+                    else:
+                        qk_expert = F.relu(qk_atoms).mean(dim=1)
+                    e = int(torch.argmax(qk_expert).item())
+                    m = int(torch.argmax(qk_atoms[e].abs()).item())
+                    j = e * M + m
             S.append(j)
 
             # Orthogonal LS refit on selected atoms
@@ -464,4 +534,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

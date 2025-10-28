@@ -151,6 +151,58 @@ def generate_causal_mask(K: int, device: torch.device) -> torch.Tensor:
     return m
 
 
+@torch.no_grad()
+def unroll_policy(model: DTMinPointer, D: torch.Tensor, y: torch.Tensor, K: int,
+                  rtg_resid_target: float, rtg_acc_target: float,
+                  device: torch.device) -> Tuple[List[Tuple[int,int,int]], int, torch.Tensor]:
+    """Greedy unroll: at each step compute inputs up to t and pick (e,m) by argmax.
+    Returns (actions list of (e,m,j), predicted_angle_e, final y_hat).
+    """
+    E = model.E; M = model.M; Fdim = model.F
+    actions: List[int] = []
+    em_list: List[Tuple[int,int,int]] = []
+    # Precompute keys are already set in model via set_keys_from_D
+    # Build helper to compute p_true from y_hat
+    def p_true_from_yhat(y_hat: torch.Tensor) -> float:
+        g_hat = (D.T @ y_hat).view(E, M).abs().sum(dim=1)
+        p = torch.softmax(g_hat, dim=0)
+        # Use explicit e from y via dataset? Not available here, return mean as placeholder for RTG update
+        # We only use it to compute RTG_acc; for stability, approximate by max probability gap to target using top-1 prob
+        return float(p.max().item())
+    # Begin unroll
+    y = y.to(device)
+    for t in range(K):
+        # recompute r_t from actions so far
+        r_t = recompute_r_t(y, D, actions)
+        # build sequences up to t
+        R_seq = r_t.view(1,1,-1)
+        # estimate current p (using previous y_hat if available)
+        y_hat = (D[:, actions] @ torch.linalg.lstsq(D[:, actions], y).solution) if actions else torch.zeros_like(y)
+        p_est = p_true_from_yhat(y_hat)
+        RTG_seq = torch.tensor([[[max(0.0, float((r_t @ r_t).item()) - rtg_resid_target), max(0.0, rtg_acc_target - p_est)]]], dtype=torch.float32, device=device)
+        STEP_seq = torch.tensor([[[t/ K, (K - t)/ K]]], dtype=torch.float32, device=device)
+        cmask = generate_causal_mask(1, device)
+        se, sem = model(R_seq, RTG_seq, STEP_seq, cmask)
+        e = int(se[0,0].argmax().item())
+        a_scores = sem[0,0,e]
+        m = int(a_scores.argmax().item())
+        j = e * M + m
+        if j in actions:
+            # pick next best atom for the same expert if duplicated
+            a_scores2 = a_scores.clone(); a_scores2[m] = -1e9
+            m = int(a_scores2.argmax().item()); j = e*M + m
+        actions.append(j); em_list.append((e,m,j))
+    # Build final y_hat and angle prediction
+    if actions:
+        xS = torch.linalg.lstsq(D[:, actions], y).solution
+        y_hat = D[:, actions] @ xS
+    else:
+        y_hat = torch.zeros_like(y)
+    g_hat = (D.T @ y_hat).view(E, M).abs().sum(dim=1)
+    e_pred = int(torch.argmax(g_hat).item())
+    return em_list, e_pred, y_hat
+
+
 def main():
     ap = argparse.ArgumentParser(description='Minimal DT trainer (hierarchical pointer)')
     ap.add_argument('--traj_dir', type=str, default='results/dt_traj_v1')
@@ -282,8 +334,70 @@ def main():
         acc_a = correct_a/total_a if total_a else 0.0
         print(f"Final train step-acc: expert={acc_e:.3f}, atom={acc_a:.3f}")
 
+    # Angle accuracy via unroll on full dataset (using manifest targets)
+    rtg_resid_tgt = float(manifest['rtg_targets']['resid'])
+    rtg_acc_tgt = float(manifest['rtg_targets']['acc'])
+
+    # Helper: teacher-forced sequences from trajectories
+    def build_teacher_seqs(obj) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, List[int]]:
+        path = obj['path']; steps = obj['steps']
+        y = load_y_for_path(path)
+        actions=[]; R_list=[]; RTG_list=[]; STEP_list=[]
+        for t,s in enumerate(steps):
+            r_t = recompute_r_t(y, D, actions)
+            R_list.append(r_t.unsqueeze(0))
+            RTG_list.append(torch.tensor([[float(s['rtg_resid']), float(s['rtg_acc'])]], dtype=torch.float32))
+            STEP_list.append(torch.tensor([[t/ K, (K - t)/ K]], dtype=torch.float32))
+            actions.append(int(s['dict_index']))
+        R_seq = torch.cat(R_list, dim=0).unsqueeze(0)
+        RTG_seq = torch.cat(RTG_list, dim=0).unsqueeze(0)
+        STEP_seq = torch.cat(STEP_list, dim=0).unsqueeze(0)
+        return R_seq, RTG_seq, STEP_seq, actions
+
+    # Teacher-forced imitation angle accuracy and step match
+    model.eval()
+    correct_steps=0; total_steps=0; correct_angles=0; total_angles=0
+    ctrl_path = (out_dir / 'controllability.jsonl').open('w')
+    for obj in trajs:
+        angle_idx = int(obj['angle_index'])
+        R_seq, RTG_seq, STEP_seq, actions = build_teacher_seqs(obj)
+        se, sem = model(R_seq.to(device), RTG_seq.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
+        pred_e = se.argmax(dim=-1).squeeze(0).cpu().tolist()
+        # gather atom scores for predicted expert each step
+        pred_m = []
+        for t in range(K):
+            a_scores = sem[0,t,pred_e[t]].cpu()
+            pred_m.append(int(a_scores.argmax().item()))
+        # compare with teacher steps
+        for t in range(K):
+            e_t = actions[t] // model.M
+            m_t = actions[t] % model.M
+            if pred_e[t] == e_t and pred_m[t] == m_t:
+                correct_steps += 1
+            total_steps += 1
+        # use routing scores (last step) to predict angle (consistent with Soft‑OMP evaluate)
+        e_pred = int(se[0, -1].argmax().item())
+        if e_pred == angle_idx:
+            correct_angles += 1
+        total_angles += 1
+        # Controllability: change RTG tokens while keeping R_seq fixed
+        RTG_alt = RTG_seq.clone(); RTG_alt[:,:,0] = torch.clamp(RTG_alt[:,:,0]*0.5, min=0.0); RTG_alt[:,:,1] = torch.clamp(RTG_alt[:,:,1]+0.03, max=0.99)
+        se2, sem2 = model(R_seq.to(device), RTG_alt.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
+        pred_e2 = se2.argmax(dim=-1).squeeze(0).cpu().tolist()
+        pred_m2 = []
+        for t in range(K):
+            a_scores2 = sem2[0,t,pred_e2[t]].cpu()
+            pred_m2.append(int(a_scores2.argmax().item()))
+        diff_steps = int(sum(1 for a,b in zip(zip(pred_e,pred_m), zip(pred_e2,pred_m2)) if a!=b))
+        ctrl_path.write(json.dumps({'path': obj['path'], 'angle_idx': angle_idx, 'diff_steps': diff_steps})+'\n')
+    ctrl_path.close()
+    step_match = correct_steps / max(total_steps,1)
+    angle_acc_teacher_forced = correct_angles / max(total_angles,1)
+    print(f"Teacher-forced step match: {step_match:.3f}; angle accuracy: {angle_acc_teacher_forced:.3f}")
+
     # Save metrics and code_state
-    np.savez(out_dir / 'metrics.npz', history=np.array(hist, dtype=object), acc_e=acc_e, acc_a=acc_a)
+    np.savez(out_dir / 'metrics.npz', history=np.array(hist, dtype=object), acc_e=acc_e, acc_a=acc_a,
+             teacher_forced_step_match=step_match, teacher_forced_angle_acc=angle_acc_teacher_forced)
     code_state = {
         'git_head': os.popen('git rev-parse HEAD').read().strip(),
         'git_dirty': bool(os.popen('git diff --quiet').close()),
