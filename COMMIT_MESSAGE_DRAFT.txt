@@ -1,0 +1,77 @@
+Background & Motivation:
+Previous analysis revealed severe overfitting risk due to imbalanced parameter/data ratio (481:1).
+With only 111 training samples (666 step examples) and 320k model parameters, increasing epochs
+without monitoring could lead to memorization instead of generalization.
+
+Objectives:
+1. Implement train/test split to monitor generalization
+2. Track test loss independently to detect overfitting early
+3. Enable informed decision about increasing epochs based on test performance
+4. Provide visualization tools for training dynamics analysis
+
+Data Architecture:
+- Stratified train/test split by angle to ensure representation
+- Default: 85% train (94 samples, 564 steps) / 15% test (17 samples, 102 steps)
+- Configurable via --test_split and --split_seed arguments
+- Preserves trajectory structure (splits by sample, not individual steps)
+
+Model Methodology:
+Enhanced dt_pointer_ldv.py training loop:
+1. Separate train/test evaluation functions
+2. Per-epoch monitoring of both train and test metrics (loss, expert acc, atom acc)
+3. Best model checkpointing based on test loss
+4. Clear visualization of train-test gap (Δ loss)
+
+Technical Changes:
+- scripts/dt_pointer_ldv.py:
+  * Added --test_split (default 0.15) and --split_seed (default 42) arguments
+  * Implemented stratified splitting by angle using angle_groups dictionary
+  * Modified batch_iter() to accept sample_list and shuffle parameters
+  * Added evaluate() function for clean train/test evaluation
+  * Enhanced training loop with dual-set monitoring and best-model tracking
+  * Save both ckpt_latest.pth and ckpt_best.pth
+
+- scripts/analyze_training_curves.py (new):
+  * Visualizes train/test loss and accuracy curves
+  * Detects overfitting signals (stagnant test loss, large train-test gap)
+  * Follows canonical AGENTS.md plotting standards
+  * Generates PDF + PNG outputs
+
+- test_train_test_split.sh (new):
+  * Quick 10-epoch test run to verify split functionality
+  * Captures full log for analysis
+
+- TRAIN_TEST_SPLIT_README.md (new):
+  * Complete usage guide and best practices
+  * Overfitting detection criteria
+  * Next-step optimization suggestions
+
+Expected Outcomes:
+After running 10-20 epochs with train/test monitoring:
+1. Clear visibility into whether model is overfitting or still learning
+2. Quantitative metrics (test loss trend, train-test gap %) to guide epoch scaling
+3. If test loss plateaus → DO NOT increase epochs, focus on regularization/data augmentation
+4. If test loss decreases → Safe to gradually increase epochs with continued monitoring
+5. Baseline for comparing regularization strategies (dropout, weight decay, model downsizing)
+
+Reproducibility:
+All experiments use fixed split_seed=42 by default. To reproduce:
+```bash
+python -u scripts/dt_pointer_ldv.py \
+  --traj_dir results/dt_traj_qk_kmeans \
+  --out_dir results/dt_min_train_test_split \
+  --epochs 20 \
+  --test_split 0.15 \
+  --split_seed 42 \
+  --device cpu \
+  2>&1 | tee results/dt_min_train_test_split/run.log
+
+python scripts/analyze_training_curves.py \
+  --ckpt results/dt_min_train_test_split/ckpt_latest.pth
+```
+
+Files Modified/Added:
+- scripts/dt_pointer_ldv.py (modified: train/test split, dual evaluation)
+- scripts/analyze_training_curves.py (new: visualization tool)
+- test_train_test_split.sh (new: quick test script)
+- TRAIN_TEST_SPLIT_README.md (new: documentation)
