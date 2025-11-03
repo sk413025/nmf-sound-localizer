@@ -727,13 +727,12 @@ def main():
             except Exception as e:
                 print(f"Warning: Failed to save checkpoint: {e}")
         
-        # Print progress
-        if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"Epoch {epoch+1}/{args.epochs}")
-            print(f"  Train loss: {train_loss:.4f} | Train E-acc: {train_acc_e:.3f} | Train A-acc: {train_acc_a:.3f}")
-            print(f"  Test loss:  {test_loss:.4f} | Test E-acc:  {test_acc_e:.3f} | Test A-acc:  {test_acc_a:.3f}")
-            print(f"  Best: epoch {best_epoch}, test loss {best_test_loss:.4f}")
-            print()
+        # Print progress (every epoch for better monitoring)
+        print(f"Epoch {epoch+1}/{args.epochs}")
+        print(f"  Train loss: {train_loss:.4f} | Train E-acc: {train_acc_e:.3f} | Train A-acc: {train_acc_a:.3f}")
+        print(f"  Test loss:  {test_loss:.4f} | Test E-acc:  {test_acc_e:.3f} | Test A-acc:  {test_acc_a:.3f}")
+        print(f"  Best: epoch {best_epoch}, test loss {best_test_loss:.4f}")
+        print()
     
     # Save final model
     torch.save({
