@@ -1,0 +1,88 @@
+================================================================================
+DTMinPointerV2: Atom-Sequence Input Decision Transformer
+================================================================================
+Trajectory dir: results/dt_traj_g_full
+Output dir: results/dt_v2_functional
+Device: cpu
+
+Dictionary: F=346, E=37, M=8, P=296
+Sequence length per step: 298 (RTG + R + 296 atoms)
+Total sequence per episode: K×(2+P) = 6×298 = 1788 tokens
+
+================================================================================
+Train/Test Split
+================================================================================
+Total samples: 111
+Train samples: 74 (66.7%)
+Test samples:  37 (33.3%)
+Train steps: 444
+Test steps:  222
+
+================================================================================
+Model Architecture
+================================================================================
+Embedding dim: 128
+Attention heads: 2
+Encoder layers: 1
+Sequence length: 1788 tokens
+Causal mask shape: torch.Size([1788, 1788])
+
+================================================================================
+Training Start
+================================================================================
+Epoch 1/10
+  Train loss: 5.7221 | Train E-acc: 0.092 | Train A-acc: 0.032
+  Test loss:  5.6910 | Test E-acc:  0.095 | Test A-acc:  0.032
+  Best: epoch 1, test loss 5.6910
+
+Epoch 2/10
+  Train loss: 5.7418 | Train E-acc: 0.018 | Train A-acc: 0.167
+  Test loss:  5.6895 | Test E-acc:  0.018 | Test A-acc:  0.167
+  Best: epoch 2, test loss 5.6895
+
+Epoch 3/10
+  Train loss: 5.7348 | Train E-acc: 0.059 | Train A-acc: 0.167
+  Test loss:  5.6886 | Test E-acc:  0.059 | Test A-acc:  0.167
+  Best: epoch 3, test loss 5.6886
+
+Epoch 4/10
+  Train loss: 5.7148 | Train E-acc: 0.092 | Train A-acc: 0.167
+  Test loss:  5.6873 | Test E-acc:  0.095 | Test A-acc:  0.167
+  Best: epoch 4, test loss 5.6873
+
+Epoch 5/10
+  Train loss: 5.7328 | Train E-acc: 0.092 | Train A-acc: 0.167
+  Test loss:  5.6867 | Test E-acc:  0.095 | Test A-acc:  0.167
+  Best: epoch 5, test loss 5.6867
+
+Epoch 6/10
+  Train loss: 5.7365 | Train E-acc: 0.092 | Train A-acc: 0.162
+  Test loss:  5.6418 | Test E-acc:  0.095 | Test A-acc:  0.162
+  Best: epoch 6, test loss 5.6418
+
+Epoch 7/10
+  Train loss: 5.6700 | Train E-acc: 0.050 | Train A-acc: 0.151
+  Test loss:  5.6894 | Test E-acc:  0.050 | Test A-acc:  0.153
+  Best: epoch 6, test loss 5.6418
+
+Epoch 8/10
+  Train loss: 5.7278 | Train E-acc: 0.059 | Train A-acc: 0.065
+  Test loss:  5.6872 | Test E-acc:  0.059 | Test A-acc:  0.068
+  Best: epoch 6, test loss 5.6418
+
+Epoch 9/10
+  Train loss: 5.7093 | Train E-acc: 0.059 | Train A-acc: 0.108
+  Test loss:  5.6808 | Test E-acc:  0.059 | Test A-acc:  0.113
+  Best: epoch 6, test loss 5.6418
+
+Epoch 10/10
+  Train loss: 5.7309 | Train E-acc: 0.092 | Train A-acc: 0.090
+  Test loss:  5.6617 | Test E-acc:  0.095 | Test A-acc:  0.090
+  Best: epoch 6, test loss 5.6418
+
+================================================================================
+Training Complete
+================================================================================
+Best model: epoch 6, test loss 5.6418
+Checkpoints saved to results/dt_v2_functional
+
