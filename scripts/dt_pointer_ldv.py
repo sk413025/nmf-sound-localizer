@@ -26,7 +26,7 @@ import math
 import time
 import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 
 import numpy as np
 import torch
@@ -194,10 +194,13 @@ def recompute_r_t(y: torch.Tensor, D: torch.Tensor, actions_prev: List[int]) -> 
 
 
 class DTMinPointer(nn.Module):
-    def __init__(self, F: int, E: int, M: int, d_model: int = 128, nhead: int = 2, nlayers: int = 1):
+    def __init__(self, F: int, E: int, M: int, d_model: int = 128, nhead: int = 2, nlayers: int = 1, 
+                 use_physics_reconstruction: bool = False, physics_weight: float = 0.1):
         super().__init__()
         self.F, self.E, self.M = F, E, M
         self.d = d_model
+        self.use_physics_reconstruction = use_physics_reconstruction
+        
         # Residual/Dictionary projections (align with teacher qk head semantics)
         self.P_R = nn.Linear(F, d_model, bias=False)
         self.P_D = nn.Linear(F, d_model, bias=False)
@@ -216,6 +219,17 @@ class DTMinPointer(nn.Module):
         self.Wk = nn.Linear(d_model, d_model, bias=False)
         # Precomputed dictionary embeddings after P_D + type_D + Wk
         self.register_buffer('KD_em', torch.empty(0))  # (E, M, d)
+        
+        # Physics reconstruction head (optional)
+        self.physics_head = None
+        if use_physics_reconstruction:
+            from doa_rl.model.physics_reconstruction import PhysicsReconstructionHead
+            self.physics_head = PhysicsReconstructionHead(
+                d_model=d_model,
+                F=F,
+                E=E,
+                reconstruction_weight=physics_weight
+            )
 
     def set_keys_from_D(self, D: torch.Tensor):
         # Precompute dictionary token embeddings H_D ≈ Wk(P_D(D.T)+type_D) without grad
@@ -228,14 +242,15 @@ class DTMinPointer(nn.Module):
             KD_em = KD.view(E, M, self.d).clone()
             self.KD_em = KD_em  # (E,M,d)
 
-    def forward(self, R_seq: torch.Tensor, RTG_seq: torch.Tensor, STEP_seq: torch.Tensor, causal_mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, R_seq: torch.Tensor, RTG_seq: torch.Tensor, STEP_seq: torch.Tensor, 
+                causal_mask: torch.Tensor, return_hidden: bool = False) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
         # Inputs: (B,K,F), (B,K,2), (B,K,2)
         B, K, Fdim = R_seq.shape
         r_tok = self.P_R(R_seq) + self.type_R           # (B,K,d)
         rtg_tok = self.proj_rtg(RTG_seq)                # (B,K,d)
         step_tok = self.proj_step(STEP_seq)             # (B,K,d)
         h = self.ln(r_tok + rtg_tok + step_tok)         # (B,K,d)
-        Ht = self.encoder(h, mask=causal_mask)          # (B,K,d)
+        Ht = self.encoder(h, mask=causal_mask)          # (B,K,d) - Hidden states
         Q = self.Wq(Ht)                                 # (B,K,d)
         # Teacher-like qk atoms: dot(Q, KD_em) / sqrt(d)
         KD = self.KD_em  # (E,M,d)
@@ -243,7 +258,12 @@ class DTMinPointer(nn.Module):
         # Expert L2 aggregation over atoms
         scores_e = torch.sqrt((qk.abs() ** 2).sum(dim=3) + 1e-12)      # (B,K,E)
         scores_em = qk                                                 # (B,K,E,M)
-        return scores_e, scores_em
+        
+        # Return hidden states if requested (for physics reconstruction)
+        if return_hidden or self.use_physics_reconstruction:
+            return scores_e, scores_em, Ht
+        else:
+            return scores_e, scores_em, None
 
 
 def generate_causal_mask(K: int, device: torch.device) -> torch.Tensor:
@@ -283,7 +303,7 @@ def unroll_policy(model: DTMinPointer, D: torch.Tensor, y: torch.Tensor, K: int,
         RTG_seq = torch.tensor([[[max(0.0, float((r_t @ r_t).item()) - rtg_resid_target), max(0.0, rtg_acc_target - p_est)]]], dtype=torch.float32, device=device)
         STEP_seq = torch.tensor([[[t/ K, (K - t)/ K]]], dtype=torch.float32, device=device)
         cmask = generate_causal_mask(1, device)
-        se, sem = model(R_seq, RTG_seq, STEP_seq, cmask)
+        se, sem, _ = model(R_seq, RTG_seq, STEP_seq, cmask)  # Ignore hidden states in unroll
         e = int(se[0,0].argmax().item())
         a_scores = sem[0,0,e]
         m = int(a_scores.argmax().item())
@@ -323,6 +343,13 @@ def main():
     ap.add_argument('--distill_weight', type=float, default=0.5, help='Weight for teacher qk_expert distillation')
     ap.add_argument('--distill_T', type=float, default=1.0, help='Temperature for distillation softmax')
     ap.add_argument('--warmup_epochs', type=int, default=2, help='Epochs to apply distillation strongly')
+    # Physics reconstruction arguments
+    ap.add_argument('--use_physics_reconstruction', action='store_true', help='Enable physics reconstruction head')
+    ap.add_argument('--physics_weight', type=float, default=0.1, help='Weight for physics reconstruction loss')
+    ap.add_argument('--physics_warmup_epochs', type=int, default=50, help='Epochs to emphasize physics reconstruction')
+    ap.add_argument('--residual_weight', type=float, default=1.0, help='Weight for residual reconstruction')
+    ap.add_argument('--direction_weight', type=float, default=0.5, help='Weight for direction classification')
+    ap.add_argument('--coherence_weight', type=float, default=0.1, help='Weight for spectral coherence')
     # Train/test split
     ap.add_argument('--test_split', type=float, default=0.15, help='Fraction of samples for test set (default: 0.15 -> ~17 samples)')
     ap.add_argument('--split_seed', type=int, default=42, help='Random seed for train/test split')
@@ -459,7 +486,12 @@ def main():
             yield R_b, RTG_b, STEP_b, E_b, M_b
 
     # Model
-    model = DTMinPointer(F=Fdim, E=E, M=M, d_model=args.d_model, nhead=args.nhead, nlayers=args.nlayers).to(device)
+    model = DTMinPointer(
+        F=Fdim, E=E, M=M, 
+        d_model=args.d_model, nhead=args.nhead, nlayers=args.nlayers,
+        use_physics_reconstruction=args.use_physics_reconstruction,
+        physics_weight=args.physics_weight
+    ).to(device)
     model.set_keys_from_D(D.to(device))
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     causal = generate_causal_mask(K, device)
@@ -500,10 +532,10 @@ def main():
         correct_a = 0; total_a = 0
         
         with torch.no_grad():
-            for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(sample_list, batch_size=len(sample_list), shuffle=False):
+            for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(sample_list, args.batch_size, shuffle=False):
                 R_b = R_b.to(device); RTG_b = RTG_b.to(device); STEP_b = STEP_b.to(device)
                 E_b = E_b.to(device); M_b = M_b.to(device)
-                scores_e, scores_em = model(R_b, RTG_b, STEP_b, causal_mask=causal)
+                scores_e, scores_em, _ = model(R_b, RTG_b, STEP_b, causal_mask=causal)
                 
                 # Loss
                 loss_e = F.cross_entropy(scores_e.reshape(-1, E), E_b.reshape(-1))
@@ -535,15 +567,27 @@ def main():
     best_test_loss = float('inf')
     best_epoch = 0
     
+    # Track physics metrics per epoch
+    epoch_physics_metrics = {
+        'loss_residual': [],
+        'loss_direction': [],
+        'loss_coherence': [],
+        'coherence_mean': [],
+        'residual_mse_db': [],
+        'direction_acc': []
+    }
+    
     for epoch in range(args.epochs):
         # Training
         model.train()
         total_loss = 0.0; n_batches = 0
+        # Accumulate physics metrics within epoch
+        batch_physics_metrics = {k: [] for k in epoch_physics_metrics.keys()}
         
         for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(train_samples, args.batch_size, shuffle=True):
             R_b = R_b.to(device); RTG_b = RTG_b.to(device); STEP_b = STEP_b.to(device)
             E_b = E_b.to(device); M_b = M_b.to(device)
-            scores_e, scores_em = model(R_b, RTG_b, STEP_b, causal_mask=causal)
+            scores_e, scores_em, H_t = model(R_b, RTG_b, STEP_b, causal_mask=causal)
             
             # Loss: CE over steps
             loss_e = F.cross_entropy(scores_e.reshape(-1, E), E_b.reshape(-1))
@@ -552,7 +596,30 @@ def main():
             se_flat = scores_em.reshape(-1, E, M)  # (B*K,E,M)
             se_sel = se_flat.gather(1, idx.view(-1,1,1).expand(-1,1,M)).squeeze(1)  # (B*K,M)
             loss_a = F.cross_entropy(se_sel, M_b.reshape(-1))
-            loss = loss_e + loss_a
+            loss_action = loss_e + loss_a
+            
+            # Physics reconstruction loss (if enabled)
+            loss_physics = torch.tensor(0.0, device=device)
+            physics_metrics = {}
+            if args.use_physics_reconstruction and model.physics_head is not None:
+                loss_physics, physics_metrics = model.physics_head(
+                    H_t, R_b, E_b, mask=None
+                )
+                # Accumulate metrics
+                for k, v in physics_metrics.items():
+                    batch_physics_metrics[k].append(v)
+            
+            # Combined loss with warmup scheduling
+            if args.use_physics_reconstruction and epoch < args.physics_warmup_epochs:
+                # Early epochs: emphasize physics (70% physics, 30% action)
+                w_physics = 0.7
+                w_action = 0.3
+            else:
+                # Later epochs: balance or reduce physics
+                w_physics = args.physics_weight if args.use_physics_reconstruction else 0.0
+                w_action = 1.0
+            
+            loss = w_action * loss_action + w_physics * loss_physics
             
             # Optional teacher distillation on expert scores (per step)
             if teacher_model is not None and args.distill_weight > 0.0:
@@ -609,6 +676,18 @@ def main():
         print(f"  Train loss: {train_loss:.4f} | Test loss: {test_loss:.4f} | Δ: {test_loss - train_loss:+.4f}")
         print(f"  Train acc:  expert={train_acc_e:.3f}, atom={train_acc_a:.3f}")
         print(f"  Test acc:   expert={test_acc_e:.3f}, atom={test_acc_a:.3f}")
+        
+        # Print physics metrics if enabled
+        if args.use_physics_reconstruction and batch_physics_metrics['loss_residual']:
+            avg_phys = {k: np.mean(v) for k, v in batch_physics_metrics.items() if v}
+            print(f"  Physics metrics:")
+            print(f"    Residual MSE: {avg_phys.get('residual_mse_db', 0):.2f} dB")
+            print(f"    Direction acc: {avg_phys.get('direction_acc', 0):.3f}")
+            print(f"    Coherence: {avg_phys.get('coherence_mean', 0):.3f}")
+            # Store for history
+            for k, v in avg_phys.items():
+                epoch_physics_metrics[k].append(v)
+        
         if epoch + 1 == best_epoch:
             print(f"  ✓ Best test loss so far!")
         
@@ -646,7 +725,7 @@ def main():
         for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(train_samples, batch_size=len(train_samples), shuffle=False):
             R_b = R_b.to(device); RTG_b = RTG_b.to(device); STEP_b = STEP_b.to(device)
             E_b = E_b.to(device); M_b = M_b.to(device)
-            scores_e, scores_em = model(R_b, RTG_b, STEP_b, causal_mask=causal)
+            scores_e, scores_em, _ = model(R_b, RTG_b, STEP_b, causal_mask=causal)
             pred_e = scores_e.argmax(dim=-1)
             correct_e += int((pred_e == E_b).sum().item()); total_e += int(E_b.numel())
             se_flat = scores_em.reshape(-1, E, M)
