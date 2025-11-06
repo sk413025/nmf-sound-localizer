@@ -5,6 +5,34 @@
 
 A modular, high-performance toolkit for **Non-negative Matrix Factorization (NMF) based sound source localization** with **fixed group sparsity mechanism**. Designed for researchers working on acoustic signal processing and spatial audio analysis.
 
+## ⚡ Quick Start: Full Training Pipeline
+
+**Run complete 480-epoch training in one command:**
+
+```bash
+# Activate environment
+conda activate trl-training
+export PYTHONPATH=$(pwd):$PYTHONPATH
+
+# Run full training (OMP trajectories → Decision Transformer)
+./run_full_training.sh
+```
+
+This will:
+1. Generate OMP trajectories with baseline performance (~65% expert accuracy)
+2. Train Decision Transformer for 480 epochs
+3. Output comprehensive results and metrics
+
+**Expected outputs:**
+- `results/dt_traj_omp_full_*/trajectories.jsonl` - Training data
+- `results/dt_full_training_*/training.log` - Full training log
+- `results/dt_full_training_*/best_model.ckpt` - Best model checkpoint
+
+**Documentation:**
+- Pipeline overview: `DATA_PIPELINE_EXPLANATION.md`
+- Results template: `FULL_TRAINING_RESULTS_TEMPLATE.md`
+- Physics details: `PHYSICS_RECONSTRUCTION_SUMMARY.md`
+
 ## 🎯 Key Features
 
 - **✅ Fixed Group Sparsity**: Resolved fundamental issue where all predictions converged to single angle
