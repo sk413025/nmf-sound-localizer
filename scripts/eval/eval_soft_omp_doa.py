@@ -66,7 +66,7 @@ def plot_error_hist(errors: np.ndarray, out_path: Path):
 def main():
     ap = argparse.ArgumentParser(description='Evaluate Routed Soft-OMP DoA accuracy on real dataset')
     ap.add_argument('--dataset_root', type=str, required=True)
-    ap.add_argument('--H_path', type=str, default='h_matrix_normalized_original_to_box.pth')
+    ap.add_argument('--H_path', type=str, default='/Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth')
     ap.add_argument('--W_path', type=str, default='doa_normalized_config_c_corrected/models/usm.pth')
     ap.add_argument('--angles', type=int, nargs='*', default=None, help='Angles to evaluate; if omitted, use all angles present in dataset that exist in H')
     ap.add_argument('--freq_min', type=float, default=300.0)

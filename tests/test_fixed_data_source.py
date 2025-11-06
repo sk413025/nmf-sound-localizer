@@ -12,8 +12,8 @@ def test_environment_variables_set():
     assert "REAL_TF_Y_ROOT" in os.environ  
     assert "REAL_TF_N_FILES" in os.environ
     
-    expected_x_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
-    expected_y_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge"
+    expected_x_root = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
+    expected_y_root = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge"
     
     assert os.environ["REAL_TF_X_ROOT"] == expected_x_root
     assert os.environ["REAL_TF_Y_ROOT"] == expected_y_root

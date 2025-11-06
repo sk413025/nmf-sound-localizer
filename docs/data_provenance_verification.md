@@ -85,7 +85,7 @@ $ ls -la /Users/sbplab/jiawei/datasets/20250709/20250709/
 
 **Output**:
 ```
-/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/
+/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/
 ├── white_noise_original_data_no_edge/  (51 .npy files)
 └── white_noise_box_data_no_edge/       (51 .npy files)
 ```
@@ -192,10 +192,10 @@ $ find white_noise_box_data_no_edge_sync_vad -name "*.npy" | wc -l
 **Exact Reproduction Command** (from commit d9b11d1):
 ```bash
 python scripts/apply_spectrogram_vad.py \
-  --x_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
-  --y_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
-  --x_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
-  --y_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
+  --x_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
+  --y_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
+  --x_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
+  --y_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
   --vad_threshold 1e-6 \
   --vad_method hard \
   --sample_rate 48000 \
@@ -297,10 +297,10 @@ Box dataset:
 **Hardcoded Paths in Script**:
 ```python
 # In scripts/normalize_datasets.py
-INPUT_DIR_ORIGINAL = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad"
-INPUT_DIR_BOX = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad"
-OUTPUT_DIR_ORIGINAL = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized"
-OUTPUT_DIR_BOX = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized"
+INPUT_DIR_ORIGINAL = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad"
+INPUT_DIR_BOX = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad"
+OUTPUT_DIR_ORIGINAL = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized"
+OUTPUT_DIR_BOX = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized"
 ```
 
 **Recommendation**: Add command-line arguments for portability
@@ -373,7 +373,7 @@ Physical meaning: Original→Box frequency-dependent transfer functions
 **Exact Reproduction Command**:
 ```bash
 python scripts/estimate_transfer_functions.py \
-  /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
   --output h_matrix_normalized_original_to_box.pth \
   --time-pooling geometric \
   --freq-min 300.0 \
@@ -451,8 +451,8 @@ Loss: 1.387227
 **Exact Reproduction Command**:
 ```bash
 python scripts/run_localization.py \
-  --usm-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
-  --test-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
+  --usm-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  --test-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
   --tf-path h_matrix_normalized_original_to_box.pth \
   --output-dir doa_normalized_config_c_corrected \
   --n-atoms 50 \

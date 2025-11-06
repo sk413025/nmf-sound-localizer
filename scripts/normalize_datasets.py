@@ -226,7 +226,7 @@ def main():
     logger.info("=" * 80)
     
     # Define dataset paths
-    base_data_path = Path("/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original")
+    base_data_path = Path("/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original")
     
     original_dataset_path = base_data_path / "white_noise_original_data_no_edge_sync_vad"
     box_dataset_path = base_data_path / "white_noise_box_data_no_edge_sync_vad"

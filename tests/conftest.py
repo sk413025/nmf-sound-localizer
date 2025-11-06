@@ -23,8 +23,8 @@ def setup_fixed_test_data():
     - Validation: Time-frequency correspondence maintained
     """
     # Set fixed environment variables for all tests - using synchronized VAD processed data
-    os.environ["REAL_TF_X_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad"
-    os.environ["REAL_TF_Y_ROOT"] = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad"
+    os.environ["REAL_TF_X_ROOT"] = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad"
+    os.environ["REAL_TF_Y_ROOT"] = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad"
     os.environ["REAL_TF_N_FILES"] = "3"
     
     # Verify data sources exist

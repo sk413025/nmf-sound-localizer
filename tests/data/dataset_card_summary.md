@@ -11,7 +11,7 @@
 
 ### File Organization
 ```
-/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/
+/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/
 ├── white_noise_original_data_no_edge/    # X data (white noise sources)
 │   ├── angle_90/
 │   ├── angle_100/

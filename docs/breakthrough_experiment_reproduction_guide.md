@@ -71,13 +71,13 @@ conda activate wavtokenizer
 export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace:$PYTHONPATH
 
 # 3. 確認數據路徑可用
-ls /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad
+ls /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad
 ```
 
 ### 步驟1: 傳遞函數估計 (如果需要重新生成)
 ```bash
 python scripts/estimate_transfer_functions.py \
-  /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
+  /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
   --output h_matrix_80_150_freq_300_3000.pth \
   --freq-min 300.0 --freq-max 3000.0 \
   --files-per-angle 50 --time-pooling geometric
@@ -96,7 +96,7 @@ Condition number: 7669419008.00
 ```bash
 python scripts/run_localization.py \
   --tf-path h_matrix_80_150_freq_300_3000.pth \
-  --speech-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
+  --speech-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
   --output doa_freq_300_3000_reproduction \
   --freq-min 300.0 --freq-max 3000.0 \
   --tolerance-degrees 10 --n-sources 1 \

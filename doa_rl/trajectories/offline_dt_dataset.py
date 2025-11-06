@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Offline trajectory builder for Decision Transformer (g-teacher, hierarchical pointer).
+Offline trajectory builder for Decision Transformer with multiple teacher options.
 
-Generates K-step greedy trajectories using |g| = |D^T r| energies with:
-- State: residual r_t (time-averaged, band-limited STFT magnitude, F=346),
-         selected set S_t (stored as indices), step t and remaining budget K-t.
-- Action: hierarchical pointer (expert e in [0,E), atom m in [0,M)), dict index j=e*M+m.
-- Transition: deterministic least-squares re-fitting on selected atoms (orthogonal projection).
-- Rewards/Diagnostics: per-step Δ||r||^2, classification confidence p_t estimated from y_hat_t,
+Generates K-step greedy trajectories using:
+- g-teacher: hierarchical |g| energies (expert-first, then atom)
+- omp-teacher: traditional OMP (max |D^T r| across all atoms)
+- qk-teacher: learned QK routing from pretrained model
+
+State: residual r_t (time-averaged, band-limited STFT magnitude, F=346),
+       selected set S_t (stored as indices), step t and remaining budget K-t.
+Action: hierarchical pointer (expert e in [0,E), atom m in [0,M)), dict index j=e*M+m.
+Transition: deterministic least-squares re-fitting on selected atoms (orthogonal projection).
+Rewards/Diagnostics: per-step Δ||r||^2, classification confidence p_t estimated from y_hat_t,
   and RTGs (RTG_resid, RTG_acc) against targets.
 
 Outputs under results/<run_name>/:
@@ -213,6 +217,33 @@ def hierarchical_pick_g(D: torch.Tensor, r: torch.Tensor, E: int, M: int) -> Tup
     return e, m, j, float(energy_e[e].item()), float(a_scores[m].item())
 
 
+def traditional_omp_pick(D: torch.Tensor, r: torch.Tensor, E: int, M: int) -> Tuple[int, int, int, float, float]:
+    """
+    Traditional OMP: select atom with maximum absolute correlation |D^T @ r|.
+    No hierarchical expert structure - purely greedy selection.
+    
+    Returns (e, m, j, e_energy_max, a_score) for compatibility with g-teacher interface.
+    - e: expert index (derived from selected atom)
+    - m: atom index within expert (derived from selected atom)
+    - j: dictionary index (0 to P-1)
+    - e_energy_max: total energy for the selected expert (computed post-hoc)
+    - a_score: the maximum correlation score
+    """
+    g = (D.T @ r)  # (P,)
+    a_scores = g.abs()  # (P,)
+    j = int(torch.argmax(a_scores).item())
+    
+    # Derive expert and atom from dictionary index
+    e = j // M
+    m = j % M
+    
+    # Compute expert energy for diagnostics
+    g_em = g.view(E, M)
+    energy_e = g_em.abs().sum(dim=1)  # (E,)
+    
+    return e, m, j, float(energy_e[e].item()), float(a_scores[j].item())
+
+
 def solve_ls(D_sub: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Least-squares with torch.linalg.lstsq for stability (no NNLS)."""
     # y ~ D_sub x; returns x (min-norm solution)
@@ -305,9 +336,9 @@ def _qk_scores_with_config(model, D: torch.Tensor, r: torch.Tensor) -> tuple[tor
 def main():
     ap = argparse.ArgumentParser(description='Offline DT trajectory builder (g-teacher)')
     # Data paths
-    ap.add_argument('--h_path', type=str, default='/Users/sbplab/jiawei/LDV-data-processed/h_matrix_box_ldv_correct.pth')
+    ap.add_argument('--h_path', type=str, default='/Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth')
     ap.add_argument('--w_path', type=str, default='doa_normalized_config_c_corrected/models/usm.pth')
-    ap.add_argument('--dataset_root', type=str, default='/Users/sbplab/jiawei/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized')
+    ap.add_argument('--dataset_root', type=str, default='/Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized')
     # STFT/grid
     ap.add_argument('--fs', type=int, default=16000)
     ap.add_argument('--n_fft', type=int, default=2048)
@@ -322,7 +353,7 @@ def main():
     ap.add_argument('--rtg_target_acc', type=float, default=0.95)
     ap.add_argument('--softmax_T', type=float, default=1.0)
     # Teacher selection
-    ap.add_argument('--teacher', type=str, default='g', choices=['g','qk'], help='Trajectory teacher policy')
+    ap.add_argument('--teacher', type=str, default='g', choices=['g','qk','omp'], help='Trajectory teacher policy: g=hierarchical, qk=learned, omp=traditional OMP')
     ap.add_argument('--qk_ckpt', type=str, default='results/exp_H_qk_encoder_on_atom_d128_20251026_233228/model_best.pth', help='Checkpoint for qk teacher')
     ap.add_argument('--qk_d_model', type=int, default=128)
     ap.add_argument('--qk_nhead', type=int, default=2)
@@ -343,7 +374,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 80)
-    print("Offline DT Trajectory Builder (g-teacher)")
+    print(f"Offline DT Trajectory Builder (teacher={args.teacher})")
     print("=" * 80)
     print(f"Output directory: {out_dir}")
 
@@ -528,6 +559,8 @@ def main():
             # Hierarchical pick
             if args.teacher == 'g':
                 e, m, j, energy_e_max, a_score = hierarchical_pick_g(D, r, E=E, M=M)
+            elif args.teacher == 'omp':
+                e, m, j, energy_e_max, a_score = traditional_omp_pick(D, r, E=E, M=M)
             else:
                 assert qk_model is not None
                 with torch.no_grad():

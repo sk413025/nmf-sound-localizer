@@ -113,7 +113,7 @@ export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/deve
 # Use existing breakthrough configuration
 python scripts/run_localization.py \
     --tf-path h_matrix_80_150_freq_300_3000.pth \
-    --speech-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
+    --speech-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
     --freq-min 300.0 --freq-max 3000.0 \
     --output-dir doa_breakthrough_reproduction
 ```
@@ -123,7 +123,7 @@ python scripts/run_localization.py \
 # Use original-to-box transfer function
 python scripts/run_localization.py \
     --tf-path h_matrix_original_to_box_experiment.pth \
-    --speech-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
+    --speech-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
     --freq-min 300.0 --freq-max 3000.0 \
     --output-dir doa_original_tf_box_test
 ```
@@ -135,7 +135,7 @@ python scripts/run_localization.py \
 # Then: Run localization with original TF
 python scripts/run_localization.py \
     --tf-path h_matrix_original_to_box_experiment.pth \
-    --speech-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
+    --speech-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad \
     --freq-min 300.0 --freq-max 3000.0 \
     --output-dir doa_original_system_box_test
 ```

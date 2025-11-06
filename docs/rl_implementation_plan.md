@@ -6,8 +6,8 @@
 - Keep the model architecture minimal: add a policy head and trainers without modifying nmf_localizer’s core algorithm.
 
 ## Ground Truth Assets and Shapes (Config C)
-- USM training root (Original normalized): `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized`
-- Test root (Box normalized): `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
+- USM training root (Original normalized): `/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized`
+- Test root (Box normalized): `/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
 - H path: `h_matrix_normalized_original_to_box.pth` → `H: (F=346, D=17)`, `angles: (17,)` = `[30..150]`
 - W path: `doa_normalized_config_c_corrected_reproduction/models/usm.pth` → `W: (F=346, K=50)`
 - STFT: `fs=16000, n_fft=2048, hop=512 (noverlap=1536), window=hann`, band `300–3000 Hz` → `F=346`
@@ -83,9 +83,9 @@ Fairness constraints:
 
 ## CLI Defaults (Config C)
 - PPO example:
-  - `python scripts/train_ppo.py --tf-path h_matrix_normalized_original_to_box.pth --w-path doa_normalized_config_c_corrected_reproduction/models/usm.pth --test-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized --epochs 50 --clip-eps 0.2 --target-kl 0.02`
+  - `python scripts/train_ppo.py --tf-path h_matrix_normalized_original_to_box.pth --w-path doa_normalized_config_c_corrected_reproduction/models/usm.pth --test-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized --epochs 50 --clip-eps 0.2 --target-kl 0.02`
 - GRPO example:
-  - `python scripts/train_grpo.py --group-size 4 --beta-kl 0.01 --tf-path h_matrix_normalized_original_to_box.pth --w-path doa_normalized_config_c_corrected_reproduction/models/usm.pth --test-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
+  - `python scripts/train_grpo.py --group-size 4 --beta-kl 0.01 --tf-path h_matrix_normalized_original_to_box.pth --w-path doa_normalized_config_c_corrected_reproduction/models/usm.pth --test-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
 
 ## Milestones
 1) Scaffolding: `rl/config.py, rl/data.py, rl/assets.py, rl/policy.py, rl/advantage.py`, CLI scripts; no code changes to nmf_localizer.

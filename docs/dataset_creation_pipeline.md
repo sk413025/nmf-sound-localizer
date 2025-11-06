@@ -404,10 +404,10 @@ export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/deve
 
 # Run synchronized VAD processing
 python scripts/apply_spectrogram_vad.py \
-  --x_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
-  --y_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
-  --x_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
-  --y_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
+  --x_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
+  --y_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
+  --x_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
+  --y_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
   --energy_threshold 1e-6 \
   --min_duration 0.1
 ```
@@ -691,7 +691,7 @@ export PYTHONPATH=$PWD:$PYTHONPATH
 
 # Generate H matrix
 python scripts/estimate_transfer_functions.py \
-  /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
   --output h_matrix_normalized_original_to_box.pth \
   --time-pooling geometric \
   --freq-min 300.0 \
@@ -892,7 +892,7 @@ print("✅ H matrix verification PASSED")
 #### 1. USM Training Root (Original, normalized)
 
 ```
-/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/
+/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/
   white_noise_original_data_no_edge_sync_vad_normalized
 ```
 
@@ -906,7 +906,7 @@ print("✅ H matrix verification PASSED")
 #### 2. Test Root (Box, normalized)
 
 ```
-/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/
+/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/
   white_noise_box_data_no_edge_sync_vad_normalized
 ```
 
@@ -941,7 +941,7 @@ print("✅ H matrix verification PASSED")
 
 ```bash
 # Navigate to dataset root
-cd /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original
+cd /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original
 
 # Compute fingerprint for normalized datasets
 find white_noise_box_data_no_edge_sync_vad_normalized \
@@ -1064,10 +1064,10 @@ cd /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspa
 
 # Run synchronized VAD
 python scripts/apply_spectrogram_vad.py \
-  --x_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
-  --y_input_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
-  --x_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
-  --y_output_dir "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
+  --x_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
+  --y_input_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
+  --x_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad" \
+  --y_output_dir "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad" \
   --energy_threshold 1e-6 \
   --min_duration 0.1
 
@@ -1105,7 +1105,7 @@ cd /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspa
 
 # Generate H matrix using normalized datasets
 python scripts/estimate_transfer_functions.py \
-  /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
   --output h_matrix_normalized_original_to_box.pth \
   --time-pooling geometric \
   --freq-min 300.0 \
@@ -1131,8 +1131,8 @@ cd /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspa
 
 # Full pipeline with USM training (Configuration C)
 python scripts/run_localization.py \
-  --usm-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
-  --test-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
+  --usm-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  --test-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
   --tf-path h_matrix_normalized_original_to_box.pth \
   --output-dir doa_normalized_config_c_corrected \
   --n-atoms 50 \
@@ -1158,7 +1158,7 @@ python scripts/run_localization.py \
 
 ```bash
 # Verify dataset structure
-ls -la /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized/
+ls -la /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized/
 
 # Expected:
 # angle_30/ angle_45/ angle_80/ ... angle_150/ metadata.json
@@ -1515,7 +1515,7 @@ Train a Universal Speech Model (USM) dictionary W using Non-negative Matrix Fact
 ### Input Data
 ```
 Source: Normalized datasets from Stage 3
-USM Training Root: /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/
+USM Training Root: /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/
                    white_noise_original_data_no_edge_sync_vad_normalized
 
 Structure:
@@ -1658,8 +1658,8 @@ usm_dict = pipeline.train_usm(
 **Full Pipeline Execution** (as used in commit c96860b):
 ```bash
 python scripts/run_localization.py \
-  --usm-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
-  --test-data-root /Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
+  --usm-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized \
+  --test-data-root /Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized \
   --tf-path h_matrix_normalized_original_to_box.pth \
   --output-dir doa_normalized_config_c_corrected \
   --n-atoms 50 \

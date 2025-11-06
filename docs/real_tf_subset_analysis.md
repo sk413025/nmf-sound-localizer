@@ -88,8 +88,8 @@
 conda run -n wavtokenizer bash -lc \
   'export PYTHONPATH=$(pwd):$PYTHONPATH; \
    python scripts/analyze_real_tf_subset.py \
-     --original "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
-     --box "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
+     --original "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge" \
+     --box "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge" \
      --out out/real_tf_subset.pth \
      --angle-start 80 --angle-end 150 --angle-step 5 \
      --n-files 3'

@@ -64,7 +64,7 @@ def main():
     
     try:
         # Use test data paths from conftest.py for demonstration
-        test_data_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
+        test_data_root = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge"
         
         # Check if test data exists, otherwise fall back to 'root'
         from pathlib import Path as PathLib

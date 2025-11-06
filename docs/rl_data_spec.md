@@ -2,11 +2,11 @@
 
 ## Data Roots (Config C)
 - USM training root (Original, normalized):
-  - `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized`
+  - `/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized`
   - Structure: 17 angle folders (`angle_30` … `angle_150`), 3 files each
   - Example file: `(145920,) float32` waveform
 - Test root (Box, normalized):
-  - `/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
+  - `/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized`
   - Structure: same as above; total 51 test clips
 
 Environment overrides (optional):
@@ -98,8 +98,8 @@ Batching and groups:
 ## Minimal RLConfig (defaults to Config C)
 - `tf_path = "h_matrix_normalized_original_to_box.pth"`
 - `w_path = "doa_normalized_config_c_corrected_reproduction/models/usm.pth"`
-- `usm_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized"`
-- `test_root = "/Users/sbplab/jiawei/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized"`
+- `usm_root = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_original_data_no_edge_sync_vad_normalized"`
+- `test_root = "/Users/sbplab/jnrle/datasets/test_nmf_output_no_edge_with_original/white_noise_box_data_no_edge_sync_vad_normalized"`
 - `fs=16000, n_fft=2048, hop=512, window='hann', freq_min=300.0, freq_max=3000.0`
 - `ppo: clip_eps, target_kl, entropy_coef`; `grpo: group_size, beta_kl`
 
