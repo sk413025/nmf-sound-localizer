@@ -775,7 +775,7 @@ def main():
     for obj in trajs:
         angle_idx = int(obj['angle_index'])
         R_seq, RTG_seq, STEP_seq, actions = build_teacher_seqs(obj)
-        se, sem = model(R_seq.to(device), RTG_seq.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
+        se, sem, _ = model(R_seq.to(device), RTG_seq.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
         se_np = se.detach().squeeze(0).cpu().numpy()  # (K,E)
         pred_e = se.argmax(dim=-1).squeeze(0).cpu().tolist()
         # gather atom scores for predicted expert each step
