@@ -862,7 +862,7 @@ def main():
         total_angles += 1
         # Controllability: change RTG tokens while keeping R_seq fixed
         RTG_alt = RTG_seq.clone(); RTG_alt[:,:,0] = torch.clamp(RTG_alt[:,:,0]*0.5, min=0.0); RTG_alt[:,:,1] = torch.clamp(RTG_alt[:,:,1]+0.03, max=0.99)
-        se2, sem2 = model(R_seq.to(device), RTG_alt.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
+        se2, sem2, _ = model(R_seq.to(device), RTG_alt.to(device), STEP_seq.to(device), causal_mask=generate_causal_mask(K, device))
         pred_e2 = se2.argmax(dim=-1).squeeze(0).cpu().tolist()
         pred_m2 = []
         for t in range(K):
