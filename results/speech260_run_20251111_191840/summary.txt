@@ -1,0 +1,5 @@
+S0 fingerprint: a7966f90a452d2323919263187e4ce5d
+S2 fingerprint: 16f36f620ceaf39b4a894730c337c2a2
+Base run dir: results/speech260_run_20251111_191840
+S0 fingerprint: a7966f90a452d2323919263187e4ce5d
+S2 fingerprint: 16f36f620ceaf39b4a894730c337c2a2
