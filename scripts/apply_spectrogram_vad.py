@@ -253,12 +253,22 @@ def process_xy_audio_directories(x_input_dir: Path,
     # Get list of angle directories from both X and Y
     x_angle_dirs = [d for d in x_input_dir.iterdir() if d.is_dir() and d.name.startswith('angle_')]
     y_angle_dirs = [d for d in y_input_dir.iterdir() if d.is_dir() and d.name.startswith('angle_')]
-    
+
+    # Support flat X input (original clips not organized per-angle):
+    # If X has no angle_*/ but Y does, reuse the flat X for every Y angle.
+    flat_x_mode = False
+    if not x_angle_dirs and y_angle_dirs:
+        flat_x_mode = True
+        logger.info("X input has no angle_* directories; using flat X for all Y angles")
+        x_angle_dirs = y_angle_dirs  # iterate over Y angles
+
     x_angle_names = {d.name for d in x_angle_dirs}
     y_angle_names = {d.name for d in y_angle_dirs}
-    
-    # Find common angles
+
+    # Find common angles (or adopt Y angles in flat X mode)
     common_angles = x_angle_names.intersection(y_angle_names)
+    if not common_angles and flat_x_mode:
+        common_angles = y_angle_names
     if not common_angles:
         raise ValueError("No common angle directories found between X and Y input directories")
     
@@ -266,7 +276,8 @@ def process_xy_audio_directories(x_input_dir: Path,
     
     # Process each common angle directory
     for angle_name in sorted(common_angles):
-        x_angle_dir = x_input_dir / angle_name
+        # For flat X, use the flat directory as source
+        x_angle_dir = x_input_dir if flat_x_mode else (x_input_dir / angle_name)
         y_angle_dir = y_input_dir / angle_name
         
         logger.info(f"Processing {angle_name}...")

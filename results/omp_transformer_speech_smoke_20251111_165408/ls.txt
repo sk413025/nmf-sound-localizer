@@ -1,0 +1,11 @@
+total 2112
+drwxr-xr-x   10 sbplab  staff     320 Nov 11 16:54 .
+drwxr-xr-x  125 sbplab  staff    4000 Nov 11 16:54 ..
+-rw-r--r--    1 sbplab  staff    1818 Nov 11 16:54 code_state.json
+-rw-r--r--    1 sbplab  staff    1853 Nov 11 16:54 diagnostics.jsonl
+-rw-r--r--    1 sbplab  staff       0 Nov 11 16:54 ls.txt
+-rw-r--r--    1 sbplab  staff   15577 Nov 11 16:54 metrics.npz
+-rw-r--r--    1 sbplab  staff  438389 Nov 11 16:54 model_best.pth
+-rw-r--r--    1 sbplab  staff  501401 Nov 11 16:54 preprocessing.pth
+-rw-r--r--    1 sbplab  staff  100680 Nov 11 16:54 results.png
+-rw-r--r--    1 sbplab  staff    6654 Nov 11 16:54 run.log

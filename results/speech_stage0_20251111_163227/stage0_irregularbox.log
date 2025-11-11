@@ -1,0 +1,6 @@
+[Retry Step 3] Converting LDV IrregularBox (speech) in 'wavtokenizer' env...
+Conversion completed successfully.
+Audio type: speech, segment: segment1, indices: [64, 129, 195]
+Angles processed (37): [0, 5, 10, 15, 20, 25]...
+Output roots under: /Users/sbplab/LDV-data-processed
+

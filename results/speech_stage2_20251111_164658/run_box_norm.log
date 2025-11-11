@@ -1,0 +1,5 @@
+[Stage2] Normalizing Stage1 outputs (box)...
+Normalized 111 files from /Users/sbplab/LDV-data-processed/speech_original_data_no_edge_sync_vad -> /Users/sbplab/LDV-data-processed/speech_original_data_no_edge_sync_vad_normalized
+
+Normalized 111 files from /Users/sbplab/LDV-data-processed/speech_box_data_no_edge_sync_vad -> /Users/sbplab/LDV-data-processed/speech_box_data_no_edge_sync_vad_normalized
+

@@ -1,0 +1,2 @@
+Stage2 Box Normalized: X npy=111, Y npy=111
+Fingerprint: b83512f2b03abe6ccf35e7c3a3ea2408

@@ -1,0 +1,4 @@
+Box NPY count: 111
+IrregularBox NPY count: 111
+Original clips NPY count: 3
+Fingerprint: 402c1430a496b8d17a3003fd0e8bbe53

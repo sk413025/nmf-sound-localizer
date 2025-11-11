@@ -1,0 +1,36 @@
+[Step 1] Generating speech intervals manifest...
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/conversion/generate_speech_intervals_manifest.py", line 40, in <module>
+    import librosa
+ModuleNotFoundError: No module named 'librosa'
+
+ERROR conda.cli.main_run:execute(125): `conda run python -u scripts/conversion/generate_speech_intervals_manifest.py --dataset_path /Users/sbplab/LDV-data --select 3 --out results/speech_stage0_20251111_163227/speech_intervals.json` failed. (See above for error)
+[Retry Step 1] Generating speech intervals manifest in 'wavtokenizer' env...
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/conversion/generate_speech_intervals_manifest.py", line 186, in <module>
+    raise SystemExit(main())
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/scripts/conversion/generate_speech_intervals_manifest.py", line 179, in main
+    out_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/__init__.py", line 234, in dumps
+    return cls(
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 201, in encode
+    chunks = list(chunks)
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 325, in _iterencode_list
+    yield from chunks
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/opt/anaconda3/envs/wavtokenizer/lib/python3.9/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type int64 is not JSON serializable
+
+ERROR conda.cli.main_run:execute(125): `conda run python -u scripts/conversion/generate_speech_intervals_manifest.py --dataset_path /Users/sbplab/LDV-data --select 3 --out results/speech_stage0_20251111_163227/speech_intervals.json` failed. (See above for error)
+[Retry Step 1b] Generating speech intervals manifest in 'wavtokenizer' env after patch...
+Saved speech interval manifest to: results/speech_stage0_20251111_163227/speech_intervals.json
+Selected indices (global): [64, 129, 195]
+

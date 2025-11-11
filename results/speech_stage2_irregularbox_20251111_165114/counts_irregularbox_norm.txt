@@ -1,0 +1,2 @@
+Stage2 IrregularBox Normalized: Y npy=111
+Fingerprint: 98c5191c55114e1ef1d388cc36bac43d
