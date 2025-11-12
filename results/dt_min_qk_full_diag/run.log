@@ -1,0 +1,15 @@
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_qk_v1
+Out dir: results/dt_min_qk_full_diag
+D: F=346, E=37, M=8, P=296
+Epoch 1/1: loss=0.9643
+Final train step-acc: expert=1.000, atom=1.000
+Teacher-forced step match: 1.000
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.027; teacher qk t=0: 0.02702702702702703; g(y): 1.000
+
+================================================================================
+DT-Min training DONE
+Metrics: results/dt_min_qk_full_diag/metrics.npz; code_state: results/dt_min_qk_full_diag/code_state.json
+================================================================================

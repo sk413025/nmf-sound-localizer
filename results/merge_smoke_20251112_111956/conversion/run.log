@@ -1,0 +1,6 @@
+Using writer backend: scipy.io.wavfile
+Root: /tmp/smoke_npy_112039
+Sample rate: 16000
+Amplitude mode: auto
+Done. Converted=1, skipped=0, errors=0
+

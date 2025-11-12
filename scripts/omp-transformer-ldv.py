@@ -22,7 +22,7 @@ import argparse
 from pathlib import Path
 from typing import List, Tuple, Dict
 from datetime import datetime
-from sklearn.cluster import KMeans
+# from sklearn.cluster import KMeans  # Removed: using NumPy K-means instead (faster, deterministic)
 from scipy import signal as scipy_signal
 
 # Import DoADataset for proper STFT processing (matches b573aa6)
@@ -60,45 +60,75 @@ def load_raw_ldv_matrices(h_path: str, w_path: str, device='cpu'):
 
 def reduce_atoms_kmeans(W: torch.Tensor, n_clusters: int = 8, random_state: int = 42):
     """
-    Reduce W atoms from 50 → n_clusters using K-means clustering.
-    
+    Reduce W atoms from 50 → n_clusters using NumPy K-means clustering.
+    Lightweight implementation with k-means++ init, avoids sklearn overhead.
+
     Args:
         W: (F, M) where F=346 freq bins, M=50 atoms
         n_clusters: Target number of atoms (default: 8)
-    
+        random_state: Random seed for reproducibility (default: 42)
+
     Returns:
         W_reduced: (F, n_clusters) centroids
         labels: (M,) cluster assignment for each original atom
-        kmeans: fitted KMeans object
+        info: dict with clustering metadata
     """
     print(f"\n=== Atom Reduction via K-means ===")
     print(f"Input: W shape {W.shape} (346 freq bins × 50 atoms)")
     print(f"Target: {n_clusters} clusters")
-    
+
     # Transpose for clustering: cluster atoms (rows), not frequencies
-    W_np = W.cpu().numpy().T  # (50, 346)
-    
-    # K-means clustering
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=20, max_iter=300)
-    labels = kmeans.fit_predict(W_np)
-    
-    # Get centroids and transpose back to (F, M')
-    centroids = kmeans.cluster_centers_  # (n_clusters, 346)
-    W_reduced = torch.from_numpy(centroids.T).float()  # (346, n_clusters)
-    
-    # Normalize centroids
+    X = W.cpu().numpy().T  # (M_full, F)
+    rng = np.random.RandomState(random_state)
+    M_full, Fdim = X.shape
+
+    # k-means++ initialization
+    centers = []
+    idx0 = int(rng.randint(M_full))
+    centers.append(X[idx0].copy())
+    for _ in range(1, n_clusters):
+        d2 = np.min([np.sum((X - c) ** 2, axis=1) for c in centers], axis=0)  # (M_full,)
+        probs = d2 / (d2.sum() + 1e-12)
+        idx = int(rng.choice(M_full, p=probs))
+        centers.append(X[idx].copy())
+    C = np.stack(centers, axis=0)  # (k, F)
+    labels = np.zeros(M_full, dtype=int)
+
+    # Lloyd's algorithm (30 iterations)
+    for _ in range(30):
+        # Assign to nearest centroid
+        dists = np.sum((X[:, None, :] - C[None, :, :]) ** 2, axis=2)  # (M_full, k)
+        labels = np.argmin(dists, axis=1)
+        # Update centroids
+        newC = np.zeros_like(C)
+        for k in range(n_clusters):
+            mask = (labels == k)
+            if np.any(mask):
+                newC[k] = X[mask].mean(axis=0)
+            else:
+                # Reinit empty cluster to farthest point
+                far_idx = int(np.argmax(np.min(dists, axis=1)))
+                newC[k] = X[far_idx]
+        if np.allclose(newC, C, atol=1e-5):
+            C = newC
+            break
+        C = newC
+
+    # Convert back to torch
+    W_reduced = torch.from_numpy(C.T).float()  # (F, k)
     W_reduced = W_reduced / (W_reduced.norm(dim=0, keepdim=True) + 1e-12)
-    
+
     # Compute reconstruction error
     W_reconstructed = W_reduced[:, labels]  # (346, 50)
     recon_error = (W - W_reconstructed).norm().item() / W.norm().item()
-    
+
     print(f"K-means completed:")
     print(f"  Centroids shape: {W_reduced.shape}")
     print(f"  Cluster sizes: {np.bincount(labels).tolist()}")
     print(f"  Reconstruction error: {recon_error:.4f} ({recon_error*100:.2f}%)")
-    
-    return W_reduced, labels, kmeans
+
+    info = {}
+    return W_reduced, labels, info
 
 
 def reduce_atoms_kcenter(W: torch.Tensor, n_clusters: int = 8):
@@ -573,6 +603,11 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         _res_norms_t: list[torch.Tensor] = []
         _scores_expert_steps: list[torch.Tensor] = []
 
+        # Phase 2: Track selected atoms across steps for masking during training
+        # Use Python list (not tensors) to avoid autograd graph issues
+        selected_atoms = []  # List of (expert_idx, atom_idx) tuples
+        support_indices = []  # List of selected global atom indices (for diversity testing)
+
         for step in range(self.steps):
             # Build tokens and apply Transformer
             T = self._build_tokens(r, D)  # (1+P, d)
@@ -629,18 +664,51 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 scores_atoms = scores_atoms - scores_atoms.mean(dim=1, keepdim=True)
             
             if train_mode:
-                # Soft routing
+                # Soft routing (or hard if use_hard_gumbel is enabled)
                 # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
-                w_e = self._soft_picker(scores_expert, self.tau_e, self.routing_e, hard=False)  # (E,)
+                use_hard = getattr(self, 'use_hard_gumbel', False)  # Default False for backward compatibility
+                w_e = self._soft_picker(scores_expert, self.tau_e, self.routing_e, hard=use_hard)  # (E,)
                 w_all = torch.zeros(self.E, self.M, device=D.device)
                 w_a_list = []  # Collect w_a for all experts
                 for e in range(self.E):
                     if self.single_gate_expert:
                         w_a_e = torch.ones(self.M, device=D.device)
                     else:
-                        w_a_e = self._soft_picker(scores_atoms[e].abs(), self.tau_a, self.routing_a, hard=False)
+                        # Phase 2: Apply atom masking to prevent repetition
+                        scores_atoms_e = scores_atoms[e].abs()
+
+                        if use_hard and step > 0:  # Apply masking from step 1 onwards
+                            # Create FRESH mask from selected_atoms list (standard Transformer pattern)
+                            mask_e = torch.zeros(self.M, dtype=torch.bool, device=scores_atoms_e.device)
+                            for (prev_e, prev_m) in selected_atoms:
+                                if prev_e == e:  # Same expert
+                                    mask_e[prev_m] = True
+
+                            # Safety check: don't mask if all atoms would be masked
+                            if mask_e.sum() < self.M:  # At least one atom remains unmasked
+                                # Use large negative value instead of -inf for numerical stability
+                                # This works like -inf in softmax but has well-defined gradients
+                                scores_atoms_e_masked = scores_atoms_e.clone()
+                                scores_atoms_e_masked[mask_e] = -1e10
+                                w_a_e = self._soft_picker(scores_atoms_e_masked, self.tau_a, self.routing_a, hard=use_hard)
+                            else:
+                                # All atoms masked - skip masking for this expert
+                                w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
+                        else:
+                            w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
                     w_all[e] = w_e[e] * w_a_e
                     w_a_list.append(w_a_e.detach())
+
+                # Phase 2: Record selected atoms to Python list (if using hard Gumbel)
+                # Standard Transformer pattern: track state in simple data structures, not tensors
+                if use_hard:
+                    e_selected = torch.argmax(w_e).item()  # Which expert was selected (one-hot)
+                    m_selected = torch.argmax(w_all[e_selected]).item()  # Which atom in that expert
+                    selected_atoms.append((e_selected, m_selected))
+                    # Also track global atom index for diversity testing
+                    global_idx = e_selected * self.M + m_selected
+                    support_indices.append(global_idx)
+
                 w_all = w_all.reshape(-1)  # (P,)
                 # Save diagnostics (detached) and training-useful tensors (non-detached)
                 if self.last_diag is None:
@@ -664,15 +732,48 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 # Remove .item() on eta to keep it learnable / schedulable
                 x = x + self.eta * (w_all * g)
             else:
-                # Hard routing
-                kE = min(self.top_e, self.E)
-                chosen_e = torch.topk(scores_expert, k=kE).indices.tolist()
-                chosen_idx = []
-                for e in chosen_e:
-                    kL = min(self.L, self.M)
-                    chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
-                    chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+                # Hard routing (inference mode)
+                # Apply atom masking to prevent repetition (if trained with hard Gumbel)
+                use_hard = getattr(self, 'use_hard_gumbel', False)
+
+                if use_hard and step > 0:
+                    # Mask out already-selected atoms (similar to training mode masking)
+                    scores_atoms_masked = scores_atoms.clone()
+                    scores_expert_masked = scores_expert.clone()
+
+                    # Build mask from previously selected atoms
+                    for prev_idx in support_indices:
+                        prev_e = prev_idx // self.M
+                        prev_m = prev_idx % self.M
+                        scores_atoms_masked[prev_e, prev_m] = -1e10
+
+                    # Recompute expert scores after masking (experts with all atoms masked get -inf)
+                    for e in range(self.E):
+                        if torch.all(scores_atoms_masked[e].abs() < -1e9):
+                            scores_expert_masked[e] = -1e10
+
+                    # Use masked scores for selection
+                    kE = min(self.top_e, self.E)
+                    chosen_e = torch.topk(scores_expert_masked, k=kE).indices.tolist()
+                    chosen_idx = []
+                    for e in chosen_e:
+                        kL = min(self.L, self.M)
+                        # Don't use .abs() on masked scores! Masked values are -1e10, abs() would make them +1e10 (largest!)
+                        chosen_a = torch.topk(scores_atoms_masked[e], k=kL).indices.tolist()
+                        chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+                else:
+                    # No masking (original behavior)
+                    kE = min(self.top_e, self.E)
+                    chosen_e = torch.topk(scores_expert, k=kE).indices.tolist()
+                    chosen_idx = []
+                    for e in chosen_e:
+                        kL = min(self.L, self.M)
+                        chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
+                        chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+
                 chosen_idx = list(dict.fromkeys(chosen_idx))
+                # Record selected atoms for diversity testing
+                support_indices.extend(chosen_idx)
                 if step == 0:
                     if self.last_diag is None:
                         self.last_diag = {}
@@ -696,6 +797,8 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 self.last_outputs['scores_expert_steps'] = torch.stack(_scores_expert_steps, dim=0)
             except Exception:
                 self.last_outputs['scores_expert_steps'] = None
+        # Save support indices for atom diversity testing
+        self.last_outputs['support_indices'] = support_indices
 
         return x, res_curve
 
@@ -1327,6 +1430,8 @@ def main():
                         help='Weight for step-wise InfoNCE loss (anchor=step0, positive=step1)')
     parser.add_argument('--nce_T', type=float, default=1.0,
                         help='Temperature for InfoNCE (default: 1.0)')
+    parser.add_argument('--use_hard_gumbel', action='store_true',
+                        help='Use hard=True for Gumbel-Softmax during training (discrete selection with STE gradients)')
     # Routing temperature annealing
     parser.add_argument('--tau_e_start', type=float, default=1.0,
                         help='Initial expert temperature for routing (default: 1.0)')
@@ -1376,11 +1481,11 @@ def main():
     
     # Reduce atoms (50 → n_atoms)
     if args.atom_reduce_mode == 'kmeans':
-        W_reduced, kmeans_labels, kmeans_model = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
+        W_reduced, kmeans_labels, info = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
     elif args.atom_reduce_mode == 'kcenter':
-        W_reduced, kmeans_labels, kmeans_model = reduce_atoms(W_raw, mode='kcenter', n_clusters=args.n_atoms)
+        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='kcenter', n_clusters=args.n_atoms)
     else:  # 'diverse'
-        W_reduced, kmeans_labels, kmeans_model = reduce_atoms(W_raw, mode='diverse', n_clusters=args.n_atoms, min_cos=args.atom_min_cos)
+        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='diverse', n_clusters=args.n_atoms, min_cos=args.atom_min_cos)
     
     # NO PCA - use full frequency resolution (F=346)
     print(f"\n=== Using Full Frequency Resolution (NO PCA) ===")
@@ -1470,6 +1575,7 @@ def main():
     model.score_center_expert = bool(getattr(args, 'score_center_expert', False))
     model.expert_agg = getattr(args, 'expert_agg', 'l2')
     model.d_can_attend_r = bool(getattr(args, 'd_can_attend_r', False))
+    model.use_hard_gumbel = bool(getattr(args, 'use_hard_gumbel', False))  # Phase 1: Hard Gumbel fix
     
     print(f"\nModel architecture:")
     print(f"  F (input freq dim): {F}")

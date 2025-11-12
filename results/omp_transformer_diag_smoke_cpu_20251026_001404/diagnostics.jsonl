@@ -1,1 +1,3 @@
-{"epoch": 1, "rec_loss": 0.0015843351471370884, "mono_loss": 0.0, "class_loss": 3.6124818325042725, "total_loss": 1.807825241770063, "teacher_samples": 16, "teacher_acc_subset": 1.0, "teacher_margin_p50": 0.16924643516540527, "teacher_margin_p95": 0.3341590166091919, "qk_g_corr_pearson_mean": 0.07851102114188645, "qk_top1_match_rate": 0.0625, "w_e_entropy_mean": 1.315088541712612, "tau_e": 0.5, "tau_a": 0.20000000298023224, "eta": 0.49186044931411743, "grad_norms": {"P_R": 0.00013664213474839926, "P_D": 0.001479714410379529, "Wq": 0.0026822162326425314, "Wk": 0.004702047444880009, "type_R": 0.00015840810374356806, "type_D": 0.0005803719977848232, "tau_e": 0.0, "tau_a": 0.0, "eta": 0.009751684963703156, "encoder": 0.018953201768454164}}
+version https://git-lfs.github.com/spec/v1
+oid sha256:827bd9cb57091178230ecdf5d2b6d3e806d87f276c93f7b0d8dd37162689af52
+size 746
