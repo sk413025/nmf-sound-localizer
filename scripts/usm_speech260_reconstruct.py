@@ -78,7 +78,10 @@ def save_wav(path: Path, audio: np.ndarray, fs: int = 16000) -> None:
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     usm_path = repo_root / "doa_speech260_config_c_corrected/models/usm.pth"
-    data_root = Path("/Users/sbplab/LDV-data-processed/speech260_original_data_no_edge_sync_vad_normalized")
+    # Use 16 kHz resampled speech260 original data to align with H/DoADataset
+    data_root = Path(
+        "/Users/sbplab/LDV-data-processed/speech260_original_16k_no_edge_sync_vad_normalized"
+    )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = repo_root / f"results/usm_speech260_recon_{timestamp}"
