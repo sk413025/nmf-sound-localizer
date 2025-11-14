@@ -1,0 +1,59 @@
+============================================================
+NMF LOCALIZATION EVALUATION REPORT
+============================================================
+
+--- OVERALL PERFORMANCE ---
+Accuracy: 4.3%
+Mean Error: 2.5°
+Median Error: 0.0°
+Per-Source Accuracy: 7.0%
+
+--- PROCESSING PERFORMANCE ---
+Mean Processing Time: 65.5ms
+Success Rate: 100.0%
+Examples Evaluated: 185
+
+--- PER-ANGLE ANALYSIS ---
+Angle   0°: 100.0% ( 5/ 5), Error:   0.0°
+Angle   5°: 100.0% ( 5/ 5), Error:   5.0°
+Angle  10°:  40.0% ( 2/ 5), Error:  69.0°
+Angle  15°:   0.0% ( 0/ 5), Error:  41.0°
+Angle  20°:   0.0% ( 0/ 5), Error:  43.0°
+Angle  25°:   0.0% ( 0/ 5), Error:  82.0°
+Angle  30°:   0.0% ( 0/ 5), Error:  30.0°
+Angle  35°:   0.0% ( 0/ 5), Error:  56.0°
+Angle  40°:   0.0% ( 0/ 5), Error:  43.0°
+Angle  45°:   0.0% ( 0/ 5), Error:  45.0°
+Angle  50°:   0.0% ( 0/ 5), Error:  46.0°
+Angle  55°:   0.0% ( 0/ 5), Error:  55.0°
+Angle  60°:   0.0% ( 0/ 5), Error:  50.0°
+Angle  65°:   0.0% ( 0/ 5), Error:  59.0°
+Angle  70°:   0.0% ( 0/ 5), Error:  53.0°
+Angle  75°:   0.0% ( 0/ 5), Error:  75.0°
+Angle  80°:   0.0% ( 0/ 5), Error:  59.0°
+Angle  85°:   0.0% ( 0/ 5), Error:  59.0°
+Angle  90°:   0.0% ( 0/ 5), Error:  61.0°
+Angle  95°:  20.0% ( 1/ 5), Error:  77.0°
+Angle 100°:   0.0% ( 0/ 5), Error:  83.0°
+Angle 105°:   0.0% ( 0/ 5), Error: 105.0°
+Angle 110°:   0.0% ( 0/ 5), Error: 110.0°
+Angle 115°:   0.0% ( 0/ 5), Error:  79.0°
+Angle 120°:   0.0% ( 0/ 5), Error:  88.0°
+Angle 125°:   0.0% ( 0/ 5), Error:  87.0°
+Angle 130°:   0.0% ( 0/ 5), Error:  88.0°
+Angle 135°:   0.0% ( 0/ 5), Error:  93.0°
+Angle 140°:   0.0% ( 0/ 5), Error: 121.0°
+Angle 145°:   0.0% ( 0/ 5), Error: 104.0°
+Angle 150°:   0.0% ( 0/ 5), Error: 150.0°
+Angle 155°:   0.0% ( 0/ 5), Error: 155.0°
+Angle 160°:   0.0% ( 0/ 5), Error: 160.0°
+Angle 165°:   0.0% ( 0/ 5), Error: 165.0°
+Angle 170°:   0.0% ( 0/ 5), Error: 131.0°
+Angle 175°:   0.0% ( 0/ 5), Error: 122.0°
+Angle 180°:   0.0% ( 0/ 5), Error: 140.0°
+
+--- CONFIGURATION ---
+Tolerance: 10.0°
+Sources: 1
+
+============================================================
