@@ -395,6 +395,64 @@ def load_ldv_samples(dataset_root: str, H: torch.Tensor, W: torch.Tensor,
     return Y_samples, labels, metadata
 
 
+def split_train_val_by_clip_id(metadata, val_mod: int = 5):
+    """
+    Deterministic train/val split based on clip id parsed from file path.
+
+    Rule (per-angle, stratified):
+      - Let k be the integer clip id from filename `clip_YYY.npy` (YYY in [000, 259]).
+      - Validation set: k % val_mod == 0
+      - Training set:   k % val_mod != 0
+    """
+    N = len(metadata)
+    train_indices = []
+    val_indices = []
+    split_stats = {}
+
+    for idx, m in enumerate(metadata):
+        path = m.get('path')
+        angle_deg = float(m.get('angle_deg', 0.0))
+        if path is None:
+            raise ValueError(f"Missing 'path' in metadata entry at index {idx}")
+
+        fname = os.path.basename(path)
+        stem, _ = os.path.splitext(fname)
+        digits = "".join(ch for ch in stem if ch.isdigit())
+        if not digits:
+            raise ValueError(f"Could not parse clip id from path: {path}")
+        clip_id = int(digits)
+
+        stats = split_stats.setdefault(angle_deg, {'train': 0, 'val': 0})
+        if clip_id % val_mod == 0:
+            val_indices.append(idx)
+            stats['val'] += 1
+        else:
+            train_indices.append(idx)
+            stats['train'] += 1
+
+    if not train_indices or not val_indices:
+        raise ValueError(
+            f"Train/val split produced empty subset "
+            f"(train={len(train_indices)}, val={len(val_indices)}); "
+            f"check clip-id parsing and dataset structure."
+        )
+
+    train_mask = torch.zeros(N, dtype=torch.bool)
+    val_mask = torch.zeros(N, dtype=torch.bool)
+    train_mask[train_indices] = True
+    val_mask[val_indices] = True
+
+    print("\n=== Train/Validation Split (clip_id % {0}) ===".format(val_mod))
+    print(f"  Total samples: {N}")
+    print(f"  Train samples: {int(train_mask.sum().item())}")
+    print(f"  Val samples:   {int(val_mask.sum().item())}")
+    for angle in sorted(split_stats.keys()):
+        stats = split_stats[angle]
+        print(f"  Angle {int(angle):3d}°: train={stats['train']:3d}, val={stats['val']:3d}")
+
+    return train_mask, val_mask, split_stats
+
+
 def compute_dataset_fingerprint(dataset_root: str):
     """Compute MD5 fingerprint of all .npy files in dataset."""
     root = Path(dataset_root)
@@ -1507,6 +1565,30 @@ def main():
     
     # Compute dataset fingerprint
     fingerprint = compute_dataset_fingerprint(args.dataset_root)
+
+    # Deterministic train/validation split based on clip id (per-angle, stratified)
+    train_mask, val_mask, split_stats = split_train_val_by_clip_id(metadata, val_mod=5)
+    Y_train = Y_samples[train_mask]
+    labels_train = labels[train_mask]
+    Y_val = Y_samples[val_mask]
+    labels_val = labels[val_mask]
+
+    # Persist split information into diagnostics for reproducibility
+    split_info = {
+        "event": "train_val_split",
+        "total_samples": len(metadata),
+        "train_samples": int(train_mask.sum().item()),
+        "val_samples": int(val_mask.sum().item()),
+        "per_angle": {
+            int(angle): {"train": stats["train"], "val": stats["val"]}
+            for angle, stats in split_stats.items()
+        },
+    }
+    try:
+        with open(os.path.join(args.out_dir, "diagnostics.jsonl"), "a") as f:
+            f.write(json.dumps(split_info) + "\n")
+    except Exception:
+        pass
     
     # ========================================================================
     # STEP 2: Build model
@@ -1622,7 +1704,7 @@ def main():
                 model.tau_e.data.fill_(float(tau_e_cur))
                 model.tau_a.data.fill_(float(tau_a_cur))
         metrics = train_epoch(
-            model, D, Y_samples, labels, opt, idx2angle,
+            model, D, Y_train, labels_train, opt, idx2angle,
             batch_size=args.batch_size, device=args.device,
             alpha=args.alpha, beta=args.beta, gamma=args.gamma, align_weight=args.align_weight,
             distill_T=args.distill_T, distill_weight=args.distill_weight,
@@ -1653,7 +1735,7 @@ def main():
         
         # Evaluate every 10 epochs
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            eval_metrics = evaluate(model, D, Y_samples, labels, idx2angle, device=args.device)
+            eval_metrics = evaluate(model, D, Y_val, labels_val, idx2angle, device=args.device)
             accuracy = eval_metrics['accuracy']
             
             parts = [
@@ -1705,7 +1787,7 @@ def main():
     checkpoint = torch.load(os.path.join(args.out_dir, 'model_best.pth'), weights_only=False)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    final_metrics = evaluate(model, D, Y_samples, labels, idx2angle, device=args.device)
+    final_metrics = evaluate(model, D, Y_val, labels_val, idx2angle, device=args.device)
     
     print(f"\nFinal Results (Best model from epoch {best_epoch}):")
     print(f"  Overall accuracy: {final_metrics['accuracy']:.3f} ({final_metrics['accuracy']*100:.1f}%)")
@@ -1793,7 +1875,7 @@ def main():
         confusion_matrix=final_metrics['confusion_matrix'],
         per_angle_accuracy=final_metrics['per_angle_accuracy'],
         predictions=final_metrics['predictions'],
-        labels=labels.cpu().numpy(),
+        labels=labels_val.cpu().numpy(),
         angles=angles,
         best_epoch=best_epoch,
         best_accuracy=best_accuracy
