@@ -1,0 +1,12 @@
+2025-11-22 18:08:02,360 INFO Generating shard full ([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180])
+2025-11-22 18:08:02,911 INFO Generated shard full: 111 samples, first_step_acc=1.000 voted_acc=0.973
+2025-11-22 18:08:02,911 INFO Shard full written to results/angle_range_shards_k3/full
+2025-11-22 18:08:02,911 INFO Generating shard low ([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60])
+2025-11-22 18:08:03,099 INFO Generated shard low: 39 samples, first_step_acc=1.000 voted_acc=1.000
+2025-11-22 18:08:03,099 INFO Shard low written to results/angle_range_shards_k3/low
+2025-11-22 18:08:03,099 INFO Generating shard mid ([65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115])
+2025-11-22 18:08:03,812 INFO Generated shard mid: 33 samples, first_step_acc=1.000 voted_acc=0.909
+2025-11-22 18:08:03,813 INFO Shard mid written to results/angle_range_shards_k3/mid
+2025-11-22 18:08:03,813 INFO Generating shard high ([120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180])
+2025-11-22 18:08:04,030 INFO Generated shard high: 39 samples, first_step_acc=1.000 voted_acc=1.000
+2025-11-22 18:08:04,030 INFO Shard high written to results/angle_range_shards_k3/high

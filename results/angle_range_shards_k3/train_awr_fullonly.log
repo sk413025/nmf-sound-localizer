@@ -1,0 +1,33 @@
+2025-11-22 18:09:04,507 INFO Dataset loaded: N=111 K=3 d_model=128 shards=['full']
+2025-11-22 18:09:04,507 INFO Coverage: angles=37, missing=[]
+2025-11-22 18:09:05,551 INFO Epoch 1/30 | train_loss=5.1408 | val_loss=4.5739 | voted=0.136 | expert=0.182 | atom=0.591 | joint=0.152
+2025-11-22 18:09:05,593 INFO Epoch 2/30 | train_loss=4.3205 | val_loss=4.2035 | voted=0.136 | expert=0.182 | atom=0.697 | joint=0.152
+2025-11-22 18:09:05,631 INFO Epoch 3/30 | train_loss=4.0084 | val_loss=3.9983 | voted=0.136 | expert=0.197 | atom=0.758 | joint=0.182
+2025-11-22 18:09:05,670 INFO Epoch 4/30 | train_loss=3.7819 | val_loss=3.8503 | voted=0.136 | expert=0.197 | atom=0.833 | joint=0.152
+2025-11-22 18:09:05,708 INFO Epoch 5/30 | train_loss=3.6178 | val_loss=3.7190 | voted=0.136 | expert=0.182 | atom=0.864 | joint=0.152
+2025-11-22 18:09:05,747 INFO Epoch 6/30 | train_loss=3.4617 | val_loss=3.5979 | voted=0.136 | expert=0.182 | atom=0.879 | joint=0.167
+2025-11-22 18:09:05,784 INFO Epoch 7/30 | train_loss=3.2762 | val_loss=3.4366 | voted=0.136 | expert=0.197 | atom=0.894 | joint=0.182
+2025-11-22 18:09:05,822 INFO Epoch 8/30 | train_loss=3.0711 | val_loss=3.2900 | voted=0.182 | expert=0.258 | atom=0.909 | joint=0.258
+2025-11-22 18:09:05,860 INFO Epoch 9/30 | train_loss=2.9037 | val_loss=3.1707 | voted=0.045 | expert=0.303 | atom=0.909 | joint=0.242
+2025-11-22 18:09:05,897 INFO Epoch 10/30 | train_loss=2.7955 | val_loss=3.0776 | voted=0.045 | expert=0.303 | atom=0.909 | joint=0.242
+2025-11-22 18:09:05,934 INFO Epoch 11/30 | train_loss=2.6710 | val_loss=2.9938 | voted=0.000 | expert=0.303 | atom=0.909 | joint=0.242
+2025-11-22 18:09:05,972 INFO Epoch 12/30 | train_loss=2.5172 | val_loss=2.9136 | voted=0.000 | expert=0.303 | atom=0.924 | joint=0.242
+2025-11-22 18:09:06,009 INFO Epoch 13/30 | train_loss=2.4073 | val_loss=2.8181 | voted=0.045 | expert=0.318 | atom=0.924 | joint=0.258
+2025-11-22 18:09:06,046 INFO Epoch 14/30 | train_loss=2.2640 | val_loss=2.7271 | voted=0.045 | expert=0.318 | atom=0.939 | joint=0.258
+2025-11-22 18:09:06,082 INFO Epoch 15/30 | train_loss=2.1336 | val_loss=2.5980 | voted=0.045 | expert=0.364 | atom=0.939 | joint=0.303
+2025-11-22 18:09:06,119 INFO Epoch 16/30 | train_loss=2.0075 | val_loss=2.4766 | voted=0.091 | expert=0.394 | atom=0.939 | joint=0.333
+2025-11-22 18:09:06,155 INFO Epoch 17/30 | train_loss=1.8778 | val_loss=2.3476 | voted=0.136 | expert=0.439 | atom=0.955 | joint=0.394
+2025-11-22 18:09:06,192 INFO Epoch 18/30 | train_loss=1.7709 | val_loss=2.2264 | voted=0.091 | expert=0.470 | atom=0.955 | joint=0.424
+2025-11-22 18:09:06,230 INFO Epoch 19/30 | train_loss=1.6256 | val_loss=2.1155 | voted=0.136 | expert=0.515 | atom=0.955 | joint=0.470
+2025-11-22 18:09:06,268 INFO Epoch 20/30 | train_loss=1.5190 | val_loss=2.0041 | voted=0.227 | expert=0.545 | atom=1.000 | joint=0.545
+2025-11-22 18:09:06,305 INFO Epoch 21/30 | train_loss=1.3885 | val_loss=1.8890 | voted=0.273 | expert=0.591 | atom=0.955 | joint=0.545
+2025-11-22 18:09:06,343 INFO Epoch 22/30 | train_loss=1.3132 | val_loss=1.7783 | voted=0.227 | expert=0.545 | atom=1.000 | joint=0.545
+2025-11-22 18:09:06,380 INFO Epoch 23/30 | train_loss=1.1874 | val_loss=1.6900 | voted=0.364 | expert=0.652 | atom=1.000 | joint=0.652
+2025-11-22 18:09:06,417 INFO Epoch 24/30 | train_loss=1.1055 | val_loss=1.6214 | voted=0.409 | expert=0.682 | atom=1.000 | joint=0.682
+2025-11-22 18:09:06,455 INFO Epoch 25/30 | train_loss=1.0376 | val_loss=1.5192 | voted=0.364 | expert=0.682 | atom=1.000 | joint=0.682
+2025-11-22 18:09:06,492 INFO Epoch 26/30 | train_loss=0.9529 | val_loss=1.4385 | voted=0.455 | expert=0.712 | atom=1.000 | joint=0.712
+2025-11-22 18:09:06,530 INFO Epoch 27/30 | train_loss=0.8745 | val_loss=1.3491 | voted=0.545 | expert=0.727 | atom=1.000 | joint=0.727
+2025-11-22 18:09:06,567 INFO Epoch 28/30 | train_loss=0.8341 | val_loss=1.3032 | voted=0.636 | expert=0.803 | atom=1.000 | joint=0.803
+2025-11-22 18:09:06,605 INFO Epoch 29/30 | train_loss=0.7405 | val_loss=1.2291 | voted=0.545 | expert=0.758 | atom=1.000 | joint=0.758
+2025-11-22 18:09:06,642 INFO Epoch 30/30 | train_loss=0.7088 | val_loss=1.1829 | voted=0.591 | expert=0.788 | atom=1.000 | joint=0.788
+2025-11-22 18:09:06,642 WARNING Voted accuracy 0.591 below expected threshold 0.6
