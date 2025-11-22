@@ -1,0 +1,37 @@
+================================================================================
+DT-Min Trainer (hierarchical pointer)
+================================================================================
+Traj dir: results/dt_traj_gK6_M8_smoke
+Out dir: results/dt_min_gK6_M8_qkDistill_smoke
+D: F=346, E=37, M=8, P=296
+[Teacher loader] Missing keys: []
+[Teacher loader] Unexpected keys: []
+Epoch 1/20: loss=7.3814
+Epoch 2/20: loss=7.3796
+Epoch 3/20: loss=6.5256
+Epoch 4/20: loss=6.5196
+Epoch 5/20: loss=6.5096
+Epoch 6/20: loss=6.4998
+Epoch 7/20: loss=6.4879
+Epoch 8/20: loss=6.4784
+Epoch 9/20: loss=6.4687
+Epoch 10/20: loss=6.4575
+Epoch 11/20: loss=6.4503
+Epoch 12/20: loss=6.4405
+Epoch 13/20: loss=6.4282
+Epoch 14/20: loss=6.4170
+Epoch 15/20: loss=6.4033
+Epoch 16/20: loss=6.3912
+Epoch 17/20: loss=6.3813
+Epoch 18/20: loss=6.3715
+Epoch 19/20: loss=6.3596
+Epoch 20/20: loss=6.3472
+Final train step-acc: expert=0.063, atom=0.462
+Teacher-forced step match: 0.017
+Angle acc — DT-min t=0: 0.027; DT-min t=K-1: 0.054; teacher qk t=0: 0.5405405405405406; g(y): 1.000
+Teacher qk t=0 with KMeans W: 0.541
+
+================================================================================
+DT-Min training DONE
+Metrics: results/dt_min_gK6_M8_qkDistill_smoke/metrics.npz; code_state: results/dt_min_gK6_M8_qkDistill_smoke/code_state.json
+================================================================================

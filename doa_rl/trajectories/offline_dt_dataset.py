@@ -193,6 +193,7 @@ class StepRecord:
     dict_index: int
     resid_sq: float
     delta_resid_sq: float
+    reward: float
     p_true: float
     rtg_resid: float
     rtg_acc: float
@@ -524,6 +525,8 @@ def main():
         # Also track probability using current reconstruction (start with zeros)
         y_hat = torch.zeros_like(y)
 
+        total_reward = 0.0
+
         for t in range(args.K):
             # Hierarchical pick
             if args.teacher == 'g':
@@ -545,11 +548,13 @@ def main():
             res_now = float((r @ r).item())
             delta_res = res_prev - res_now
             res_prev = res_now
+            # Step reward: residual energy reduction (positive when reconstruction improves).
+            reward_t = delta_res
 
             # Classification confidence from y_hat via per-angle energy softmax
             p_true = angle_prob_from_yhat(D, y_hat, E=E, M=M, true_e=angle_idx, temp=args.softmax_T)
 
-            # RTGs
+            # RTGs (targets remain as before; reward is logged separately)
             rtg_res = max(0.0, res_now - args.rtg_target_resid)
             rtg_acc = max(0.0, args.rtg_target_acc - p_true)
 
@@ -560,10 +565,12 @@ def main():
                 dict_index=j,
                 resid_sq=res_now,
                 delta_resid_sq=delta_res,
+                 reward=reward_t,
                 p_true=p_true,
                 rtg_resid=rtg_res,
                 rtg_acc=rtg_acc,
             ))
+            total_reward += reward_t
 
         # Write trajectory line
         traj_obj = {
@@ -573,7 +580,9 @@ def main():
             'steps': [asdict(s) for s in steps],
             'final': {
                 'resid_sq': steps[-1].resid_sq if steps else float((y @ y).item()),
-                'p_true': steps[-1].p_true if steps else float('nan')
+                'p_true': steps[-1].p_true if steps else float('nan'),
+                # Trajectory-level return: sum of per-step rewards (residual energy reductions).
+                'total_reward': float(total_reward),
             }
         }
         traj_f.write(json.dumps(traj_obj) + "\n")

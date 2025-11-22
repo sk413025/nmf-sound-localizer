@@ -323,6 +323,8 @@ def main():
     ap.add_argument('--distill_weight', type=float, default=0.5, help='Weight for teacher qk_expert distillation')
     ap.add_argument('--distill_T', type=float, default=1.0, help='Temperature for distillation softmax')
     ap.add_argument('--warmup_epochs', type=int, default=2, help='Epochs to apply distillation strongly')
+    ap.add_argument('--awr_beta', type=float, default=0.5, help='Temperature for return-based weighting')
+    ap.add_argument('--awr_w_max', type=float, default=4.0, help='Max cap for AWR sample weights')
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir); out_dir.mkdir(parents=True, exist_ok=True)
@@ -379,9 +381,11 @@ def main():
 
     # Build training tensors (R_seq, RTG_seq, STEP_seq) and labels (expert, atom) per step
     K = manifest['K']
-    samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = []
+    samples: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = []
     for obj in trajs:
         path = obj['path']; angle_idx = int(obj['angle_index']); steps = obj['steps']
+        final = obj.get('final', {})
+        total_reward = float(final.get('total_reward', 0.0))
         y = load_y_for_path(path)
         actions_prev: List[int] = []
         R_list=[]; RTG_list=[]; STEP_list=[]; lab_e=[]; lab_m=[]
@@ -401,7 +405,7 @@ def main():
         STEP_seq = torch.cat(STEP_list, dim=0)        # (K,2)
         lab_e = torch.cat(lab_e, dim=0)               # (K,)
         lab_m = torch.cat(lab_m, dim=0)               # (K,)
-        samples.append((R_seq, RTG_seq, STEP_seq, lab_e, lab_m))
+        samples.append((R_seq, RTG_seq, STEP_seq, lab_e, lab_m, torch.tensor(total_reward, dtype=torch.float32)))
 
     # Data loader (simple list batching)
     def batch_iter(batch_size: int):
@@ -414,7 +418,8 @@ def main():
             STEP_b = torch.stack([b[2] for b in batch], dim=0)
             E_b = torch.stack([b[3] for b in batch], dim=0)  # (B,K)
             M_b = torch.stack([b[4] for b in batch], dim=0)  # (B,K)
-            yield R_b, RTG_b, STEP_b, E_b, M_b
+            Rtot_b = torch.stack([b[5] for b in batch], dim=0)  # (B,)
+            yield R_b, RTG_b, STEP_b, E_b, M_b, Rtot_b
 
     # Model
     model = DTMinPointer(F=Fdim, E=E, M=M, d_model=args.d_model, nhead=args.nhead, nlayers=args.nlayers).to(device)
@@ -453,18 +458,30 @@ def main():
     # Training
     for epoch in range(args.epochs):
         model.train(); total=0.0; n=0
-        for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(args.batch_size):
+        for R_b, RTG_b, STEP_b, E_b, M_b, Rtot_b in batch_iter(args.batch_size):
             R_b = R_b.to(device); RTG_b = RTG_b.to(device); STEP_b = STEP_b.to(device)
             E_b = E_b.to(device); M_b = M_b.to(device)
+            Rtot_b = Rtot_b.to(device)
             scores_e, scores_em = model(R_b, RTG_b, STEP_b, causal_mask=causal)
-            # Loss: CE over steps
-            loss_e = F.cross_entropy(scores_e.reshape(-1, E), E_b.reshape(-1))
+            B, K = E_b.shape
+            # Per-token CE over steps (no reduction) so we can apply per-trajectory weights
+            loss_e_tokens = F.cross_entropy(scores_e.reshape(-1, E), E_b.reshape(-1), reduction='none')  # (B*K,)
             # For atom CE, select expert row per sample/step using gather
             idx = E_b.reshape(-1)  # (B*K,)
             se_flat = scores_em.reshape(-1, E, M)  # (B*K,E,M)
             se_sel = se_flat.gather(1, idx.view(-1,1,1).expand(-1,1,M)).squeeze(1)  # (B*K,M)
-            loss_a = F.cross_entropy(se_sel, M_b.reshape(-1))
-            loss = loss_e + loss_a
+            loss_a_tokens = F.cross_entropy(se_sel, M_b.reshape(-1), reduction='none')  # (B*K,)
+            loss_tokens = loss_e_tokens + loss_a_tokens  # (B*K,)
+            # Aggregate to per-trajectory loss
+            loss_per_traj = loss_tokens.view(B, K).mean(dim=1)  # (B,)
+            # AWR-style weighting based on trajectory return (sum of residual improvements)
+            with torch.no_grad():
+                adv = Rtot_b - Rtot_b.mean()
+                w = torch.exp(adv / max(args.awr_beta, 1e-8))
+                w = torch.clamp(w, max=args.awr_w_max)
+                # Normalize weights to keep scale stable
+                w = w / (w.mean() + 1e-8)
+            loss = (w * loss_per_traj).mean()
             # Optional teacher distillation on expert scores (per step)
             if teacher_model is not None and args.distill_weight > 0.0:
                 # Build teacher logits per step from R_b using current D
@@ -506,7 +523,7 @@ def main():
     model.eval();
     with torch.no_grad():
         correct_e=0; total_e=0; correct_a=0; total_a=0
-        for R_b, RTG_b, STEP_b, E_b, M_b in batch_iter(batch_size=len(samples)):
+        for R_b, RTG_b, STEP_b, E_b, M_b, Rtot_b in batch_iter(batch_size=len(samples)):
             R_b = R_b.to(device); RTG_b = RTG_b.to(device); STEP_b = STEP_b.to(device)
             E_b = E_b.to(device); M_b = M_b.to(device)
             scores_e, scores_em = model(R_b, RTG_b, STEP_b, causal_mask=causal)

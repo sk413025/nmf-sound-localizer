@@ -1,0 +1,39 @@
+================================================================================
+Offline DT Trajectory Builder (g-teacher)
+================================================================================
+Output directory: results/dt_traj_gK6_M8_smoke
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: doa_normalized_config_c_corrected/models/usm.pth
+Raw matrices:
+  H shape: (346, 37)
+  W shape: (346, 50)
+  Angles: 37 total -> [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/mdp-decision-transformer/doa_rl/trajectories/offline_dt_dataset.py:85: DeprecationWarning: __array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must implement 'dtype' and 'copy' keyword arguments. To learn more, see the migration guide https://numpy.org/devdocs/numpy_2_0_migration_guide.html#adapting-to-changes-in-the-copy-keyword
+  return H.float(), W.float(), np.array(angles, dtype=float)
+
+=== Atom reduction (k-center) ===
+Selected indices: [4, 5, 18, 24, 30, 35, 40, 48]
+Cluster sizes: [10, 5, 10, 13, 2, 2, 3, 5]
+
+=== Build dictionary D = H ⊙ W ===
+Dictionary built:
+  D shape: (346, 296) (P = 296)
+  Mutual coherence μ_max=0.9977, μ_mean=0.3034
+
+=== Loading dataset (DoADataset) ===
+Dataset size: 111; angles covered: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+Dataset fingerprint (MD5): 713c0635878a04b32f4ee30208904d11 (from 111 .npy files)
+/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/mdp-decision-transformer/doa_rl/trajectories/offline_dt_dataset.py:220: UserWarning: The operator 'aten::linalg_lstsq.out' is not currently supported on the MPS backend and will fall back to run on the CPU. This may have performance implications. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/mps/MPSFallback.mm:15.)
+  sol = torch.linalg.lstsq(D_sub, y)
+Processed 20 samples...
+Processed 40 samples...
+Processed 60 samples...
+Processed 80 samples...
+Processed 100 samples...
+
+================================================================================
+DONE: trajectories built
+Samples written: 111
+Artifacts: results/dt_traj_gK6_M8_smoke/trajectories.jsonl, results/dt_traj_gK6_M8_smoke/numeric_diagnostics.jsonl, results/dt_traj_gK6_M8_smoke/manifest.json
+Elapsed: 2.28s
+================================================================================
