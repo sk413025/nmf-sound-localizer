@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Train a tiny DTMin-style model on angle-range shards (BC or AWR)."""
+"""Train DTMin (Decision Transformer Minimum) on angle-range shards.
+
+DTMin learns to imitate OMP teacher's hierarchical trajectory decisions:
+- Input: Residual embeddings h_seq from OMP steps
+- Supervision: Teacher's (expert, atom) choices at each step
+- Training: BC (Behavioral Cloning) or AWR (Advantage-Weighted Regression)
+- Evaluation: Joint accuracy (trajectory matching) + Voted accuracy (angle classification)
+
+NOTE: This is TRUE DTMin - imitates teacher trajectory, not direct angle classification.
+For direct angle supervision, use label_mode='angle' (non-standard, see ARCHITECTURE_VIOLATION.md).
+"""
 
 from __future__ import annotations
 
@@ -37,7 +47,21 @@ def collate(batch: List[Dict]) -> Dict[str, torch.Tensor]:
 
 
 class TinyDTMin(nn.Module):
-    """Minimal DTMin-style encoder with dual heads."""
+    """DTMin: Decision Transformer Minimum for OMP trajectory imitation.
+    
+    Architecture:
+    - TransformerEncoder: Process residual sequence embeddings
+    - Expert head: Predict which angle/expert to select (E-way classification)
+    - Atom head: Predict which atom within expert to select (M-way classification)
+    
+    Training objective (label_mode='teacher'):
+    - Expert loss: CE(expert_pred, expert_omp)  # Imitate teacher's expert choice
+    - Atom loss: CE(atom_pred, atom_omp)        # Imitate teacher's atom choice
+    
+    Evaluation:
+    - Joint accuracy: P(expert=teacher AND atom=teacher)  # Trajectory matching
+    - Voted accuracy: majority_vote(experts) == angle_gt  # Localization quality
+    """
 
     def __init__(self, d_model: int, nhead: int, nlayers: int, E: int, M: int, max_K: int, dropout: float = 0.1):
         super().__init__()
@@ -67,10 +91,17 @@ class TinyDTMin(nn.Module):
 
 
 def compute_targets(batch: Dict[str, torch.Tensor], label_mode: str) -> torch.Tensor:
+    """Compute supervision targets for expert head.
+    
+    label_mode='teacher' (DTMin standard): Imitate OMP teacher's expert choices
+    label_mode='angle' (non-standard): Direct angle supervision (see ARCHITECTURE_VIOLATION.md)
+    """
     if label_mode == "angle":
+        # WARNING: This bypasses trajectory imitation - NOT true DTMin!
         angle = batch["angle_gt"]
         B, K, _ = batch["h_seq"].shape
         return angle.view(B, 1).expand(-1, K)
+    # Standard DTMin: supervise with teacher's expert choices
     return batch["expert_gt"]
 
 
@@ -180,7 +211,7 @@ def expected_angles(shard_dirs: Sequence[Path]) -> List[int]:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Train tiny DTMin on angle-range shards (BC or AWR).")
+    ap = argparse.ArgumentParser(description="Train DTMin (Decision Transformer Minimum) on angle-range shards. Supports BC (Behavioral Cloning) or AWR (Advantage-Weighted Regression) for OMP trajectory imitation.")
     ap.add_argument("--shard-root", type=Path, default=Path("results/angle_range_shards"), help="Root containing shard subdirs.")
     ap.add_argument("--shard-names", type=str, default="full,low,mid,high", help="Comma-separated shard names to load.")
     ap.add_argument("--epochs", type=int, default=5)
@@ -192,14 +223,16 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--nhead", type=int, default=4)
     ap.add_argument("--layers", type=int, default=2)
     ap.add_argument("--dropout", type=float, default=0.1)
-    ap.add_argument("--mode", type=str, default="bc", choices=["bc", "awr"])
+    ap.add_argument("--mode", type=str, default="bc", choices=["bc", "awr"], help="Training mode: 'bc' (standard imitation) or 'awr' (advantage-weighted).")
     ap.add_argument("--awr-beta", type=float, default=0.5)
     ap.add_argument("--awr-w-max", type=float, default=4.0)
     ap.add_argument("--awr-normalize", action="store_true")
     ap.add_argument("--expected-voted", type=float, default=0.6, help="Threshold to flag low voted accuracy.")
     ap.add_argument("--require-voted-threshold", action="store_true", help="Raise error if voted accuracy is below threshold.")
-    ap.add_argument("--label-mode", type=str, default="angle", choices=["angle", "teacher"], help="Supervise experts with ground-truth angles or teacher picks.")
-    ap.add_argument("--disable-atom-loss", action="store_true", help="Skip atom supervision (useful when teacher atoms are unreliable).")
+    ap.add_argument("--label-mode", type=str, default="teacher", choices=["angle", "teacher"], 
+                    help="DTMin supervision mode. 'teacher' (default): imitate OMP trajectory. 'angle': direct angle classification (non-standard, see ARCHITECTURE_VIOLATION.md).")
+    ap.add_argument("--disable-atom-loss", action="store_true", 
+                    help="Skip atom supervision. WARNING: Disabling breaks DTMin's hierarchical learning - only use when teacher atoms are severely unreliable.")
     ap.add_argument("--log-file", type=Path, default=None, help="Optional JSON log output.")
     return ap.parse_args()
 
@@ -219,8 +252,17 @@ def main() -> None:
     coverage = dataset.coverage()
     expected = expected_angles(shard_dirs)
     missing_angles = [a for a in expected if a not in coverage]
+    LOG.info("="*80)
+    LOG.info("DTMin Training Configuration")
+    LOG.info("="*80)
     LOG.info("Dataset loaded: N=%d K=%d d_model=%d shards=%s", N, K, d_model_detected, [d.name for d in shard_dirs])
     LOG.info("Coverage: angles=%d, missing=%s", len(coverage), missing_angles)
+    LOG.info("Training mode: %s", args.mode.upper())
+    LOG.info("Supervision: label_mode='%s' %s", args.label_mode, 
+             "(TRUE DTMin - trajectory imitation)" if args.label_mode == "teacher" else "(NON-STANDARD - direct angle supervision)")
+    LOG.info("Atom loss: %s %s", "ENABLED" if not args.disable_atom_loss else "DISABLED",
+             "" if not args.disable_atom_loss else "(WARNING: Breaks hierarchical learning!)")
+    LOG.info("="*80)
     if missing_angles:
         raise ValueError(f"Missing angles in dataset: {missing_angles}")
 

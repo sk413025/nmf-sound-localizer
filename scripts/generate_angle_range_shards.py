@@ -36,9 +36,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--w-path", type=Path, default=DEFAULT_W_PATH, help="Path to W matrix (.pth).")
     ap.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Where to write shard outputs.")
     ap.add_argument("--clips-per-angle", type=int, default=3, help="Clips to use per angle (no fallback).")
-    ap.add_argument("--k", type=int, default=6, help="OMP steps.")
-    ap.add_argument("--m", type=int, default=8, help="Atoms per expert after reduction.")
-    ap.add_argument("--reduction-seed", type=int, default=200, help="Seed for kmeans atom reduction.")
+    ap.add_argument("--k", type=int, default=6, help="OMP steps (DTMin trajectory length).")
+    ap.add_argument("--m", type=int, default=50, help="Atoms per expert. Use 50 (full W) to preserve dictionary fidelity; 8 for compressed (legacy).")
+    ap.add_argument("--reduction-seed", type=int, default=200, help="Seed for kmeans atom reduction (only if m < full W atoms).")
     ap.add_argument("--projection-seed", type=int, default=200, help="Seed for projection layers.")
     ap.add_argument("--include-overlap", action="store_true", help="Also generate overlap shards (30–90, 90–150).")
     ap.add_argument(

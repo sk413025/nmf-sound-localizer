@@ -84,15 +84,32 @@ class AngleRangeShardGenerator:
         self.angles = [int(a) for a in angles_tensor.tolist()]
         self._validate_assets()
 
+        # DTMin dictionary configuration
+        M_full = self.W_full.shape[1]
+        logger.info("="*80)
+        logger.info("DTMin Dictionary Configuration")
+        logger.info("="*80)
+        logger.info("W_full shape: %s (F=%d, M_full=%d)", self.W_full.shape, self.W_full.shape[0], M_full)
+        logger.info("H_full shape: %s (F=%d, E=%d angles)", self.H_full.shape, self.H_full.shape[0], len(self.angles))
+        
         # If requested M matches full dictionary, keep full W to preserve fidelity.
-        if config.m >= self.W_full.shape[1]:
+        if config.m >= M_full:
+            logger.info("Using FULL W dictionary (m=%d >= M_full=%d) - preserves fidelity for DTMin", config.m, M_full)
             self.W_reduced = self.W_full.clone()
         else:
+            logger.info("Compressing W: M_full=%d → m=%d via k-means (seed=%d)", M_full, config.m, config.reduction_seed)
+            logger.warning("WARNING: Compression may degrade teacher quality for speech/complex signals!")
             self.W_reduced = self._reduce_atoms_kmeans(self.W_full, config.m, config.reduction_seed)
+        
         if config.normalize_w:
+            logger.info("Applying column normalization to W")
             self.W_reduced = _normalize_columns(self.W_reduced)
-
+        
+        logger.info("Building dictionary D = H ⊙ W (Hadamard product)")
         self.D = self._build_dictionary(self.W_reduced, self.H_full, normalize=config.normalize_d)
+        logger.info("Dictionary D shape: %s (F=%d, P=%d)", self.D.shape, self.D.shape[0], self.D.shape[1])
+        logger.info("normalize_d: %s", config.normalize_d)
+        logger.info("="*80)
         self.expected_F = self.W_reduced.shape[0]
 
         torch.manual_seed(config.projection_seed)
