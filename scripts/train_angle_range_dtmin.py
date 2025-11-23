@@ -66,12 +66,21 @@ class TinyDTMin(nn.Module):
         return expert_logits, atom_logits
 
 
-def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batch: Dict[str, torch.Tensor]) -> Dict[str, float]:
+def compute_targets(batch: Dict[str, torch.Tensor], label_mode: str) -> torch.Tensor:
+    if label_mode == "angle":
+        angle = batch["angle_gt"]
+        B, K, _ = batch["h_seq"].shape
+        return angle.view(B, 1).expand(-1, K)
+    return batch["expert_gt"]
+
+
+def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batch: Dict[str, torch.Tensor], label_mode: str) -> Dict[str, float]:
+    target_expert = compute_targets(batch, label_mode)
     expert_pred = expert_logits.argmax(dim=-1)
     atom_pred = atom_logits.argmax(dim=-1)
-    expert_acc = (expert_pred == batch["expert_gt"]).float().mean().item()
+    expert_acc = (expert_pred == target_expert).float().mean().item()
     atom_acc = (atom_pred == batch["atom_gt"]).float().mean().item()
-    joint_acc = ((expert_pred == batch["expert_gt"]) & (atom_pred == batch["atom_gt"])).float().mean().item()
+    joint_acc = ((expert_pred == target_expert) & (atom_pred == batch["atom_gt"])).float().mean().item()
     voted_preds = []
     for i in range(expert_pred.shape[0]):
         counts = torch.bincount(expert_pred[i], minlength=expert_logits.shape[-1])
@@ -79,15 +88,16 @@ def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batc
     voted_preds = torch.tensor(voted_preds, device=expert_pred.device)
     voted_gt = batch["angle_gt"]
     voted_acc = (voted_preds == voted_gt).float().mean().item()
-    return {
+    metrics = {
         "expert_acc": expert_acc,
         "atom_acc": atom_acc,
         "joint_acc": joint_acc,
         "voted_acc": voted_acc,
     }
+    return metrics
 
 
-def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool) -> Dict[str, float]:
+def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool, label_mode: str, use_atom_loss: bool) -> Dict[str, float]:
     model.train()
     total_loss = 0.0
     total_batches = 0
@@ -96,24 +106,30 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
         expert_gt = batch["expert_gt"].to(device)
         atom_gt = batch["atom_gt"].to(device)
         angle_gt = batch["angle_gt"].to(device)
+        target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
 
         optimizer.zero_grad()
         expert_logits, atom_logits = model(h_seq)
 
-        expert_loss = F.cross_entropy(expert_logits.view(-1, expert_logits.shape[-1]), expert_gt.view(-1))
-        atom_loss = F.cross_entropy(atom_logits.view(-1, atom_logits.shape[-1]), atom_gt.view(-1))
-        loss_per_sample = (expert_loss + atom_loss).view(1)
+        expert_ce = F.cross_entropy(expert_logits.transpose(1, 2), target_expert, reduction="none")
+        expert_loss_per_sample = expert_ce.mean(dim=1)
+        if use_atom_loss:
+            atom_ce = F.cross_entropy(atom_logits.transpose(1, 2), atom_gt, reduction="none")
+            atom_loss_per_sample = atom_ce.mean(dim=1)
+        else:
+            atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
+        loss_per_sample = expert_loss_per_sample + atom_loss_per_sample
 
         if mode == "awr":
             B, K = expert_gt.shape
             angle_expanded = angle_gt.view(B, 1).expand(-1, K)
-            returns = (expert_gt == angle_expanded).float().mean(dim=1)
+            returns = (target_expert == angle_expanded).float().mean(dim=1)
             baseline = returns.mean().detach()
             adv = returns - baseline
             weights = torch.exp(adv / awr_beta).clamp(max=awr_w_max)
             if awr_normalize:
                 weights = weights / (weights.mean() + 1e-8)
-            loss = (loss_per_sample * weights.mean()).mean()
+            loss = (loss_per_sample * weights).mean()
         else:
             loss = loss_per_sample.mean()
 
@@ -125,7 +141,7 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> Dict[str, float]:
+def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool) -> Dict[str, float]:
     model.eval()
     total_loss = 0.0
     total_batches = 0
@@ -134,14 +150,20 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> Dict
         h_seq = batch["h_seq"].to(device)
         expert_gt = batch["expert_gt"].to(device)
         atom_gt = batch["atom_gt"].to(device)
+        angle_gt = batch["angle_gt"].to(device)
+        target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
         expert_logits, atom_logits = model(h_seq)
-        loss = (
-            F.cross_entropy(expert_logits.view(-1, expert_logits.shape[-1]), expert_gt.view(-1))
-            + F.cross_entropy(atom_logits.view(-1, atom_logits.shape[-1]), atom_gt.view(-1))
-        )
+        expert_ce = F.cross_entropy(expert_logits.transpose(1, 2), target_expert, reduction="none")
+        expert_loss_per_sample = expert_ce.mean(dim=1)
+        if use_atom_loss:
+            atom_ce = F.cross_entropy(atom_logits.transpose(1, 2), atom_gt, reduction="none")
+            atom_loss_per_sample = atom_ce.mean(dim=1)
+        else:
+            atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
+        loss = (expert_loss_per_sample + atom_loss_per_sample).mean()
         total_loss += loss.item()
         total_batches += 1
-        m = compute_metrics(expert_logits, atom_logits, {k: v.to(device) for k, v in batch.items()})
+        m = compute_metrics(expert_logits, atom_logits, {k: v.to(device) for k, v in batch.items()}, label_mode)
         for k, v in m.items():
             metrics_accum[k] += v
     avg_metrics = {k: v / max(total_batches, 1) for k, v in metrics_accum.items()}
@@ -176,6 +198,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--awr-normalize", action="store_true")
     ap.add_argument("--expected-voted", type=float, default=0.6, help="Threshold to flag low voted accuracy.")
     ap.add_argument("--require-voted-threshold", action="store_true", help="Raise error if voted accuracy is below threshold.")
+    ap.add_argument("--label-mode", type=str, default="angle", choices=["angle", "teacher"], help="Supervise experts with ground-truth angles or teacher picks.")
+    ap.add_argument("--disable-atom-loss", action="store_true", help="Skip atom supervision (useful when teacher atoms are unreliable).")
     ap.add_argument("--log-file", type=Path, default=None, help="Optional JSON log output.")
     return ap.parse_args()
 
@@ -210,6 +234,7 @@ def main() -> None:
     M = int(torch.max(torch.stack([sample["atom_gt"].max() for sample in dataset.samples])).item()) + 1
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    use_atom_loss = not args.disable_atom_loss
     model = TinyDTMin(
         d_model=args.d_model,
         nhead=args.nhead,
@@ -223,8 +248,19 @@ def main() -> None:
 
     history: List[Dict[str, float]] = []
     for epoch in range(1, args.epochs + 1):
-        train_metrics = train_epoch(model, train_loader, optimizer, device, args.mode, args.awr_beta, args.awr_w_max, args.awr_normalize)
-        val_metrics = evaluate(model, val_loader, device)
+        train_metrics = train_epoch(
+            model,
+            train_loader,
+            optimizer,
+            device,
+            args.mode,
+            args.awr_beta,
+            args.awr_w_max,
+            args.awr_normalize,
+            args.label_mode,
+            use_atom_loss,
+        )
+        val_metrics = evaluate(model, val_loader, device, args.label_mode, use_atom_loss)
         LOG.info(
             "Epoch %d/%d | train_loss=%.4f | val_loss=%.4f | voted=%.3f | expert=%.3f | atom=%.3f | joint=%.3f",
             epoch,
