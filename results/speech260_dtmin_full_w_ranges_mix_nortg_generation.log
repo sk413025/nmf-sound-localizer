@@ -1,0 +1,32 @@
+2025-11-24 23:04:52,695 INFO ================================================================================
+2025-11-24 23:04:52,695 INFO DTMin Dictionary Configuration
+2025-11-24 23:04:52,695 INFO ================================================================================
+2025-11-24 23:04:52,695 INFO W_full shape: torch.Size([346, 50]) (F=346, M_full=50)
+2025-11-24 23:04:52,695 INFO H_full shape: torch.Size([346, 37]) (F=346, E=37 angles)
+2025-11-24 23:04:52,695 INFO Using FULL W dictionary (m=50 >= M_full=50) - preserves fidelity for DTMin
+2025-11-24 23:04:52,695 INFO Applying column normalization to W
+2025-11-24 23:04:52,696 INFO Building dictionary D = H ⊙ W (Hadamard product)
+2025-11-24 23:04:52,698 INFO Dictionary D shape: torch.Size([346, 1850]) (F=346, P=1850)
+2025-11-24 23:04:52,698 INFO normalize_d: True
+2025-11-24 23:04:52,698 INFO ================================================================================
+2025-11-24 23:04:52,698 INFO Generating shard full ([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180])
+2025-11-24 23:04:53,447 INFO Generated shard full: 111 samples, first_step_acc=0.189 voted_acc=0.324
+2025-11-24 23:04:53,447 INFO Shard full written to results/speech260_dtmin_full_w_ranges_mix_nortg/full
+2025-11-24 23:04:53,447 INFO Generating shard low ([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60])
+2025-11-24 23:04:53,675 INFO Generated shard low: 39 samples, first_step_acc=0.154 voted_acc=0.282
+2025-11-24 23:04:53,676 INFO Shard low written to results/speech260_dtmin_full_w_ranges_mix_nortg/low
+2025-11-24 23:04:53,676 INFO Generating shard mid ([65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115])
+2025-11-24 23:04:53,869 INFO Generated shard mid: 33 samples, first_step_acc=0.212 voted_acc=0.303
+2025-11-24 23:04:53,869 INFO Shard mid written to results/speech260_dtmin_full_w_ranges_mix_nortg/mid
+2025-11-24 23:04:53,869 INFO Generating shard high ([120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180])
+2025-11-24 23:04:54,096 INFO Generated shard high: 39 samples, first_step_acc=0.205 voted_acc=0.385
+2025-11-24 23:04:54,096 INFO Shard high written to results/speech260_dtmin_full_w_ranges_mix_nortg/high
+2025-11-24 23:04:54,096 INFO Generating shard weak_0_50 ([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+2025-11-24 23:04:54,288 INFO Generated shard weak_0_50: 33 samples, first_step_acc=0.152 voted_acc=0.212
+2025-11-24 23:04:54,288 INFO Shard weak_0_50 written to results/speech260_dtmin_full_w_ranges_mix_nortg/weak_0_50
+2025-11-24 23:04:54,288 INFO Generating shard weak_140_170 ([140, 145, 150, 155, 160, 165, 170])
+2025-11-24 23:04:54,413 INFO Generated shard weak_140_170: 21 samples, first_step_acc=0.238 voted_acc=0.286
+2025-11-24 23:04:54,413 INFO Shard weak_140_170 written to results/speech260_dtmin_full_w_ranges_mix_nortg/weak_140_170
+2025-11-24 23:04:54,413 INFO Generating shard strong_edges ([170, 175, 180])
+2025-11-24 23:04:54,469 INFO Generated shard strong_edges: 9 samples, first_step_acc=0.333 voted_acc=0.778
+2025-11-24 23:04:54,469 INFO Shard strong_edges written to results/speech260_dtmin_full_w_ranges_mix_nortg/strong_edges

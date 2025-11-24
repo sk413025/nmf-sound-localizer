@@ -1,0 +1,89 @@
+2025-11-24 22:56:29,532 INFO ================================================================================
+2025-11-24 22:56:29,532 INFO DTMin Training Configuration
+2025-11-24 22:56:29,532 INFO ================================================================================
+2025-11-24 22:56:29,532 INFO Dataset loaded: N=285 K=5 d_model=128 shards=['full', 'low', 'mid', 'high', 'weak_0_50', 'weak_140_170', 'strong_edges']
+2025-11-24 22:56:29,532 INFO Coverage: angles=37, missing=[]
+2025-11-24 22:56:29,532 INFO Training mode: BC
+2025-11-24 22:56:29,533 INFO Supervision: label_mode='angle' (NON-STANDARD - direct angle supervision)
+2025-11-24 22:56:29,533 INFO Atom loss: ENABLED 
+2025-11-24 22:56:29,533 INFO ================================================================================
+2025-11-24 22:56:35,294 INFO Epoch 1/80 | train_loss=7.4604 | val_loss=7.1288 | voted=0.056 | expert=0.049 | atom=0.114 | joint=0.004
+2025-11-24 22:56:35,400 INFO Epoch 2/80 | train_loss=6.8719 | val_loss=6.8707 | voted=0.036 | expert=0.021 | atom=0.154 | joint=0.004
+2025-11-24 22:56:35,505 INFO Epoch 3/80 | train_loss=6.6750 | val_loss=6.6696 | voted=0.076 | expert=0.056 | atom=0.218 | joint=0.011
+2025-11-24 22:56:35,607 INFO Epoch 4/80 | train_loss=6.4520 | val_loss=6.4459 | voted=0.102 | expert=0.101 | atom=0.227 | joint=0.015
+2025-11-24 22:56:35,709 INFO Epoch 5/80 | train_loss=6.1995 | val_loss=6.2089 | voted=0.185 | expert=0.151 | atom=0.315 | joint=0.047
+2025-11-24 22:56:35,812 INFO Epoch 6/80 | train_loss=6.0037 | val_loss=5.9377 | voted=0.169 | expert=0.189 | atom=0.349 | joint=0.070
+2025-11-24 22:56:35,914 INFO Epoch 7/80 | train_loss=5.6222 | val_loss=5.6109 | voted=0.296 | expert=0.259 | atom=0.409 | joint=0.118
+2025-11-24 22:56:36,016 INFO Epoch 8/80 | train_loss=5.2763 | val_loss=5.3223 | voted=0.221 | expert=0.254 | atom=0.416 | joint=0.112
+2025-11-24 22:56:36,117 INFO Epoch 9/80 | train_loss=5.0037 | val_loss=5.0422 | voted=0.256 | expert=0.286 | atom=0.428 | joint=0.110
+2025-11-24 22:56:36,218 INFO Epoch 10/80 | train_loss=4.6421 | val_loss=4.7952 | voted=0.343 | expert=0.339 | atom=0.439 | joint=0.135
+2025-11-24 22:56:36,320 INFO Epoch 11/80 | train_loss=4.4517 | val_loss=4.5997 | voted=0.379 | expert=0.377 | atom=0.469 | joint=0.168
+2025-11-24 22:56:36,422 INFO Epoch 12/80 | train_loss=4.2587 | val_loss=4.3344 | voted=0.494 | expert=0.473 | atom=0.470 | joint=0.213
+2025-11-24 22:56:36,524 INFO Epoch 13/80 | train_loss=4.0095 | val_loss=4.1334 | voted=0.530 | expert=0.495 | atom=0.501 | joint=0.225
+2025-11-24 22:56:36,626 INFO Epoch 14/80 | train_loss=3.7923 | val_loss=3.9648 | voted=0.546 | expert=0.529 | atom=0.532 | joint=0.262
+2025-11-24 22:56:36,727 INFO Epoch 15/80 | train_loss=3.6045 | val_loss=3.7728 | voted=0.601 | expert=0.587 | atom=0.555 | joint=0.311
+2025-11-24 22:56:36,828 INFO Epoch 16/80 | train_loss=3.4516 | val_loss=3.6249 | voted=0.586 | expert=0.592 | atom=0.557 | joint=0.316
+2025-11-24 22:56:36,927 INFO Epoch 17/80 | train_loss=3.2838 | val_loss=3.4237 | voted=0.641 | expert=0.644 | atom=0.603 | joint=0.372
+2025-11-24 22:56:37,030 INFO Epoch 18/80 | train_loss=3.1140 | val_loss=3.2566 | voted=0.759 | expert=0.729 | atom=0.609 | joint=0.434
+2025-11-24 22:56:37,132 INFO Epoch 19/80 | train_loss=2.9640 | val_loss=3.1063 | voted=0.735 | expert=0.749 | atom=0.611 | joint=0.455
+2025-11-24 22:56:37,233 INFO Epoch 20/80 | train_loss=2.8066 | val_loss=2.9891 | voted=0.775 | expert=0.744 | atom=0.649 | joint=0.478
+2025-11-24 22:56:37,335 INFO Epoch 21/80 | train_loss=2.7157 | val_loss=2.8852 | voted=0.779 | expert=0.763 | atom=0.628 | joint=0.472
+2025-11-24 22:56:37,437 INFO Epoch 22/80 | train_loss=2.4854 | val_loss=2.7370 | voted=0.795 | expert=0.774 | atom=0.632 | joint=0.480
+2025-11-24 22:56:37,538 INFO Epoch 23/80 | train_loss=2.4398 | val_loss=2.6261 | voted=0.831 | expert=0.811 | atom=0.660 | joint=0.545
+2025-11-24 22:56:37,640 INFO Epoch 24/80 | train_loss=2.3353 | val_loss=2.5453 | voted=0.831 | expert=0.816 | atom=0.673 | joint=0.549
+2025-11-24 22:56:37,742 INFO Epoch 25/80 | train_loss=2.2185 | val_loss=2.4181 | voted=0.882 | expert=0.846 | atom=0.666 | joint=0.571
+2025-11-24 22:56:37,843 INFO Epoch 26/80 | train_loss=2.0984 | val_loss=2.3335 | voted=0.862 | expert=0.838 | atom=0.681 | joint=0.572
+2025-11-24 22:56:37,946 INFO Epoch 27/80 | train_loss=2.0436 | val_loss=2.2032 | voted=0.929 | expert=0.882 | atom=0.714 | joint=0.632
+2025-11-24 22:56:38,047 INFO Epoch 28/80 | train_loss=1.9291 | val_loss=2.1315 | voted=0.862 | expert=0.873 | atom=0.727 | joint=0.637
+2025-11-24 22:56:38,148 INFO Epoch 29/80 | train_loss=1.8278 | val_loss=2.0568 | voted=0.846 | expert=0.861 | atom=0.727 | joint=0.630
+2025-11-24 22:56:38,248 INFO Epoch 30/80 | train_loss=1.7696 | val_loss=1.9902 | voted=0.866 | expert=0.866 | atom=0.756 | joint=0.660
+2025-11-24 22:56:38,348 INFO Epoch 31/80 | train_loss=1.6968 | val_loss=1.9051 | voted=0.862 | expert=0.867 | atom=0.760 | joint=0.666
+2025-11-24 22:56:38,453 INFO Epoch 32/80 | train_loss=1.6056 | val_loss=1.8336 | voted=0.929 | expert=0.893 | atom=0.751 | joint=0.677
+2025-11-24 22:56:38,555 INFO Epoch 33/80 | train_loss=1.5393 | val_loss=1.7825 | voted=0.913 | expert=0.890 | atom=0.744 | joint=0.677
+2025-11-24 22:56:38,657 INFO Epoch 34/80 | train_loss=1.4614 | val_loss=1.6880 | voted=0.898 | expert=0.900 | atom=0.766 | joint=0.698
+2025-11-24 22:56:38,759 INFO Epoch 35/80 | train_loss=1.4452 | val_loss=1.6367 | voted=0.898 | expert=0.885 | atom=0.791 | joint=0.708
+2025-11-24 22:56:38,861 INFO Epoch 36/80 | train_loss=1.3614 | val_loss=1.5915 | voted=0.902 | expert=0.914 | atom=0.787 | joint=0.732
+2025-11-24 22:56:38,963 INFO Epoch 37/80 | train_loss=1.3014 | val_loss=1.5222 | voted=0.917 | expert=0.905 | atom=0.789 | joint=0.723
+2025-11-24 22:56:39,065 INFO Epoch 38/80 | train_loss=1.2175 | val_loss=1.4754 | voted=0.917 | expert=0.920 | atom=0.806 | joint=0.758
+2025-11-24 22:56:39,167 INFO Epoch 39/80 | train_loss=1.1773 | val_loss=1.3923 | voted=0.949 | expert=0.922 | atom=0.825 | joint=0.771
+2025-11-24 22:56:39,268 INFO Epoch 40/80 | train_loss=1.1403 | val_loss=1.3539 | voted=0.949 | expert=0.913 | atom=0.838 | joint=0.778
+2025-11-24 22:56:39,370 INFO Epoch 41/80 | train_loss=1.1210 | val_loss=1.2813 | voted=0.949 | expert=0.943 | atom=0.821 | joint=0.788
+2025-11-24 22:56:39,472 INFO Epoch 42/80 | train_loss=1.0553 | val_loss=1.2522 | voted=0.933 | expert=0.937 | atom=0.838 | joint=0.795
+2025-11-24 22:56:39,574 INFO Epoch 43/80 | train_loss=0.9396 | val_loss=1.1839 | voted=0.949 | expert=0.956 | atom=0.860 | joint=0.837
+2025-11-24 22:56:39,676 INFO Epoch 44/80 | train_loss=0.9181 | val_loss=1.1469 | voted=0.949 | expert=0.943 | atom=0.854 | joint=0.817
+2025-11-24 22:56:39,778 INFO Epoch 45/80 | train_loss=0.9017 | val_loss=1.0928 | voted=0.949 | expert=0.949 | atom=0.865 | joint=0.834
+2025-11-24 22:56:39,880 INFO Epoch 46/80 | train_loss=0.8465 | val_loss=1.0863 | voted=0.949 | expert=0.949 | atom=0.869 | joint=0.838
+2025-11-24 22:56:39,981 INFO Epoch 47/80 | train_loss=0.8127 | val_loss=1.0560 | voted=0.949 | expert=0.939 | atom=0.877 | joint=0.837
+2025-11-24 22:56:40,083 INFO Epoch 48/80 | train_loss=0.7812 | val_loss=1.0115 | voted=0.949 | expert=0.939 | atom=0.872 | joint=0.832
+2025-11-24 22:56:40,185 INFO Epoch 49/80 | train_loss=0.7368 | val_loss=0.9810 | voted=0.949 | expert=0.953 | atom=0.896 | joint=0.869
+2025-11-24 22:56:40,286 INFO Epoch 50/80 | train_loss=0.7170 | val_loss=0.9321 | voted=0.933 | expert=0.947 | atom=0.883 | joint=0.850
+2025-11-24 22:56:40,388 INFO Epoch 51/80 | train_loss=0.6867 | val_loss=0.9068 | voted=0.949 | expert=0.953 | atom=0.910 | joint=0.883
+2025-11-24 22:56:40,491 INFO Epoch 52/80 | train_loss=0.6618 | val_loss=0.8846 | voted=0.949 | expert=0.953 | atom=0.902 | joint=0.875
+2025-11-24 22:56:40,593 INFO Epoch 53/80 | train_loss=0.6214 | val_loss=0.8663 | voted=0.949 | expert=0.956 | atom=0.915 | joint=0.892
+2025-11-24 22:56:40,694 INFO Epoch 54/80 | train_loss=0.6058 | val_loss=0.8421 | voted=0.949 | expert=0.956 | atom=0.916 | joint=0.893
+2025-11-24 22:56:40,796 INFO Epoch 55/80 | train_loss=0.6078 | val_loss=0.8093 | voted=0.949 | expert=0.956 | atom=0.901 | joint=0.877
+2025-11-24 22:56:40,898 INFO Epoch 56/80 | train_loss=0.5606 | val_loss=0.7877 | voted=0.949 | expert=0.956 | atom=0.943 | joint=0.919
+2025-11-24 22:56:41,004 INFO Epoch 57/80 | train_loss=0.5687 | val_loss=0.7724 | voted=0.949 | expert=0.956 | atom=0.913 | joint=0.889
+2025-11-24 22:56:41,109 INFO Epoch 58/80 | train_loss=0.5645 | val_loss=0.7486 | voted=0.949 | expert=0.956 | atom=0.923 | joint=0.899
+2025-11-24 22:56:41,213 INFO Epoch 59/80 | train_loss=0.5309 | val_loss=0.7303 | voted=0.949 | expert=0.956 | atom=0.923 | joint=0.899
+2025-11-24 22:56:41,315 INFO Epoch 60/80 | train_loss=0.4800 | val_loss=0.6958 | voted=0.949 | expert=0.966 | atom=0.955 | joint=0.942
+2025-11-24 22:56:41,418 INFO Epoch 61/80 | train_loss=0.4629 | val_loss=0.6749 | voted=0.949 | expert=0.956 | atom=0.943 | joint=0.919
+2025-11-24 22:56:41,520 INFO Epoch 62/80 | train_loss=0.4626 | val_loss=0.6695 | voted=0.949 | expert=0.956 | atom=0.944 | joint=0.920
+2025-11-24 22:56:41,623 INFO Epoch 63/80 | train_loss=0.4201 | val_loss=0.6482 | voted=0.949 | expert=0.956 | atom=0.950 | joint=0.927
+2025-11-24 22:56:41,726 INFO Epoch 64/80 | train_loss=0.4006 | val_loss=0.6312 | voted=0.949 | expert=0.956 | atom=0.959 | joint=0.935
+2025-11-24 22:56:41,829 INFO Epoch 65/80 | train_loss=0.4120 | val_loss=0.6141 | voted=0.949 | expert=0.959 | atom=0.969 | joint=0.949
+2025-11-24 22:56:41,931 INFO Epoch 66/80 | train_loss=0.3847 | val_loss=0.6021 | voted=0.949 | expert=0.959 | atom=0.957 | joint=0.937
+2025-11-24 22:56:42,033 INFO Epoch 67/80 | train_loss=0.3568 | val_loss=0.5861 | voted=0.949 | expert=0.959 | atom=0.969 | joint=0.949
+2025-11-24 22:56:42,136 INFO Epoch 68/80 | train_loss=0.3719 | val_loss=0.5744 | voted=0.949 | expert=0.959 | atom=0.969 | joint=0.949
+2025-11-24 22:56:42,237 INFO Epoch 69/80 | train_loss=0.3622 | val_loss=0.5512 | voted=0.949 | expert=0.959 | atom=0.969 | joint=0.949
+2025-11-24 22:56:42,340 INFO Epoch 70/80 | train_loss=0.3253 | val_loss=0.5608 | voted=0.949 | expert=0.949 | atom=0.976 | joint=0.946
+2025-11-24 22:56:42,442 INFO Epoch 71/80 | train_loss=0.3209 | val_loss=0.5352 | voted=0.949 | expert=0.959 | atom=0.972 | joint=0.951
+2025-11-24 22:56:42,544 INFO Epoch 72/80 | train_loss=0.3186 | val_loss=0.5267 | voted=0.949 | expert=0.959 | atom=0.969 | joint=0.949
+2025-11-24 22:56:42,646 INFO Epoch 73/80 | train_loss=0.3329 | val_loss=0.5294 | voted=0.949 | expert=0.959 | atom=0.972 | joint=0.951
+2025-11-24 22:56:42,748 INFO Epoch 74/80 | train_loss=0.3202 | val_loss=0.5040 | voted=0.949 | expert=0.969 | atom=0.976 | joint=0.966
+2025-11-24 22:56:42,850 INFO Epoch 75/80 | train_loss=0.2983 | val_loss=0.4912 | voted=0.949 | expert=0.959 | atom=0.980 | joint=0.959
+2025-11-24 22:56:42,953 INFO Epoch 76/80 | train_loss=0.2876 | val_loss=0.4775 | voted=0.949 | expert=0.959 | atom=0.980 | joint=0.959
+2025-11-24 22:56:43,054 INFO Epoch 77/80 | train_loss=0.2652 | val_loss=0.4814 | voted=0.949 | expert=0.956 | atom=0.980 | joint=0.956
+2025-11-24 22:56:43,156 INFO Epoch 78/80 | train_loss=0.2781 | val_loss=0.4804 | voted=0.949 | expert=0.956 | atom=0.980 | joint=0.956
+2025-11-24 22:56:43,258 INFO Epoch 79/80 | train_loss=0.2586 | val_loss=0.4678 | voted=0.949 | expert=0.959 | atom=0.980 | joint=0.959
+2025-11-24 22:56:43,360 INFO Epoch 80/80 | train_loss=0.2447 | val_loss=0.4637 | voted=0.949 | expert=0.959 | atom=0.980 | joint=0.959

@@ -67,6 +67,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--min-steps", type=int, default=1, help="Minimum OMP steps before early stop can trigger.")
     ap.add_argument("--early-stop-resid-ratio", type=float, default=0.0, help="Early stop when residual energy <= ratio * initial residual (0 disables).")
     ap.add_argument("--reduction-mode", type=str, default="kmeans", choices=["kmeans", "svd"], help="Atom reduction method when m < full.")
+    ap.add_argument("--no-rtg", action="store_true", help="Disable RTG projection in embeddings (use only residual + step).")
     return ap.parse_args()
 
 
@@ -104,6 +105,7 @@ def main() -> None:
         min_steps=args.min_steps,
         early_stop_resid_ratio=args.early_stop_resid_ratio,
         reduction_mode=args.reduction_mode,
+        use_rtg=not args.no_rtg,
     )
 
     max_samples = args.max_samples_per_shard if args.max_samples_per_shard > 0 else None

@@ -59,6 +59,7 @@ class GenerationConfig:
     min_steps: int = 1  # enforce at least this many OMP steps
     early_stop_resid_ratio: float = 0.0  # 0 disables; stop when resid <= ratio * initial_resid
     reduction_mode: str = "kmeans"  # kmeans (default) or svd
+    use_rtg: bool = True  # include rtg projection in embeddings
 
 
 def _normalize_columns(x: torch.Tensor) -> torch.Tensor:
@@ -276,7 +277,8 @@ class AngleRangeShardGenerator:
         step_tensor = torch.from_numpy(step_seq).float()
 
         with torch.no_grad():
-            h_seq = self.P_R(r_tensor) + self.proj_rtg(rtg_tensor) + self.proj_step(step_tensor) + self.type_R
+            proj_rtg = self.proj_rtg(rtg_tensor) if self.config.use_rtg else 0.0
+            h_seq = self.P_R(r_tensor) + proj_rtg + self.proj_step(step_tensor) + self.type_R
             h_seq = torch.nn.functional.layer_norm(h_seq, [h_seq.shape[-1]])
         return (
             h_seq.cpu().numpy().astype(np.float32),
