@@ -59,6 +59,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--freq-min", type=float, default=300.0, help="Minimum frequency (Hz).")
     ap.add_argument("--freq-max", type=float, default=3000.0, help="Maximum frequency (Hz).")
     ap.add_argument("--d-model", type=int, default=128, help="Projection dimension for embeddings.")
+    ap.add_argument("--early-stop-eps", type=float, default=0.0, help="Relative residual energy threshold for early stopping (0 disables).")
+    ap.add_argument("--min-steps", type=int, default=1, help="Minimum OMP steps before early stop can trigger.")
+    ap.add_argument("--early-stop-resid-ratio", type=float, default=0.0, help="Early stop when residual energy <= ratio * initial residual (0 disables).")
     return ap.parse_args()
 
 
@@ -92,6 +95,9 @@ def main() -> None:
         d_model=args.d_model,
         normalize_w=True,
         normalize_d=True,
+        early_stop_eps=args.early_stop_eps,
+        min_steps=args.min_steps,
+        early_stop_resid_ratio=args.early_stop_resid_ratio,
     )
 
     max_samples = args.max_samples_per_shard if args.max_samples_per_shard > 0 else None

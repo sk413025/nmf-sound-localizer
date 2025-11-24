@@ -105,16 +105,30 @@ def compute_targets(batch: Dict[str, torch.Tensor], label_mode: str) -> torch.Te
     return batch["expert_gt"]
 
 
+def _mask_from_batch(batch: Dict[str, torch.Tensor], device: torch.device) -> torch.Tensor:
+    B, K, _ = batch["h_seq"].shape
+    if "actual_length" in batch:
+        lengths = torch.as_tensor(batch["actual_length"], device=device)
+        arange = torch.arange(K, device=device).unsqueeze(0)
+        return arange < lengths.unsqueeze(1)
+    return torch.ones((B, K), device=device, dtype=torch.bool)
+
+
 def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batch: Dict[str, torch.Tensor], label_mode: str) -> Dict[str, float]:
     target_expert = compute_targets(batch, label_mode)
     expert_pred = expert_logits.argmax(dim=-1)
     atom_pred = atom_logits.argmax(dim=-1)
-    expert_acc = (expert_pred == target_expert).float().mean().item()
-    atom_acc = (atom_pred == batch["atom_gt"]).float().mean().item()
-    joint_acc = ((expert_pred == target_expert) & (atom_pred == batch["atom_gt"])).float().mean().item()
+    mask = _mask_from_batch(batch, expert_logits.device)
+    atom_mask = mask & (batch["atom_gt"] != -100)
+
+    expert_acc = ((expert_pred == target_expert) & mask).float().sum().item() / mask.sum().clamp(min=1).item()
+    atom_acc = ((atom_pred == batch["atom_gt"]) & atom_mask).float().sum().item() / atom_mask.sum().clamp(min=1).item()
+    joint_acc = ((expert_pred == target_expert) & (atom_pred == batch["atom_gt"]) & atom_mask).float().sum().item() / atom_mask.sum().clamp(min=1).item()
     voted_preds = []
+    lengths = batch.get("actual_length", None)
     for i in range(expert_pred.shape[0]):
-        counts = torch.bincount(expert_pred[i], minlength=expert_logits.shape[-1])
+        length_i = int(lengths[i].item()) if lengths is not None else expert_pred.shape[1]
+        counts = torch.bincount(expert_pred[i, :length_i], minlength=expert_logits.shape[-1])
         voted_preds.append(int(torch.argmax(counts).item()))
     voted_preds = torch.tensor(voted_preds, device=expert_pred.device)
     voted_gt = batch["angle_gt"]
@@ -138,15 +152,21 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
         atom_gt = batch["atom_gt"].to(device)
         angle_gt = batch["angle_gt"].to(device)
         target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
+        mask = _mask_from_batch({"h_seq": h_seq, **batch}, device)
+        atom_mask = mask & (atom_gt != -100)
 
         optimizer.zero_grad()
         expert_logits, atom_logits = model(h_seq)
 
-        expert_ce = F.cross_entropy(expert_logits.transpose(1, 2), target_expert, reduction="none")
-        expert_loss_per_sample = expert_ce.mean(dim=1)
+        expert_ce = F.cross_entropy(
+            expert_logits.transpose(1, 2), target_expert, reduction="none", ignore_index=-100
+        )
+        expert_loss_per_sample = (expert_ce * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1)
         if use_atom_loss:
-            atom_ce = F.cross_entropy(atom_logits.transpose(1, 2), atom_gt, reduction="none")
-            atom_loss_per_sample = atom_ce.mean(dim=1)
+            atom_ce = F.cross_entropy(
+                atom_logits.transpose(1, 2), atom_gt, reduction="none", ignore_index=-100
+            )
+            atom_loss_per_sample = (atom_ce * atom_mask).sum(dim=1) / atom_mask.sum(dim=1).clamp_min(1)
         else:
             atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
         loss_per_sample = expert_loss_per_sample + atom_loss_per_sample
@@ -154,7 +174,7 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
         if mode == "awr":
             B, K = expert_gt.shape
             angle_expanded = angle_gt.view(B, 1).expand(-1, K)
-            returns = (target_expert == angle_expanded).float().mean(dim=1)
+            returns = ((target_expert == angle_expanded) & mask).float().sum(dim=1) / mask.sum(dim=1).clamp_min(1)
             baseline = returns.mean().detach()
             adv = returns - baseline
             weights = torch.exp(adv / awr_beta).clamp(max=awr_w_max)
@@ -183,18 +203,29 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_m
         atom_gt = batch["atom_gt"].to(device)
         angle_gt = batch["angle_gt"].to(device)
         target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
+        mask = _mask_from_batch({"h_seq": h_seq, **batch}, device)
+        atom_mask = mask & (atom_gt != -100)
         expert_logits, atom_logits = model(h_seq)
-        expert_ce = F.cross_entropy(expert_logits.transpose(1, 2), target_expert, reduction="none")
-        expert_loss_per_sample = expert_ce.mean(dim=1)
+        expert_ce = F.cross_entropy(
+            expert_logits.transpose(1, 2), target_expert, reduction="none", ignore_index=-100
+        )
+        expert_loss_per_sample = (expert_ce * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1)
         if use_atom_loss:
-            atom_ce = F.cross_entropy(atom_logits.transpose(1, 2), atom_gt, reduction="none")
-            atom_loss_per_sample = atom_ce.mean(dim=1)
+            atom_ce = F.cross_entropy(
+                atom_logits.transpose(1, 2), atom_gt, reduction="none", ignore_index=-100
+            )
+            atom_loss_per_sample = (atom_ce * atom_mask).sum(dim=1) / atom_mask.sum(dim=1).clamp_min(1)
         else:
             atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
         loss = (expert_loss_per_sample + atom_loss_per_sample).mean()
         total_loss += loss.item()
         total_batches += 1
-        m = compute_metrics(expert_logits, atom_logits, {k: v.to(device) for k, v in batch.items()}, label_mode)
+        batch_on_device = {k: v.to(device) if hasattr(v, "to") else v for k, v in batch.items()}
+        batch_on_device["h_seq"] = h_seq
+        batch_on_device["expert_gt"] = expert_gt
+        batch_on_device["atom_gt"] = atom_gt
+        batch_on_device["angle_gt"] = angle_gt
+        m = compute_metrics(expert_logits, atom_logits, batch_on_device, label_mode)
         for k, v in m.items():
             metrics_accum[k] += v
     avg_metrics = {k: v / max(total_batches, 1) for k, v in metrics_accum.items()}

@@ -55,6 +55,9 @@ class GenerationConfig:
     d_model: int = 128
     normalize_w: bool = True
     normalize_d: bool = True
+    early_stop_eps: float = 0.0  # 0 disables; stop when resid_sq < eps (relative to 1.0 after norm)
+    min_steps: int = 1  # enforce at least this many OMP steps
+    early_stop_resid_ratio: float = 0.0  # 0 disables; stop when resid <= ratio * initial_resid
 
 
 def _normalize_columns(x: torch.Tensor) -> torch.Tensor:
@@ -201,7 +204,7 @@ class AngleRangeShardGenerator:
             raise ValueError("NaN detected in STFT magnitude")
         return y
 
-    def _run_omp(self, y: torch.Tensor, angle_idx: int) -> Tuple[List[Dict], np.ndarray]:
+    def _run_omp(self, y: torch.Tensor, angle_idx: int) -> Tuple[List[Dict], np.ndarray, int]:
         K = self.config.k
         M = self.config.m
         D = self.D
@@ -210,6 +213,8 @@ class AngleRangeShardGenerator:
         residuals: List[np.ndarray] = []
         steps: List[Dict] = []
         prev_resid = (r @ r).item()
+        init_resid = prev_resid
+        min_steps = max(1, self.config.min_steps)
         for t in range(K):
             g = torch.matmul(D.T, r)
             j = int(torch.argmax(torch.abs(g)).item())
@@ -217,9 +222,9 @@ class AngleRangeShardGenerator:
             D_sel = D[:, selected]
             x = torch.linalg.lstsq(D_sel, y).solution
             y_hat = D_sel @ x
-            r = y - y_hat
-            r = r / (r.norm() + 1e-12)
-            resid = (r @ r).item()
+            r_raw = y - y_hat
+            resid = (r_raw @ r_raw).item()
+            r = r_raw / (r_raw.norm() + 1e-12)
             residuals.append(r.cpu().numpy())
             steps.append(
                 {
@@ -233,7 +238,15 @@ class AngleRangeShardGenerator:
                 }
             )
             prev_resid = resid
-        return steps, np.stack(residuals)
+            if t + 1 >= min_steps:
+                stop_eps = self.config.early_stop_eps > 0.0 and resid < self.config.early_stop_eps
+                stop_ratio = (
+                    self.config.early_stop_resid_ratio > 0.0
+                    and resid <= init_resid * self.config.early_stop_resid_ratio
+                )
+                if stop_eps or stop_ratio:
+                    break
+        return steps, np.stack(residuals), len(steps)
 
     def _convert_to_embeddings(self, residuals: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         K = residuals.shape[0]
@@ -281,6 +294,7 @@ class AngleRangeShardGenerator:
         step_list = []
         traj_records = []
         teacher_records = []
+        actual_lengths: List[int] = []
 
         for path, angle_deg in zip(files, file_angles):
             wav = np.load(path)
@@ -288,15 +302,30 @@ class AngleRangeShardGenerator:
                 raise ValueError(f"Expected mono waveform at {path}, got shape {wav.shape}")
             y = self._compute_spectrum(wav)
             angle_idx = self.angle_to_index[angle_deg]
-            steps, residuals = self._run_omp(y, angle_idx)
-            h_seq, rtg_seq, step_seq = self._convert_to_embeddings(residuals)
+            steps, residuals, actual_len = self._run_omp(y, angle_idx)
+            actual_lengths.append(actual_len)
+
+            # Pad residuals to length K for downstream batching.
+            if actual_len < self.config.k:
+                pad = np.zeros((self.config.k - actual_len, residuals.shape[1]), dtype=residuals.dtype)
+                residuals_padded = np.concatenate([residuals, pad], axis=0)
+            else:
+                residuals_padded = residuals
+
+            h_seq, rtg_seq, step_seq = self._convert_to_embeddings(residuals_padded)
             experts = [s["expert"] for s in steps]
             atoms = [s["atom"] for s in steps]
-            expert_gt_list.append(np.array(experts, dtype=np.int64))
-            atom_gt_list.append(np.array(atoms, dtype=np.int64))
-            outputs.append(h_seq)
-            rtg_list.append(rtg_seq)
-            step_list.append(step_seq)
+
+            expert_padded = np.full(self.config.k, fill_value=-100, dtype=np.int64)
+            atom_padded = np.full(self.config.k, fill_value=-100, dtype=np.int64)
+            expert_padded[:actual_len] = np.array(experts, dtype=np.int64)
+            atom_padded[:actual_len] = np.array(atoms, dtype=np.int64)
+
+            expert_gt_list.append(expert_padded)
+            atom_gt_list.append(atom_padded)
+            outputs.append(h_seq[: self.config.k])
+            rtg_list.append(rtg_seq[: self.config.k])
+            step_list.append(step_seq[: self.config.k])
             angle_gt_list.append(angle_idx)
             angle_deg_list.append(float(angle_deg))
             voted = Counter(experts).most_common(1)[0][0]
@@ -332,7 +361,7 @@ class AngleRangeShardGenerator:
             atom_gt=np.stack(atom_gt_list),
             angle_gt=np.array(angle_gt_list, dtype=np.int64),
             angle_deg_gt=np.array(angle_deg_list, dtype=np.float32),
-            actual_length=np.full(len(outputs), self.config.k, dtype=np.int64),
+            actual_length=np.array(actual_lengths, dtype=np.int64),
         )
 
         with (shard_dir / "trajectories.jsonl").open("w") as f:
@@ -346,6 +375,7 @@ class AngleRangeShardGenerator:
         voted_acc = float(np.mean([r["voted_correct"] for r in teacher_records]))
         any_prefix = float(np.mean([r["any_prefix"] for r in teacher_records]))
         avg_prefix = float(np.mean([r["avg_prefix"] for r in teacher_records]))
+        step_hist = Counter(actual_lengths)
         summary = {
             "samples": len(outputs),
             "angles": angles,
@@ -355,6 +385,11 @@ class AngleRangeShardGenerator:
             "voted_acc": voted_acc,
             "any_prefix": any_prefix,
             "avg_prefix": avg_prefix,
+            "actual_steps": {
+                "min": min(actual_lengths),
+                "max": max(actual_lengths),
+                "hist": {int(k): int(v) for k, v in sorted(step_hist.items())},
+            },
             "fingerprint": fingerprint,
             "stft": {
                 "fs": self.config.target_sample_rate,

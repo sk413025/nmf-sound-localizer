@@ -58,6 +58,7 @@ class AngleRangeDataset(Dataset):
             atom_gt = data["atom_gt"]
             angle_gt = data["angle_gt"]
             angle_deg_gt = data["angle_deg_gt"] if "angle_deg_gt" in data else None
+            actual_length = data["actual_length"] if "actual_length" in data else np.full(h_seq.shape[0], h_seq.shape[1], dtype=np.int64)
             if h_seq.shape[0] != expert_gt.shape[0] or h_seq.shape[0] != angle_gt.shape[0]:
                 raise ValueError(f"Shape mismatch in {npz_path}: h_seq={h_seq.shape} expert_gt={expert_gt.shape} angle_gt={angle_gt.shape}")
             for i in range(h_seq.shape[0]):
@@ -69,6 +70,7 @@ class AngleRangeDataset(Dataset):
                         "atom_gt": torch.from_numpy(atom_gt[i]).long(),
                         "angle_gt": int(angle_gt[i]),
                         "angle_deg": angle_deg_val,
+                        "actual_length": int(actual_length[i]),
                         "shard": shard_dir.name,
                     }
                 )
