@@ -22,6 +22,10 @@ def _default_ranges(include_overlap: bool) -> Dict[str, AngleRange]:
         "low": AngleRange("low", 0, 60),
         "mid": AngleRange("mid", 65, 115),
         "high": AngleRange("high", 120, 180),
+        # Targeted ranges to oversample weak/strong angles (5 deg step assumed)
+        "weak_0_50": AngleRange("weak_0_50", 0, 50),
+        "weak_140_170": AngleRange("weak_140_170", 140, 170),
+        "strong_edges": AngleRange("strong_edges", 170, 180),
     }
     if include_overlap:
         ranges["overlap_30_90"] = AngleRange("overlap_30_90", 30, 90)
@@ -62,6 +66,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--early-stop-eps", type=float, default=0.0, help="Relative residual energy threshold for early stopping (0 disables).")
     ap.add_argument("--min-steps", type=int, default=1, help="Minimum OMP steps before early stop can trigger.")
     ap.add_argument("--early-stop-resid-ratio", type=float, default=0.0, help="Early stop when residual energy <= ratio * initial residual (0 disables).")
+    ap.add_argument("--reduction-mode", type=str, default="kmeans", choices=["kmeans", "svd"], help="Atom reduction method when m < full.")
     return ap.parse_args()
 
 
@@ -98,6 +103,7 @@ def main() -> None:
         early_stop_eps=args.early_stop_eps,
         min_steps=args.min_steps,
         early_stop_resid_ratio=args.early_stop_resid_ratio,
+        reduction_mode=args.reduction_mode,
     )
 
     max_samples = args.max_samples_per_shard if args.max_samples_per_shard > 0 else None

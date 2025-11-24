@@ -142,7 +142,7 @@ def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batc
     return metrics
 
 
-def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool, label_mode: str, use_atom_loss: bool) -> Dict[str, float]:
+def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None) -> Dict[str, float]:
     model.train()
     total_loss = 0.0
     total_batches = 0
@@ -170,6 +170,13 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
         else:
             atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
         loss_per_sample = expert_loss_per_sample + atom_loss_per_sample
+        if angle_weights:
+            w = torch.tensor(
+                [angle_weights.get(float(a.item()), 1.0) for a in batch.get("angle_deg", batch["angle_gt"])],
+                device=device,
+                dtype=loss_per_sample.dtype,
+            )
+            loss_per_sample = loss_per_sample * w
 
         if mode == "awr":
             B, K = expert_gt.shape
@@ -192,7 +199,7 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool) -> Dict[str, float]:
+def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None) -> Dict[str, float]:
     model.eval()
     total_loss = 0.0
     total_batches = 0
@@ -217,7 +224,15 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_m
             atom_loss_per_sample = (atom_ce * atom_mask).sum(dim=1) / atom_mask.sum(dim=1).clamp_min(1)
         else:
             atom_loss_per_sample = torch.zeros_like(expert_loss_per_sample)
-        loss = (expert_loss_per_sample + atom_loss_per_sample).mean()
+        loss_per_sample = expert_loss_per_sample + atom_loss_per_sample
+        if angle_weights:
+            w = torch.tensor(
+                [angle_weights.get(float(a.item()), 1.0) for a in batch.get("angle_deg", batch["angle_gt"])],
+                device=device,
+                dtype=loss_per_sample.dtype,
+            )
+            loss_per_sample = loss_per_sample * w
+        loss = loss_per_sample.mean()
         total_loss += loss.item()
         total_batches += 1
         batch_on_device = {k: v.to(device) if hasattr(v, "to") else v for k, v in batch.items()}
@@ -241,7 +256,7 @@ def expected_angles(shard_dirs: Sequence[Path]) -> List[int]:
     return sorted(set(angles))
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Train DTMin (Decision Transformer Minimum) on angle-range shards. Supports BC (Behavioral Cloning) or AWR (Advantage-Weighted Regression) for OMP trajectory imitation.")
     ap.add_argument("--shard-root", type=Path, default=Path("results/angle_range_shards"), help="Root containing shard subdirs.")
     ap.add_argument("--shard-names", type=str, default="full,low,mid,high", help="Comma-separated shard names to load.")
@@ -265,13 +280,17 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--disable-atom-loss", action="store_true", 
                     help="Skip atom supervision. WARNING: Disabling breaks DTMin's hierarchical learning - only use when teacher atoms are severely unreliable.")
     ap.add_argument("--log-file", type=Path, default=None, help="Optional JSON log output.")
-    return ap.parse_args()
+    ap.add_argument("--angle-weight-json", type=Path, default=None, help="Optional JSON mapping angle_deg -> weight (float). Loss will be scaled per sample.")
+    return ap
 
 
 def main() -> None:
-    args = parse_args()
+    args = parse_args().parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     set_seed(args.seed)
+    angle_weights = None
+    if args.angle_weight_json:
+        angle_weights = {float(k): float(v) for k, v in json.loads(Path(args.angle_weight_json).read_text()).items()}
 
     shard_dirs = [args.shard_root / name for name in args.shard_names.split(",") if name.strip()]
     for d in shard_dirs:
@@ -323,17 +342,18 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         train_metrics = train_epoch(
             model,
-            train_loader,
-            optimizer,
-            device,
-            args.mode,
-            args.awr_beta,
-            args.awr_w_max,
-            args.awr_normalize,
-            args.label_mode,
-            use_atom_loss,
-        )
-        val_metrics = evaluate(model, val_loader, device, args.label_mode, use_atom_loss)
+        train_loader,
+        optimizer,
+        device,
+        args.mode,
+        args.awr_beta,
+        args.awr_w_max,
+        args.awr_normalize,
+        args.label_mode,
+        use_atom_loss,
+        angle_weights,
+    )
+        val_metrics = evaluate(model, val_loader, device, args.label_mode, use_atom_loss, angle_weights)
         LOG.info(
             "Epoch %d/%d | train_loss=%.4f | val_loss=%.4f | voted=%.3f | expert=%.3f | atom=%.3f | joint=%.3f",
             epoch,

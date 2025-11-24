@@ -58,6 +58,7 @@ class GenerationConfig:
     early_stop_eps: float = 0.0  # 0 disables; stop when resid_sq < eps (relative to 1.0 after norm)
     min_steps: int = 1  # enforce at least this many OMP steps
     early_stop_resid_ratio: float = 0.0  # 0 disables; stop when resid <= ratio * initial_resid
+    reduction_mode: str = "kmeans"  # kmeans (default) or svd
 
 
 def _normalize_columns(x: torch.Tensor) -> torch.Tensor:
@@ -100,9 +101,15 @@ class AngleRangeShardGenerator:
             logger.info("Using FULL W dictionary (m=%d >= M_full=%d) - preserves fidelity for DTMin", config.m, M_full)
             self.W_reduced = self.W_full.clone()
         else:
-            logger.info("Compressing W: M_full=%d → m=%d via k-means (seed=%d)", M_full, config.m, config.reduction_seed)
+            mode_desc = (
+                f"k-means (seed={config.reduction_seed})" if config.reduction_mode == "kmeans" else "SVD"
+            )
+            logger.info("Compressing W: M_full=%d → m=%d via %s", M_full, config.m, mode_desc)
             logger.warning("WARNING: Compression may degrade teacher quality for speech/complex signals!")
-            self.W_reduced = self._reduce_atoms_kmeans(self.W_full, config.m, config.reduction_seed)
+            if config.reduction_mode == "svd":
+                self.W_reduced = self._reduce_atoms_svd(self.W_full, config.m)
+            else:
+                self.W_reduced = self._reduce_atoms_kmeans(self.W_full, config.m, config.reduction_seed)
         
         if config.normalize_w:
             logger.info("Applying column normalization to W")
@@ -144,6 +151,12 @@ class AngleRangeShardGenerator:
         km.fit(W_np)
         centers = torch.from_numpy(km.cluster_centers_.T).float()
         return centers
+
+    @staticmethod
+    def _reduce_atoms_svd(W: torch.Tensor, M: int) -> torch.Tensor:
+        # SVD-based reduction: keep top-M components; columns are U * S
+        U, S, _ = torch.linalg.svd(W, full_matrices=False)
+        return U[:, :M] * S[:M]
 
     def _build_dictionary(self, W_reduced: torch.Tensor, H: torch.Tensor, normalize: bool) -> torch.Tensor:
         F, M = W_reduced.shape
@@ -295,6 +308,7 @@ class AngleRangeShardGenerator:
         traj_records = []
         teacher_records = []
         actual_lengths: List[int] = []
+        per_angle_counts: Dict[float, Counter] = {}
 
         for path, angle_deg in zip(files, file_angles):
             wav = np.load(path)
@@ -348,6 +362,11 @@ class AngleRangeShardGenerator:
             traj_records.append(
                 {"path": str(path), "angle_deg": float(angle_deg), "angle_idx": angle_idx, "steps": steps}
             )
+            agg = per_angle_counts.setdefault(float(angle_deg), Counter())
+            agg["count"] += 1
+            agg["first"] += first_hit
+            agg["voted"] += voted_hit
+            agg["joint"] += joint_hit
 
         shard_dir = self.config.output_root / angle_range.name
         shard_dir.mkdir(parents=True, exist_ok=True)
@@ -389,6 +408,15 @@ class AngleRangeShardGenerator:
                 "min": min(actual_lengths),
                 "max": max(actual_lengths),
                 "hist": {int(k): int(v) for k, v in sorted(step_hist.items())},
+            },
+            "per_angle": {
+                str(a): {
+                    "count": int(c["count"]),
+                    "first_step_acc": float(c["first"] / max(c["count"], 1)),
+                    "voted_acc": float(c["voted"] / max(c["count"], 1)),
+                    "joint_acc": float(c["joint"] / max(c["count"], 1)),
+                }
+                for a, c in sorted(per_angle_counts.items())
             },
             "fingerprint": fingerprint,
             "stft": {
