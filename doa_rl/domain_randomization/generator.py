@@ -218,7 +218,15 @@ class AngleRangeShardGenerator:
             raise ValueError("NaN detected in STFT magnitude")
         return y
 
-    def _run_omp(self, y: torch.Tensor, angle_idx: int) -> Tuple[List[Dict], np.ndarray, int]:
+    def _run_omp(self, y: torch.Tensor, angle_idx: int) -> Tuple[List[Dict], np.ndarray, int, float]:
+        """Run OMP algorithm and return trajectory info.
+
+        Returns:
+            steps: List of step dictionaries with expert, atom, residual info
+            residuals: [K, F] array of normalized residual vectors
+            actual_len: Number of actual steps taken (may be < K due to early stop)
+            init_resid: Initial residual energy (for RTG normalization)
+        """
         K = self.config.k
         M = self.config.m
         D = self.D
@@ -260,15 +268,55 @@ class AngleRangeShardGenerator:
                 )
                 if stop_eps or stop_ratio:
                     break
-        return steps, np.stack(residuals), len(steps)
+        return steps, np.stack(residuals), len(steps), init_resid
 
-    def _convert_to_embeddings(self, residuals: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _compute_rewards(self, steps: List[Dict], init_resid: float) -> np.ndarray:
+        """Compute per-step rewards for RTG calculation.
+
+        Reward function:
+            r_t = α * is_correct_expert - β * delta_resid_sq / init_resid
+
+        Components:
+        - is_correct_expert: 1 if expert matches angle, else 0 (sparse reward)
+        - delta_resid_sq: Change in residual (negative = improvement)
+
+        Returns:
+            rewards: [K] array of per-step rewards
+        """
+        alpha = 1.0  # correct angle weight
+        beta = 0.1   # residual improvement weight
+
+        rewards = np.zeros(len(steps), dtype=np.float32)
+        for t, step in enumerate(steps):
+            correct_bonus = alpha * float(step["is_correct_expert"])
+            # delta_resid_sq is negative when improving, so we negate it for positive reward
+            resid_bonus = -beta * step["delta_resid_sq"] / max(init_resid, 1e-12)
+            rewards[t] = correct_bonus + resid_bonus
+        return rewards
+
+    def _convert_to_embeddings(
+        self, residuals: np.ndarray, steps: List[Dict] = None, init_resid: float = 1.0
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         K = residuals.shape[0]
         rtg_seq = np.zeros((K, 2), dtype=np.float32)
         step_seq = np.zeros((K, 2), dtype=np.float32)
+
+        # Compute proper RTG if steps provided
+        if steps is not None and len(steps) > 0:
+            rewards = self._compute_rewards(steps, init_resid)
+            actual_len = len(steps)
+            # RTG_t = sum of rewards from t to T (Return-to-Go)
+            for t in range(actual_len):
+                rtg_seq[t, 0] = rewards[t:actual_len].sum()  # cumulative future reward
+                rtg_seq[t, 1] = (actual_len - t) / max(self.config.k, 1)  # normalized remaining steps
+            # Padded positions get zero RTG
+        else:
+            # Fallback: use residual mean (legacy behavior)
+            for t in range(K):
+                rtg_seq[t, 0] = residuals[t].mean()
+                rtg_seq[t, 1] = 0.0
+
         for t in range(K):
-            rtg_seq[t, 0] = residuals[t].mean()
-            rtg_seq[t, 1] = 0.0
             step_seq[t, 0] = t / max(self.config.k, 1)
             step_seq[t, 1] = (self.config.k - t) / max(self.config.k, 1)
 
@@ -318,7 +366,7 @@ class AngleRangeShardGenerator:
                 raise ValueError(f"Expected mono waveform at {path}, got shape {wav.shape}")
             y = self._compute_spectrum(wav)
             angle_idx = self.angle_to_index[angle_deg]
-            steps, residuals, actual_len = self._run_omp(y, angle_idx)
+            steps, residuals, actual_len, init_resid = self._run_omp(y, angle_idx)
             actual_lengths.append(actual_len)
 
             # Pad residuals to length K for downstream batching.
@@ -328,7 +376,9 @@ class AngleRangeShardGenerator:
             else:
                 residuals_padded = residuals
 
-            h_seq, rtg_seq, step_seq = self._convert_to_embeddings(residuals_padded)
+            h_seq, rtg_seq, step_seq = self._convert_to_embeddings(
+                residuals_padded, steps=steps, init_resid=init_resid
+            )
             experts = [s["expert"] for s in steps]
             atoms = [s["atom"] for s in steps]
 

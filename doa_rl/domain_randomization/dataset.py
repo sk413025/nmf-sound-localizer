@@ -59,21 +59,28 @@ class AngleRangeDataset(Dataset):
             angle_gt = data["angle_gt"]
             angle_deg_gt = data["angle_deg_gt"] if "angle_deg_gt" in data else None
             actual_length = data["actual_length"] if "actual_length" in data else np.full(h_seq.shape[0], h_seq.shape[1], dtype=np.int64)
+            # Load RTG and step sequences for Physics-Informed DT
+            rtg_seq = data["rtg_seq"] if "rtg_seq" in data else None
+            step_seq = data["step_seq"] if "step_seq" in data else None
             if h_seq.shape[0] != expert_gt.shape[0] or h_seq.shape[0] != angle_gt.shape[0]:
                 raise ValueError(f"Shape mismatch in {npz_path}: h_seq={h_seq.shape} expert_gt={expert_gt.shape} angle_gt={angle_gt.shape}")
             for i in range(h_seq.shape[0]):
                 angle_deg_val = float(angle_deg_gt[i]) if angle_deg_gt is not None else None
-                self.samples.append(
-                    {
-                        "h_seq": torch.from_numpy(h_seq[i]).float(),
-                        "expert_gt": torch.from_numpy(expert_gt[i]).long(),
-                        "atom_gt": torch.from_numpy(atom_gt[i]).long(),
-                        "angle_gt": int(angle_gt[i]),
-                        "angle_deg": angle_deg_val,
-                        "actual_length": int(actual_length[i]),
-                        "shard": shard_dir.name,
-                    }
-                )
+                sample = {
+                    "h_seq": torch.from_numpy(h_seq[i]).float(),
+                    "expert_gt": torch.from_numpy(expert_gt[i]).long(),
+                    "atom_gt": torch.from_numpy(atom_gt[i]).long(),
+                    "angle_gt": int(angle_gt[i]),
+                    "angle_deg": angle_deg_val,
+                    "actual_length": int(actual_length[i]),
+                    "shard": shard_dir.name,
+                }
+                # Add RTG and step sequences if available
+                if rtg_seq is not None:
+                    sample["rtg_seq"] = torch.from_numpy(rtg_seq[i]).float()
+                if step_seq is not None:
+                    sample["step_seq"] = torch.from_numpy(step_seq[i]).float()
+                self.samples.append(sample)
             # Track coverage
             summary = load_shard_summary(shard_dir)
             self.angles.extend(summary.angles)

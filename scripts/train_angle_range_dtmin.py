@@ -43,27 +43,42 @@ def collate(batch: List[Dict]) -> Dict[str, torch.Tensor]:
     expert_gt = torch.stack([b["expert_gt"] for b in batch])
     atom_gt = torch.stack([b["atom_gt"] for b in batch])
     angle_gt = torch.tensor([b["angle_gt"] for b in batch], dtype=torch.long)
-    return {"h_seq": h_seq, "expert_gt": expert_gt, "atom_gt": atom_gt, "angle_gt": angle_gt}
+    result = {"h_seq": h_seq, "expert_gt": expert_gt, "atom_gt": atom_gt, "angle_gt": angle_gt}
+    # Include RTG sequences if available (for Physics-Informed DT)
+    if "rtg_seq" in batch[0] and batch[0]["rtg_seq"] is not None:
+        result["rtg_seq"] = torch.stack([b["rtg_seq"] for b in batch])
+    if "step_seq" in batch[0] and batch[0]["step_seq"] is not None:
+        result["step_seq"] = torch.stack([b["step_seq"] for b in batch])
+    if "actual_length" in batch[0]:
+        result["actual_length"] = torch.tensor([b["actual_length"] for b in batch], dtype=torch.long)
+    if "angle_deg" in batch[0] and batch[0]["angle_deg"] is not None:
+        result["angle_deg"] = torch.tensor([b["angle_deg"] for b in batch], dtype=torch.float)
+    return result
 
 
 class TinyDTMin(nn.Module):
     """DTMin: Decision Transformer Minimum for OMP trajectory imitation.
-    
+
     Architecture:
     - TransformerEncoder: Process residual sequence embeddings
     - Expert head: Predict which angle/expert to select (E-way classification)
     - Atom head: Predict which atom within expert to select (M-way classification)
-    
+
     Training objective (label_mode='teacher'):
     - Expert loss: CE(expert_pred, expert_omp)  # Imitate teacher's expert choice
     - Atom loss: CE(atom_pred, atom_omp)        # Imitate teacher's atom choice
-    
+
     Evaluation:
     - Joint accuracy: P(expert=teacher AND atom=teacher)  # Trajectory matching
     - Voted accuracy: majority_vote(experts) == angle_gt  # Localization quality
+
+    Physics-Informed DT extensions:
+    - RTG projection: Condition on return-to-go for controllable generation
+    - Causal mask: Enforce sequential decision making (position i can only attend to j <= i)
     """
 
-    def __init__(self, d_model: int, nhead: int, nlayers: int, E: int, M: int, max_K: int, dropout: float = 0.1):
+    def __init__(self, d_model: int, nhead: int, nlayers: int, E: int, M: int, max_K: int,
+                 dropout: float = 0.1, rtg_dim: int = 2, use_rtg: bool = False):
         super().__init__()
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
@@ -79,11 +94,43 @@ class TinyDTMin(nn.Module):
         self.expert_head = nn.Linear(d_model, E)
         self.atom_head = nn.Linear(d_model, M)
 
-    def forward(self, h_seq: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Physics-Informed DT extensions
+        self.use_rtg = use_rtg
+        self.max_K = max_K
+        if use_rtg:
+            self.rtg_proj = nn.Sequential(
+                nn.Linear(rtg_dim, d_model),
+                nn.GELU(),
+                nn.Linear(d_model, d_model),
+            )
+
+    def _generate_causal_mask(self, K: int, device: torch.device) -> torch.Tensor:
+        """Generate causal attention mask.
+
+        Returns: (K, K) mask where mask[i,j] = True means position i
+                 cannot attend to position j (j > i is masked)
+        """
+        mask = torch.triu(torch.ones(K, K, device=device), diagonal=1).bool()
+        return mask
+
+    def forward(self, h_seq: torch.Tensor, rtg_seq: torch.Tensor = None,
+                use_causal_mask: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         B, K, _ = h_seq.shape
-        pos_idx = torch.arange(K, device=h_seq.device).unsqueeze(0).expand(B, K)
+        device = h_seq.device
+
+        # Positional embedding
+        pos_idx = torch.arange(K, device=device).unsqueeze(0).expand(B, K)
         h = h_seq + self.pos(pos_idx)
-        h = self.encoder(h)
+
+        # RTG conditioning (Physics-Informed DT)
+        if self.use_rtg and rtg_seq is not None:
+            rtg_embed = self.rtg_proj(rtg_seq)
+            h = h + rtg_embed
+
+        # Causal mask for sequential decision making
+        mask = self._generate_causal_mask(K, device) if use_causal_mask else None
+
+        h = self.encoder(h, mask=mask)
         h = self.norm(h)
         expert_logits = self.expert_head(h)
         atom_logits = self.atom_head(h)
@@ -142,7 +189,7 @@ def compute_metrics(expert_logits: torch.Tensor, atom_logits: torch.Tensor, batc
     return metrics
 
 
-def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None) -> Dict[str, float]:
+def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Optimizer, device: torch.device, mode: str, awr_beta: float, awr_w_max: float, awr_normalize: bool, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None, use_rtg: bool = False, use_causal_mask: bool = False) -> Dict[str, float]:
     model.train()
     total_loss = 0.0
     total_batches = 0
@@ -151,12 +198,18 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
         expert_gt = batch["expert_gt"].to(device)
         atom_gt = batch["atom_gt"].to(device)
         angle_gt = batch["angle_gt"].to(device)
+        # RTG conditioning for Physics-Informed DT
+        rtg_seq = batch.get("rtg_seq")
+        if rtg_seq is not None and use_rtg:
+            rtg_seq = rtg_seq.to(device)
+        else:
+            rtg_seq = None
         target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
         mask = _mask_from_batch({"h_seq": h_seq, **batch}, device)
         atom_mask = mask & (atom_gt != -100)
 
         optimizer.zero_grad()
-        expert_logits, atom_logits = model(h_seq)
+        expert_logits, atom_logits = model(h_seq, rtg_seq=rtg_seq, use_causal_mask=use_causal_mask)
 
         expert_ce = F.cross_entropy(
             expert_logits.transpose(1, 2), target_expert, reduction="none", ignore_index=-100
@@ -199,7 +252,7 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None) -> Dict[str, float]:
+def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None, use_rtg: bool = False, use_causal_mask: bool = False) -> Dict[str, float]:
     model.eval()
     total_loss = 0.0
     total_batches = 0
@@ -209,10 +262,16 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_m
         expert_gt = batch["expert_gt"].to(device)
         atom_gt = batch["atom_gt"].to(device)
         angle_gt = batch["angle_gt"].to(device)
+        # RTG conditioning for Physics-Informed DT
+        rtg_seq = batch.get("rtg_seq")
+        if rtg_seq is not None and use_rtg:
+            rtg_seq = rtg_seq.to(device)
+        else:
+            rtg_seq = None
         target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
         mask = _mask_from_batch({"h_seq": h_seq, **batch}, device)
         atom_mask = mask & (atom_gt != -100)
-        expert_logits, atom_logits = model(h_seq)
+        expert_logits, atom_logits = model(h_seq, rtg_seq=rtg_seq, use_causal_mask=use_causal_mask)
         expert_ce = F.cross_entropy(
             expert_logits.transpose(1, 2), target_expert, reduction="none", ignore_index=-100
         )
@@ -277,10 +336,17 @@ def parse_args() -> argparse.ArgumentParser:
     ap.add_argument("--require-voted-threshold", action="store_true", help="Raise error if voted accuracy is below threshold.")
     ap.add_argument("--label-mode", type=str, default="teacher", choices=["angle", "teacher"], 
                     help="DTMin supervision mode. 'teacher' (default): imitate OMP trajectory. 'angle': direct angle classification (non-standard, see ARCHITECTURE_VIOLATION.md).")
-    ap.add_argument("--disable-atom-loss", action="store_true", 
+    ap.add_argument("--disable-atom-loss", action="store_true",
                     help="Skip atom supervision. WARNING: Disabling breaks DTMin's hierarchical learning - only use when teacher atoms are severely unreliable.")
     ap.add_argument("--log-file", type=Path, default=None, help="Optional JSON log output.")
     ap.add_argument("--angle-weight-json", type=Path, default=None, help="Optional JSON mapping angle_deg -> weight (float). Loss will be scaled per sample.")
+    # Physics-Informed DT extensions
+    ap.add_argument("--use-rtg", action="store_true",
+                    help="Enable RTG (Return-to-Go) conditioning for Physics-Informed DT mode.")
+    ap.add_argument("--use-causal-mask", action="store_true",
+                    help="Use causal attention mask for sequential decision making.")
+    ap.add_argument("--rtg-dim", type=int, default=2,
+                    help="RTG embedding dimension (default: 2 for [cumulative_reward, remaining_steps]).")
     return ap
 
 
@@ -308,10 +374,13 @@ def main() -> None:
     LOG.info("Dataset loaded: N=%d K=%d d_model=%d shards=%s", N, K, d_model_detected, [d.name for d in shard_dirs])
     LOG.info("Coverage: angles=%d, missing=%s", len(coverage), missing_angles)
     LOG.info("Training mode: %s", args.mode.upper())
-    LOG.info("Supervision: label_mode='%s' %s", args.label_mode, 
+    LOG.info("Supervision: label_mode='%s' %s", args.label_mode,
              "(TRUE DTMin - trajectory imitation)" if args.label_mode == "teacher" else "(NON-STANDARD - direct angle supervision)")
     LOG.info("Atom loss: %s %s", "ENABLED" if not args.disable_atom_loss else "DISABLED",
              "" if not args.disable_atom_loss else "(WARNING: Breaks hierarchical learning!)")
+    LOG.info("Physics-Informed DT: RTG=%s, Causal Mask=%s",
+             "ENABLED" if args.use_rtg else "DISABLED",
+             "ENABLED" if args.use_causal_mask else "DISABLED")
     LOG.info("="*80)
     if missing_angles:
         raise ValueError(f"Missing angles in dataset: {missing_angles}")
@@ -335,6 +404,8 @@ def main() -> None:
         M=M,
         max_K=K,
         dropout=args.dropout,
+        rtg_dim=args.rtg_dim,
+        use_rtg=args.use_rtg,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
@@ -342,18 +413,23 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         train_metrics = train_epoch(
             model,
-        train_loader,
-        optimizer,
-        device,
-        args.mode,
-        args.awr_beta,
-        args.awr_w_max,
-        args.awr_normalize,
-        args.label_mode,
-        use_atom_loss,
-        angle_weights,
-    )
-        val_metrics = evaluate(model, val_loader, device, args.label_mode, use_atom_loss, angle_weights)
+            train_loader,
+            optimizer,
+            device,
+            args.mode,
+            args.awr_beta,
+            args.awr_w_max,
+            args.awr_normalize,
+            args.label_mode,
+            use_atom_loss,
+            angle_weights,
+            use_rtg=args.use_rtg,
+            use_causal_mask=args.use_causal_mask,
+        )
+        val_metrics = evaluate(
+            model, val_loader, device, args.label_mode, use_atom_loss, angle_weights,
+            use_rtg=args.use_rtg, use_causal_mask=args.use_causal_mask,
+        )
         LOG.info(
             "Epoch %d/%d | train_loss=%.4f | val_loss=%.4f | voted=%.3f | expert=%.3f | atom=%.3f | joint=%.3f",
             epoch,
