@@ -252,7 +252,14 @@ def train_epoch(model: nn.Module, loader: DataLoader, optimizer: torch.optim.Opt
 
 
 @torch.no_grad()
-def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None, use_rtg: bool = False, use_causal_mask: bool = False) -> Dict[str, float]:
+def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_mode: str, use_atom_loss: bool, angle_weights: Dict[float, float] | None, use_rtg: bool = False, use_causal_mask: bool = False, fixed_rtg: float | None = None) -> Dict[str, float]:
+    """Evaluate model on validation set.
+
+    Args:
+        fixed_rtg: If provided, use this fixed RTG value instead of actual RTG from data.
+                   This is used to test for RTG information leakage.
+                   Set to None to use actual RTG (default behavior).
+    """
     model.eval()
     total_loss = 0.0
     total_batches = 0
@@ -264,8 +271,16 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device, label_m
         angle_gt = batch["angle_gt"].to(device)
         # RTG conditioning for Physics-Informed DT
         rtg_seq = batch.get("rtg_seq")
-        if rtg_seq is not None and use_rtg:
-            rtg_seq = rtg_seq.to(device)
+        if use_rtg:
+            if fixed_rtg is not None:
+                # Use fixed RTG value for leakage testing
+                B, K = h_seq.shape[:2]
+                rtg_dim = batch["rtg_seq"].shape[-1] if rtg_seq is not None else 2
+                rtg_seq = torch.full((B, K, rtg_dim), fixed_rtg, device=device, dtype=h_seq.dtype)
+            elif rtg_seq is not None:
+                rtg_seq = rtg_seq.to(device)
+            else:
+                rtg_seq = None
         else:
             rtg_seq = None
         target_expert = compute_targets({"h_seq": h_seq, "expert_gt": expert_gt, "angle_gt": angle_gt}, label_mode)
@@ -347,6 +362,8 @@ def parse_args() -> argparse.ArgumentParser:
                     help="Use causal attention mask for sequential decision making.")
     ap.add_argument("--rtg-dim", type=int, default=2,
                     help="RTG embedding dimension (default: 2 for [cumulative_reward, remaining_steps]).")
+    ap.add_argument("--rtg-leakage-test", action="store_true",
+                    help="After training, run evaluation with multiple fixed RTG values to test for information leakage.")
     return ap
 
 
@@ -449,6 +466,41 @@ def main() -> None:
         if args.require_voted_threshold:
             raise RuntimeError(msg)
         LOG.warning(msg)
+
+    # RTG Leakage Test: Evaluate with multiple fixed RTG values
+    leakage_results = {}
+    if args.rtg_leakage_test and args.use_rtg:
+        LOG.info("="*80)
+        LOG.info("RTG Leakage Test: Evaluating with fixed RTG values")
+        LOG.info("="*80)
+        fixed_rtg_values = [
+            (None, "Actual RTG (control)"),
+            (5.0, "High RTG=5.0 (assume OMP all correct)"),
+            (2.5, "Medium RTG=2.5"),
+            (0.5, "Low RTG=0.5 (assume OMP all wrong)"),
+            (0.0, "Zero RTG=0.0"),
+        ]
+        for rtg_val, rtg_desc in fixed_rtg_values:
+            metrics = evaluate(
+                model, val_loader, device, args.label_mode, use_atom_loss, angle_weights,
+                use_rtg=args.use_rtg, use_causal_mask=args.use_causal_mask, fixed_rtg=rtg_val,
+            )
+            rtg_label = "actual" if rtg_val is None else f"{rtg_val:.1f}"
+            leakage_results[rtg_label] = metrics
+            LOG.info(
+                "RTG=%s | voted=%.3f | expert=%.3f | joint=%.3f | %s",
+                rtg_label.rjust(6), metrics["voted_acc"], metrics["expert_acc"], metrics["joint_acc"], rtg_desc,
+            )
+        LOG.info("="*80)
+        LOG.info("Leakage Analysis:")
+        actual_voted = leakage_results["actual"]["voted_acc"]
+        high_voted = leakage_results["5.0"]["voted_acc"]
+        if abs(high_voted - 0.324) < 0.1:  # Close to OMP's 32.4%
+            LOG.info("  HIGH RTG -> ~OMP accuracy: RTG provides 'trust OMP' signal")
+        if actual_voted - high_voted > 0.1:
+            LOG.info("  ACTUAL >> HIGH: Actual RTG contains information beyond 'trust OMP'")
+            LOG.info("  CONCLUSION: RTG likely leaking ground truth information!")
+        LOG.info("="*80)
 
     if args.log_file:
         args.log_file.parent.mkdir(parents=True, exist_ok=True)
