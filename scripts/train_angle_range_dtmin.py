@@ -473,13 +473,41 @@ def main() -> None:
         LOG.info("="*80)
         LOG.info("RTG Leakage Test: Evaluating with fixed RTG values")
         LOG.info("="*80)
-        fixed_rtg_values = [
-            (None, "Actual RTG (control)"),
-            (5.0, "High RTG=5.0 (assume OMP all correct)"),
-            (2.5, "Medium RTG=2.5"),
-            (0.5, "Low RTG=0.5 (assume OMP all wrong)"),
-            (0.0, "Zero RTG=0.0"),
-        ]
+        # Detect RTG mode from data: temperature-based RTG has values in [0.02, 1.0]
+        # while return-based RTG has values up to ~5.0 (cumulative reward)
+        sample_rtg = next(iter(val_loader)).get("rtg_seq")
+        if sample_rtg is not None:
+            max_rtg = sample_rtg[:, 0, 0].max().item()
+            if max_rtg <= 1.5:
+                # Temperature-based RTG: RTG = 1/τ (normalized to [0, 1])
+                # τ=0.1 → RTG=1.0 (exploit/greedy)
+                # τ=5.0 → RTG=0.02 (explore/random)
+                fixed_rtg_values = [
+                    (None, "Actual RTG (control)"),
+                    (1.0, "High RTG=1.0 (τ=0.1, exploit/greedy)"),
+                    (0.2, "Med RTG=0.2 (τ=0.5)"),
+                    (0.1, "Low RTG=0.1 (τ=1.0)"),
+                    (0.02, "Min RTG=0.02 (τ=5.0, explore/random)"),
+                    (0.0, "Zero RTG=0.0 (OOD)"),
+                ]
+            else:
+                # Return-based RTG: cumulative reward up to ~5.0
+                fixed_rtg_values = [
+                    (None, "Actual RTG (control)"),
+                    (5.0, "High RTG=5.0 (assume OMP all correct)"),
+                    (2.5, "Medium RTG=2.5"),
+                    (0.5, "Low RTG=0.5 (assume OMP all wrong)"),
+                    (0.0, "Zero RTG=0.0"),
+                ]
+        else:
+            # Fallback to return-based
+            fixed_rtg_values = [
+                (None, "Actual RTG (control)"),
+                (5.0, "High RTG=5.0 (assume OMP all correct)"),
+                (2.5, "Medium RTG=2.5"),
+                (0.5, "Low RTG=0.5 (assume OMP all wrong)"),
+                (0.0, "Zero RTG=0.0"),
+            ]
         for rtg_val, rtg_desc in fixed_rtg_values:
             metrics = evaluate(
                 model, val_loader, device, args.label_mode, use_atom_loss, angle_weights,
@@ -494,12 +522,30 @@ def main() -> None:
         LOG.info("="*80)
         LOG.info("Leakage Analysis:")
         actual_voted = leakage_results["actual"]["voted_acc"]
-        high_voted = leakage_results["5.0"]["voted_acc"]
-        if abs(high_voted - 0.324) < 0.1:  # Close to OMP's 32.4%
-            LOG.info("  HIGH RTG -> ~OMP accuracy: RTG provides 'trust OMP' signal")
-        if actual_voted - high_voted > 0.1:
-            LOG.info("  ACTUAL >> HIGH: Actual RTG contains information beyond 'trust OMP'")
-            LOG.info("  CONCLUSION: RTG likely leaking ground truth information!")
+        actual_expert = leakage_results["actual"]["expert_acc"]
+        # Check if using temperature-based RTG
+        if "1.0" in leakage_results:
+            # Temperature-based RTG mode
+            high_expert = leakage_results["1.0"]["expert_acc"]  # exploit mode
+            low_expert = leakage_results.get("0.0", leakage_results.get("0.1", {})).get("expert_acc", 0)
+            LOG.info("  Temperature-based RTG detected (Soft-OMP mode)")
+            LOG.info("  Actual RTG expert_acc: %.3f", actual_expert)
+            LOG.info("  High RTG=1.0 (exploit) expert_acc: %.3f", high_expert)
+            LOG.info("  Low RTG=0.0 (OOD) expert_acc: %.3f", low_expert)
+            if actual_expert > high_expert + 0.05:
+                LOG.info("  ACTUAL >> HIGH_RTG: Model uses RTG to condition predictions!")
+                LOG.info("  CONCLUSION: RTG conditioning is EFFECTIVE with multi-temperature data")
+            elif abs(actual_expert - high_expert) < 0.02:
+                LOG.info("  ACTUAL ≈ HIGH_RTG: Model ignores RTG variation")
+                LOG.info("  CONCLUSION: RTG conditioning may NOT be effective")
+        else:
+            # Return-based RTG mode
+            high_voted = leakage_results.get("5.0", {}).get("voted_acc", 0)
+            if abs(high_voted - 0.324) < 0.1:
+                LOG.info("  HIGH RTG -> ~OMP accuracy: RTG provides 'trust OMP' signal")
+            if actual_voted - high_voted > 0.1:
+                LOG.info("  ACTUAL >> HIGH: Actual RTG contains information beyond 'trust OMP'")
+                LOG.info("  CONCLUSION: RTG likely leaking ground truth information!")
         LOG.info("="*80)
 
     if args.log_file:
