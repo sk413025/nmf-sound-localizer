@@ -12,7 +12,7 @@ Transformer Routed Soft-OMP with Real LDV Data
 Migration from commit 4d9bb81 (synthetic VQ codebook) to real LDV data (commits b573aa6 & dd1e20d)
 """
 
-import math, os, json, hashlib
+import math, os, json, hashlib, random
 import numpy as np
 import torch
 import torch.nn as nn
@@ -27,9 +27,6 @@ from scipy import signal as scipy_signal
 
 # Import DoADataset for proper STFT processing (matches b573aa6)
 from doa_rl.data import DoADataset, create_dataloader
-
-torch.manual_seed(42)
-np.random.seed(42)
 
 # ============================================================================
 # PART 0: Data Loading and Preprocessing
@@ -1429,6 +1426,8 @@ def main():
                         help='Batch size (default: 16)')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='Learning rate (default: 1e-3)')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed for torch/numpy/K-means (default: 42)')
     parser.add_argument('--alpha', type=float, default=1.0,
                         help='Reconstruction loss weight (default: 1.0)')
     parser.add_argument('--beta', type=float, default=0.2,
@@ -1514,6 +1513,11 @@ def main():
                         help='Device: cpu|mps|cuda')
     
     args = parser.parse_args()
+
+    # Reproducibility: set seeds for torch, numpy, and stdlib random
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
     
     # Setup output directory
     if args.out_dir is None:
@@ -1539,11 +1543,11 @@ def main():
     
     # Reduce atoms (50 → n_atoms)
     if args.atom_reduce_mode == 'kmeans':
-        W_reduced, kmeans_labels, info = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms)
+        W_reduced, kmeans_labels, info = reduce_atoms_kmeans(W_raw, n_clusters=args.n_atoms, random_state=args.seed)
     elif args.atom_reduce_mode == 'kcenter':
-        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='kcenter', n_clusters=args.n_atoms)
+        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='kcenter', n_clusters=args.n_atoms, random_state=args.seed)
     else:  # 'diverse'
-        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='diverse', n_clusters=args.n_atoms, min_cos=args.atom_min_cos)
+        W_reduced, kmeans_labels, info = reduce_atoms(W_raw, mode='diverse', n_clusters=args.n_atoms, random_state=args.seed, min_cos=args.atom_min_cos)
     
     # NO PCA - use full frequency resolution (F=346)
     print(f"\n=== Using Full Frequency Resolution (NO PCA) ===")

@@ -10,3 +10,9 @@
   - `python -u scripts/eval_omp_transformer_split.py --run_dir $RUN_DIR --device mps --subset both | tee $RUN_DIR/posthoc_eval.log`
 - Current run dir: `results/omp_transformer_speech260_trainval_split_full_20251202_192153`; split diagnostics recorded (train=7696, val=1924, per-angle 208/52). Training still running; run.log/posthoc_eval.log will populate once the job finishes.
 - Expected outcome: match the original val accuracy ≈0.946 on the val split; actual may deviate due to dataset fingerprint change (e23ded2e… vs f5639848…); will record final train/val metrics once the run completes.
+
+### Seed tracking (target: 5 repeats)
+- Completed: seed 42 (run dir `results/omp_transformer_speech260_trainval_split_full_20251202_192153`, val acc ≈0.946, train acc ≈0.976).
+- In progress: seed 1 (`tmux` session `valsplit_seed1`, run dir `results/omp_transformer_speech260_trainval_split_full_seed1_20251203_102515`, 20 epochs, mps).
+- In progress: seed 2 (`tmux` session `valsplit_seed2`, run dir `results/omp_transformer_speech260_trainval_split_full_seed2_20251203_102524`, 20 epochs, mps).
+- Remaining to schedule after these finish: seeds 3 and 4 to reach 5 total repeats.
