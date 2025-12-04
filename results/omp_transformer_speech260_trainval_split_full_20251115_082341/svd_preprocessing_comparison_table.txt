@@ -1,0 +1,62 @@
+================================================================================
+SVD Preprocessing Impact on Modal Sparsity - Comparison Summary
+================================================================================
+
+EFFECTIVE RANK COMPARISON
+--------------------------------------------------------------------------------
+Method                                 50%    70%    80%    90%    95%    99%
+--------------------------------------------------------------------------------
+Method 1: |H| direct                    1     1     1     3     5    16
+Method 2: log|H|                        1     1     1     1     1     3
+Method 3: log|H| + centering [CURRENT]     6    11    15    21    26    33
+Method 4: |H| + centering               2     4     6    11    17    28
+--------------------------------------------------------------------------------
+
+TOP 5 SINGULAR VALUES (σ₁ through σ₅)
+--------------------------------------------------------------------------------
+
+Method 1: |H| direct:
+  σ_1 =     2.6038  ( 84.85% energy)
+  σ_2 =     0.5847  (  4.28% energy)
+  σ_3 =     0.4745  (  2.82% energy)
+  σ_4 =     0.4591  (  2.64% energy)
+  σ_5 =     0.2620  (  0.86% energy)
+
+Method 2: log|H|:
+  σ_1 =   535.4996  ( 98.86% energy)
+  σ_2 =    19.7263  (  0.13% energy)
+  σ_3 =    18.6309  (  0.12% energy)
+  σ_4 =    17.4850  (  0.11% energy)
+  σ_5 =    15.6446  (  0.08% energy)
+
+Method 3: log|H| + centering [CURRENT]:
+  σ_1 =    23.8225  ( 15.60% energy)
+  σ_2 =    19.1825  ( 10.11% energy)
+  σ_3 =    17.6712  (  8.58% energy)
+  σ_4 =    16.3638  (  7.36% energy)
+  σ_5 =    15.0226  (  6.20% energy)
+
+Method 4: |H| + centering:
+  σ_1 =     0.7008  ( 33.47% energy)
+  σ_2 =     0.5448  ( 20.23% energy)
+  σ_3 =     0.4641  ( 14.68% energy)
+  σ_4 =     0.2669  (  4.86% energy)
+  σ_5 =     0.2418  (  3.99% energy)
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. Original data (Method 1) is SPARSE: 3 modes for 90% energy
+
+2. Log transform ENHANCES sparsity: 1 mode for 90% energy
+   - Method 2 concentrates 98.9% energy in mode 1!
+
+3. Centering DESTROYS sparsity:
+   - Method 2 → Method 3: 1 → 21 modes (21.0× increase)
+   - Method 1 → Method 4: 3 → 11 modes (3.7× increase)
+
+4. Current method (Method 3) inflates required modes by 21× compared to optimal (Method 2)
+
+CONCLUSION: Row-wise centering removes dominant omnidirectional component,
+            artificially inflating the apparent complexity of the system.
