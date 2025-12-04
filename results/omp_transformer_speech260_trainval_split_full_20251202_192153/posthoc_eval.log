@@ -1,0 +1,89 @@
+Reloading H/W and dataset using training configuration...
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: doa_speech260_config_c_16k_smoke_mps_20251114_184322/models/usm.pth
+Raw data loaded:
+  H shape: torch.Size([346, 37]), range: [0.000677, 0.148538]
+  W shape: torch.Size([346, 50]), range: [0.000000, 1.312674]
+  Angles: 37 total, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+
+=== Atom Reduction via K-means ===
+Input: W shape torch.Size([346, 50]) (346 freq bins × 50 atoms)
+Target: 8 clusters
+K-means completed:
+  Centroids shape: torch.Size([346, 8])
+  Cluster sizes: [2, 7, 1, 2, 1, 2, 34, 1]
+  Reconstruction error: 1.0791 (107.91%)
+
+=== Building Dictionary ===
+Dictionary built:
+  Shape: torch.Size([346, 296]) (F=346, P=296)
+  Mutual coherence μ_max: 1.0000
+  Mutual coherence μ_mean: 0.1534
+  Index mapping: 296 entries
+
+=== Loading LDV Samples with DoADataset ===
+Dataset root: /Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized
+DoADataset created:
+  Total samples: 9620
+  Angles: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz
+  Using scipy.signal.stft with DC offset removal
+
+Loaded samples:
+  Y_samples: torch.Size([9620, 346])
+  Labels: torch.Size([9620]), unique angles: 37
+  Metadata: 9620 entries
+
+=== Train/Validation Split (clip_id % 5) ===
+  Total samples: 9620
+  Train samples: 7696
+  Val samples:   1924
+  Angle   0°: train=208, val= 52
+  Angle   5°: train=208, val= 52
+  Angle  10°: train=208, val= 52
+  Angle  15°: train=208, val= 52
+  Angle  20°: train=208, val= 52
+  Angle  25°: train=208, val= 52
+  Angle  30°: train=208, val= 52
+  Angle  35°: train=208, val= 52
+  Angle  40°: train=208, val= 52
+  Angle  45°: train=208, val= 52
+  Angle  50°: train=208, val= 52
+  Angle  55°: train=208, val= 52
+  Angle  60°: train=208, val= 52
+  Angle  65°: train=208, val= 52
+  Angle  70°: train=208, val= 52
+  Angle  75°: train=208, val= 52
+  Angle  80°: train=208, val= 52
+  Angle  85°: train=208, val= 52
+  Angle  90°: train=208, val= 52
+  Angle  95°: train=208, val= 52
+  Angle 100°: train=208, val= 52
+  Angle 105°: train=208, val= 52
+  Angle 110°: train=208, val= 52
+  Angle 115°: train=208, val= 52
+  Angle 120°: train=208, val= 52
+  Angle 125°: train=208, val= 52
+  Angle 130°: train=208, val= 52
+  Angle 135°: train=208, val= 52
+  Angle 140°: train=208, val= 52
+  Angle 145°: train=208, val= 52
+  Angle 150°: train=208, val= 52
+  Angle 155°: train=208, val= 52
+  Angle 160°: train=208, val= 52
+  Angle 165°: train=208, val= 52
+  Angle 170°: train=208, val= 52
+  Angle 175°: train=208, val= 52
+  Angle 180°: train=208, val= 52
+
+[Eval] Using split from split_train_val_by_clip_id (clip_id % 5).
+  Train subset: 7696 samples, Val subset: 1924 samples
+
+[Eval] Evaluating TRAIN subset...
+  Train accuracy: 0.976 (97.6%)
+
+[Eval] Evaluating VAL subset...
+  Val accuracy:   0.946 (94.6%)
+
+[Eval] Saved post-hoc metrics to: results/omp_transformer_speech260_trainval_split_full_20251202_192153/posthoc_eval_metrics.npz
+

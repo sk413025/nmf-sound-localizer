@@ -12,7 +12,11 @@
 - Expected outcome: match the original val accuracy ≈0.946 on the val split; actual may deviate due to dataset fingerprint change (e23ded2e… vs f5639848…); will record final train/val metrics once the run completes.
 
 ### Seed tracking (target: 5 repeats)
-- Completed: seed 42 (run dir `results/omp_transformer_speech260_trainval_split_full_20251202_192153`, val acc ≈0.946, train acc ≈0.976).
-- In progress: seed 1 (`tmux` session `valsplit_seed1`, run dir `results/omp_transformer_speech260_trainval_split_full_seed1_20251203_102515`, 20 epochs, mps).
-- In progress: seed 2 (`tmux` session `valsplit_seed2`, run dir `results/omp_transformer_speech260_trainval_split_full_seed2_20251203_102524`, 20 epochs, mps).
-- Remaining to schedule after these finish: seeds 3 and 4 to reach 5 total repeats.
+- Completed val-split runs (20 epochs, mps, dataset MD5 f563984848ae49b4443378c4ef720a51):
+  - seed 42: `results/omp_transformer_speech260_trainval_split_full_20251202_192153` — train 0.976, val 0.946.
+  - seed 1: `results/omp_transformer_speech260_trainval_split_full_seed1_20251203_105731` — train 0.993, val 0.962.
+  - seed 2: `results/omp_transformer_speech260_trainval_split_full_seed2_20251203_105739` — train 0.991, val 0.966.
+  - seed 3: `results/omp_transformer_speech260_trainval_split_full_seed3_20251203_202610` — train 0.986, val 0.951.
+  - seed 4: `results/omp_transformer_speech260_trainval_split_full_seed4_20251203_202619` — train 0.993, val 0.975.
+  - seed 5: `results/omp_transformer_speech260_trainval_split_full_seed5_20251203_202628` — train 0.986, val 0.962.
+- Eval fix: `scripts/eval_omp_transformer_split.py` now reuses training `seed` for atom reduction, preventing post-hoc metric mismatch.

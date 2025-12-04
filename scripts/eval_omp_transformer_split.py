@@ -127,17 +127,18 @@ def main():
     atom_reduce_mode = args_dict.get("atom_reduce_mode", "kmeans")
     n_atoms = int(args_dict.get("n_atoms", 8))
     atom_min_cos = float(args_dict.get("atom_min_cos", 0.98))
+    random_state = int(args_dict.get("seed", 42))
 
     if atom_reduce_mode == "kmeans":
         W_reduced, kmeans_labels, _ = omp_mod.reduce_atoms_kmeans(
-            W_raw, n_clusters=n_atoms, random_state=42
+            W_raw, n_clusters=n_atoms, random_state=random_state
         )
     else:
         W_reduced, kmeans_labels, _ = omp_mod.reduce_atoms(
             W_raw,
             mode=atom_reduce_mode,
             n_clusters=n_atoms,
-            random_state=42,
+            random_state=random_state,
             min_cos=atom_min_cos,
         )
 
