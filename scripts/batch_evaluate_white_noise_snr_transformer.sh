@@ -64,7 +64,7 @@ evaluate_snr_level() {
     # Special case: Use BASELINE data for SNR=Inf verification
     if [ "$snr_label" = "Inf" ]; then
         # Use 48kHz baseline dataset (matches H matrix training)
-        local dataset_root="${HOME}/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized"
+        local dataset_root="${HOME}/LDV-data-experiments/snr-synthetic-2025-12/processed-48k/white_noise_box_snrInf_sync_vad_normalized"
         echo "  Using BASELINE data for SNR=Inf verification (48kHz)"
     else
         # Use synthetic SNR data for other levels (48kHz version, NOT 16kHz resampled)
