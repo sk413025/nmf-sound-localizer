@@ -77,25 +77,10 @@ def add_spectral_shaped_noise_per_clip(
     # 2. Generate white Gaussian noise
     white_noise = rng.normal(0, 1, signal.shape)
 
-    # 3. Shape noise spectrum to match signal spectrum
-    f_s, t_s, S_signal = sp_signal.stft(signal, fs=fs, nperseg=2048, noverlap=1536)
-    f_w, t_w, S_white = sp_signal.stft(white_noise, fs=fs, nperseg=2048, noverlap=1536)
-
-    # Compute spectral envelopes (average magnitude across time)
-    signal_envelope = np.abs(S_signal).mean(axis=1, keepdims=True) + 1e-10
-    white_envelope = np.abs(S_white).mean(axis=1, keepdims=True) + 1e-10
-
-    # Shaping filter: match signal's frequency distribution
-    shaping_filter = signal_envelope / white_envelope
-
-    # Apply shaping filter
-    S_shaped = S_white * shaping_filter
-
-    # Convert back to time domain
-    _, shaped_noise = sp_signal.istft(S_shaped, fs=fs, nperseg=2048, noverlap=1536)
-
-    # Trim to match signal length (ISTFT may change length slightly)
-    shaped_noise = shaped_noise[:len(signal)]
+    # 3. Use white noise directly (Sensor Noise model)
+    # We skip spectral shaping to simulate sensor/measurement noise
+    # which is typically flat (white) and does not follow the signal's transfer function.
+    shaped_noise = white_noise
 
     # 4. Scale noise to achieve target SNR (time-domain)
     noise_ac = shaped_noise - np.mean(shaped_noise)
