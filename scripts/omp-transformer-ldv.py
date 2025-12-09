@@ -11,6 +11,7 @@ Transformer Routed Soft-OMP with Real LDV Data
 
 Migration from commit 4d9bb81 (synthetic VQ codebook) to real LDV data (commits b573aa6 & dd1e20d)
 """
+from __future__ import annotations
 
 import math, os, json, hashlib
 import numpy as np
