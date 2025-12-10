@@ -558,6 +558,8 @@ class FullTransformerRoutedSoftOMP(nn.Module):
         assert routing_mode in ('qk', 'g', 'hybrid')
         self.routing_mode = routing_mode
         self.hybrid_alpha = float(hybrid_alpha)
+        # Optional ablation: disable sparsity (dense routing/update)
+        self.disable_omp_sparsity: bool = False
         # Score normalization and regularization controls
         assert score_norm_mode in ('none', 'std')
         self.score_norm_mode = score_norm_mode
@@ -719,123 +721,150 @@ class FullTransformerRoutedSoftOMP(nn.Module):
                 scores_atoms = scores_atoms - scores_atoms.mean(dim=1, keepdim=True)
             
             if train_mode:
-                # Soft routing (or hard if use_hard_gumbel is enabled)
-                # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
-                use_hard = getattr(self, 'use_hard_gumbel', False)  # Default False for backward compatibility
-                w_e = self._soft_picker(scores_expert, self.tau_e, self.routing_e, hard=use_hard)  # (E,)
-                w_all = torch.zeros(self.E, self.M, device=D.device)
-                w_a_list = []  # Collect w_a for all experts
-                for e in range(self.E):
-                    if self.single_gate_expert:
-                        w_a_e = torch.ones(self.M, device=D.device)
-                    else:
-                        # Phase 2: Apply atom masking to prevent repetition
-                        scores_atoms_e = scores_atoms[e].abs()
-
-                        if use_hard and step > 0:  # Apply masking from step 1 onwards
-                            # Create FRESH mask from selected_atoms list (standard Transformer pattern)
-                            mask_e = torch.zeros(self.M, dtype=torch.bool, device=scores_atoms_e.device)
-                            for (prev_e, prev_m) in selected_atoms:
-                                if prev_e == e:  # Same expert
-                                    mask_e[prev_m] = True
-
-                            # Safety check: don't mask if all atoms would be masked
-                            if mask_e.sum() < self.M:  # At least one atom remains unmasked
-                                # Use large negative value instead of -inf for numerical stability
-                                # This works like -inf in softmax but has well-defined gradients
-                                scores_atoms_e_masked = scores_atoms_e.clone()
-                                scores_atoms_e_masked[mask_e] = -1e10
-                                w_a_e = self._soft_picker(scores_atoms_e_masked, self.tau_a, self.routing_a, hard=use_hard)
-                            else:
-                                # All atoms masked - skip masking for this expert
-                                w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
-                        else:
-                            w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
-                    w_all[e] = w_e[e] * w_a_e
-                    w_a_list.append(w_a_e.detach())
-
-                # Phase 2: Record selected atoms to Python list (if using hard Gumbel)
-                # Standard Transformer pattern: track state in simple data structures, not tensors
-                if use_hard:
-                    e_selected = torch.argmax(w_e).item()  # Which expert was selected (one-hot)
-                    m_selected = torch.argmax(w_all[e_selected]).item()  # Which atom in that expert
-                    selected_atoms.append((e_selected, m_selected))
-                    # Also track global atom index for diversity testing
-                    global_idx = e_selected * self.M + m_selected
-                    support_indices.append(global_idx)
-
-                w_all = w_all.reshape(-1)  # (P,)
-                # Save diagnostics (detached) and training-useful tensors (non-detached)
-                if self.last_diag is None:
-                    self.last_diag = {}
-                self.last_diag['scores_expert'] = scores_expert.detach()
-                if self.enable_diag and step == 0:
-                    self.last_diag.update({
-                        'scores_atoms': scores_atoms.detach(),
-                        'w_e': w_e.detach(),
-                        'w_a_list': w_a_list,
-                        'g_vec': g_vec_all.detach(),
-                    })
-                if step == 0:
+                if self.disable_omp_sparsity:
+                    # Dense routing: bypass sparsity, use all atoms uniformly
+                    w_e = torch.ones(self.E, device=D.device)
+                    w_all = torch.ones(self.E, self.M, device=D.device).reshape(-1)
+                    if self.last_diag is None:
+                        self.last_diag = {}
+                    self.last_diag['scores_expert'] = scores_expert.detach()
+                    self.last_diag['scores_atoms'] = scores_atoms.detach()
+                    self.last_diag['w_e'] = w_e.detach()
                     self.last_outputs = {
                         'scores_expert': scores_expert,
                         'scores_atoms': scores_atoms,
                         'w_e': w_e,
                     }
-                _scores_expert_steps.append(scores_expert)
-                g = g_vec_all  # (P,) gradient-like signal from above
-                # Remove .item() on eta to keep it learnable / schedulable
-                x = x + self.eta * (w_all * g)
-            else:
-                # Hard routing (inference mode)
-                # Apply atom masking to prevent repetition (if trained with hard Gumbel)
-                use_hard = getattr(self, 'use_hard_gumbel', False)
-
-                if use_hard and step > 0:
-                    # Mask out already-selected atoms (similar to training mode masking)
-                    scores_atoms_masked = scores_atoms.clone()
-                    scores_expert_masked = scores_expert.clone()
-
-                    # Build mask from previously selected atoms
-                    for prev_idx in support_indices:
-                        prev_e = prev_idx // self.M
-                        prev_m = prev_idx % self.M
-                        scores_atoms_masked[prev_e, prev_m] = -1e10
-
-                    # Recompute expert scores after masking (experts with all atoms masked get -inf)
-                    for e in range(self.E):
-                        if torch.all(scores_atoms_masked[e].abs() < -1e9):
-                            scores_expert_masked[e] = -1e10
-
-                    # Use masked scores for selection
-                    kE = min(self.top_e, self.E)
-                    chosen_e = torch.topk(scores_expert_masked, k=kE).indices.tolist()
-                    chosen_idx = []
-                    for e in chosen_e:
-                        kL = min(self.L, self.M)
-                        # Don't use .abs() on masked scores! Masked values are -1e10, abs() would make them +1e10 (largest!)
-                        chosen_a = torch.topk(scores_atoms_masked[e], k=kL).indices.tolist()
-                        chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+                    _scores_expert_steps.append(scores_expert)
+                    g = g_vec_all  # (P,)
+                    x = x + self.eta * g
                 else:
-                    # No masking (original behavior)
-                    kE = min(self.top_e, self.E)
-                    chosen_e = torch.topk(scores_expert, k=kE).indices.tolist()
-                    chosen_idx = []
-                    for e in chosen_e:
-                        kL = min(self.L, self.M)
-                        chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
-                        chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+                    # Soft routing (or hard if use_hard_gumbel is enabled)
+                    # NOTE: use learnable temperatures directly (no .item()) so they can get gradients / schedules
+                    use_hard = getattr(self, 'use_hard_gumbel', False)  # Default False for backward compatibility
+                    w_e = self._soft_picker(scores_expert, self.tau_e, self.routing_e, hard=use_hard)  # (E,)
+                    w_all = torch.zeros(self.E, self.M, device=D.device)
+                    w_a_list = []  # Collect w_a for all experts
+                    for e in range(self.E):
+                        if self.single_gate_expert:
+                            w_a_e = torch.ones(self.M, device=D.device)
+                        else:
+                            # Phase 2: Apply atom masking to prevent repetition
+                            scores_atoms_e = scores_atoms[e].abs()
 
-                chosen_idx = list(dict.fromkeys(chosen_idx))
-                # Record selected atoms for diversity testing
-                support_indices.extend(chosen_idx)
-                if step == 0:
+                            if use_hard and step > 0:  # Apply masking from step 1 onwards
+                                # Create FRESH mask from selected_atoms list (standard Transformer pattern)
+                                mask_e = torch.zeros(self.M, dtype=torch.bool, device=scores_atoms_e.device)
+                                for (prev_e, prev_m) in selected_atoms:
+                                    if prev_e == e:  # Same expert
+                                        mask_e[prev_m] = True
+
+                                # Safety check: don't mask if all atoms would be masked
+                                if mask_e.sum() < self.M:  # At least one atom remains unmasked
+                                    # Use large negative value instead of -inf for numerical stability
+                                    # This works like -inf in softmax but has well-defined gradients
+                                    scores_atoms_e_masked = scores_atoms_e.clone()
+                                    scores_atoms_e_masked[mask_e] = -1e10
+                                    w_a_e = self._soft_picker(scores_atoms_e_masked, self.tau_a, self.routing_a, hard=use_hard)
+                                else:
+                                    # All atoms masked - skip masking for this expert
+                                    w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
+                            else:
+                                w_a_e = self._soft_picker(scores_atoms_e, self.tau_a, self.routing_a, hard=use_hard)
+                        w_all[e] = w_e[e] * w_a_e
+                        w_a_list.append(w_a_e.detach())
+
+                    # Phase 2: Record selected atoms to Python list (if using hard Gumbel)
+                    # Standard Transformer pattern: track state in simple data structures, not tensors
+                    if use_hard:
+                        e_selected = torch.argmax(w_e).item()  # Which expert was selected (one-hot)
+                        m_selected = torch.argmax(w_all[e_selected]).item()  # Which atom in that expert
+                        selected_atoms.append((e_selected, m_selected))
+                        # Also track global atom index for diversity testing
+                        global_idx = e_selected * self.M + m_selected
+                        support_indices.append(global_idx)
+
+                    w_all = w_all.reshape(-1)  # (P,)
+                    # Save diagnostics (detached) and training-useful tensors (non-detached)
                     if self.last_diag is None:
                         self.last_diag = {}
                     self.last_diag['scores_expert'] = scores_expert.detach()
-                if len(chosen_idx) > 0:
+                    if self.enable_diag and step == 0:
+                        self.last_diag.update({
+                            'scores_atoms': scores_atoms.detach(),
+                            'w_e': w_e.detach(),
+                            'w_a_list': w_a_list,
+                            'g_vec': g_vec_all.detach(),
+                        })
+                    if step == 0:
+                        self.last_outputs = {
+                            'scores_expert': scores_expert,
+                            'scores_atoms': scores_atoms,
+                            'w_e': w_e,
+                        }
+                    _scores_expert_steps.append(scores_expert)
+                    g = g_vec_all  # (P,) gradient-like signal from above
+                    # Remove .item() on eta to keep it learnable / schedulable
+                    x = x + self.eta * (w_all * g)
+            else:
+                # Hard routing (inference mode)
+                if self.disable_omp_sparsity:
+                    # Dense update: treat all atoms as selected
+                    if step == 0:
+                        if self.last_diag is None:
+                            self.last_diag = {}
+                        self.last_diag['scores_expert'] = scores_expert.detach()
                     g = (D.T @ r)
-                    x[chosen_idx] = x[chosen_idx] + self.eta * g[chosen_idx]
+                    x = x + self.eta * g
+                else:
+                    # Apply atom masking to prevent repetition (if trained with hard Gumbel)
+                    use_hard = getattr(self, 'use_hard_gumbel', False)
+
+                    if use_hard and step > 0:
+                        # Mask out already-selected atoms (similar to training mode masking)
+                        scores_atoms_masked = scores_atoms.clone()
+                        scores_expert_masked = scores_expert.clone()
+
+                        # Build mask from previously selected atoms
+                        for prev_idx in support_indices:
+                            prev_e = prev_idx // self.M
+                            prev_m = prev_idx % self.M
+                            scores_atoms_masked[prev_e, prev_m] = -1e10
+
+                        # Recompute expert scores after masking (experts with all atoms masked get -inf)
+                        for e in range(self.E):
+                            if torch.all(scores_atoms_masked[e].abs() < -1e9):
+                                scores_expert_masked[e] = -1e10
+
+                        # Use masked scores for selection
+                        kE = min(self.top_e, self.E)
+                        chosen_e = torch.topk(scores_expert_masked, k=kE).indices.tolist()
+                        chosen_idx = []
+                        for e in chosen_e:
+                            kL = min(self.L, self.M)
+                            # Don't use .abs() on masked scores! Masked values are -1e10, abs() would make them +1e10 (largest!)
+                            chosen_a = torch.topk(scores_atoms_masked[e], k=kL).indices.tolist()
+                            chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+                    else:
+                        # No masking (original behavior)
+                        kE = min(self.top_e, self.E)
+                        chosen_e = torch.topk(scores_expert, k=kE).indices.tolist()
+                        chosen_idx = []
+                        for e in chosen_e:
+                            kL = min(self.L, self.M)
+                            chosen_a = torch.topk(scores_atoms[e].abs(), k=kL).indices.tolist()
+                            chosen_idx += [int(e) * self.M + int(a) for a in chosen_a]
+
+                    chosen_idx = list(dict.fromkeys(chosen_idx))
+                    # Record selected atoms for diversity testing
+                    support_indices.extend(chosen_idx)
+                    if step == 0:
+                        if self.last_diag is None:
+                            self.last_diag = {}
+                        self.last_diag['scores_expert'] = scores_expert.detach()
+                    if len(chosen_idx) > 0:
+                        g = (D.T @ r)
+                        x[chosen_idx] = x[chosen_idx] + self.eta * g[chosen_idx]
             
             # Update residual and track norms for mono loss (keep tensor for gradients)
             r = y - D @ x
@@ -1460,6 +1489,14 @@ def main():
                         help='If set, run CE-only and REC-only gradient probes on the first sample to log grad norms.')
     parser.add_argument('--freeze_encoder', action='store_true',
                         help='If set, freeze Transformer encoder parameters (no gradient)')
+    parser.add_argument('--freeze_transformer_all', action='store_true',
+                        help='Freeze Transformer encoder, token projections, and QK projections')
+    parser.add_argument('--freeze_omp_selection', action='store_true',
+                        help='Freeze OMP selection parameters (tau_e, tau_a, eta)')
+    parser.add_argument('--freeze_output_heads', action='store_true',
+                        help='Freeze projection/classifier heads (P_R, P_D, type embeddings, Wq, Wk) while training backbone/OMP')
+    parser.add_argument('--disable_omp_sparsity', action='store_true',
+                        help='Disable OMP sparsity (dense routing/update); use for ablation, not for production')
     parser.add_argument('--init_qk_identity', action='store_true',
                         help='If set and d_model==F, initialize Wq/Wk to identity for g-like scoring')
     parser.add_argument('--distill_T', type=float, default=1.0,
@@ -1639,10 +1676,38 @@ def main():
         score_norm_mode=args.score_norm, score_reg_weight=args.score_reg_weight
     ).to(args.device)
 
-    if args.freeze_encoder:
-        for p in model.encoder.parameters():
-            p.requires_grad = False
-        print('Freeze: encoder parameters frozen (no gradient)')
+    # Ablation toggles / freeze scopes
+    model.disable_omp_sparsity = bool(getattr(args, 'disable_omp_sparsity', False))
+
+    def _freeze_params(params, note: str):
+        cnt = 0
+        for p in params:
+            if p.requires_grad:
+                p.requires_grad = False
+            cnt += p.numel()
+        print(f"Freeze: {note} ({cnt:,} params)")
+
+    if args.freeze_transformer_all:
+        _freeze_params(model.encoder.parameters(), "Transformer encoder")
+        _freeze_params(model.Wq.parameters(), "Q projection (Wq)")
+        _freeze_params(model.Wk.parameters(), "K projection (Wk)")
+        _freeze_params(model.P_R.parameters(), "Residual projection (P_R)")
+        _freeze_params(model.P_D.parameters(), "Dictionary projection (P_D)")
+        _freeze_params([model.type_R, model.type_D], "Type embeddings (type_R/type_D)")
+    elif args.freeze_encoder:
+        _freeze_params(model.encoder.parameters(), "Transformer encoder")
+
+    if args.freeze_output_heads:
+        _freeze_params(model.Wq.parameters(), "Q projection (Wq)")
+        _freeze_params(model.Wk.parameters(), "K projection (Wk)")
+        _freeze_params(model.P_R.parameters(), "Residual projection (P_R)")
+        _freeze_params(model.P_D.parameters(), "Dictionary projection (P_D)")
+        _freeze_params([model.type_R, model.type_D], "Type embeddings (type_R/type_D)")
+
+    if args.freeze_omp_selection:
+        _freeze_params([model.tau_e, model.tau_a, model.eta], "OMP selection temps/eta")
+        # Avoid implicit changes when frozen
+        args.tau_anneal_epochs = 0
 
     # Optional: initialize Wq/Wk to identity when d_model matches input F
     if args.init_qk_identity and d == F:
@@ -1778,6 +1843,18 @@ def main():
                   f"rec={metrics['rec_loss']:.4f} "
                   f"mono={metrics['mono_loss']:.4f} "
                   f"class={metrics['class_loss']:.4f}")
+
+    # Ensure a checkpoint exists even if eval accuracy never surpasses initial best
+    ckpt_path = os.path.join(args.out_dir, 'model_best.pth')
+    if not os.path.exists(ckpt_path):
+        torch.save({
+            'epoch': args.epochs,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': opt.state_dict(),
+            'accuracy': best_accuracy,
+            'metrics': train_history[-1] if train_history else None
+        }, ckpt_path)
+        print(f"Saved fallback checkpoint to {ckpt_path} (best_accuracy={best_accuracy:.3f})")
     
     # ========================================================================
     # STEP 4: Final Evaluation

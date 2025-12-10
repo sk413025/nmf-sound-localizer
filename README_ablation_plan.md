@@ -1,5 +1,4 @@
 # OMP / Transformer Ablation Plan (exp/omp-ablation-20251209)
-
 ## Background
 - Baseline: commit `af6a483` (Speech260 val-split, seeds 1–5, dataset MD5 `f563984848ae49b4443378c4ef720a51`, 20 epochs, MPS) reached val accuracies 0.946–0.975 with seed-aware eval.
 - Motivation: quantify which components are essential for accuracy (Transformer, OMP selection, shared heads) and identify any redundant capacity.
