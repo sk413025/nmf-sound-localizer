@@ -1,4 +1,6 @@
-# OMP / Transformer Ablation Plan (exp/omp-ablation-20251209)
+# OMP / Transformer Ablation Plan (exp/omp-ablation-20251209, codex resume 019b02da-b0d9-7373-9c9b-5520e5b59078)
+
+019b02da-b0d9-7373-9c9b-5520e5b59078
 ## Background
 - Baseline: commit `af6a483` (Speech260 val-split, seeds 1–5, dataset MD5 `f563984848ae49b4443378c4ef720a51`, 20 epochs, MPS) reached val accuracies 0.946–0.975 with seed-aware eval.
 - Motivation: quantify which components are essential for accuracy (Transformer, OMP selection, shared heads) and identify any redundant capacity.
@@ -9,10 +11,10 @@
 
 ## Candidate Ablations (one run per row)
 - Baseline rerun: identical to `af6a483` to verify reproducibility on this machine.
-- Freeze Transformer weights: train only non-Transformer modules (optimizer scope excludes Transformer parameters).
-- Freeze OMP selection parameters: lock OMP scoring/reduction module; train remaining parts.
-- Freeze output heads only: lock classifier/projection heads; train backbone + OMP.
-- Disable OMP sparsity step: replace selection with pass-through (if code path exists); otherwise add a guarded flag and fail fast if unsupported.
+- No Transformer (Identity): use `--encoder_identity` to bypass the Transformer. Proves the necessity of non-linear feature extraction vs. random projection.
+- Fixed Heuristic (Gradient-based): use `--routing_mode g` to replace learned QK routing with fixed gradient-based selection. Proves the value of "learning to route".
+- No Type Embeddings: use `--no_type_bias` to remove type indicators (Residual vs Atom). Proves the importance of structural information.
+- Disable OMP Sparsity: replace selection with pass-through (Dense Routing). Proves the necessity of sparsity (already verified as critical).
 
 ## Smoke & Functional Tests (real data only)
 - Smoke: minimal subset (e.g., Speech260 val split angles {0, 30, 60}, 1 clip/angle, seed 42) must run end-to-end on MPS, print device, finish without errors; log to `results/<run>/run.log`.
@@ -27,14 +29,14 @@ source ~/.zshrc
 conda activate trl-training
 export PYTHONPATH=/Users/jnrle/Documents/LDVReorientation/worktrees/exp-omp-ablation-20251209:$PYTHONPATH
 
-# Training (example: freeze Transformer)
-RUN_DIR=results/omp_ablate_freeze_transformer_seed42_$(date +%Y%m%d_%H%M%S)
+# Training (example: No Transformer)
+RUN_DIR=results/omp_ablate_no_transformer_seed42_$(date +%Y%m%d_%H%M%S)
 mkdir -p "$RUN_DIR"
 conda run -n trl-training python -u scripts/omp-transformer-ldv.py \
   --accelerator mps \
   --seed 42 \
   --out_dir "$RUN_DIR" \
-  --freeze_transformer true \
+  --encoder_identity \
   --use_angle_pairs \
   > "$RUN_DIR/run.log" 2>&1
 
