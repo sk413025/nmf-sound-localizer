@@ -1,4 +1,4 @@
-# Baseline Comparison Plan: OMP vs Transformer vs CNN vs Trans-Routed Soft-OMP
+# Baseline Comparison Plan: OMP vs Transformer vs CNN vs Trans-Routed Soft-OMP (codex resume 019b02da-b0d9-7373-9c9b-5520e5b59078)
 
 ## 1. Ablation Architecture Comparison
 
@@ -37,8 +37,8 @@ Each variant modifies a specific component to test its contribution to the overa
 [Update Residual]             [Update Residual]             [Update Residual]             [Update Residual]             [Update Residual]
       |                             |                             |                             |                             |
       v                             v                             v                             v                             v
-[Accuracy: 93.5%]             [Accuracy: 63.1%]             [Accuracy: 1.7%]              [Accuracy: 2.7%]              [Accuracy: 91.2%]
-(SOTA)                        (-30.4%)                      (Collapse)                    (Collapse)                    (-2.3%)
+[Accuracy: 94.6–97.5%]        [Accuracy: 62.3–72.7%]        [Accuracy: 1.4–3.0%]          [Accuracy: 2.7%]              [Accuracy: 91.2–94.0%]
+(SOTA)                        (-30% abs)                    (Collapse)                    (Collapse)                    (-2–3% abs)
 ```
 
 ## 2. Execution Plan
@@ -79,21 +79,21 @@ To rigorously quantify the contribution of each component in our proposed archit
 *   **Flag**: `--encoder_identity`
 *   **Mechanism**: Bypasses the Transformer Encoder entirely. The input tokens (Residual + Dictionary Atoms) are projected linearly and then directly used for routing, without any self-attention or non-linear feature extraction layers.
 *   **Scientific Question**: "Does the Transformer actually learn complex features, or is a simple linear projection sufficient?"
-*   **Result**: Accuracy drops from **93.5% (Baseline)** to **63.1%**.
+*   **Result**: Accuracy drops from **94.6–97.5% (Baseline)** to **62.3–72.7%**.
 *   **Interpretation**: The Transformer contributes ~30% absolute accuracy. This proves that the non-linear attention mechanism is critical for disentangling complex acoustic interference patterns that a simple linear model cannot resolve.
 
 ### 3.2. Fixed Heuristic (G-Routing)
 *   **Flag**: `--routing_mode g`
 *   **Mechanism**: Replaces the learned "Query-Key" (QK) attention routing with a fixed, non-learnable heuristic based on the inner product (correlation) between the residual and atoms ( = D^T r$). This mimics the selection criteria of standard OMP.
 *   **Scientific Question**: "Is it necessary to *learn* how to route, or is the standard physical correlation sufficient?"
-*   **Result**: Accuracy collapses to **1.7%**.
+*   **Result**: Accuracy collapses to **1.4–3.0%**.
 *   **Interpretation**: Standard physical correlation fails in this complex LDV environment (likely due to frequency response mismatches or multi-path interference). The model *must* learn a specialized routing policy (via QK attention) to identify the correct atoms. This justifies the "Deep Unfolding" approach over pure signal processing.
 
 ### 3.3. No Type Embeddings
 *   **Flag**: `--no_type_bias`
 *   **Mechanism**: Removes the learnable type embeddings that distinguish "Residual Tokens" from "Dictionary Atom Tokens". The model must rely solely on the content of the vectors.
 *   **Scientific Question**: "Does the model need explicit structural hints to distinguish between the signal it's trying to explain (Residual) and the candidates (Atoms)?"
-*   **Result**: Accuracy drops slightly to **91.2%** (-2.3%).
+*   **Result**: Accuracy drops slightly to **91.2–94.0%** (-2–3% abs).
 *   **Interpretation**: While the model can largely infer roles from content, explicit structural information provides a helpful inductive bias that refines performance.
 
 ### 3.4. Disable OMP Sparsity (Dense Routing)
@@ -106,7 +106,17 @@ To rigorously quantify the contribution of each component in our proposed archit
 ### Summary of Contributions
 | Component | Contribution | Status |
 | :--- | :--- | :--- |
-| **Sparsity** | **Critical (Prerequisite)** | Without it, model fails (2.7%). |
-| **Learned Routing** | **Critical (Enabler)** | Without it, model fails (1.7%). |
-| **Transformer (Non-linearity)** | **Major (+30%)** | Boosts performance from mediocre (63%) to SOTA (93%). |
-| **Type Embeddings** | **Minor (+2.3%)** | Refines accuracy. |
+| **Sparsity** | **Critical (Prerequisite)** | Without it, model fails (2.7% across seeds). |
+| **Learned Routing** | **Critical (Enabler)** | Without it, model fails (1.4–3.0%). |
+| **Transformer (Non-linearity)** | **Major (+30% abs)** | Boosts performance from ~0.63–0.73 to ~0.95–0.98. |
+| **Type Embeddings** | **Minor (+2–3% abs)** | Refines accuracy; still strong without them. |
+
+## 4. Seed-wise accuracies (Speech260 val split, 20 epochs, mps)
+- **Baseline (Trans-Routed Soft-OMP)**: 0.946 / 0.962 / 0.966 / 0.951 / 0.975 / 0.962 (seeds 42/1/2/3/4/5)
+- **No Transformer (identity)**: 0.631 / 0.623 / 0.727 / 0.640 / 0.678 (seeds 42/1/2/3/4)
+- **G-Routing (fixed heuristic)**: 0.017 / 0.014 / 0.019 / 0.027 / 0.030 (seeds 42/1/2/3/4)
+- **Dense Routing (disable sparsity)**: 0.027 ×5 (seeds 42/1/2/3/4)
+- **No Type Bias**: 0.912 / 0.940 / 0.920 / 0.929 / 0.922 (seeds 42/1/2/3/4)
+
+## 5. Quartile plot
+![Ablation accuracy quartiles](results/ablation_accuracy_quartiles.png)
