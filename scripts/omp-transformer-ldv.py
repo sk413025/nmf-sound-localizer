@@ -396,14 +396,14 @@ def load_ldv_samples(dataset_root: str, H: torch.Tensor, W: torch.Tensor,
     return Y_samples, labels, metadata
 
 
-def split_train_val_by_clip_id(metadata, val_mod: int = 5):
+def split_train_val_by_clip_id(metadata, val_mod: int = 5, fold: int = 0):
     """
     Deterministic train/val split based on clip id parsed from file path.
 
     Rule (per-angle, stratified):
       - Let k be the integer clip id from filename `clip_YYY.npy` (YYY in [000, 259]).
-      - Validation set: k % val_mod == 0
-      - Training set:   k % val_mod != 0
+      - Validation set: k % val_mod == fold
+      - Training set:   k % val_mod != fold
     """
     N = len(metadata)
     train_indices = []
@@ -422,9 +422,13 @@ def split_train_val_by_clip_id(metadata, val_mod: int = 5):
         if not digits:
             raise ValueError(f"Could not parse clip id from path: {path}")
         clip_id = int(digits)
+        
+        # Debug print for first few samples
+        if idx < 5:
+            print(f"DEBUG: path={path}, fname={fname}, clip_id={clip_id}, fold={fold}, val_mod={val_mod}, is_val={clip_id % val_mod == fold}")
 
         stats = split_stats.setdefault(angle_deg, {'train': 0, 'val': 0})
-        if clip_id % val_mod == 0:
+        if clip_id % val_mod == fold:
             val_indices.append(idx)
             stats['val'] += 1
         else:
@@ -1400,6 +1404,8 @@ def main():
     parser.add_argument('--dataset_root', type=str,
                         default='/Users/sbplab/jiawei/LDV-data-processed/white_noise_box_data_no_edge_sync_vad',
                         help='Path to LDV samples (37 angles × 3 clips)')
+    parser.add_argument('--fold', type=int, default=0,
+                        help='Validation fold index (0-4) for 5-fold cross-validation (default: 0)')
     
     # Preprocessing
     parser.add_argument('--n_atoms', type=int, default=8,
@@ -1568,7 +1574,7 @@ def main():
     fingerprint = compute_dataset_fingerprint(args.dataset_root)
 
     # Deterministic train/validation split based on clip id (per-angle, stratified)
-    train_mask, val_mask, split_stats = split_train_val_by_clip_id(metadata, val_mod=5)
+    train_mask, val_mask, split_stats = split_train_val_by_clip_id(metadata, val_mod=5, fold=args.fold)
     Y_train = Y_samples[train_mask]
     labels_train = labels[train_mask]
     Y_val = Y_samples[val_mask]
