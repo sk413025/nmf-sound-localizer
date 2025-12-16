@@ -1,6 +1,3 @@
-Using writer backend: scipy.io.wavfile
-Root: /tmp/smoke_npy_112039
-Sample rate: 16000
-Amplitude mode: auto
-Done. Converted=1, skipped=0, errors=0
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:70d39a40f637e1f3f3f222f27c3daf366b8fa5e8dfa999a40d2622c46fd2e1dc
+size 147

@@ -1,3 +1,3 @@
-[Stage2] Normalizing Stage1 outputs (IrregularBox)...
-Normalized 111 files from /Users/sbplab/LDV-data-processed/speech_irregularbox_data_no_edge_sync_vad -> /Users/sbplab/LDV-data-processed/speech_irregularbox_data_no_edge_sync_vad_normalized
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:428f12ec262addbf48a42d39af2a5b672dc211b32a95bee849ae75d39da8301a
+size 245

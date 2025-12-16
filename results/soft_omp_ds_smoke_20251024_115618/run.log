@@ -1,9 +1,3 @@
-Device: cpu
-Loaded H: (346, 5), W: (346, 50) (F=346, E=5, M=50)
-/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/doa_rl/omp/soft_omp.py:137: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
-Consider using tensor.detach() first. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
-  res.append(float(torch.norm(r)))
-[iter 5/20] rec=0.0000
-[iter 10/20] rec=0.0000
-[iter 15/20] rec=0.0000
-Saved outputs to results/soft_omp_ds_smoke_20251024_115618
+version https://git-lfs.github.com/spec/v1
+oid sha256:13e4b83238a01de3c667433089238ec7f6b497d049bbd0474191651b6784f75b
+size 609

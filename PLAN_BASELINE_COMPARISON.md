@@ -11,34 +11,34 @@ Each variant modifies a specific component to test its contribution to the overa
       v
 [Tokenization] (Residual r + Atoms D)
       |
-      +-----------------------------+-----------------------------+-----------------------------+-----------------------------+
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[1. Baseline (Proposed)]      [2. No Transformer]           [3. Fixed Heuristic]          [4. Dense Routing]            [5. No Type Emb]
-(Full Architecture)           (Identity Encoder)            (G-Routing)                   (No Sparsity)                 (No Structure)
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Type Embeddings]             [Type Embeddings]             [Type Embeddings]             [Type Embeddings]             [NONE / Raw]
-(Learned Indicators)          (Learned Indicators)          (Learned Indicators)          (Learned Indicators)          (Removed)
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Transformer Encoder]         [NONE / Linear]               [Transformer Encoder]         [Transformer Encoder]         [Transformer Encoder]
-(Self-Attention)              (Bypass / Identity)           (Self-Attention)              (Self-Attention)              (Self-Attention)
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Learned Routing (QK)]        [Learned Routing (QK)]        [FIXED G-Routing]             [Learned Routing (QK)]        [Learned Routing (QK)]
-(Attention Weights)           (Attention Weights)           (Dot Product D^T r)           (Attention Weights)           (Attention Weights)
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Sparse Top-K]                [Sparse Top-K]                [Sparse Top-K]                [DENSE / All]                 [Sparse Top-K]
-(Select Best Atoms)           (Select Best Atoms)           (Select Best Atoms)           (Weighted Sum)                (Select Best Atoms)
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Update Residual]             [Update Residual]             [Update Residual]             [Update Residual]             [Update Residual]
-      |                             |                             |                             |                             |
-      v                             v                             v                             v                             v
-[Accuracy: 94.6–97.5%]        [Accuracy: 62.3–72.7%]        [Accuracy: 1.4–3.0%]          [Accuracy: 2.7%]              [Accuracy: 91.2–94.0%]
-(SOTA)                        (-30% abs)                    (Collapse)                    (Collapse)                    (-2–3% abs)
+      +--------------------------------+--------------------------------+--------------------------------+--------------------------------+--------------------------------+--------------------------------+
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[1. Baseline (Proposed)]       [2. No Transformer]            [3. Fixed Heuristic]         [4. Dense Routing]            [5. No Type Emb]             [6. Pure G (g-teacher)]
+(Full Architecture)            (Identity Encoder)             (G-Routing)                  (No Sparsity)                 (No Structure)                (Identity + g only)
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Type Embeddings]              [Type Embeddings]              [Type Embeddings]             [Type Embeddings]             [NONE / Raw]                  [NONE / Raw]
+(Learned Indicators)           (Learned Indicators)           (Learned Indicators)          (Learned Indicators)          (Removed)                     (Removed)
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Transformer Encoder]          [NONE / Linear]                [Transformer Encoder]         [Transformer Encoder]         [Transformer Encoder]         [NONE / Linear]
+(Self-Attention)               (Bypass / Identity)            (Self-Attention)             (Self-Attention)              (Self-Attention)              (Bypass / Identity)
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Learned Routing (QK)]         [Learned Routing (QK)]         [FIXED G-Routing]            [Learned Routing (QK)]        [Learned Routing (QK)]        [Physics g = D^T r]
+(Attention Weights)            (Attention Weights)            (Dot Product D^T r)          (Attention Weights)           (Attention Weights)           (No QK)
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Sparse Top-K]                 [Sparse Top-K]                 [Sparse Top-K]               [DENSE / All]                 [Sparse Top-K]                 [Sparse Top-K]
+(Select Best Atoms)            (Select Best Atoms)            (Select Best Atoms)          (Weighted Sum)                (Select Best Atoms)            (Select Best Atoms)
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Update Residual]              [Update Residual]              [Update Residual]            [Update Residual]             [Update Residual]             [Update Residual]
+      |                                |                                |                                |                                |                                |                                |
+      v                                v                                v                                v                                v                                v
+[Accuracy: 94.6–97.5%]         [Accuracy: 62.3–72.7%]         [Accuracy: 1.4–3.0%]         [Accuracy: 2.7%]              [Accuracy: 91.2–94.0%]        [Accuracy: 1.6%]
+(SOTA)                         (-30% abs)                     (Collapse)                   (Collapse)                    (-2–3% abs)                   (Collapse)
 ```
 
 ## 2. Execution Plan
@@ -103,6 +103,13 @@ To rigorously quantify the contribution of each component in our proposed archit
 *   **Result**: Accuracy collapses to **2.7%**.
 *   **Interpretation**: Sparsity is a **prerequisite** for success, not just an optimization. In acoustic localization, the signal is physically sparse (few sources). Dense processing introduces too much noise from irrelevant atoms, preventing the model from converging. This confirms the fundamental premise of using OMP as the backbone.
 
+### 3.5. Pure G (g-teacher)
+*   **Flag**: `--routing_mode g --encoder_identity`
+*   **Mechanism**: Combines "No Transformer" (Identity Encoder) with "Fixed Heuristic" (G-Routing). This represents a pure signal processing baseline where routing is determined solely by the physical correlation $D^T r$ without any learned feature extraction or routing policy.
+*   **Scientific Question**: "Does the Transformer encoder add value even if the routing policy is fixed to the physical heuristic?" (Comparison with 3.2)
+*   **Result**: Accuracy collapses to **1.6%** (worse than random guess ~2.7%).
+*   **Interpretation**: Both "Fixed Heuristic" (with Transformer) and "Pure G" (without Transformer) fail completely. This confirms that the failure of G-Routing is fundamental to the heuristic itself, not the encoder. The Transformer cannot learn useful features if the downstream routing decision ignores them (since G-Routing depends only on $D^T r$, not the Transformer output).
+
 ### Summary of Contributions
 | Component | Contribution | Status |
 | :--- | :--- | :--- |
@@ -110,6 +117,7 @@ To rigorously quantify the contribution of each component in our proposed archit
 | **Learned Routing** | **Critical (Enabler)** | Without it, model fails (1.4–3.0%). |
 | **Transformer (Non-linearity)** | **Major (+30% abs)** | Boosts performance from ~0.63–0.73 to ~0.95–0.98. |
 | **Type Embeddings** | **Minor (+2–3% abs)** | Refines accuracy; still strong without them. |
+| **Pure Physics (g-teacher)** | **Ineffective** | Fails completely (1.6%) on this dataset. |
 
 ## 4. Seed-wise accuracies (Speech260 val split, 20 epochs, mps)
 - **Baseline (Trans-Routed Soft-OMP)**: 0.946 / 0.962 / 0.966 / 0.951 / 0.975 / 0.962 (seeds 42/1/2/3/4/5)
@@ -117,6 +125,7 @@ To rigorously quantify the contribution of each component in our proposed archit
 - **G-Routing (fixed heuristic)**: 0.017 / 0.014 / 0.019 / 0.027 / 0.030 (seeds 42/1/2/3/4)
 - **Dense Routing (disable sparsity)**: 0.027 ×5 (seeds 42/1/2/3/4)
 - **No Type Bias**: 0.912 / 0.940 / 0.920 / 0.929 / 0.922 (seeds 42/1/2/3/4)
+- **Pure G (g-teacher)**: ~0.016 ×5 (seeds 42/1/2/3/4)
 
 ## 5. Quartile plot
 ![Ablation accuracy quartiles](results/ablation_accuracy_quartiles.png)

@@ -1,34 +1,3 @@
-Device: cpu
-Loaded H: (346, 17), W: (346, 50) (F=346, E=17, M=50)
-{
-  "n_samples": 51,
-  "angles": [
-    30,
-    45,
-    80,
-    85,
-    90,
-    95,
-    100,
-    105,
-    110,
-    115,
-    120,
-    125,
-    130,
-    135,
-    140,
-    145,
-    150
-  ],
-  "F": 346,
-  "E": 17,
-  "M": 50,
-  "top1_acc": 0.9411764705882353,
-  "acc_within_5deg": 1.0,
-  "acc_within_10deg": 1.0,
-  "mae_deg": 0.29411764705882354,
-  "median_abs_err_deg": 0.0,
-  "p95_abs_err_deg": 2.5
-}
-Saved outputs to results/soft_omp_doa_eval_all_20251024_122339
+version https://git-lfs.github.com/spec/v1
+oid sha256:f27c506d9b691aa828830f8528ed37eeff4f9786f9e4160e7177f9ed9c7902e4
+size 526

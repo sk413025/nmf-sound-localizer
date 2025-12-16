@@ -1,6 +1,3 @@
-[Retry Step 2] Converting LDV box (speech) in 'wavtokenizer' env...
-Conversion completed successfully.
-Audio type: speech, segment: segment1, indices: [64, 129, 195]
-Angles processed (37): [0, 5, 10, 15, 20, 25]...
-Output roots under: /Users/sbplab/LDV-data-processed
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:da6460e772fab2d8a9acaa1465dbdb5d6b1a437fe1beb86cccacbd00d31d0991
+size 269

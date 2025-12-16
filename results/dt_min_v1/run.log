@@ -1,13 +1,3 @@
-================================================================================
-DT-Min Trainer (hierarchical pointer)
-================================================================================
-Traj dir: results/dt_traj_v1
-Out dir: results/dt_min_v1
-D: F=346, E=37, M=8, P=296
-Epoch 1/1: loss=5.3117
-Final train step-acc: expert=0.333, atom=0.417
-
-================================================================================
-DT-Min training DONE
-Metrics: results/dt_min_v1/metrics.npz; code_state: results/dt_min_v1/code_state.json
-================================================================================
+version https://git-lfs.github.com/spec/v1
+oid sha256:40a402d6ddcb3096054e9d284588ea80f981e2cdb75101c2fca31cbf1df14a18
+size 623

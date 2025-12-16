@@ -1,36 +1,3 @@
-================================================================================
-Offline DT Trajectory Builder (g-teacher)
-================================================================================
-Output directory: results/merge_smoke_20251112_111956/offline_dt
-Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
-Loading W matrix from: doa_normalized_config_c_corrected/models/usm.pth
-Raw matrices:
-  H shape: (346, 37)
-  W shape: (346, 50)
-  Angles: 37 total -> [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
-
-=== Atom reduction (k-center) ===
-Selected indices: [4, 5, 30, 35]
-Cluster sizes: [22, 15, 2, 11]
-
-=== Build dictionary D = H ⊙ W ===
-Dictionary built:
-  D shape: (346, 148) (P = 148)
-  Mutual coherence μ_max=0.9977, μ_mean=0.3462
-
-=== Loading dataset (DoADataset) ===
-Dataset size: 51; angles covered: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
-Dataset fingerprint (MD5): 0bcbbef078336c999a76effda64eb841 (from 51 .npy files)
-Subset angles requested: [30, 45, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150]
-Reached max_samples=5; stopping early.
-
-================================================================================
-DONE: trajectories built
-Samples written: 5
-Artifacts: results/merge_smoke_20251112_111956/offline_dt/trajectories.jsonl, results/merge_smoke_20251112_111956/offline_dt/numeric_diagnostics.jsonl, results/merge_smoke_20251112_111956/offline_dt/manifest.json
-Elapsed: 0.07s
-================================================================================
-
-/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace/doa_rl/trajectories/offline_dt_dataset.py:85: DeprecationWarning: __array__ implementation doesn't accept a copy keyword, so passing copy=False failed. __array__ must implement 'dtype' and 'copy' keyword arguments. To learn more, see the migration guide https://numpy.org/devdocs/numpy_2_0_migration_guide.html#adapting-to-changes-in-the-copy-keyword
-  return H.float(), W.float(), np.array(angles, dtype=float)
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:0425f7729e6d391254d32c12745ac0dc99df53ea1fb5c8e314ad75fd9ca5c485
+size 2442

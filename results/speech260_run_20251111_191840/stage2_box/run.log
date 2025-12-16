@@ -1,5 +1,3 @@
-[Stage2-Box] Normalizing...
-Normalized 9620 files from /Users/sbplab/LDV-data-processed/speech260_original_data_no_edge_sync_vad -> /Users/sbplab/LDV-data-processed/speech260_original_data_no_edge_sync_vad_normalized
-
-Normalized 9620 files from /Users/sbplab/LDV-data-processed/speech260_box_data_no_edge_sync_vad -> /Users/sbplab/LDV-data-processed/speech260_box_data_no_edge_sync_vad_normalized
-
+version https://git-lfs.github.com/spec/v1
+oid sha256:8cca46dee4436fecc82271233f7f1c3c408f207a3a6d1e50b2c9fd2ca1568003
+size 398

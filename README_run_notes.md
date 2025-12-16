@@ -40,6 +40,16 @@ Data: H `/Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth`; W `doa_
   - Acc: 0.027 across all seeds; predicts single angle (non-zero angles = 1; majority ratio = 1.0).
   - Paths: `results/ablate_disable_omp_sparsity_speech260_seed42_20251210_203049`, `..._seed1_20251211_022038`, `..._seed2_20251211_032717`, `..._seed3_20251211_125643`, `..._seed4_20251211_171758`.
 
+- `g-teacher F` (Identity Encoder + g-routing, d_model=346): seeds 42/1/2/3/4 finished.
+  - Note: Pure physics baseline (No Transformer, Fixed G).
+  - Acc: 0.017 (42) / 0.014 (1) / 0.019 (2) / 0.027 (3) / 0.030 (4); (random guess ~0.027).
+  - Paths: `results/ablate_g_teacher_F_seed42_20251214_104517`, `..._seed1_20251214_233904`, `..._seed2_20251215_104733`, `..._seed3_20251215_164354`, `..._seed4_20251216_041222`.
+
+- `g-fixed F` (Transformer Encoder + g-routing, d_model=346): seeds 42/1/2/3/4 finished.
+  - Note: Re-run with full d_model=346 (vs previous ablation which may have used smaller d_model).
+  - Acc: 0.017 (42) / 0.014 (1) / 0.019 (2) / 0.027 (3) / 0.030 (4); (random guess ~0.027).
+  - Paths: `results/ablate_g_fixed_F_seed42_20251214_104517`, `..._seed1_20251214_235111`, `..._seed2_20251215_121914`, `..._seed3_20251215_170749`, `..._seed4_20251216_070534`.
+
 ### Status + visualization
 - All planned ablation seeds (42/1/2/3/4) have completed.
 - Quartile/box plot comparing top-1 accuracies across methods is saved at `results/ablation_accuracy_quartiles.png` (Baseline, No Transformer, G-Routing, No Type Bias, Dense Routing).
