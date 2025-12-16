@@ -1,0 +1,212 @@
+================================================================================
+Transformer Routed Soft-OMP with Real LDV Data
+================================================================================
+Output directory: results/ablate_g_teacher_F_seed42_20251214_104517
+
+================================================================================
+STEP 1: Data Loading and Preprocessing
+================================================================================
+Loading H matrix from: /Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth
+Loading W matrix from: /Users/jnrle/Documents/LDVReorientation/worktrees/exp-omp-gteacher-20251214/doa_speech260_config_c_16k_smoke_mps_20251114_184322/models/usm.pth
+Raw data loaded:
+  H shape: torch.Size([346, 37]), range: [0.000677, 0.148538]
+  W shape: torch.Size([346, 50]), range: [0.000000, 1.312674]
+  Angles: 37 total, [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+
+=== Atom Reduction via K-means ===
+Input: W shape torch.Size([346, 50]) (346 freq bins × 50 atoms)
+Target: 8 clusters
+K-means completed:
+  Centroids shape: torch.Size([346, 8])
+  Cluster sizes: [2, 7, 1, 2, 1, 2, 34, 1]
+  Reconstruction error: 1.0791 (107.91%)
+
+=== Using Full Frequency Resolution (NO PCA) ===
+H shape: torch.Size([346, 37])
+W shape: torch.Size([346, 8])
+Rationale: PCA may discard low-variance but high-discriminability features
+           Greedy achieves 83.8% with F=346; test if Transformer needs full info too
+
+=== Building Dictionary ===
+Dictionary built:
+  Shape: torch.Size([346, 296]) (F=346, P=296)
+  Mutual coherence μ_max: 1.0000
+  Mutual coherence μ_mean: 0.1534
+  Index mapping: 296 entries
+
+=== Loading LDV Samples with DoADataset ===
+Dataset root: /Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized
+DoADataset created:
+  Total samples: 9620
+  Angles: [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0, 125.0, 130.0, 135.0, 140.0, 145.0, 150.0, 155.0, 160.0, 165.0, 170.0, 175.0, 180.0]
+  STFT: fs=16000, n_fft=2048, freq_band=[300, 3000]Hz
+  Using scipy.signal.stft with DC offset removal
+
+Loaded samples:
+  Y_samples: torch.Size([9620, 346])
+  Labels: torch.Size([9620]), unique angles: 37
+  Metadata: 9620 entries
+Dataset fingerprint (MD5): f563984848ae49b4443378c4ef720a51
+  Computed from 9620 .npy files
+
+=== Train/Validation Split (clip_id % 5) ===
+  Total samples: 9620
+  Train samples: 7696
+  Val samples:   1924
+  Angle   0°: train=208, val= 52
+  Angle   5°: train=208, val= 52
+  Angle  10°: train=208, val= 52
+  Angle  15°: train=208, val= 52
+  Angle  20°: train=208, val= 52
+  Angle  25°: train=208, val= 52
+  Angle  30°: train=208, val= 52
+  Angle  35°: train=208, val= 52
+  Angle  40°: train=208, val= 52
+  Angle  45°: train=208, val= 52
+  Angle  50°: train=208, val= 52
+  Angle  55°: train=208, val= 52
+  Angle  60°: train=208, val= 52
+  Angle  65°: train=208, val= 52
+  Angle  70°: train=208, val= 52
+  Angle  75°: train=208, val= 52
+  Angle  80°: train=208, val= 52
+  Angle  85°: train=208, val= 52
+  Angle  90°: train=208, val= 52
+  Angle  95°: train=208, val= 52
+  Angle 100°: train=208, val= 52
+  Angle 105°: train=208, val= 52
+  Angle 110°: train=208, val= 52
+  Angle 115°: train=208, val= 52
+  Angle 120°: train=208, val= 52
+  Angle 125°: train=208, val= 52
+  Angle 130°: train=208, val= 52
+  Angle 135°: train=208, val= 52
+  Angle 140°: train=208, val= 52
+  Angle 145°: train=208, val= 52
+  Angle 150°: train=208, val= 52
+  Angle 155°: train=208, val= 52
+  Angle 160°: train=208, val= 52
+  Angle 165°: train=208, val= 52
+  Angle 170°: train=208, val= 52
+  Angle 175°: train=208, val= 52
+  Angle 180°: train=208, val= 52
+
+================================================================================
+STEP 2: Model Initialization
+================================================================================
+
+=== Parameter Reduction Strategy ===
+  Input frequency dimension F: 346
+  Transformer embedding dimension d: 346
+  Ratio d/F: 1.000
+  Token projection size: 2 × (346 × 346) = 239,432 parameters
+  (vs naive F×F: 2 × (346 × 346) = 239,432 parameters)
+  Parameter reduction: 0.0%
+
+Model architecture:
+  F (input freq dim): 346
+  d_model (embedding dim): 346
+  E (experts/angles): 37
+  M (atoms/expert): 8
+  P (total atoms): 296
+  nhead: 2
+  nlayers: 1
+  routing_mode: g (hybrid_alpha=n/a)
+  Total parameters: 1,920,649
+  Trainable parameters: 1,920,649
+
+================================================================================
+STEP 3: Training
+================================================================================
+Epoch   1/20: loss=3.5342 rec=0.0020 mono=0.0000 class=3.6332 acc=0.017 teach=0.016 align=0.966 tau_e=0.812 tau_a=0.628 eta=0.937
+Epoch   2/20: loss=3.5338 rec=0.0016 mono=0.0000 class=3.6332
+Epoch   3/20: loss=3.5336 rec=0.0014 mono=0.0000 class=3.6332
+Epoch   4/20: loss=3.5334 rec=0.0013 mono=0.0000 class=3.6332
+Epoch   5/20: loss=3.5333 rec=0.0012 mono=0.0000 class=3.6332
+Epoch   6/20: loss=3.5333 rec=0.0011 mono=0.0000 class=3.6332
+Epoch   7/20: loss=3.5333 rec=0.0011 mono=0.0000 class=3.6332
+Epoch   8/20: loss=3.5332 rec=0.0011 mono=0.0000 class=3.6332
+Epoch   9/20: loss=3.5332 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  10/20: loss=3.5333 rec=0.0011 mono=0.0000 class=3.6332 acc=0.017 teach=0.016 align=0.915 tau_e=1.089 tau_a=0.872 eta=2.349
+Epoch  11/20: loss=1.8177 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  12/20: loss=1.8177 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  13/20: loss=1.8177 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  14/20: loss=1.8177 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  15/20: loss=1.8178 rec=0.0011 mono=0.0000 class=3.6332
+Epoch  16/20: loss=1.8178 rec=0.0012 mono=0.0000 class=3.6332
+Epoch  17/20: loss=1.8178 rec=0.0012 mono=0.0000 class=3.6332
+Epoch  18/20: loss=1.8178 rec=0.0012 mono=0.0000 class=3.6332
+Epoch  19/20: loss=1.8179 rec=0.0012 mono=0.0000 class=3.6332
+Epoch  20/20: loss=1.8179 rec=0.0012 mono=0.0000 class=3.6332 acc=0.017 teach=0.016 align=0.901 tau_e=0.869 tau_a=0.780 eta=2.100
+
+================================================================================
+STEP 4: Final Evaluation
+================================================================================
+
+Final Results (Best model from epoch 1):
+  Overall accuracy: 0.017 (1.7%)
+  Baseline (commit b573aa6): 0.838 (83.8%)
+
+Per-angle accuracy:
+  Angle   0°: 0.000 (  0.0%) - 260 samples
+  Angle   5°: 0.000 (  0.0%) - 260 samples
+  Angle  10°: 0.000 (  0.0%) - 260 samples
+  Angle  15°: 0.000 (  0.0%) - 260 samples
+  Angle  20°: 0.000 (  0.0%) - 260 samples
+  Angle  25°: 0.000 (  0.0%) - 260 samples
+  Angle  30°: 0.000 (  0.0%) - 260 samples
+  Angle  35°: 0.000 (  0.0%) - 260 samples
+  Angle  40°: 0.000 (  0.0%) - 260 samples
+  Angle  45°: 0.000 (  0.0%) - 260 samples
+  Angle  50°: 0.000 (  0.0%) - 260 samples
+  Angle  55°: 0.000 (  0.0%) - 260 samples
+  Angle  60°: 0.135 ( 13.5%) - 260 samples
+  Angle  65°: 0.038 (  3.8%) - 260 samples
+  Angle  70°: 0.000 (  0.0%) - 260 samples
+  Angle  75°: 0.000 (  0.0%) - 260 samples
+  Angle  80°: 0.212 ( 21.2%) - 260 samples
+  Angle  85°: 0.000 (  0.0%) - 260 samples
+  Angle  90°: 0.000 (  0.0%) - 260 samples
+  Angle  95°: 0.000 (  0.0%) - 260 samples
+  Angle 100°: 0.000 (  0.0%) - 260 samples
+  Angle 105°: 0.000 (  0.0%) - 260 samples
+  Angle 110°: 0.250 ( 25.0%) - 260 samples
+  Angle 115°: 0.000 (  0.0%) - 260 samples
+  Angle 120°: 0.000 (  0.0%) - 260 samples
+  Angle 125°: 0.000 (  0.0%) - 260 samples
+  Angle 130°: 0.000 (  0.0%) - 260 samples
+  Angle 135°: 0.000 (  0.0%) - 260 samples
+  Angle 140°: 0.000 (  0.0%) - 260 samples
+  Angle 145°: 0.000 (  0.0%) - 260 samples
+  Angle 150°: 0.000 (  0.0%) - 260 samples
+  Angle 155°: 0.000 (  0.0%) - 260 samples
+  Angle 160°: 0.000 (  0.0%) - 260 samples
+  Angle 165°: 0.000 (  0.0%) - 260 samples
+  Angle 170°: 0.000 (  0.0%) - 260 samples
+  Angle 175°: 0.000 (  0.0%) - 260 samples
+  Angle 180°: 0.000 (  0.0%) - 260 samples
+
+Problematic angles from baseline:
+   15°: 0.000 (STILL PROBLEMATIC)
+   35°: 0.000 (STILL PROBLEMATIC)
+   50°: 0.000 (STILL PROBLEMATIC)
+   70°: 0.000 (STILL PROBLEMATIC)
+  105°: 0.000 (STILL PROBLEMATIC)
+  120°: 0.000 (STILL PROBLEMATIC)
+
+================================================================================
+STEP 5: Visualization
+================================================================================
+Saved figure: results/ablate_g_teacher_F_seed42_20251214_104517/results.png
+
+================================================================================
+STEP 6: Saving Results
+================================================================================
+All results saved to: results/ablate_g_teacher_F_seed42_20251214_104517
+
+================================================================================
+DONE
+================================================================================
+
+2025-12-14 23:39:02.936 python[20084:15640367] +[NSXPCSharedListener endpointForReply:withListenerName:replyErrorCode:]: an error occurred while attempting to obtain endpoint for listener 'ClientCallsAuxiliary': Connection interrupted
+
