@@ -68,52 +68,63 @@ def process_frequency_mode(u_r, freqs, smooth=True, n_interp=None):
 
 def process_angular_mode(v_half, angles_half, n_interp=360):
     """
-    Process half-circle angular mode to generate smooth full-circle data.
-    Replicates logic from visualize_modal_decomposition_polar.py (commit e3d8462).
+    Process angular mode to generate smooth full-circle data.
+    Handles non-uniform angles and enforces mirror symmetry and periodicity.
     """
-    # === [1] Savitzky-Golay Filter ===
-    # Smooth original data to remove high-frequency noise
-    # window_length must be odd and < len(v_half)
-    window_length = min(11, len(v_half) if len(v_half) % 2 == 1 else len(v_half) - 1)
-    polyorder = 3  # Polynomial order
-
-    v_smoothed = savgol_filter(v_half, window_length=window_length,
-                                polyorder=polyorder, mode='nearest')
-
-    # === [2] Mirror Symmetry ===
-    # Create full circle data (mirror symmetry)
-    v_full = np.concatenate([
-        v_smoothed,              # 0-180
-        v_smoothed[::-1][1:-1]   # 185-175 (mirrored)
-    ])
-
-    angles_full = np.concatenate([
-        angles_half,                    # 0-180
-        360 - angles_half[::-1][1:-1]   # 185-355
-    ])
-
-    # === [3] CubicSpline Interpolation ===
-    # For periodicity, append first point to end (360 = 0)
-    angles_periodic = np.append(angles_full, 360)
-    v_periodic = np.append(v_full, v_full[0])
-
-    # Create cubic spline with periodic boundary conditions
-    cs = CubicSpline(angles_periodic, v_periodic, bc_type='periodic')
-
-    # Generate high-density angle grid
-    angles_smooth = np.linspace(0, 360, n_interp, endpoint=False)
-    v_interp = cs(angles_smooth)
-
-    # === [4] Absolute Value ===
-    v_abs = np.abs(v_interp)
-
-    # === [5] Normalization ===
+    # 1. Construct Full Circle Data via Mirroring
+    # Original angles (e.g., 30..150)
+    angles_orig = angles_half
+    v_orig = v_half
+    
+    # Mirrored angles (e.g., 330..210)
+    angles_mirror = 360.0 - angles_orig
+    v_mirror = v_orig # Symmetric magnitude
+    
+    # Combine
+    angles_combined = np.concatenate([angles_orig, angles_mirror])
+    v_combined = np.concatenate([v_orig, v_mirror])
+    
+    # Sort by angle
+    sort_idx = np.argsort(angles_combined)
+    angles_sorted = angles_combined[sort_idx]
+    v_sorted = v_combined[sort_idx]
+    
+    # 2. Cubic Spline Interpolation (Periodic)
+    # We don't need to manually append 360 if we use bc_type='periodic' correctly,
+    # but CubicSpline expects strictly increasing x.
+    # Also, if 0 and 360 are missing, periodic spline will solve for them.
+    
+    # However, scipy's CubicSpline with bc_type='periodic' requires y[0] == y[-1] if x[0] and x[-1] are the period boundaries.
+    # Here our data doesn't touch the boundaries (starts at 30, ends at 330).
+    # So we can't strictly use bc_type='periodic' on the raw data if it doesn't span the full period.
+    
+    # Instead, we can wrap the data for interpolation:
+    # Append (angles + 360) to the end and (angles - 360) to the beginning to guide the spline.
+    
+    angles_ext = np.concatenate([angles_sorted - 360, angles_sorted, angles_sorted + 360])
+    v_ext = np.concatenate([v_sorted, v_sorted, v_sorted])
+    
+    # Create Spline on extended data
+    cs = CubicSpline(angles_ext, v_ext)
+    
+    # 3. Evaluate on Dense Grid (0 to 360)
+    angles_smooth = np.linspace(0, 360, n_interp + 1, endpoint=True)
+    v_dense = cs(angles_smooth)
+    
+    # 4. Smooth the result (Savitzky-Golay)
+    # Now we have uniform data, so SavGol is valid and helps remove noise/wiggles
+    window_length = 31 # ~30 degrees window
+    if window_length > len(v_dense): window_length = len(v_dense) // 2 * 2 + 1
+    v_smooth = savgol_filter(v_dense, window_length=window_length, polyorder=3, mode='wrap')
+    
+    # 5. Absolute Value & Normalization
+    v_abs = np.abs(v_smooth)
     v_max = np.max(v_abs)
     if v_max > 1e-10:
         v_norm = v_abs / v_max
     else:
         v_norm = v_abs
-
+        
     return v_norm, angles_smooth
 
 def plot_singular_values(S, energy_r, doa_cap_r_norm, out_path):
