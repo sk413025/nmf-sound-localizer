@@ -26,27 +26,30 @@ def build_freq_axis(F, fs=16000.0, n_fft=2048.0, f_min=300.0, f_max=3000.0):
 def process_angular_mode(v_half, angles_half, n_interp=360):
     """
     Process half-circle angular mode to generate smooth full-circle data.
-    Implements Point Symmetry: v(theta + 180) = v(theta).
+    Implements Mirror Symmetry: v(360 - theta) = v(theta).
     """
     # === [1] Savitzky-Golay Filter ===
     window_length = min(11, len(v_half) if len(v_half) % 2 == 1 else len(v_half) - 1)
     polyorder = 3
     v_smoothed = savgol_filter(v_half, window_length=window_length, polyorder=polyorder, mode='nearest')
 
-    # === [2] Point Symmetry (Repeat 0-180 for 180-360) ===
+    # === [2] Mirror Symmetry (1 deg to 359 deg) ===
     # v_smoothed corresponds to 0..180.
-    # We take 0..179 and repeat it.
-    # Note: angles_half usually includes 180.
-    # If we just concatenate, we might duplicate 180/0.
-    # Let's assume v_smoothed[-1] (180) matches v_smoothed[0] (0) approximately if symmetric?
-    # Or we just repeat the pattern.
+    # We want to mirror it such that 360-theta has same value.
+    # 0 is axis of symmetry? Or 0-180 line?
+    # If 1 maps to 359, then 0 is the axis.
+    # Sequence: 0, 1, ..., 180, 179, ..., 1
+    # Total length: 181 + 179 = 360 points.
     
-    # Use 0..179 part
-    v_part = v_smoothed[:-1]
-    angles_part = angles_half[:-1]
+    v_full = np.concatenate([
+        v_smoothed,              # 0-180
+        v_smoothed[::-1][1:-1]   # 179-1
+    ])
     
-    v_full = np.concatenate([v_part, v_part])
-    angles_full = np.concatenate([angles_part, angles_part + 180])
+    angles_full = np.concatenate([
+        angles_half,                    # 0-180
+        360 - angles_half[::-1][1:-1]   # 181-359 (approx)
+    ])
 
     # === [3] CubicSpline Interpolation ===
     # Periodic boundary condition
@@ -114,10 +117,19 @@ def plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, mode_idx, out_path):
     # === Left: Frequency Mode ===
     ax1 = fig.add_subplot(gs[0])
     u_abs = np.abs(u_vec)
-    color = '#E69F00' # Gold/Orange
     
-    ax1.plot(freqs, u_abs, color=color, linewidth=0.8)
-    ax1.fill_between(freqs, u_abs, color=color, alpha=0.15)
+    # Smooth u_abs
+    window_length = min(21, len(u_abs) if len(u_abs) % 2 == 1 else len(u_abs) - 1)
+    u_smooth = savgol_filter(u_abs, window_length=window_length, polyorder=3)
+    # Ensure non-negative after smoothing
+    u_smooth = np.maximum(u_smooth, 0)
+    
+    # Color cycle (Blue, Orange, Green)
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+    color = colors[(mode_idx - 1) % 3]
+    
+    ax1.plot(freqs, u_smooth, color=color, linewidth=0.8)
+    ax1.fill_between(freqs, u_smooth, color=color, alpha=0.15)
     
     ax1.set_ylabel(f"$|u_{mode_idx}(f)|$", labelpad=1)
     # ax1.set_xlabel("Freq (Hz)", labelpad=1) # Might be too crowded
