@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from pathlib import Path
+from tqdm import tqdm
 from scipy.signal import savgol_filter
 from scipy.interpolate import CubicSpline
 import NA_matplotlib_guild as na_style
@@ -23,40 +24,83 @@ def build_freq_axis(F, fs=16000.0, n_fft=2048.0, f_min=300.0, f_max=3000.0):
     freqs = (k_start + np.arange(F)) * df
     return freqs
 
+def process_frequency_mode(u_r, freqs, smooth=True, n_interp=None):
+    """
+    Process frequency mode with full smoothing pipeline (Savitzky-Golay).
+    Replicates logic from visualize_modal_decomposition_polar.py (commit e3d8462).
+    """
+    # === [1] Absolute Value ===
+    u_abs = np.abs(u_r)
+
+    if not smooth:
+        return u_abs, freqs
+
+    # === [2] Savitzky-Golay Filter ===
+    # Use wider window for frequency (more data points)
+    # Aim for similar relative coverage as angular mode (~30%)
+    target_coverage = 0.30
+    window_length = max(15, int(len(u_abs) * target_coverage))
+    # Ensure odd
+    if window_length % 2 == 0:
+        window_length += 1
+    # Ensure not too large
+    window_length = min(window_length, len(u_abs) - 2)
+
+    polyorder = 3  # Cubic polynomial
+    u_smoothed = savgol_filter(u_abs, window_length=window_length,
+                                 polyorder=polyorder, mode='nearest')
+
+    # === [3] CubicSpline Interpolation (optional) ===
+    if n_interp is not None and n_interp > len(freqs):
+        # Create cubic spline
+        cs = CubicSpline(freqs, u_smoothed)
+
+        # Generate high-density frequency grid
+        freqs_interp = np.linspace(freqs[0], freqs[-1], n_interp)
+        u_interp = cs(freqs_interp)
+
+        # Ensure non-negative (physical constraint)
+        u_interp = np.maximum(u_interp, 0)
+
+        return u_interp, freqs_interp
+    else:
+        return u_smoothed, freqs
+
 def process_angular_mode(v_half, angles_half, n_interp=360):
     """
     Process half-circle angular mode to generate smooth full-circle data.
-    Implements Mirror Symmetry: v(360 - theta) = v(theta).
+    Replicates logic from visualize_modal_decomposition_polar.py (commit e3d8462).
     """
     # === [1] Savitzky-Golay Filter ===
+    # Smooth original data to remove high-frequency noise
+    # window_length must be odd and < len(v_half)
     window_length = min(11, len(v_half) if len(v_half) % 2 == 1 else len(v_half) - 1)
-    polyorder = 3
-    v_smoothed = savgol_filter(v_half, window_length=window_length, polyorder=polyorder, mode='nearest')
+    polyorder = 3  # Polynomial order
 
-    # === [2] Mirror Symmetry (1 deg to 359 deg) ===
-    # v_smoothed corresponds to 0..180.
-    # We want to mirror it such that 360-theta has same value.
-    # 0 is axis of symmetry? Or 0-180 line?
-    # If 1 maps to 359, then 0 is the axis.
-    # Sequence: 0, 1, ..., 180, 179, ..., 1
-    # Total length: 181 + 179 = 360 points.
-    
+    v_smoothed = savgol_filter(v_half, window_length=window_length,
+                                polyorder=polyorder, mode='nearest')
+
+    # === [2] Mirror Symmetry ===
+    # Create full circle data (mirror symmetry)
     v_full = np.concatenate([
         v_smoothed,              # 0-180
-        v_smoothed[::-1][1:-1]   # 179-1
+        v_smoothed[::-1][1:-1]   # 185-175 (mirrored)
     ])
-    
+
     angles_full = np.concatenate([
         angles_half,                    # 0-180
-        360 - angles_half[::-1][1:-1]   # 181-359 (approx)
+        360 - angles_half[::-1][1:-1]   # 185-355
     ])
 
     # === [3] CubicSpline Interpolation ===
-    # Periodic boundary condition
+    # For periodicity, append first point to end (360 = 0)
     angles_periodic = np.append(angles_full, 360)
     v_periodic = np.append(v_full, v_full[0])
-    
+
+    # Create cubic spline with periodic boundary conditions
     cs = CubicSpline(angles_periodic, v_periodic, bc_type='periodic')
+
+    # Generate high-density angle grid
     angles_smooth = np.linspace(0, 360, n_interp, endpoint=False)
     v_interp = cs(angles_smooth)
 
@@ -69,7 +113,7 @@ def process_angular_mode(v_half, angles_half, n_interp=360):
         v_norm = v_abs / v_max
     else:
         v_norm = v_abs
-    
+
     return v_norm, angles_smooth
 
 def plot_singular_values(S, energy_r, doa_cap_r_norm, out_path):
@@ -105,34 +149,22 @@ def plot_singular_values(S, energy_r, doa_cap_r_norm, out_path):
 
 def plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, mode_idx, out_path):
     # Block 2-4: 46.544 x 31.36 mm
-    # Layout: Left (Freq), Right (Polar)
     fig = na_style.make_figure(width_mm=46.544, height_mm=31.36)
-    
-    # Adjust layout manually to fit
-    # Left: [0.12, 0.2, 0.35, 0.6] (x, y, w, h)
-    # Right: [0.55, 0.1, 0.4, 0.8]
     
     gs = fig.add_gridspec(1, 2, width_ratios=[1, 1], wspace=0.3, left=0.15, right=0.95, bottom=0.2, top=0.85)
     
     # === Left: Frequency Mode ===
     ax1 = fig.add_subplot(gs[0])
-    u_abs = np.abs(u_vec)
-    
-    # Smooth u_abs
-    window_length = min(21, len(u_abs) if len(u_abs) % 2 == 1 else len(u_abs) - 1)
-    u_smooth = savgol_filter(u_abs, window_length=window_length, polyorder=3)
-    # Ensure non-negative after smoothing
-    u_smooth = np.maximum(u_smooth, 0)
+    u_abs = np.abs(u_vec) # u_vec is already smooth mean from bootstrap
     
     # Color cycle (Blue, Orange, Green)
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
     color = colors[(mode_idx - 1) % 3]
     
-    ax1.plot(freqs, u_smooth, color=color, linewidth=0.8)
-    ax1.fill_between(freqs, u_smooth, color=color, alpha=0.15)
+    ax1.plot(freqs, u_abs, color=color, linewidth=0.8)
+    ax1.fill_between(freqs, u_abs, color=color, alpha=0.15)
     
     ax1.set_ylabel(f"$|u_{mode_idx}(f)|$", labelpad=1)
-    # ax1.set_xlabel("Freq (Hz)", labelpad=1) # Might be too crowded
     
     # Simplify ticks
     ax1.tick_params(axis='both', which='major', pad=1, labelsize=5)
@@ -188,7 +220,8 @@ def plot_dictionary_heatmap(u, v_norm, freqs, angles_smooth, mode_idx, out_path)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--h_path', type=str, default='h_matrix_normalized_original_to_box.pth')
-    parser.add_argument('--out_dir', type=str, default='results_nature')
+    parser.add_argument('--out_dir', type=str, default='results_nature_repro')
+    parser.add_argument('--n_modes', type=int, default=10)
     args = parser.parse_args()
     
     out_dir = Path(args.out_dir)
@@ -201,10 +234,12 @@ def main():
     freqs = build_freq_axis(F)
     angles_deg = np.array(angles, dtype=float)
     
-    # SVD
+    # Preprocess
     eps = 1e-8
     H_log = np.log(np.clip(np.abs(H_np), eps, None))
     H_log_centered = H_log - H_log.mean(axis=1, keepdims=True)
+    
+    # Single SVD (No Bootstrap)
     U, S, Vt = np.linalg.svd(H_log_centered, full_matrices=False)
     V = Vt.T
     
@@ -219,26 +254,21 @@ def main():
     plot_singular_values(S, energy_r, doa_cap_r_norm, out_dir / "Fig1_singular_values.pdf")
     
     # Process Modes
-    for r in range(3): # First 3 modes
+    for r in range(args.n_modes):
         u_vec = U[:, r]
-        v_vec = V[:, r]
+        v_vec = V[:, r] # 0-180
         
-        # Process Angular Mode (Smooth & Normalize)
-        if not np.all(np.diff(angles_deg) > 0):
-            sort_idx = np.argsort(angles_deg)
-            angles_sorted = angles_deg[sort_idx]
-            v_sorted = v_vec[sort_idx]
-        else:
-            angles_sorted = angles_deg
-            v_sorted = v_vec
-            
-        v_norm, angles_smooth = process_angular_mode(v_sorted, angles_sorted)
+        # Process Frequency Mode (SavGol + CubicSpline)
+        u_smooth, freqs_smooth = process_frequency_mode(u_vec, freqs, smooth=True, n_interp=len(freqs)*2)
+        
+        # Process Angular Mode (SavGol + Mirror + CubicSpline)
+        v_norm, angles_smooth = process_angular_mode(v_vec, angles_deg, n_interp=360)
         
         # 2-4. Modal Decomposition (Freq + Polar)
-        plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, r+1, out_dir / f"Fig{r+2}_mode{r+1}.pdf")
+        plot_modal_mode(u_smooth, freqs_smooth, v_norm, angles_smooth, r+1, out_dir / f"Fig{r+2}_mode{r+1}.pdf")
         
         # 5-7. Dictionary Heatmap
-        plot_dictionary_heatmap(u_vec, v_norm, freqs, angles_smooth, r+1, out_dir / f"Fig{r+5}_dict_mode{r+1}.pdf")
+        plot_dictionary_heatmap(u_smooth, v_norm, freqs_smooth, angles_smooth, r+1, out_dir / f"Fig{r+5}_dict_mode{r+1}.pdf")
 
 if __name__ == "__main__":
     main()
