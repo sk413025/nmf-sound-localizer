@@ -26,20 +26,33 @@ def build_freq_axis(F, fs=16000.0, n_fft=2048.0, f_min=300.0, f_max=3000.0):
 def process_angular_mode(v_half, angles_half, n_interp=360):
     """
     Process half-circle angular mode to generate smooth full-circle data.
-    Logic from visualize_modal_decomposition_polar.py
+    Implements Point Symmetry: v(theta + 180) = v(theta).
     """
     # === [1] Savitzky-Golay Filter ===
     window_length = min(11, len(v_half) if len(v_half) % 2 == 1 else len(v_half) - 1)
     polyorder = 3
     v_smoothed = savgol_filter(v_half, window_length=window_length, polyorder=polyorder, mode='nearest')
 
-    # === [2] Mirror Symmetry ===
-    v_full = np.concatenate([v_smoothed, v_smoothed[::-1][1:-1]])
-    angles_full = np.concatenate([angles_half, 360 - angles_half[::-1][1:-1]])
+    # === [2] Point Symmetry (Repeat 0-180 for 180-360) ===
+    # v_smoothed corresponds to 0..180.
+    # We take 0..179 and repeat it.
+    # Note: angles_half usually includes 180.
+    # If we just concatenate, we might duplicate 180/0.
+    # Let's assume v_smoothed[-1] (180) matches v_smoothed[0] (0) approximately if symmetric?
+    # Or we just repeat the pattern.
+    
+    # Use 0..179 part
+    v_part = v_smoothed[:-1]
+    angles_part = angles_half[:-1]
+    
+    v_full = np.concatenate([v_part, v_part])
+    angles_full = np.concatenate([angles_part, angles_part + 180])
 
     # === [3] CubicSpline Interpolation ===
+    # Periodic boundary condition
     angles_periodic = np.append(angles_full, 360)
     v_periodic = np.append(v_full, v_full[0])
+    
     cs = CubicSpline(angles_periodic, v_periodic, bc_type='periodic')
     angles_smooth = np.linspace(0, 360, n_interp, endpoint=False)
     v_interp = cs(angles_smooth)
@@ -81,26 +94,58 @@ def plot_singular_values(S, energy_r, doa_cap_r_norm, out_path):
     # Legend
     lines = [line1, line2, line3]
     labels = [l.get_label() for l in lines]
-    ax.legend(lines, labels, loc="center right", fontsize=6)
+    ax.legend(lines, labels, loc="center right", fontsize=5, frameon=False)
     
     na_style.save_outputs(fig, str(out_path).replace('.pdf', ''))
     plt.close(fig)
     print(f"Saved {out_path}")
 
-def plot_modal_mode(v_norm, angles_smooth, mode_idx, out_path):
+def plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, mode_idx, out_path):
     # Block 2-4: 46.544 x 31.36 mm
-    # Polar plot
+    # Layout: Left (Freq), Right (Polar)
     fig = na_style.make_figure(width_mm=46.544, height_mm=31.36)
-    ax = fig.add_subplot(1, 1, 1, projection='polar')
     
+    # Adjust layout manually to fit
+    # Left: [0.12, 0.2, 0.35, 0.6] (x, y, w, h)
+    # Right: [0.55, 0.1, 0.4, 0.8]
+    
+    gs = fig.add_gridspec(1, 2, width_ratios=[1, 1], wspace=0.3, left=0.15, right=0.95, bottom=0.2, top=0.85)
+    
+    # === Left: Frequency Mode ===
+    ax1 = fig.add_subplot(gs[0])
+    u_abs = np.abs(u_vec)
+    color = '#E69F00' # Gold/Orange
+    
+    ax1.plot(freqs, u_abs, color=color, linewidth=0.8)
+    ax1.fill_between(freqs, u_abs, color=color, alpha=0.15)
+    
+    ax1.set_ylabel(f"$|u_{mode_idx}(f)|$", labelpad=1)
+    # ax1.set_xlabel("Freq (Hz)", labelpad=1) # Might be too crowded
+    
+    # Simplify ticks
+    ax1.tick_params(axis='both', which='major', pad=1, labelsize=5)
+    ax1.set_xticks([500, 1500, 2500])
+    ax1.set_xticklabels(['0.5k', '1.5k', '2.5k'])
+    ax1.grid(True, alpha=0.3, linewidth=0.3)
+
+    # === Right: Angular Mode (Polar) ===
+    ax2 = fig.add_subplot(gs[1], projection='polar')
     angles_rad = np.deg2rad(angles_smooth)
-    ax.plot(angles_rad, v_norm, linewidth=1)
     
-    ax.set_title(f"Mode {mode_idx}", fontsize=8)
-    ax.grid(True, linewidth=0.3)
-    ax.set_xticklabels([]) # Remove angle labels to save space? Or keep them small?
-    # Nature figures are small, maybe remove labels if too crowded
-    ax.tick_params(pad=-2) # Move labels closer
+    ax2.plot(angles_rad, v_norm, color=color, linewidth=0.8)
+    ax2.fill(angles_rad, v_norm, color=color, alpha=0.15)
+    
+    # Title
+    fig.suptitle(f"Mode {mode_idx}", fontsize=7, y=0.98)
+    
+    # Polar Grid
+    ax2.grid(True, alpha=0.3, linewidth=0.3)
+    ax2.set_yticklabels([]) # No radial labels
+    
+    # Angular ticks
+    ax2.set_xticks(np.deg2rad([0, 45, 90, 135, 180, 225, 270, 315]))
+    ax2.set_xticklabels(['0°', '45°', '90°', '135°', '180°', '225°', '270°', '315°'], fontsize=4)
+    ax2.tick_params(pad=-2) # Move labels closer
     
     na_style.save_outputs(fig, str(out_path).replace('.pdf', ''))
     plt.close(fig)
@@ -108,12 +153,6 @@ def plot_modal_mode(v_norm, angles_smooth, mode_idx, out_path):
 
 def plot_dictionary_heatmap(u, v_norm, freqs, angles_smooth, mode_idx, out_path):
     # Block 5-7: 52.437 x 31.36 mm
-    # D_r = u_r \otimes v_r
-    # u is (F,), v is (N_angles,)
-    # We need to interpolate v to match the original angles count? 
-    # Or just plot the outer product of the smooth v and u?
-    # Let's plot the outer product of u and the smooth v.
-    
     D_r = np.outer(u, v_norm) # (F, N_angles)
     
     fig = na_style.make_figure(width_mm=52.437, height_mm=31.36)
@@ -124,14 +163,11 @@ def plot_dictionary_heatmap(u, v_norm, freqs, angles_smooth, mode_idx, out_path)
     
     im = ax.imshow(D_r, aspect='auto', origin='lower', cmap='viridis', extent=extent)
     
-    ax.set_title(f"Dict Mode {mode_idx}", fontsize=8)
-    ax.set_xlabel("Angle (°)", fontsize=6)
-    ax.set_ylabel("Freq (Hz)", fontsize=6)
+    ax.set_title(f"Dict Mode {mode_idx}", fontsize=7)
+    ax.set_xlabel("Angle (°)", fontsize=6, labelpad=1)
+    ax.set_ylabel("Freq (Hz)", fontsize=6, labelpad=1)
     
-    # Colorbar might be too big for this small figure. 
-    # Maybe add it separately or make it small.
-    # cbar = plt.colorbar(im, ax=ax)
-    # cbar.ax.tick_params(labelsize=6)
+    ax.tick_params(labelsize=5, pad=1)
     
     na_style.save_outputs(fig, str(out_path).replace('.pdf', ''))
     plt.close(fig)
@@ -176,11 +212,7 @@ def main():
         v_vec = V[:, r]
         
         # Process Angular Mode (Smooth & Normalize)
-        # Note: v_vec corresponds to angles_deg (0-180)
-        # We need to ensure angles are sorted? They usually are.
-        # Check angles
         if not np.all(np.diff(angles_deg) > 0):
-            # Sort if needed
             sort_idx = np.argsort(angles_deg)
             angles_sorted = angles_deg[sort_idx]
             v_sorted = v_vec[sort_idx]
@@ -190,22 +222,10 @@ def main():
             
         v_norm, angles_smooth = process_angular_mode(v_sorted, angles_sorted)
         
-        # 2-4. Modal Decomposition (Polar)
-        plot_modal_mode(v_norm, angles_smooth, r+1, out_dir / f"Fig{r+2}_mode{r+1}.pdf")
+        # 2-4. Modal Decomposition (Freq + Polar)
+        plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, r+1, out_dir / f"Fig{r+2}_mode{r+1}.pdf")
         
         # 5-7. Dictionary Heatmap
-        # We use the smoothed v and original u
-        # u might need to be normalized? 
-        # In SVD, U columns are unit vectors.
-        # D_r = sigma_r * u_r * v_r^T ?
-        # The original code used: D_r = np.outer(u_mean, v_fitted_mean)
-        # where u_mean and v_fitted_mean came from bootstrap.
-        # Here we use U[:, r] and v_norm.
-        # Note that v_norm is [0, 1].
-        # U[:, r] is unit length.
-        # If we want to show the "contribution", we should probably include sigma_r?
-        # But the heatmap usually shows the "shape".
-        # I'll stick to outer(u, v_norm) as it represents the shape of the atom.
         plot_dictionary_heatmap(u_vec, v_norm, freqs, angles_smooth, r+1, out_dir / f"Fig{r+5}_dict_mode{r+1}.pdf")
 
 if __name__ == "__main__":
