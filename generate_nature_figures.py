@@ -128,8 +128,8 @@ def process_angular_mode(v_half, angles_half, n_interp=360):
     return v_norm, angles_smooth
 
 def plot_singular_values(S, energy_r, doa_cap_r_norm, out_path):
-    # Block 1: 45.113 x 94.08 mm
-    fig = na_style.make_figure(width_mm=45.113, height_mm=94.08)
+    # Block 1: 62.307 x 115.17 mm
+    fig = na_style.make_figure(width_mm=62.307, height_mm=115.17)
     ax = fig.add_subplot(1, 1, 1)
     
     r_idx = np.arange(1, len(S) + 1)
@@ -208,18 +208,28 @@ def plot_modal_mode(u_vec, freqs, v_norm, angles_smooth, mode_idx, out_path):
 
 def plot_dictionary_heatmap(u, v_norm, freqs, angles_smooth, mode_idx, out_path):
     # Block 5-7: 52.437 x 31.36 mm
-    D_r = np.outer(u, v_norm) # (F, N_angles)
+    
+    # Slice to 0-180 degrees (remove mirror)
+    mask = angles_smooth <= 180
+    v_half = v_norm[mask]
+    
+    D_r = np.outer(u, v_half) # (F, N_half)
     
     fig = na_style.make_figure(width_mm=52.437, height_mm=31.36)
+    
+    # Enforce same margins as plot_modal_mode to ensure alignment
+    # plot_modal_mode uses: bottom=0.2, top=0.85
+    fig.subplots_adjust(left=0.15, right=0.95, bottom=0.2, top=0.85)
+    
     ax = fig.add_subplot(1, 1, 1)
     
-    # Extent: angles 0-360, freqs min-max
-    extent = [0, 360, freqs[0], freqs[-1]]
+    # Extent: x is atom index (0..N_half), y is freq
+    extent = [0, D_r.shape[1], freqs[0], freqs[-1]]
     
     im = ax.imshow(D_r, aspect='auto', origin='lower', cmap='viridis', extent=extent)
     
     ax.set_title(f"Dict Mode {mode_idx}", fontsize=7)
-    ax.set_xlabel("Angle (°)", fontsize=6, labelpad=1)
+    ax.set_xlabel("atom index", fontsize=6, labelpad=1)
     ax.set_ylabel("Freq (Hz)", fontsize=6, labelpad=1)
     
     ax.tick_params(labelsize=5, pad=1)
