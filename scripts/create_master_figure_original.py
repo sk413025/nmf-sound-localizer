@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from pathlib import Path
 import matplotlib
-matplotlib.rcParams['font.family'] = ['Arial', 'Helvetica', 'sans-serif']
+matplotlib.rcParams['font.family'] = ['Arial Unicode MS', 'DejaVu Sans', 'sans-serif']
 
 
 def load_data(run_dir):
@@ -171,7 +171,7 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
 
     # Create figure with 3 panels
     fig = plt.figure(figsize=(22, 12))
-    gs = gridspec.GridSpec(1, 3, figure=fig, hspace=0.15, wspace=0.2,
+    gs = gridspec.GridSpec(1, 3, figure=fig, hspace=0.3, wspace=0.3,
                           width_ratios=[1, 1, 1])
 
     # =========================
@@ -179,52 +179,55 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     # =========================
     # Use 2 sub-panels stacked vertically for better comparison
     gs_a = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=gs[0, 0],
-                                            hspace=0.2, height_ratios=[1, 1])
+                                            hspace=0.3, height_ratios=[1, 1])
 
     # A1: Physical Structure (H matrix correlation)
     ax_a1 = fig.add_subplot(gs_a[0, 0])
     im_a1 = ax_a1.imshow(H_corr, cmap='viridis', aspect='auto', vmin=-1.0, vmax=1.0)
     ax_a1.set_title('H Matrix Physical Structure\n(Transfer Function Correlation)',
-                    fontsize=8, fontweight='bold')
-    ax_a1.set_xlabel('Angle Index j', fontweight='bold', fontsize=7)
-    ax_a1.set_ylabel('Angle Index i', fontweight='bold', fontsize=7)
+                    fontsize=10, fontweight='bold')
+    ax_a1.set_xlabel('Angle Index j', fontweight='bold', fontsize=9)
+    ax_a1.set_ylabel('Angle Index i', fontweight='bold', fontsize=9)
 
     # Add angle ticks
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels = [f"{int(angles[i])}°" for i in tick_positions]
     ax_a1.set_xticks(tick_positions)
-    ax_a1.set_xticklabels(tick_labels, fontsize=6)
+    ax_a1.set_xticklabels(tick_labels, fontsize=8)
     ax_a1.set_yticks(tick_positions)
-    ax_a1.set_yticklabels(tick_labels, fontsize=6)
+    ax_a1.set_yticklabels(tick_labels, fontsize=8)
 
     cbar_a1 = plt.colorbar(im_a1, ax=ax_a1, fraction=0.046, pad=0.04)
-    cbar_a1.set_label('Correlation', fontweight='bold', fontsize=6)
+    cbar_a1.set_label('Correlation', fontweight='bold', fontsize=9)
 
     # A2: QK Learned Structure (Expert correlation) - BOTTOM
     ax_a2 = fig.add_subplot(gs_a[1, 0])
     im_a2 = ax_a2.imshow(expert_corr, cmap='viridis', aspect='auto', vmin=-1.0, vmax=1.0)
     ax_a2.set_title('QK Learned Structure\n(Expert Activation Correlation)',
-                    fontsize=8, fontweight='bold')
-    ax_a2.set_xlabel('Angle Index j', fontweight='bold', fontsize=7)
-    ax_a2.set_ylabel('Angle Index i', fontweight='bold', fontsize=7)
+                    fontsize=10, fontweight='bold')
+    ax_a2.set_xlabel('Angle Index j', fontweight='bold', fontsize=9)
+    ax_a2.set_ylabel('Angle Index i', fontweight='bold', fontsize=9)
 
     ax_a2.set_xticks(tick_positions)
-    ax_a2.set_xticklabels(tick_labels, fontsize=6)
+    ax_a2.set_xticklabels(tick_labels, fontsize=8)
     ax_a2.set_yticks(tick_positions)
-    ax_a2.set_yticklabels(tick_labels, fontsize=6)
+    ax_a2.set_yticklabels(tick_labels, fontsize=8)
 
     cbar_a2 = plt.colorbar(im_a2, ax=ax_a2, fraction=0.046, pad=0.04)
-    cbar_a2.set_label('Correlation', fontweight='bold', fontsize=6)
+    cbar_a2.set_label('Correlation', fontweight='bold', fontsize=9)
 
-    # Add overall panel title
+    # Add overall panel title and Pearson correlation (adjusted position for vertical layout)
     fig.text(0.17, 0.96, '(a) Global Physics-Structure Alignment',
-             fontsize=9, fontweight='bold', ha='center')
+             fontsize=12, fontweight='bold', ha='center')
+    fig.text(0.17, 0.48, f'Pearson r = {metrics["structure_corr"]:.3f}  (p < 0.001)',
+             fontsize=10, ha='center',
+             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     # =========================
     # Panel B: Micro-level Mechanism
     # =========================
     gs_b = gridspec.GridSpecFromSubplotSpec(4, 1, subplot_spec=gs[0, 1],
-                                            hspace=0.25, height_ratios=[1, 1, 1.2, 0.05])
+                                            hspace=0.4, height_ratios=[1, 1, 1.2, 0.05])
 
     # Get data for case study
     Y = routing_data['Y_val'][sample_idx]
@@ -252,17 +255,17 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     physics_wrong_heatmap = np.abs(D_wrong[freq_mask, :]) * g_wrong_atoms[np.newaxis, :]
 
     # Create 1×2 subplots for B1
-    gs_b1 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_b[0, 0], wspace=0.1)
+    gs_b1 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_b[0, 0], wspace=0.15)
 
     # B1 Left: True Angle
     ax_b1_true = fig.add_subplot(gs_b1[0, 0])
     im_b1_true = ax_b1_true.imshow(physics_true_heatmap, aspect='auto', cmap='viridis',
                                    extent=[0, 8, 2000, 300], interpolation='nearest')
-    ax_b1_true.set_title(f'True Angle ({angles[true_expert]:.0f}°)', fontsize=7, fontweight='bold')
-    ax_b1_true.set_ylabel('Frequency (Hz)', fontweight='bold', fontsize=7)
-    ax_b1_true.set_xlabel('Atom Index', fontweight='bold', fontsize=6)
+    ax_b1_true.set_title(f'True Angle ({angles[true_expert]:.0f}°)', fontsize=9, fontweight='bold')
+    ax_b1_true.set_ylabel('Frequency (Hz)', fontweight='bold', fontsize=9)
+    ax_b1_true.set_xlabel('Atom Index', fontweight='bold', fontsize=8)
     ax_b1_true.set_xticks(np.arange(8))
-    ax_b1_true.set_xticklabels(range(8), fontsize=6)
+    ax_b1_true.set_xticklabels(range(8), fontsize=7)
 
     # B1 Right: Wrong Angle
     ax_b1_wrong = fig.add_subplot(gs_b1[0, 1])
@@ -270,19 +273,19 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
                                      extent=[0, 8, 2000, 300], interpolation='nearest',
                                      vmin=im_b1_true.get_clim()[0], vmax=im_b1_true.get_clim()[1])
     ax_b1_wrong.set_title(f'Wrong Angle ({angles[wrong_expert]:.0f}°)\nFalsely Selected',
-                         fontsize=7, fontweight='bold')
-    ax_b1_wrong.set_xlabel('Atom Index', fontweight='bold', fontsize=6)
+                         fontsize=9, fontweight='bold')
+    ax_b1_wrong.set_xlabel('Atom Index', fontweight='bold', fontsize=8)
     ax_b1_wrong.set_xticks(np.arange(8))
-    ax_b1_wrong.set_xticklabels(range(8), fontsize=6)
+    ax_b1_wrong.set_xticklabels(range(8), fontsize=7)
     ax_b1_wrong.set_yticklabels([])
 
     # Shared colorbar for B1
     cbar_b1 = plt.colorbar(im_b1_wrong, ax=[ax_b1_true, ax_b1_wrong], fraction=0.046, pad=0.04)
-    cbar_b1.set_label('Energy', fontweight='bold', fontsize=6)
+    cbar_b1.set_label('Energy', fontweight='bold', fontsize=8)
 
     # Add B1 row title
     ax_b1_true.text(-1.5, 0.5, 'Analytical OMP\nFreq×Atom Energy',
-                    transform=ax_b1_true.transAxes, fontsize=8, fontweight='bold',
+                    transform=ax_b1_true.transAxes, fontsize=10, fontweight='bold',
                     ha='right', va='center', rotation=90)
 
     # B2: QK Attention (Middle) - 2D Heatmaps (Frequency × Atoms)
@@ -298,7 +301,7 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     qk_wrong_heatmap = D_wrong[freq_mask, :] * qk_wrong_atoms[np.newaxis, :]
 
     # Create 1×2 subplots for B2
-    gs_b2 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_b[1, 0], wspace=0.1)
+    gs_b2 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_b[1, 0], wspace=0.15)
 
     # Determine symmetric colormap limits for diverging visualization
     vmax_qk = max(np.abs(qk_true_heatmap).max(), np.abs(qk_wrong_heatmap).max())
@@ -310,11 +313,11 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
                                    extent=[0, 8, 2000, 300], interpolation='nearest',
                                    vmin=vmin_qk, vmax=vmax_qk)
     ax_b2_true.set_title(f'True Angle ({angles[true_expert]:.0f}°)\nSelected',
-                        fontsize=7, fontweight='bold')
-    ax_b2_true.set_ylabel('Frequency (Hz)', fontweight='bold', fontsize=7)
-    ax_b2_true.set_xlabel('Atom Index', fontweight='bold', fontsize=6)
+                        fontsize=9, fontweight='bold')
+    ax_b2_true.set_ylabel('Frequency (Hz)', fontweight='bold', fontsize=9)
+    ax_b2_true.set_xlabel('Atom Index', fontweight='bold', fontsize=8)
     ax_b2_true.set_xticks(np.arange(8))
-    ax_b2_true.set_xticklabels(range(8), fontsize=6)
+    ax_b2_true.set_xticklabels(range(8), fontsize=7)
 
     # B2 Right: Wrong Angle
     ax_b2_wrong = fig.add_subplot(gs_b2[0, 1])
@@ -322,19 +325,19 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
                                      extent=[0, 8, 2000, 300], interpolation='nearest',
                                      vmin=vmin_qk, vmax=vmax_qk)
     ax_b2_wrong.set_title(f'Wrong Angle ({angles[wrong_expert]:.0f}°)\nSuppressed',
-                         fontsize=7, fontweight='bold')
-    ax_b2_wrong.set_xlabel('Atom Index', fontweight='bold', fontsize=6)
+                         fontsize=9, fontweight='bold')
+    ax_b2_wrong.set_xlabel('Atom Index', fontweight='bold', fontsize=8)
     ax_b2_wrong.set_xticks(np.arange(8))
-    ax_b2_wrong.set_xticklabels(range(8), fontsize=6)
+    ax_b2_wrong.set_xticklabels(range(8), fontsize=7)
     ax_b2_wrong.set_yticklabels([])
 
     # Shared colorbar for B2 (diverging: Green=+, Red=-)
     cbar_b2 = plt.colorbar(im_b2_wrong, ax=[ax_b2_true, ax_b2_wrong], fraction=0.046, pad=0.04)
-    cbar_b2.set_label('QK Score\n(Green=Select, Red=Suppress)', fontweight='bold', fontsize=6)
+    cbar_b2.set_label('QK Score\n(Green=Select, Red=Suppress)', fontweight='bold', fontsize=8)
 
     # Add B2 row title
     ax_b2_true.text(-1.5, 0.5, 'Physics-Aware AI\nFreq×Atom Attention',
-                    transform=ax_b2_true.transAxes, fontsize=8, fontweight='bold',
+                    transform=ax_b2_true.transAxes, fontsize=10, fontweight='bold',
                     ha='right', va='center', rotation=90)
 
     # B3: Angular Estimation (Bottom) - Polar Plot
@@ -379,24 +382,24 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     ax_b3.set_theta_direction(-1)
     ax_b3.set_title('Final Estimation (Angular View)\n'\
                     f'Frequency selection → Angular focus (θtrue = {angles[true_expert]:.0f}°)',
-                    fontsize=8, fontweight='bold', pad=20)
-    ax_b3.legend(fontsize=6, loc='upper right', bbox_to_anchor=(1.3, 1.1))
+                    fontsize=10, fontweight='bold', pad=20)
+    ax_b3.legend(fontsize=7, loc='upper right', bbox_to_anchor=(1.3, 1.1))
     ax_b3.set_ylim(0, 1.1)
     ax_b3.grid(True, alpha=0.3)
 
     # Panel B title with explanatory subtitle
     ax_b1_true.text(1.0, 1.35, '(b) Micro-level Mechanism',
-                   transform=ax_b1_true.transAxes, fontsize=9, fontweight='bold',
+                   transform=ax_b1_true.transAxes, fontsize=12, fontweight='bold',
                    ha='center', va='bottom')
     ax_b1_true.text(1.0, 1.25, 'Frequency×Atom Joint Analysis: 2D selection patterns (top & middle) → Angular discrimination (bottom)',
-                   transform=ax_b1_true.transAxes, fontsize=6, style='italic',
+                   transform=ax_b1_true.transAxes, fontsize=8, style='italic',
                    ha='center', va='bottom', color='dimgray')
 
     # =========================
     # Panel C: Macro-level Selection Robustness
     # =========================
     gs_c = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=gs[0, 2],
-                                            hspace=0.15, height_ratios=[1, 1])
+                                            hspace=0.25, height_ratios=[1, 1])
 
     # Determine unified colorbar range for fair comparison
     vmax_unified = max(physics_prob.max(), qk_prob.max())
@@ -407,14 +410,14 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     im_c1 = ax_c1.imshow(physics_prob, cmap='hot', aspect='auto',
                          extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                          interpolation='nearest')
-    ax_c1.set_ylabel('True DOA (θ° ~ 180°)', fontweight='bold', fontsize=7)
+    ax_c1.set_ylabel('True DOA (θ° ~ 180°)', fontweight='bold', fontsize=10)
     ax_c1.set_title('Traditional OMP Selection Probability',
-                    fontsize=8, fontweight='bold', pad=10)
+                    fontsize=10, fontweight='bold', pad=10)
     ax_c1.set_yticks(tick_positions)
-    ax_c1.set_yticklabels(tick_labels, fontsize=6)
+    ax_c1.set_yticklabels(tick_labels, fontsize=9)
     ax_c1.set_xticks([])
     cbar_c1 = plt.colorbar(im_c1, ax=ax_c1)
-    cbar_c1.set_label('P(select)', fontsize=6)
+    cbar_c1.set_label('P(select)', fontsize=9)
 
     # C2: QK Selection Probability (Bottom)
     ax_c2 = fig.add_subplot(gs_c[1, 0])
@@ -422,23 +425,30 @@ def create_master_figure_reference_style(routing_data, dict_data, output_path):
     im_c2 = ax_c2.imshow(qk_prob, cmap='hot', aspect='auto',
                          extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                          interpolation='nearest')
-    ax_c2.set_xlabel('Selected Expert Index (0-36)', fontweight='bold', fontsize=7)
-    ax_c2.set_ylabel('True DOA (θ° ~ 180°)', fontweight='bold', fontsize=7)
+    ax_c2.set_xlabel('Selected Expert Index (0-36)', fontweight='bold', fontsize=10)
+    ax_c2.set_ylabel('True DOA (θ° ~ 180°)', fontweight='bold', fontsize=10)
     ax_c2.set_title('Physics-Aware AI Selection Probability',
-                    fontsize=8, fontweight='bold', pad=10)
+                    fontsize=10, fontweight='bold', pad=10)
     ax_c2.set_yticks(tick_positions)
-    ax_c2.set_yticklabels(tick_labels, fontsize=6)
+    ax_c2.set_yticklabels(tick_labels, fontsize=9)
     cbar_c2 = plt.colorbar(im_c2, ax=ax_c2)
-    cbar_c2.set_label('P(select)', fontsize=6)
+    cbar_c2.set_label('P(select)', fontsize=9)
+
+    # Add annotation arrow for sharp diagonal (updated position for 37×37 scale)
+    ax_c2.annotate('Sharp, Global\nPhysical Alignment',
+                  xy=(27, 30), xytext=(31, 20),
+                  arrowprops=dict(arrowstyle='->', lw=2, color='cyan'),
+                  fontsize=9, fontweight='bold', color='cyan',
+                  bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.7, edgecolor='cyan'))
 
     # Panel C title
     ax_c1.text(0.5, 1.25, '(c) Macro-level Selection Robustness\n(All Angles)',
-              transform=ax_c1.transAxes, fontsize=9, fontweight='bold',
+              transform=ax_c1.transAxes, fontsize=12, fontweight='bold',
               ha='center', va='bottom')
 
     # Overall title
     fig.suptitle('Deciphering AI Understanding via Micro-Mechanism & Macro-Robustness',
-                 fontsize=10, fontweight='bold', y=0.98)
+                 fontsize=16, fontweight='bold', y=0.98)
 
     # Save
     plt.savefig(output_path, dpi=200, bbox_inches='tight', facecolor='white')
