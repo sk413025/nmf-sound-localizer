@@ -4,40 +4,38 @@ import matplotlib.pyplot as plt
 def mm_to_in(mm):
     return mm / 25.4
 
-def set_nature_rcparams(base_fontsize=7):
-    """
-    Set matplotlib rcParams for Nature-style figures.
-    Nature guide: 7pt (max 8pt) for text.
-    """
+def set_nature_rcparams(base_fontsize=8):
     mpl.rcParams.update({
-        # Font
+        # 字體（sans-serif；優先 Arial/Helvetica）
         "font.family": "sans-serif",
         "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+
+        # 字級：以 8 pt 為基準（縮放後仍可讀）
         "font.size": base_fontsize,
         "axes.titlesize": base_fontsize,
-        "axes.labelsize": base_fontsize - 1, # 6pt for labels
-        "xtick.labelsize": base_fontsize - 1, # 6pt for ticks
-        "ytick.labelsize": base_fontsize - 1,
-        "legend.fontsize": base_fontsize - 1,
+        "axes.labelsize": base_fontsize,
+        "xtick.labelsize": base_fontsize,
+        "ytick.labelsize": base_fontsize,
+        "legend.fontsize": base_fontsize,
 
-        # Lines
-        "axes.linewidth": 0.5, # Thinner lines for small figures
-        "lines.linewidth": 0.75,
-        "grid.linewidth": 0.4,
-        "xtick.major.width": 0.5,
-        "ytick.major.width": 0.5,
-        "xtick.minor.width": 0.4,
-        "ytick.minor.width": 0.4,
-        "xtick.major.size": 2.0,
-        "ytick.major.size": 2.0,
-        
-        # Layout
+        # 線寬：0.5–1 pt
+        "axes.linewidth": 0.8,
+        "lines.linewidth": 0.8,
+        "grid.linewidth": 0.5,
+        "xtick.major.width": 0.8,
+        "ytick.major.width": 0.8,
+        "xtick.minor.width": 0.6,
+        "ytick.minor.width": 0.6,
+        "xtick.major.size": 3.0,
+        "ytick.major.size": 3.0,
+
+        # 白底、乾淨
         "figure.facecolor": "white",
         "axes.facecolor": "white",
         "savefig.facecolor": "white",
-        
-        # PDF
-        "pdf.fonttype": 42,
+
+        # PDF/PS 字體嵌入（避免審稿端字體被替換）
+        "pdf.fonttype": 42,  # TrueType
         "ps.fonttype": 42,
     })
 
@@ -45,6 +43,33 @@ def make_figure(width_mm=88, height_mm=60):
     fig = plt.figure(figsize=(mm_to_in(width_mm), mm_to_in(height_mm)))
     return fig
 
+def add_panel_label(ax, label, x=0.0, y=1.02):
+    # Nature 常見：小寫粗體 a, b, c...
+    ax.text(x, y, label, transform=ax.transAxes,
+            fontsize=8, fontweight="bold", va="bottom", ha="left")
+
 def save_outputs(fig, out_prefix, dpi_tiff=300):
-    fig.savefig(f"{out_prefix}.pdf", bbox_inches="tight", pad_inches=0.02)
-    fig.savefig(f"{out_prefix}.tiff", dpi=dpi_tiff, bbox_inches="tight", pad_inches=0.02)
+    # 1) 向量：PDF（線圖/統計圖優先）
+    fig.savefig(f"{out_prefix}.pdf", bbox_inches="tight")
+
+    # 2) 點陣：TIFF（影像/投稿系統可能需要）
+    fig.savefig(f"{out_prefix}.tiff", dpi=dpi_tiff, bbox_inches="tight")
+
+# ======== 使用示例 ========
+set_nature_rcparams(base_fontsize=8)
+
+# 單欄圖：88 mm 寬（Nature Communications 欄寬） [oai_citation:13‡Nature](https://www.nature.com/ncomms/submit/how-to-submit?utm_source=chatgpt.com)
+fig = make_figure(width_mm=88, height_mm=60)
+ax = fig.add_subplot(1,1,1)
+
+# 畫圖（示例）
+import numpy as np
+x = np.linspace(0, 10, 200)
+ax.plot(x, np.sin(x), label="sin(x)")
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Amplitude (a.u.)")
+ax.legend(frameon=False)
+add_panel_label(ax, "a")
+
+save_outputs(fig, "Fig1a_single_column", dpi_tiff=300)
+plt.close(fig)
