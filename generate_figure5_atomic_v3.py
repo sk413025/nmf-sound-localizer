@@ -221,24 +221,23 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     ax.grid(True, alpha=0.2, linestyle='--', color='gray')
     ax.set_axisbelow(True) # Grid behind data
 
-    # 2. Traditional OMP: Neutral Gray, Thin Line, No Fill (or very subtle)
-    # Using a "scatter-like" appearance with markers but connected to show continuity
-    ax.plot(angles_rad, physics_scores_norm, 'o-', color='#B0B0B0',
+    # 2. Traditional OMP: Coral (Nature style), Thin Line
+    ax.plot(angles_rad, physics_scores_norm, 'o-', color='coral',
             linewidth=0.8, markersize=2, alpha=0.6, 
             label='Traditional OMP', zorder=1)
     
-    # 3. Physics-Aware AI: Prussian Blue, Strong Line
-    ax.plot(angles_rad, qk_scores_norm, '-', color='#1D3557',
+    # 3. Physics-Aware AI: Dark Green (Nature style), Strong Line
+    ax.plot(angles_rad, qk_scores_norm, '-', color='darkgreen',
             linewidth=1.5, alpha=0.9, 
             label='Physics-Aware AI', zorder=2)
     # Add a scatter point only at the peak to highlight the prediction
     peak_idx = np.argmax(qk_scores_norm)
     ax.scatter([angles_rad[peak_idx]], [qk_scores_norm[peak_idx]], 
-               color='#1D3557', s=15, zorder=3)
+               color='darkgreen', s=15, zorder=3)
 
-    # 4. Ground Truth: Black Dashed Line, High Z-Order
-    ax.plot([true_angle_rad, true_angle_rad], [0, 1.05], color='black',
-            linewidth=1.2, linestyle='--', alpha=0.8,
+    # 4. Ground Truth: Star marker only (No line)
+    ax.plot([true_angle_rad], [1.05], '*', color='lime', markersize=8,
+            markeredgecolor='black', markeredgewidth=0.5,
             label='Ground Truth', zorder=4)
 
     # 5. Aesthetics
@@ -246,8 +245,8 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     ax.set_theta_direction(-1)
     ax.set_title('Final Estimation', pad=10, fontsize=9)
     
-    # Legend: Frameless, outside
-    ax.legend(frameon=False, loc='upper right', bbox_to_anchor=(1.45, 1.15), 
+    # Legend: Frameless, outside, raised higher to avoid overlap
+    ax.legend(frameon=False, loc='upper right', bbox_to_anchor=(1.45, 1.35), 
               fontsize=6, handlelength=1.5)
     
     ax.set_ylim(0, 1.1)
