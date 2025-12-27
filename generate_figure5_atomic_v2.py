@@ -213,15 +213,15 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
                     (qk_scores.max() - qk_scores.min() + 1e-12)
 
     ax.plot(angles_rad, physics_scores_norm, 'o-', color='coral',
-            linewidth=1.0, markersize=2, alpha=0.7, label='Traditional OMP')
+            linewidth=0.8, markersize=1, alpha=0.7, label='Traditional OMP')
     ax.fill_between(angles_rad, 0, physics_scores_norm, color='coral', alpha=0.25)
 
     ax.plot(angles_rad, qk_scores_norm, 's-', color='darkgreen',
-            linewidth=1.0, markersize=2, alpha=0.9, label='Physics-Aware AI')
+            linewidth=0.8, markersize=1, alpha=0.9, label='Physics-Aware AI')
     ax.fill_between(angles_rad, 0, qk_scores_norm, color='darkgreen', alpha=0.35)
 
     ax.plot([true_angle_rad, true_angle_rad], [0, 1], 'lime',
-            linewidth=1.5, linestyle='--', alpha=0.9,
+            linewidth=1.0, linestyle='--', alpha=0.9,
             label=f'Ground Truth')
 
     ax.set_theta_zero_location('N')
