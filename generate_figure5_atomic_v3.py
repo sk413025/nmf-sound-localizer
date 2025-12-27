@@ -225,11 +225,14 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     ax.plot(angles_rad, physics_scores_norm, 'o-', color='coral',
             linewidth=0.8, markersize=2, alpha=0.6, 
             label='Traditional OMP', zorder=1)
+    ax.fill_between(angles_rad, 0, physics_scores_norm, color='coral', alpha=0.1, zorder=1)
     
     # 3. Physics-Aware AI: Dark Green (Nature style), Strong Line
     ax.plot(angles_rad, qk_scores_norm, '-', color='darkgreen',
             linewidth=1.5, alpha=0.9, 
             label='Physics-Aware AI', zorder=2)
+    ax.fill_between(angles_rad, 0, qk_scores_norm, color='darkgreen', alpha=0.1, zorder=2)
+
     # Add a scatter point only at the peak to highlight the prediction
     peak_idx = np.argmax(qk_scores_norm)
     ax.scatter([angles_rad[peak_idx]], [qk_scores_norm[peak_idx]], 
