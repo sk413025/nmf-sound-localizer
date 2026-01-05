@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate Figure 5 Atomic Panels (Nature Style) - v5
-Optimized Layout: Maximized Data-Ink Ratio, Square Aspect Ratios, Horizontal Colorbars
-Minimizing White Space with Fixed Dimensions
+Generate Figure 5 Atomic Panels (Nature Style) - v7
+Changes from v5:
+1. B-series panels (spectrograms) are now SQUARE, matching the exact dimensions of A and C panels.
+   - Side length of plot area: 28.482 mm.
+2. B-series Y-axis changed to 0-2000 Hz (bottom to top).
+3. B-series Y-axis ticks limited to 5 (0, 500, 1000, 1500, 2000).
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,7 +37,6 @@ def mm_to_inch(mm):
 def save_outputs_fixed_size(fig, out_prefix, dpi_tiff=300):
     """
     Save figure without bbox_inches='tight' to strictly respect the defined figsize.
-    This ensures the output dimensions are exactly as requested (e.g. 35.482mm width).
     """
     fig.savefig(f"{out_prefix}.pdf")
     fig.savefig(f"{out_prefix}.tiff", dpi=dpi_tiff)
@@ -42,52 +44,48 @@ def save_outputs_fixed_size(fig, out_prefix, dpi_tiff=300):
 def setup_figure_and_axes(width_mm, height_mm, is_square=False, is_polar=False):
     """
     Create figure and axes with precise layout.
-    Strategy:
-    - Maximize Width: Minimal Left/Right margins.
-    - Horizontal Colorbar at Bottom.
-    - Top aligned for all plots.
     """
     fig = plt.figure(figsize=(mm_to_inch(width_mm), mm_to_inch(height_mm)))
     
     if is_polar:
         # Polar plot layout
-        # Margins (mm) - TIGHTER
-        top_m = 4.0  # Just enough for title
-        bottom_m = 1.0 # Minimal bottom
-        left_m = 1.0 # Minimal left
-        right_m = 1.0 # Minimal right
+        top_m = 4.0
+        bottom_m = 1.0
+        left_m = 1.0
+        right_m = 1.0
         
         w_ax = width_mm - left_m - right_m
         h_ax = height_mm - top_m - bottom_m
         
-        # Add axes [left, bottom, width, height] in normalized coordinates
         rect = [left_m/width_mm, bottom_m/height_mm, w_ax/width_mm, h_ax/height_mm]
         ax = fig.add_axes(rect, projection='polar')
         return fig, ax, None
 
     # Standard Plot Layout
-    # Margins (mm) - TIGHTER
-    top_m = 3.5   # Just enough for Title (7pt ~ 2.5mm + padding)
-    left_m = 6.5  # Tighten Y-label space (was 7.5)
-    right_m = 0.5 # Minimal right margin (was 1.0)
+    top_m = 3.5
+    left_m = 6.5
+    right_m = 0.5
     
     # Colorbar settings
-    cbar_h = 1.2  # Thinner colorbar (was 1.5)
-    cbar_bottom_m = 2.5 # Space below colorbar for labels (was 4.0)
-    cbar_space = 3.5 # Space between plot and colorbar (includes X-labels) (was 5.0)
+    cbar_h = 1.2
+    cbar_bottom_m = 2.5
+    cbar_space = 3.5
     
     # Calculate Axes Dimensions
     w_ax = width_mm - left_m - right_m
     
+    # Force square if requested OR if we want consistent height with square plots
+    # In v7, we want B series to match A/C side length.
+    # A/C use is_square=True, so their side length is w_ax.
+    # We will use the same logic for B.
+    
     if is_square:
-        h_ax = w_ax # Force square
+        h_ax = w_ax 
     else:
-        # For non-square (spectrograms), use available vertical space
+        # Fallback for non-square if ever needed, but v7 requests matching A/C
         h_ax = height_mm - top_m - (cbar_bottom_m + cbar_h + cbar_space)
     
     # Calculate positions
-    # Top of axes should be at (Height - top_m)
-    # Bottom of axes = (Height - top_m) - h_ax
     bottom_ax = height_mm - top_m - h_ax
     
     # Axes Rect
@@ -95,7 +93,6 @@ def setup_figure_and_axes(width_mm, height_mm, is_square=False, is_polar=False):
     ax = fig.add_axes(rect_ax)
     
     # Colorbar Rect
-    # Placed at fixed position from bottom
     rect_cbar = [left_m/width_mm, cbar_bottom_m/height_mm, w_ax/width_mm, cbar_h/height_mm]
     cax = fig.add_axes(rect_cbar)
     
@@ -227,14 +224,20 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     vmax_phys = max(physics_true_heatmap.max(), physics_wrong_heatmap.max())
     cmap_phys = 'viridis'
 
+    # Y-axis settings
+    y_ticks = [0, 500, 1000, 1500, 2000]
+    y_extent = [0, 8, 0, 2000] # Left, Right, Bottom, Top
+
     # B1 Left: Physics True
-    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=False)
+    # NOTE: is_square=True to match A/C dimensions
+    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=True)
     im = ax.imshow(physics_true_heatmap, aspect='auto', cmap=cmap_phys,
-                   extent=[0, 8, 2000, 300], interpolation='nearest',
+                   extent=y_extent, interpolation='nearest', origin='lower',
                    vmin=vmin_phys, vmax=vmax_phys)
     ax.set_title(f'Physics: True ({angles[true_expert]:.0f}°)')
     ax.set_ylabel('Frequency (Hz)')
     ax.set_xlabel('Atom Index')
+    ax.set_yticks(y_ticks)
     
     cbar = plt.colorbar(im, cax=cax, orientation='horizontal')
     cbar.set_label('Energy', fontsize=6)
@@ -243,13 +246,14 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     plt.close(fig)
 
     # B1 Right: Physics Wrong
-    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=False)
+    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=True)
     im = ax.imshow(physics_wrong_heatmap, aspect='auto', cmap=cmap_phys,
-                   extent=[0, 8, 2000, 300], interpolation='nearest',
+                   extent=y_extent, interpolation='nearest', origin='lower',
                    vmin=vmin_phys, vmax=vmax_phys)
     ax.set_title(f'Physics: Wrong ({angles[wrong_expert]:.0f}°)')
     ax.set_ylabel('Frequency (Hz)')
     ax.set_xlabel('Atom Index')
+    ax.set_yticks(y_ticks)
     
     cbar = plt.colorbar(im, cax=cax, orientation='horizontal')
     cbar.set_label('Energy', fontsize=6)
@@ -262,13 +266,14 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     cmap_qk = 'RdBu_r'
 
     # B2 Left: QK True
-    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=False)
+    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=True)
     im = ax.imshow(qk_true_heatmap, aspect='auto', cmap=cmap_qk,
-                   extent=[0, 8, 2000, 300], interpolation='nearest',
+                   extent=y_extent, interpolation='nearest', origin='lower',
                    vmin=vmin_qk, vmax=vmax_qk)
     ax.set_title(f'QK: True ({angles[true_expert]:.0f}°)')
     ax.set_ylabel('Frequency (Hz)')
     ax.set_xlabel('Atom Index')
+    ax.set_yticks(y_ticks)
     
     cbar = plt.colorbar(im, cax=cax, orientation='horizontal')
     cbar.set_label('QK Score', fontsize=6)
@@ -277,13 +282,14 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     plt.close(fig)
 
     # B2 Right: QK Wrong
-    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=False)
+    fig, ax, cax = setup_figure_and_axes(W_STD, H_STD, is_square=True)
     im = ax.imshow(qk_wrong_heatmap, aspect='auto', cmap=cmap_qk,
-                   extent=[0, 8, 2000, 300], interpolation='nearest',
+                   extent=y_extent, interpolation='nearest', origin='lower',
                    vmin=vmin_qk, vmax=vmax_qk)
     ax.set_title(f'QK: Wrong ({angles[wrong_expert]:.0f}°)')
     ax.set_ylabel('Frequency (Hz)')
     ax.set_xlabel('Atom Index')
+    ax.set_yticks(y_ticks)
     
     cbar = plt.colorbar(im, cax=cax, orientation='horizontal')
     cbar.set_label('QK Score', fontsize=6)
@@ -291,7 +297,7 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     save_outputs_fixed_size(fig, str(out_dir / "Fig5_B2_QK_WRONG"))
     plt.close(fig)
 
-    # B3: Polar Plot
+    # B3: Polar Plot (Unchanged)
     fig, ax, _ = setup_figure_and_axes(W_POLAR, H_POLAR, is_polar=True)
     angles_rad = np.deg2rad(angles)
     true_angle_rad = np.deg2rad(angles[true_expert])
@@ -332,7 +338,6 @@ def create_atomic_panels_b(routing_data, dict_data, out_dir):
     
     ax.set_title('Final Estimation', pad=10)
     
-    # Legend: Inside, Top Right (to minimize whitespace)
     ax.legend(frameon=False, loc='upper right', bbox_to_anchor=(1.0, 1.05), 
               fontsize=5, handlelength=1.0)
     
@@ -390,11 +395,11 @@ def create_atomic_panels_c(routing_data, out_dir):
 
 def main():
     run_dir = "/Users/jnrle/Documents/LDVReorientation/worktrees/nature-comm-repro/results/omp_transformer_speech260_trainval_split_full_20251115_082341"
-    out_dir = Path("results/results_figure5_v5")
+    out_dir = Path("results/results_figure5_v7")
     out_dir.mkdir(exist_ok=True, parents=True)
     
     print("="*60)
-    print("Generating Figure 5 Atomic Panels (Nature Style) - v5")
+    print("Generating Figure 5 Atomic Panels (Nature Style) - v7")
     print("="*60)
 
     routing_data, dict_data = load_data(run_dir)
