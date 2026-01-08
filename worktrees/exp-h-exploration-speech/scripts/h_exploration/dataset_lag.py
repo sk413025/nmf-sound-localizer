@@ -24,7 +24,8 @@ class DoALagDataset(Dataset):
                  angle: float = 90.0,
                  max_lag: int = 16,
                  fs: int = 16000,
-                 n_fft: int = 2048, 
+                 n_fft: int = 2048,
+                 hop_length: Optional[int] = None, 
                  window: str = "hann",
                  freq_min: float = 300.0, 
                  freq_max: float = 3000.0):
@@ -34,6 +35,7 @@ class DoALagDataset(Dataset):
         self.max_lag = max_lag
         self.fs = fs
         self.n_fft = n_fft
+        self.hop_length = hop_length
         self.window = window
         self.freq_min = freq_min
         self.freq_max = freq_max
@@ -72,19 +74,24 @@ class DoALagDataset(Dataset):
         if mic_wav.ndim == 1:
             mic_wav = mic_wav.reshape(1, -1) # (1, Samples)
         
+        if self.hop_length is not None:
+             noverlap = self.n_fft - self.hop_length
+        else:
+             noverlap = None
+
         # STFT
         _, _, stft, _ = AudioProcessor.compute_stft_spectrogram(
-            mic_wav[0], fs=self.fs, nperseg=self.n_fft, window=self.window
+            mic_wav[0], fs=self.fs, nperseg=self.n_fft, noverlap=noverlap, window=self.window
         )
         mic_stft = stft.T # (T, F) Complex
         
         if ldv_wav.ndim == 1:
             _, _, stft_y, _ = AudioProcessor.compute_stft_spectrogram(
-                ldv_wav, fs=self.fs, nperseg=self.n_fft, window=self.window
+                ldv_wav, fs=self.fs, nperseg=self.n_fft, noverlap=noverlap, window=self.window
             )
         else:
             _, _, stft_y, _ = AudioProcessor.compute_stft_spectrogram(
-                ldv_wav[0], fs=self.fs, nperseg=self.n_fft, window=self.window
+                ldv_wav[0], fs=self.fs, nperseg=self.n_fft, noverlap=noverlap, window=self.window
             )
         ldv_stft = stft_y.T # (T, F) Complex
         
