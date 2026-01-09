@@ -46,8 +46,10 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
     # (F, K_max, M)
     All_Corrs = []
     All_Actions = []
+    All_Reductions = [] # Store cumulative reduction at each step
     
     initial_norms = torch.norm(Targets, dim=1).squeeze() # (F)
+    current_norms = initial_norms.clone()
     
     for k in range(K_max):
         # 1. Correlations
@@ -85,13 +87,19 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
             recon = A_active @ h
             Residuals[b, :, 0] = y_b - recon
             
-    final_norms = torch.norm(Residuals, dim=1).squeeze() # (F)
+        # Calc cumulative reduction so far
+        current_norms = torch.norm(Residuals, dim=1).squeeze()
+        reductions = (initial_norms - current_norms) / (initial_norms + 1e-6)
+        All_Reductions.append(reductions.cpu())
+            
+    final_norms = torch.norm(Residuals, dim=1).squeeze()
     
     score_improvement = (initial_norms - final_norms) / (initial_norms + 1e-6)
     
     traj = {
         "correlations": torch.stack(All_Corrs, dim=1), # (F, K, M)
         "actions": torch.stack(All_Actions, dim=1),    # (F, K)
+        "reductions": torch.stack(All_Reductions, dim=1), # (F, K)
         "scores": score_improvement.cpu() # (F)
     }
             
@@ -153,12 +161,14 @@ def main():
             
             corrs = traj["correlations"] # (F, K, M)
             actions = traj["actions"]
+            reductions = traj["reductions"]
             scores = traj["scores"]
             
             # Save block
             all_trajectories.append({
                 "corrs": corrs.half(),
                 "actions": actions.to(torch.int8),
+                "reductions": reductions.half(),  # New
                 "scores": scores.half()
             })
 
