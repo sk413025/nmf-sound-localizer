@@ -1,0 +1,25 @@
+Experiment: Clean Physics + RTG Input Normalization
+
+Context:
+Previous diagnostics revealed:
+1. Mathematical inconsistency where OMP selection used unit-norm atoms but projection used standard LS, potentially keeping "weight" magnitude inconsistent with "correlation" magnitude.
+2. Huge scaling mismatch between Input Correlations (~0.007) and RTG Token (1.0), causing policy collapse (failing to pick even the greedy max).
+
+Changes Implemented:
+1. Data Gen (`generate_lag_omp.py`): Enforced "Unit Atom Projection". The saved trajectories now result from projecting on strictly normalized atoms. 
+   - Consequence: Feature `Correlation` is exactly equal to the `Projection Coefficient`.
+2. Model (`train_dt_lag_seq_rtg.py`): Added `nn.LayerNorm(M_lags)` to the Input Embedding layer.
+   - Purpose: To standardise the small correlation values before they are added to the RTG embedding.
+
+Results (20 Epochs):
+- Training Accuracy: 50.55%
+- Validation Accuracy: 50.83% 
+- previous Baseline (Raw input): ~46%.
+
+Analysis:
+- The combination of "Clean Physics" (Consistent Data) and "Input Normalization" yielded a +4.8% absolute improvement in Action Accuracy.
+- Validation Accuracy crossing 50% is a significant milestone for the Sequence Modeling approach (guessing is 1/16 = 6%).
+- The model is now correctly identifying the "Greedy Best" lag more often, suggesting the scaling mismatch was indeed a primary blocker.
+
+Next Steps:
+- Re-run `inspect_flow.py` with this NEW model to verify if the "Interactive Rollout" gap (previously 12% vs 66%) has closed.
