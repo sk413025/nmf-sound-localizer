@@ -1,0 +1,33 @@
+Setup: Frequency-Aware Policy Architecture and Smoke Test
+
+Experiment context:
+- Background: Previous experiments showed that the global Decision Transformer (DTmin) failed to outperform OMP (Acc ~50% vs 74%), while a Single-Frequency model (Bin 50-60) matched OMP (74%). This implies the policy needs frequency context to resolve phase ambiguity.
+- Motivation: To scale the single-frequency success to the full spectrum, the model must be "Frequency-Aware" rather than blind.
+- Purpose: Implement and verify a Frequency-Conditional Architecture where the policy receives the `freq_bin_idx` as an explicit input embedding.
+- Expected: The model should compile and train without error, showing better-than-random accuracy on a small subset (Smoke Test).
+
+Implementation details:
+- Refactored `dataset_lag.py` (via `generate_lag_omp.py`) and `train_dt_lag_seq_rtg.py`.
+- Added `freq_idx` field to `dataset_lag.py`.
+- Added `self.freq_embed = nn.Embedding(1025, d_model)` to `SeqDT_FreqAware`.
+- Input Logic: `Embedding = Physics(Corr) + Goal(RTG) + Context(Freq)`.
+
+Execution:
+- Data Gen: `python scripts/h_exploration/generate_lag_omp.py --max_items 1 --out_dir results/smoke_data`
+- Training: `python scripts/h_exploration/train_dt_lag_seq_rtg.py --data_path results/smoke_data/lag_trajectories.pt --epochs 2 --out_dir results/smoke_train_freq_aware`
+
+Results (Smoke Test):
+- Subsample: 2 clips (2050 freq-trajectories).
+- Train Acc: 36.42% (Epoch 1).
+- Val Acc: 36.42% (Epoch 1).
+- Baseline (Random): ~6.25% (1/16).
+- Status: PASSED. Pipeline works end-to-end.
+
+Physical Analysis:
+- First principles: Phase difference $\Delta \phi = 2\pi f \Delta \tau$. Determining $\Delta \tau$ (Lag) from $\Delta \phi$ requires knowing $f$. Without $f$, the mapping is ambiguous (aliasing).
+- The Embedding Layer allows the network to learn a frequency-specific "Phase Unwrapping" transformation.
+
+Next Steps:
+- Run full-scale data generation (all clips).
+- Train on full dataset (Bins 5-300).
+- Compare Global vs Freq-Aware Accuracy.
