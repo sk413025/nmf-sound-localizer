@@ -1,31 +1,42 @@
 import torch
 import numpy as np
 from scripts.h_exploration.dataset_lag import DoALagDataset, create_dataloader
-from scripts.h_exploration.train_dt_lag_seq_rtg import SeqDT_RTG
+from scripts.h_exploration.train_dt_lag_seq_rtg import SeqDT_FreqAware # Modified Import
 from scripts.h_exploration.generate_lag_omp import run_omp_lag_capture
 import logging
+import argparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def inspect_data_flow():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_path", type=str, required=True)
+    parser.add_argument("--data_path", type=str, required=True) 
+    # data_path is used to infer dataset location or load subset. 
+    # But for this inspection script we might load raw wavs directly via Dataset class.
+    # Let's keep it simple and assume standard paths or args.
+    args = parser.parse_args()
+
     # 1. Setup Data & Model
-    # We use the NEW Freq-Filtered Model (73% Acc)
-    model_path = "results/dtmin_filtered_freq/dt_lag_rtg_best.pth"
+    model_path = args.model_path
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     
     # Init Model (Must match training config)
-    # Note: Training used default d_model=128
-    model = SeqDT_RTG(M_lags=16, d_model=128, hidden_dim=256)
+    # FreqAware Model has freq_embed
+    model = SeqDT_FreqAware(M_lags=16, d_model=128, hidden_dim=256, max_freq=1025)
     try:
         model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
-        logger.info("Loaded trained model.")
-    except:
-        logger.warning("Could not load model, using random weights for dimension check.")
+        logger.info(f"Loaded trained model from {model_path}")
+    except Exception as e:
+        logger.error(f"Could not load model: {e}")
+        return
+
     model.to(device)
     model.eval()
     
     # 2. Get One Real Clip Chunk
+    # Using defaults from generate_lag_omp.py
     dataset = DoALagDataset("/Users/sbplab/LDV-data-processed/speech260_original_16k_no_edge_sync_vad_normalized", 
                             "/Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized", 
                             angle=90.0)
@@ -72,6 +83,7 @@ def inspect_data_flow():
     # Store history for DTmin validation
     history_corrs = []
     history_rtg = []
+    history_freqs = [] # New: Track Freq
     
     # Safe norm for MPS/Complex
     # Fix B: Use torch.linalg.vector_norm(x.abs()) for clarity and MPS support
@@ -153,6 +165,7 @@ def inspect_data_flow():
         # Collect Data for DTmin offline check
         history_corrs.append(Corr_Abs)
         history_rtg.append(0.5) # Dummy Value for the passive check
+        history_freqs.append(b_idx) # Track correct bin
 
     print("\n=== DTmin (Student) I/O Check ===")
     
@@ -160,11 +173,18 @@ def inspect_data_flow():
     device_model = next(model.parameters()).device
     seq_corrs = torch.stack(history_corrs).unsqueeze(0).float().to(device_model)
     seq_rtg = torch.tensor(history_rtg).unsqueeze(0).float().to(device_model)
+    seq_freqs = torch.tensor(history_freqs).unsqueeze(0).long().to(device_model) # (1, K) ? No, Model expects (B, 1) or (B)? 
+    
+    # Model forward expects freq_idx: (B,)
+    # But here we have a sequence. Wait, how was model trained?
+    # In train script: self.freq_embed(freq_idx).unsqueeze(1).expand(-1, K, -1)
+    # So it expects a single freq per batch item. Correct.
+    seq_freq_scalar = torch.tensor([b_idx]).long().to(device_model) # (1,)
     
     print(f"DTmin Input State (Corrs): Shape={seq_corrs.shape}")
     
     with torch.no_grad():
-        logits = model(seq_corrs, seq_rtg)
+        logits = model(seq_corrs, seq_rtg, seq_freq_scalar)
     
     last_step_logits = logits[0, -1, :]
     print(f"final passive logits: {last_step_logits[:5].detach().cpu().numpy()}")
@@ -208,10 +228,12 @@ def inspect_data_flow():
         # Stack Sequence
         inp_seq_corrs = torch.stack(interactive_corrs).unsqueeze(0).float().to(device_model)
         inp_seq_rtg = torch.tensor(interactive_rtg_hist).unsqueeze(0).float().to(device_model)
+        # Use simple scalar freq
+        inp_freq = torch.tensor([b_idx]).long().to(device_model)
         
         # 3. Model Decision
         with torch.no_grad():
-            logits = model(inp_seq_corrs, inp_seq_rtg)
+            logits = model(inp_seq_corrs, inp_seq_rtg, inp_freq)
             
         # Get Action for current step (last in sequence)
         step_logits = logits[0, -1, :]
