@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 def inspect_data_flow():
     # 1. Setup Data & Model
-    # We use a dummy path or existing trained model path
-    model_path = "results/rtg_experiment/dt_lag_rtg_best.pth"
+    # We use the NEW Freq-Filtered Model (73% Acc)
+    model_path = "results/dtmin_filtered_freq/dt_lag_rtg_best.pth"
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     
-    # Init Model
+    # Init Model (Must match training config)
+    # Note: Training used default d_model=128
     model = SeqDT_RTG(M_lags=16, d_model=128, hidden_dim=256)
     try:
         model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
