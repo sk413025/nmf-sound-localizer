@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class LagSequenceDataset(Dataset):
-    def __init__(self, pt_path):
+    def __init__(self, pt_path, freq_idx_range=None):
         raw_data = torch.load(pt_path, weights_only=False)
         self.seq_corrs = []
         self.seq_actions = []
@@ -20,50 +20,45 @@ class LagSequenceDataset(Dataset):
         logger.info(f"Loading sequence data with RTG from {pt_path}...")
         for block in raw_data:
             # block["corrs"]: (F, K, M)
-            # block["actions"]: (F, K)
-            # block["reductions"]: (F, K) - cumulative reduction so far
-            # block["scores"]: (F) - final score of the sequence
             c = block["corrs"].float()
             a = block["actions"].long()
             red = block.get("reductions", None)
             final_target = block.get("scores", None)
             
-            # If reductions not here (old data), warn and skip RTG logic or dummy
             if red is None or final_target is None:
                 continue
+                
+            # Filter Frequencies if requested
+            if freq_idx_range is not None:
+                start, end = freq_idx_range
+                # Ensure range is valid
+                if start >= c.shape[0]: 
+                    logger.warning(f"Freq Filter start {start} >= F {c.shape[0]}")
+                    continue
+                end = min(end, c.shape[0])
+                c = c[start:end]
+                a = a[start:end]
+                red = red[start:end]
+                final_target = final_target[start:end]
+                if c.shape[0] == 0: continue
 
             red = red.float()
             final_target = final_target.float()
             
-            # Calculate RTG
-            # RTG_t = Final_Target - Current_Reduction_Before_Step_t
-            # But the 'red' stores reduction AFTER step t.
-            # So Reduction_Before_Step_0 = 0.
-            # Reduction_Before_Step_1 = red[:, 0]
-            # ...
-            
             F, K, M = c.shape
             rtgs = torch.zeros(F, K)
-            
-            # For each frequency bin
-            # RTG at step t is "How much MORE reduction we will get from t to K"
-            # = Final_Reduction - Reduction_{t-1}
-            # For t=0: Final - 0
-            # For t=1: Final - red[0]
             
             for k in range(K):
                 if k == 0:
                     prev_red = 0.0
                 else:
                     prev_red = red[:, k-1]
-                
-                # Formula: RTG_t = Final - Reduction_so_far
                 rtgs[:, k] = final_target - prev_red
                 
-            # Treat bins as independent sequences
             self.seq_corrs.append(c)
             self.seq_actions.append(a)
             self.seq_rtg.append(rtgs)
+
             
         if len(self.seq_corrs) == 0:
             raise ValueError("No valid data with 'reductions' found. Regenerate data.")
@@ -140,14 +135,22 @@ def main():
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--freq_range", type=str, default=None, help="Start,End bin indices e.g. 50,60")
     args = parser.parse_args()
     
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     logger.info(f"Using device: {device}")
 
+    # Parse freq range
+    f_range = None
+    if args.freq_range:
+        parts = args.freq_range.split(",")
+        f_range = (int(parts[0]), int(parts[1]))
+        logger.info(f"Training on filtered Frequency Range: {f_range}")
+
     try:
-        dataset = LagSequenceDataset(args.data_path)
+        dataset = LagSequenceDataset(args.data_path, freq_idx_range=f_range)
     except ValueError as e:
         logger.error(e)
         return
