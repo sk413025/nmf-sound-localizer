@@ -12,15 +12,14 @@ logger = logging.getLogger(__name__)
 def inspect_data_flow():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, required=True)
-    parser.add_argument("--data_path", type=str, required=True) 
-    # data_path is used to infer dataset location or load subset. 
-    # But for this inspection script we might load raw wavs directly via Dataset class.
-    # Let's keep it simple and assume standard paths or args.
+    parser.add_argument("--freq_idx", type=int, default=50, help="Frequency bin to inspect (0-256)")
+    parser.add_argument("--clip_idx", type=int, default=0, help="Index of clip to inspect")
+    parser.add_argument("--device", type=str, default="mps")
     args = parser.parse_args()
 
     # 1. Setup Data & Model
     model_path = args.model_path
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    device = torch.device(args.device if torch.backends.mps.is_available() else "cpu")
     
     # Init Model (Must match training config)
     # FreqAware Model has freq_embed
@@ -40,8 +39,8 @@ def inspect_data_flow():
     dataset = DoALagDataset("/Users/sbplab/LDV-data-processed/speech260_original_16k_no_edge_sync_vad_normalized", 
                             "/Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized", 
                             angle=90.0)
-    # Just take 1st item
-    item = dataset[0] 
+    # Just take requested item
+    item = dataset[args.clip_idx] 
     mic_stft = item["mic_stft"].to(device) # (T, F) complex
     ldv_stft = item["ldv_stft"].to(device) # (T, F) complex
     
@@ -76,8 +75,8 @@ def inspect_data_flow():
     Targets = Y_chunk.T.unsqueeze(2) # (F, Tw, 1)
     Residuals = Targets.clone()
     
-    # We will track one specific Frequency bin for clarity: Bin 50
-    b_idx = 50
+    # We will track one specific Frequency bin for clarity
+    b_idx = args.freq_idx
     print(f"Inspecting Frequency Bin {b_idx}...")
     
     # Store history for DTmin validation
