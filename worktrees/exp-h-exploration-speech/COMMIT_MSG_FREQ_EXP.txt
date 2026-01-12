@@ -1,0 +1,26 @@
+Experiment: Frequency Isolation (Bin 50-60)
+
+Context:
+Previous experiment (Clean Physics + Input Norm) achieved 50.8% Global Accuracy across all frequencies.
+Hypothesis:
+Signal dynamics (phase rotation speed per lag) are frequency dependent. A model trained on ALL frequencies must learn a "compromise" policy or struggle with conflicting patterns.
+Isolating a specific band (e.g., Speech formants ~1.5kHz) might yield much higher performance.
+
+Experiment:
+- Method: Trained `SeqDT_RTG` on filtering data to only include Frequency Bins 50 to 60 (approx 1500-1800Hz).
+- Dataset size: 5410 sequences (vs ~550k global).
+- Hyperparameters: Same (epochs=20, lr=5e-4), smaller batch size (64).
+
+Results:
+- Global Model Acc: 50.83%
+- Filtered (Bin 50-60) Acc: 73.75% (+22.9%)
+
+Conclusion:
+1. Significant Performance Gain (+23%): The model performs drastically better when specialized to a narrow frequency band.
+2. Interpretation: "General Policy" is hard. The relationship between "Correlation Vector Shape" and "Optimal Lag" varies significantly across frequencies (likely due to wavelength/lag ratio).
+3. Strategy Update: Instead of a single shared model, we should consider:
+   - Frequency-Conditional Model (Add Freq Embedding).
+   - Or Independent Models for sub-bands.
+   - Or just verify if "Speech Relevant Bands" (e.g. 50-100) are all learnable together.
+
+This confirms the user's intuition: "Simplifying to fewer/fixed bins increases performance."
