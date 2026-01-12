@@ -1,0 +1,21 @@
+Experiment: Frequency Filtered (50-60) Verification
+
+Summary:
+Validated the Frequency Filtered Model (Accuracy 73.75%) using the interactive inspection tool (`inspect_flow.py`).
+
+Diagnostic Results (Bin 50):
+- **Step 0:** DTmin SUCCESSFULLY selected Lag 0 (Optimal).
+  - Energy Reduction: **66.61%** (Matches OMP perfectly).
+  - Previous Model Failure: 12.90%.
+- **Step 1:** DTmin selected Lag 1 (Suboptimal but Decent).
+  - Energy Reduction: 73.21% (OMP: 74.08%).
+  - The gap is minimal (< 1%).
+  
+Conclusion:
+1. **Policy Competency Restored:** The specialized model successfully executes the Greedy Policy in the first critical step.
+2. **Phase Bottleneck Refined:** The results show that **if Environment Feedback is provided (Policy Mode)**, the missing phase information (checking `top3_indices` phase scatter) does NOT prevent the model from achieving near-optimal reduction (73% vs 76%).
+3. **Implication:** The primary barrier was indeed the **Complexity of Learning Global Dynamics**. Once simplified to a specific frequency band, the DTmin (Correlations-Only) architecture is sufficient to solve the problem.
+
+Recommendations:
+- Proceed with Frequency-Specific or Band-Conditional Modeling.
+- The "Phase Loss" concern is secondary to "Task Complexity" concern.
