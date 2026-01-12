@@ -1,0 +1,27 @@
+Experiment: Phase Inspection and Policy Audit (inspect_flow.py)
+
+Summary:
+Integrated a first-principles "clean" update consistency check in the inspection tool and ran an interactive policy rollout (environment-in-the-loop).
+
+Findings:
+1. Phase is a Critical Hidden Variable:
+   - Comparing OMP (Complex) vs Real-Part Proxy selection shows that neglecting phase changes the selected atom significantly.
+   - Proof: "Phase Rotation changes selection!" alerts in diagnostic output.
+   - Implication: A "World Model" that predicts future residues based only on current correlation magnitudes is fundamentally limited because it cannot predict destructive vs constructive interference.
+
+2. Policy Capability Gap (Scale/Generalization Issue):
+   - Interactive Rollout Test: When DTmin (Student) is given the CORRECT current correlations (computed by physics), it still fails to select the greedy optimal atom.
+   - Example (Bin 50): 
+     - OMP Selection: Lag 0 (Mag=0.0077). Reduction: 66%.
+     - DTmin Selection: Lag 1 (Mag=0.0065). Reduction: 12%.
+   - The Student sees the max magnitude atom but chooses a suboptimal one.
+
+3. Mathematical Inconsistency Identified:
+   - Previous OMP implementation used Normalized Atoms for Selection (Cosine Similarity) but Unnormalized Atoms for Update (Least Squares).
+   - While mathematically valid for OMP, it introduced a scale opacity.
+   - Fixed `inspect_flow.py` to use explicit Unit Atom Projection: alpha = d^H r. This makes the selection metric (correlation) identical to the projection coefficient.
+
+Actionable Recommendations for Training:
+- Feature Scaling: The discrepancy between Correlation Magnitude (~0.007) and RTG (~1.0) likely causes RTG to dominate the embedding. The model ignores the signal.
+  - Fix: Normalize input correlations (e.g., divide by max or current energy) or use LayerNorm *before* embedding.
+- Curriculum: The policy fails even in "One Step" greedy tasks. It needs to master the greedy step (SFT / BC) before attempting multi-step RL/RTG planning.
