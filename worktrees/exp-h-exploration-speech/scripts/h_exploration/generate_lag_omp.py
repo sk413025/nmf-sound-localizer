@@ -75,7 +75,9 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
         # 3. Projection & Weights
         for b in range(F):
             indices = Active_Sets[b, :k+1]
-            A_active = Dict_tensor[b, :, indices] # (Tw, k+1)
+            # Use NORMALIZED Dictionary for consistent projection scales
+            # This ensures that the 'Weights' correspond directly to the correlation magnitude scale
+            A_active = Dict_Norm[b, :, indices] # (Tw, k+1)
             y_b = Targets[b, :, 0] # (Tw,)
             
             # LS

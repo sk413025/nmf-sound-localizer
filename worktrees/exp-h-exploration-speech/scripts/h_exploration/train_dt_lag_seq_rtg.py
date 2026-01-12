@@ -91,6 +91,9 @@ class SeqDT_RTG(nn.Module):
         # State Embedding
         self.state_embed = nn.Linear(M_lags, d_model)
         
+        # Input Normalization (Critical for small correlation values vs RTG~1.0)
+        self.corr_norm = nn.LayerNorm(M_lags)
+        
         self.layer_norm = nn.LayerNorm(d_model)
         
         # Sequence Modeler: GRU
@@ -114,6 +117,9 @@ class SeqDT_RTG(nn.Module):
         # x: (B, K, M)
         # rtg: (B, K)
         B, K, M = x.shape
+        
+        # Apply Input Normalization
+        x = self.corr_norm(x)
         
         s_emb = self.state_embed(x) # (B, K, d)
         r_emb = self.rtg_embed(rtg.unsqueeze(-1)) # (B, K, 1) -> (B, K, d)
