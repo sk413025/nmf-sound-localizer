@@ -1,0 +1,15 @@
+---
+title: "Physics-Informed Neural Routing for Acoustic Localization"
+author:
+  - name: Your Name
+    affiliation: Your Institution
+date: "2026"
+abstract: |
+  [Abstract will be inserted here from abstract.md]
+keywords:
+  - acoustic localization
+  - physics-informed learning
+  - sparse coding
+  - transfer function
+  - attention mechanism
+---
