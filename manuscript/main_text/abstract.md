@@ -1,11 +1,3 @@
 # Abstract
 
-[150 words maximum, unstructured]
-
-**Background**: [1-2 sentences on the problem]
-
-**Our approach**: [2-3 sentences on innovation]
-
-**Key results**: [2-3 sentences with quantitative metrics - 93.5% accuracy, etc.]
-
-**Impact**: [1 sentence on broader implications]
+A vibrating plate can encode acoustic direction into spectral features, analogous to how the human pinna shapes sound for spatial hearing. Conventional localization relies on arrays or engineered scatterers; here we show that natural structural modes can serve as a direction-dependent encoder when paired with a physics-aware decoder. Using laser Doppler vibrometry on everyday surfaces, our approach achieves 93.5% accuracy on a 37-direction task, compared with 1.7% for physics-only and 2.7% for learning-only baselines, and remains robust at 0 dB signal-to-noise ratio across acrylic, paper, wood, and metal. The key insight is that scattering is not noise but a recoverable spatial code when decoded by a physics-informed architecture. This physics-inspired analogy (not a physiological model) points to non-contact acoustic localization for applications from seismic sensing to biomedical imaging.
