@@ -53,6 +53,22 @@ Prof. Ying-Hui Lai (賴穎暉), National Yang Ming Chiao Tung University (NYCU),
 | L4 | Speech enhancement for hearing-impaired listeners using deep neural networks with auditory-mask motivated loss function | JASA | 2019 | 10.1121/1.5094063 | Auditory-motivated DL |
 | L5 | Time-frequency attention for monaural speech enhancement | IEEE ICASSP | 2020 | 10.1109/ICASSP40776.2020.9054182 | Attention mechanisms for speech |
 
+### 2.1.1 Optical/Vibrometry-Based Speech Sensing (2022-2025)
+
+**These papers are DIRECTLY RELEVANT to the LDV approach in this research.**
+
+| # | Title | Journal | Year | DOI | Relevance |
+|---|-------|---------|------|-----|-----------|
+| L6 | Optical Microphone-Based Speech Reconstruction System With Deep Learning for Individuals With Hearing Loss | IEEE TBME | 2023 | 10.1109/TBME.2023.3285437 | **CRITICAL**: LDV + DL for speech |
+| L7 | Study of optical-based speech acquisition system using vibration signals from speakers' medical masks | JASA-EL | 2022 | 10.1121/10.0010491 | Optical vibration → speech |
+| L8 | Miniaturized Fabry-Perot fiber-optic microphone based on capillary tube and hydrogel diaphragm | Optics & Laser Tech | 2025 | 10.1016/j.optlastec.2025.112582 | Optical acoustic sensing |
+
+**Why L6 is critical**:
+- Uses **LDV (laser Doppler vibrometry)** to capture speech vibrations
+- Applies **deep learning** for speech reconstruction
+- Targets **hearing loss applications** (BME context)
+- Demonstrates the viability of optical sensing for speech/acoustic decoding
+
 ### 2.2 Research Themes and Connections
 
 **Theme 1: Deep Learning for Auditory Applications**
@@ -70,16 +86,29 @@ Prof. Ying-Hui Lai (賴穎暉), National Yang Ming Chiao Tung University (NYCU),
 - This parallels the physics-informed design in the current work
 - Connection: Domain-specific constraints improve generalization
 
+**Theme 4: Optical/Vibrometry-Based Acoustic Sensing** ⭐ NEW
+- L6 demonstrates LDV + deep learning for speech reconstruction
+- L7 shows optical vibration measurement can extract speech information
+- L8 develops miniaturized optical microphones for acoustic sensing
+- **Direct connection**: This research uses the same LDV + DL paradigm for DOA estimation
+
 ### 2.3 Suggested Citation Strategy
 
-**Primary citation (highly recommended)**:
+**Primary citations (highly recommended)**:
+- L6 (IEEE TBME 2023): **Most relevant** - LDV + DL for speech reconstruction, directly parallels our approach
 - L2 (Ear & Hearing 2018): Establishes advisor's expertise in DL for hearing applications
 
 **Supporting citations (if space permits)**:
 - L3 (IEEE TETCI 2018): Demonstrates multimodal fusion approach
 - L4 (JASA 2019): Shows auditory-motivated architecture design
+- L7 (JASA-EL 2022): Optical vibration-based speech acquisition
 
-**Citation context example**:
+**Citation context examples**:
+
+For LDV/optical sensing context:
+> "Optical vibrometry combined with deep learning has recently been shown effective for speech reconstruction from surface vibrations [L6], demonstrating the viability of non-contact acoustic decoding approaches that the present work extends to direction-of-arrival estimation."
+
+For general DL/hearing context:
 > "Deep learning approaches have proven effective for auditory signal processing challenges, including speech enhancement for hearing-impaired listeners [L2, L4], suggesting that learned representations can capture auditory-relevant features under adverse conditions."
 
 ---
@@ -219,7 +248,9 @@ Auditory Cortex (learning)     ←→       Physics-Aware Decoder
 
 ## 6. Complete Reference List
 
-### 6.1 Prof. Ying-Hui Lai Publications [L1-L5]
+### 6.1 Prof. Ying-Hui Lai Publications [L1-L8]
+
+**Deep Learning for Speech Enhancement (2017-2020)**
 
 [L1] Y.-H. Lai et al., "A Deep Denoising Autoencoder Approach to Improving the Intelligibility of Vocoded Speech in Cochlear Implant Simulation," IEEE Transactions on Biomedical Engineering, vol. 64, no. 7, pp. 1568-1578, 2017. DOI: 10.1109/TBME.2016.2613960
 
@@ -230,6 +261,14 @@ Auditory Cortex (learning)     ←→       Physics-Aware Decoder
 [L4] Y.-H. Lai, F. Chen, and Y.-C. Tsao, "Speech enhancement for hearing-impaired listeners using deep neural networks with auditory-mask motivated loss function," Journal of the Acoustical Society of America, vol. 145, no. 3, pp. 1766-1776, 2019. DOI: 10.1121/1.5094063
 
 [L5] Y.-H. Lai et al., "Time-frequency attention for monaural speech enhancement," IEEE ICASSP, pp. 7544-7548, 2020. DOI: 10.1109/ICASSP40776.2020.9054182
+
+**Optical/Vibrometry-Based Acoustic Sensing (2022-2025)** ⭐ DIRECTLY RELEVANT
+
+[L6] Y.-H. Lai et al., "Optical Microphone-Based Speech Reconstruction System With Deep Learning for Individuals With Hearing Loss," IEEE Transactions on Biomedical Engineering, vol. 70, no. 11, pp. 3195-3206, 2023. DOI: 10.1109/TBME.2023.3285437
+
+[L7] Y.-H. Lai et al., "Study of optical-based speech acquisition system using vibration signals from speakers' medical masks," JASA Express Letters, vol. 2, no. 5, 2022. DOI: 10.1121/10.0010491
+
+[L8] Y.-H. Lai et al., "Miniaturized Fabry-Perot fiber-optic microphone based on capillary tube and hydrogel diaphragm," Optics & Laser Technology, vol. 184, 2025. DOI: 10.1016/j.optlastec.2025.112582
 
 ### 6.2 Spatial Hearing Classics [A1-A7]
 
@@ -320,6 +359,7 @@ Auditory Cortex (learning)     ←→       Physics-Aware Decoder
 | 1998 | Neural plasticity demonstrations | Hofman 1998 |
 | 2017-2020 | Deep learning for auditory enhancement | Lai 2017, 2018, 2019 |
 | 2018-2023 | Single-sensor DOA via scattering | El Badawy 2018, JSV 2023 |
+| 2022-2025 | Optical/LDV-based acoustic sensing | Lai 2022, 2023 (L6, L7) ⭐ |
 
 ### 8.2 Conceptual Lineage
 
@@ -336,6 +376,8 @@ Deep learning for auditory tasks (2017-2020)
     ↓
 Engineered scattering structures (2018-2023)
     ↓
+Optical/LDV speech sensing (2022-2025) ← Advisor's recent work [L6, L7]
+    ↓
 Natural plate modes + LDV + physics-aware learning (This work)
 ```
 
@@ -347,10 +389,11 @@ Natural plate modes + LDV + physics-aware learning (This work)
 
 | Priority | Reference | Why Essential |
 |----------|-----------|---------------|
-| 1 | A3 (Batteau 1967) | Foundational pinna mechanism |
-| 2 | A8 (Van Wanrooij 2004) | Monaural localization evidence |
-| 3 | L2 (Lai 2018) | Advisor expertise + DL for hearing |
-| 4 | A1 (Blauert 1997) | Authoritative textbook reference |
+| 1 | **L6 (Lai 2023)** | **MOST RELEVANT**: LDV + DL for speech, directly parallels our approach |
+| 2 | A3 (Batteau 1967) | Foundational pinna mechanism |
+| 3 | A8 (Van Wanrooij 2004) | Monaural localization evidence |
+| 4 | L2 (Lai 2018) | Advisor expertise + DL for hearing |
+| 5 | A1 (Blauert 1997) | Authoritative textbook reference |
 
 ### B. Supporting Citations (If Space Permits)
 
@@ -364,8 +407,16 @@ Natural plate modes + LDV + physics-aware learning (This work)
 ### C. DOI Quick Reference
 
 ```
+# Advisor Publications - Optical/LDV (PRIORITY)
+L6:  10.1109/TBME.2023.3285437  ⭐ LDV + DL speech reconstruction
+L7:  10.1121/10.0010491         Optical speech acquisition
+L8:  10.1016/j.optlastec.2025.112582  Fiber-optic microphone
+
+# Advisor Publications - DL for Hearing
 L2:  10.1097/AUD.0000000000000537
 L3:  10.1109/TETCI.2017.2784878
+
+# Auditory Physiology
 A1:  10.1121/1.392109
 A3:  10.1098/rspb.1967.0058
 A4:  10.1121/1.1903522
@@ -376,4 +427,5 @@ A12: 10.1038/2226
 ---
 
 *Document created: 2026-01-14*
+*Last updated: 2026-01-14 - Added L6-L8 optical/LDV papers*
 *Purpose: Nature Communications manuscript preparation - auditory physiology context*
