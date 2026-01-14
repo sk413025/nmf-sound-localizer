@@ -502,12 +502,13 @@ Sarah 讀每篇論文時，腦中同時運轉著四個層次的思考：
 
 ## 8. 文獻引用清單
 
-### 8.1 時間反轉聲學 [R1, R4]
+### 8.1 時間反轉聲學 [R1, R4, R34]
 
 | 標籤 | 文獻 | DOI |
 |------|------|-----|
 | [R1] | Time reversal in acoustics. *Contemporary Physics* (1996) | [10.1080/00107519608230338](https://doi.org/10.1080/00107519608230338) |
 | [R4] | An overview of time-reversal acoustics. *JASA* (2008) | [10.1121/1.2933288](https://doi.org/10.1121/1.2933288) |
+| [R34] | Time-Reversal Acoustics in Biomedical Engineering. *Annual Review of Biomedical Engineering* (2003) | [10.1146/annurev.bioeng.5.040202.121630](https://doi.org/10.1146/annurev.bioeng.5.040202.121630) |
 
 **核心貢獻**：證明散射是可逆映射——把訊號時間反轉後播放，聲波會自動聚焦回源頭。
 
@@ -555,6 +556,115 @@ Sarah 讀每篇論文時，腦中同時運轉著四個層次的思考：
 
 **核心貢獻**：展示光學感測可以恢復聲學資訊，傳輸矩陣可以建模散射媒介。
 
+### 8.6 Classical DOA and Array Signal Processing [R22-R26]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R22] | High-resolution frequency-wavenumber spectrum analysis. *Proceedings of the IEEE* (1969) | [10.1109/PROC.1969.7278](https://doi.org/10.1109/PROC.1969.7278) |
+| [R23] | Multiple emitter location and signal parameter estimation. *IEEE Transactions on Antennas and Propagation* (1986) | [10.1109/TAP.1986.1143830](https://doi.org/10.1109/TAP.1986.1143830) |
+| [R24] | ESPRIT - Estimation of signal parameters via rotational invariance techniques. *IEEE Transactions on Acoustics, Speech, and Signal Processing* (1989) | [10.1109/29.32276](https://doi.org/10.1109/29.32276) |
+| [R25] | Beamforming: a versatile approach to spatial filtering. *IEEE ASSP Magazine* (1988) | [10.1109/53.665](https://doi.org/10.1109/53.665) |
+| [R26] | Two decades of array signal processing research: the parametric approach. *IEEE Signal Processing Magazine* (1996) | [10.1109/79.526899](https://doi.org/10.1109/79.526899) |
+
+Core contribution: establishes classic array-based DOA baselines and the signal processing context that single-point LDV-based decoding departs from.
+
+### 8.7 NMF and IS-Divergence Foundations [R27-R29]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R27] | Learning the parts of objects by non-negative matrix factorization. *Nature* (1999) | [10.1038/44565](https://doi.org/10.1038/44565) |
+| [R28] | Nonnegative Matrix Factorization with the Itakura-Saito Divergence: With Application to Music Analysis. *Neural Computation* (2009) | [10.1162/neco.2008.04-08-771](https://doi.org/10.1162/neco.2008.04-08-771) |
+| [R29] | Algorithms for Nonnegative Matrix Factorization with the beta-divergence. *Neural Computation* (2011) | [10.1162/neco_a_00168](https://doi.org/10.1162/neco_a_00168) |
+
+Core contribution: formalizes NMF and IS-divergence optimization that underpins the speech dictionary and the IS-geometry inner loop.
+
+### 8.8 Algorithm Unrolling and Sparse Inference [R30-R31]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R30] | A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems. *SIAM Journal on Imaging Sciences* (2009) | [10.1137/080716542](https://doi.org/10.1137/080716542) |
+| [R31] | Algorithm Unrolling: Interpretable, Efficient Deep Learning for Signal and Image Processing. *IEEE Signal Processing Magazine* (2021) | [10.1109/MSP.2020.3016905](https://doi.org/10.1109/MSP.2020.3016905) |
+
+Core contribution: positions unrolling as a principled bridge between iterative physics-based solvers and trainable networks.
+
+### 8.9 Transmission Matrix and Scattering Operators (Optics Analog) [R32-R33]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R32] | Measuring the Transmission Matrix in Optics: An Approach to the Study and Control of Light Propagation in Disordered Media. *Physical Review Letters* (2010) | [10.1103/PhysRevLett.104.100601](https://doi.org/10.1103/PhysRevLett.104.100601) |
+| [R33] | Focusing coherent light through opaque strongly scattering media. *Optics Letters* (2007) | [10.1364/OL.32.002309](https://doi.org/10.1364/OL.32.002309) |
+
+Core contribution: treats scattering as a linear operator (transmission matrix), reinforcing the mapping view used in the manuscript.
+
+### 8.10 Single-Sensor DOA and NMF-Based Localization [R35-R36]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R35] | Direction of arrival estimation of an acoustic wave using a single structural vibration sensor. *Journal of Sound and Vibration* (2023) | [10.1016/j.jsv.2023.117671](https://doi.org/10.1016/j.jsv.2023.117671) |
+| [R36] | Direction of Arrival With One Microphone, a Few LEGOs, and Non-Negative Matrix Factorization. *IEEE/ACM Transactions on Audio, Speech, and Language Processing* (2018) | [10.1109/TASLP.2018.2867081](https://doi.org/10.1109/TASLP.2018.2867081) |
+
+Core contribution: demonstrates single-sensor DOA feasibility and NMF-based localization, directly contextualizing the LDV single-point setting.
+
+### 8.11 Acoustic Structures and Mobile Systems for Localization [R37-R39]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [R37] | Spatial information coding with artificially engineered structures for acoustic and elastic wave sensing. *Frontiers in Physics* (2022) | [10.3389/fphy.2022.1024964](https://doi.org/10.3389/fphy.2022.1024964) |
+| [R38] | EarCase: Sound Source Localization Leveraging Mini Acoustic Structure Equipped Phone Cases for Hearing-challenged People. *MobiHoc* (2023) | [10.1145/3565287.3610270](https://doi.org/10.1145/3565287.3610270) |
+| [R39] | Owlet: Enabling Spatial Information in Ubiquitous Acoustic Devices. *MobiSys* (2021) | [10.1145/3458864.3467880](https://doi.org/10.1145/3458864.3467880) |
+
+Core contribution: highlights engineered structures and mobile-system deployments for spatial audio sensing, supporting the broader impact narrative.
+
+### 8.12 Auditory Physiology and Spatial Hearing [A1-A12, L1-L5]
+
+#### Spatial Hearing Foundations [A1, A3-A6]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [A1] | Spatial Hearing: The Psychophysics of Human Sound Localization. Blauert, J. *MIT Press* (1997) | [10.1121/1.392109](https://doi.org/10.1121/1.392109) |
+| [A3] | The role of the pinna in human localization. Batteau, D.W. *Proc. R. Soc. B* (1967) | [10.1098/rspb.1967.0058](https://doi.org/10.1098/rspb.1967.0058) |
+| [A4] | Transformation of sound-pressure level from the free field to the eardrum. Shaw, E.A.G. *JASA* (1974) | [10.1121/1.1903522](https://doi.org/10.1121/1.1903522) |
+| [A5] | Spectral cues used in the localization of sound sources on the median plane. Hebrank, J. & Wright, D. *JASA* (1974) | [10.1121/1.1903520](https://doi.org/10.1121/1.1903520) |
+| [A6] | The influence of pinnae-based spectral cues on sound localization. Musicant, A.D. & Butler, R.A. *JASA* (1984) | [10.1121/1.390773](https://doi.org/10.1121/1.390773) |
+
+Core contribution: establishes pinna as direction-dependent spectral filter, directly inspiring the plate-as-scattering-structure analogy.
+
+#### Monaural Localization and Neural Plasticity [A8-A12]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [A8] | Contribution of Head Shadow and Pinna Cues to Chronic Monaural Sound Localization. Van Wanrooij, M.M. & Van Opstal, A.J. *J. Neurosci.* (2004) | [10.1523/JNEUROSCI.4163-03.2004](https://doi.org/10.1523/JNEUROSCI.4163-03.2004) |
+| [A9] | Monaural sound localization: Acute versus chronic unilateral impairment. Slattery, W.H. & Middlebrooks, J.C. *Hearing Research* (1994) | [10.1016/0378-5955(94)90053-1](https://doi.org/10.1016/0378-5955(94)90053-1) |
+| [A10] | Monaural sound localization revisited. Wightman, F.L. & Kistler, D.J. *JASA* (1997) | [10.1121/1.418029](https://doi.org/10.1121/1.418029) |
+| [A11] | Adapting to supernormal auditory localization cues. Shinn-Cunningham, B.G. et al. *JASA* (1998) | [10.1121/1.423088](https://doi.org/10.1121/1.423088) |
+| [A12] | Relearning sound localization with new ears. Hofman, P.M. et al. *Nature Neurosci.* (1998) | [10.1038/2226](https://doi.org/10.1038/2226) |
+
+Core contribution: demonstrates spectral-to-spatial mappings require learning; supports necessity of data-driven decoder.
+
+#### Advisor Publications - Prof. Ying-Hui Lai (賴穎暉) [L1-L5]
+
+| Tag | Reference | DOI |
+|------|-----------|-----|
+| [L1] | A Deep Denoising Autoencoder Approach to Improving the Intelligibility of Vocoded Speech in Cochlear Implant Simulation. *IEEE TBME* (2017) | [10.1109/TBME.2016.2613960](https://doi.org/10.1109/TBME.2016.2613960) |
+| [L2] | Deep Learning-Based Noise Reduction Approach to Improve Speech Intelligibility for Cochlear Implant Recipients. *Ear and Hearing* (2018) | [10.1097/AUD.0000000000000537](https://doi.org/10.1097/AUD.0000000000000537) |
+| [L3] | An Audio-Visual Speech Enhancement Model Using Multimodal Deep Learning. *IEEE TETCI* (2018) | [10.1109/TETCI.2017.2784878](https://doi.org/10.1109/TETCI.2017.2784878) |
+| [L4] | Speech enhancement for hearing-impaired listeners using deep neural networks with auditory-mask motivated loss function. *JASA* (2019) | [10.1121/1.5094063](https://doi.org/10.1121/1.5094063) |
+| [L5] | Time-frequency attention for monaural speech enhancement. *IEEE ICASSP* (2020) | [10.1109/ICASSP40776.2020.9054182](https://doi.org/10.1109/ICASSP40776.2020.9054182) |
+
+Core contribution: establishes advisor expertise in deep learning for auditory applications; supports the BME/hearing context of this research.
+
+#### Biological Analogy Summary
+
+| Human Auditory System | This Research |
+|----------------------|---------------|
+| Pinna (outer ear) | Vibrating plate |
+| HRTF (spectral filtering) | Modal transfer function H_d |
+| Spectral cues | Direction-dependent spectral features |
+| Neural learning/adaptation | Deep learning decoder |
+| Monaural localization ability | Single-point LDV localization |
+
+**Key differentiation**: Unlike evolved (pinna) or engineered (metamaterial) scattering structures, plate modes arise naturally from structural dynamics—representing a third category of spatial encoding.
+
 ---
 
 ## 附錄：相關文件連結
@@ -562,3 +672,4 @@ Sarah 讀每篇論文時，腦中同時運轉著四個層次的思考：
 - [完整技術敘事](../research_context/comprehensive_research_narrative.md)
 - [文獻發展地圖](../related_work_development_map.md)
 - [NC 對齊摘要](../research_context_related_work_summary.md)
+- [聽覺生理學文獻](./auditory_physiology_literature.md)

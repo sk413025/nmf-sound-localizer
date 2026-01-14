@@ -108,3 +108,10 @@ Purpose: summarize the content of `docs/research_context/comprehensive_research_
 - Event-Based Visual Microphone. ICASSP (2023). DOI: 10.1109/ICASSP49357.2023.10094677
 - Transmission matrix inversion through scattering media. Optics Express (2017). DOI: 10.1364/OE.25.027234
 - Online learning of transmission matrix in dynamic media. Optica (2023). DOI: 10.1364/OPTICA.479962
+
+**Single-Sensor DOA via Scattering Structures**
+- Direction of Arrival With One Microphone, a Few LEGOs, and Non-Negative Matrix Factorization. IEEE/ACM TASLP (2018). DOI: 10.1109/TASLP.2018.2867081
+- Owlet: Enabling Spatial Information in Ubiquitous Acoustic Devices. MobiSys (2021). DOI: 10.1145/3458864.3467880
+- Spatial information coding with artificially engineered structures for acoustic and elastic wave sensing. Frontiers in Physics (2022). DOI: 10.3389/fphy.2022.1024964
+- Direction of arrival estimation of an acoustic wave using a single structural vibration sensor. JSV (2023). DOI: 10.1016/j.jsv.2023.117671
+- EarCase: Sound Source Localization Leveraging Mini Acoustic Structure Equipped Phone Cases. MobiHoc (2023). DOI: 10.1145/3565287.3610270
