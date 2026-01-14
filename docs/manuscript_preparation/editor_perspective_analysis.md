@@ -31,7 +31,9 @@
 │   ├── related_work_development_map.md          ← 文獻脈絡與引用定位
 │   ├── research_context_related_work_summary.md ← NC 對齊摘要
 │   └── manuscript_preparation/
-│       └── editor_perspective_analysis.md       ← 本文件
+│       ├── editor_perspective_analysis.md       ← 本文件（背景參考）
+│       ├── nc_crossdisciplinary_reframing_guide.md  ← 操作指南（撰寫中快速查閱）★
+│       └── auditory_physiology_literature.md    ← 聽覺生理學文獻
 │
 └── writing_notes/
     ├── 策略.md    ← Sarah 心理剖析 + 寫作原則
@@ -58,6 +60,7 @@
 | 撰寫 Introduction | 策略.md 下半部（6 段結構） |
 | 撰寫 Results | 策略2.md（假說驅動結構） |
 | 撰寫 Related Work | related_work_development_map.md |
+| **撰寫中快速查閱** | **nc_crossdisciplinary_reframing_guide.md** ★ |
 | 技術細節確認 | comprehensive_research_narrative.md |
 | 投稿前檢查 | 本文件第 7 章（檢查清單） |
 
