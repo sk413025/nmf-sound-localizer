@@ -23,14 +23,14 @@ echo "[Step 1] Data Generation Complete."
 
 # 2. Model Training
 echo "[Step 2] Training Frequency-Aware DT Policy..."
-# Train on bins 5-300 (Low freq noise removal + range limit)
+# Train on bins 5-1024 (Full spectrum except DC/Very Low Freq)
 # Epochs increased to 30 for full convergence
 python3 scripts/h_exploration/train_dt_lag_seq_rtg.py \
     --data_path results/full_data/lag_trajectories.pt \
     --out_dir results/dt_freq_aware_full \
     --epochs 30 \
     --batch_size 256 \
-    --freq_range 5,300
+    --freq_range 5,1024
 
 echo "========================================"
 echo "Experiment Finished Successfully!"

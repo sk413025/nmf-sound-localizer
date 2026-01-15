@@ -49,6 +49,8 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
     All_Reductions = [] # Store cumulative reduction at each step
     
     initial_norms = torch.norm(Targets, dim=1).squeeze() # (F)
+    initial_energy = initial_norms ** 2
+    
     current_norms = initial_norms.clone()
     
     for k in range(K_max):
@@ -89,14 +91,14 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
             recon = A_active @ h
             Residuals[b, :, 0] = y_b - recon
             
-        # Calc cumulative reduction so far
-        current_norms = torch.norm(Residuals, dim=1).squeeze()
-        reductions = (initial_norms - current_norms) / (initial_norms + 1e-6)
+        # Calc cumulative reduction so far (Energy Based)
+        current_energy_vec = torch.norm(Residuals, dim=1).squeeze() ** 2
+        reductions = (initial_energy - current_energy_vec) / (initial_energy + 1e-6)
         All_Reductions.append(reductions.cpu())
             
-    final_norms = torch.norm(Residuals, dim=1).squeeze()
+    final_energy_vec = torch.norm(Residuals, dim=1).squeeze() ** 2
     
-    score_improvement = (initial_norms - final_norms) / (initial_norms + 1e-6)
+    score_improvement = (initial_energy - final_energy_vec) / (initial_energy + 1e-6)
     
     traj = {
         "correlations": torch.stack(All_Corrs, dim=1), # (F, K, M)
