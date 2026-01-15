@@ -32,11 +32,45 @@ The direction-dependent transfer function matrix **H** ∈ ℝ^{346×37} was mea
 
 Each column of **H** represents the spectral signature of one incident direction, encoding how the plate's modal response varies with source angle. The physical interpretation is that different incident angles excite different combinations of plate eigenmodes with different amplitudes: the spatial pattern of acoustic pressure across the plate surface varies with incident direction, and this pattern couples differently to each structural mode depending on the mode shape. The result is that each direction produces a unique spectral fingerprint through direction-selective modal filtering.
 
+The transfer function matrix arises naturally from the linear dynamics of plate vibration. For a thin plate governed by the Kirchhoff-Love equation, the response at any point is a linear superposition of structural eigenmodes:
+
+$$
+W(x, y, \omega) = \sum_r \Phi_r(x, y) \cdot q_r(\omega)
+$$
+
+where Φ_r(x, y) is the spatial mode shape and q_r(ω) is the modal coordinate at frequency ω. Each mode is excited according to a **modal participation factor** that quantifies the spatial coupling between incident acoustic pressure and the mode shape:
+
+$$
+F_r(\theta, \phi) = \iint_\Omega \Phi_r(x, y) \cdot P(x, y; \theta, \phi) \, dA
+$$
+
+This integral varies systematically with incident direction (θ, φ) because the spatial pressure distribution P(x, y; θ, φ) across the plate surface depends on the acoustic wavefront angle. The direction-dependent variation in F_r creates the spectral signatures that **H** encodes. This physics-grounded origin ensures that the transfer matrix captures genuine structural acoustics rather than arbitrary correlations (see Supplementary Information for the complete derivation from wave equation to transfer matrix).
+
 Transfer function columns were normalized to unit L2 norm to ensure that direction estimates are not biased by overall amplitude differences between angular positions. This normalization preserves the relative spectral shape while removing scale variations that could arise from measurement inconsistencies.
+
+## Modal Sparsity Analysis
+
+Singular value decomposition of the transfer function matrix reveals the low intrinsic dimensionality of the vibration response:
+
+$$
+\mathbf{H} = \mathbf{U} \mathbf{\Sigma} \mathbf{V}^H
+$$
+
+where **U** contains the left singular vectors (frequency modes), **Σ** contains the singular values {σ₁ ≥ σ₂ ≥ ... ≥ σ_r}, and **V** contains the right singular vectors (directional patterns). Across the measured frequency range, approximately 10 to 20 dominant modes capture over 90% of the spectral variance, with singular values decaying rapidly beyond this point. This observation is consistent with the theoretical eigenmode density for a thin plate of the measured dimensions operating in the 300–3,000 Hz frequency band.
+
+The modal sparsity provides physical justification for the dictionary-based approach: rather than requiring dense sampling of the full frequency space, direction estimation can exploit the sparse modal structure inherent to structural vibration. Each mode corresponds to a characteristic spatial pattern of plate deflection, and the frequency-dependent coupling between acoustic pressure and plate motion determines which modes are excited by sound from a given direction. This low-rank property ensures that the physical dictionary captures the essential spectral features without overfitting to measurement noise, while the direction-dependent variation in modal excitation provides the physical basis for spatial discrimination.
+
+This low-rank structure has direct implications for decoder design. Because the observation can be approximated by a sparse combination of modal contributions, the inverse problem—inferring direction from observation—admits a structured solution via sparse coding. The physics dictionary exploits this structure by representing observations as sparse combinations of direction-conditioned spectral templates, with the low intrinsic dimensionality ensuring that the dictionary basis spans the physically realizable observation space. The decoder architecture then emerges as a principled solution to this physics-constrained sparse coding problem, rather than an arbitrary neural network design.
 
 ## Physical Dictionary Construction
 
-We constructed a physics-derived dictionary by combining the transfer function matrix with a speech spectral basis, encoding the assumption that the observed spectrum arises from speech content filtered by an angular transfer function.
+We constructed a physics-derived dictionary by combining the transfer function matrix with a speech spectral basis, encoding the assumption that the observed spectrum arises from speech content filtered by an angular transfer function. The forward model for the observation is:
+
+$$
+\mathbf{y} = \mathbf{H}_d \odot \mathbf{s} + \mathbf{e}
+$$
+
+where **y** is the observed spectrum, **H**_d is the transfer function for direction d, **s** is the speech spectral content, ⊙ denotes element-wise (Hadamard) product, and **e** is measurement noise.
 
 First, an unsupervised spectral model was trained on a corpus of speech data to learn a set of 50 spectral atoms representing canonical speech patterns. This basis was learned using non-negative matrix factorization with Itakura-Saito divergence [@fevotte2009_is; @lee1999_nmf], which is appropriate for audio spectra because it preserves the scale-invariant properties of perceptual loudness and naturally enforces non-negativity constraints on spectral magnitudes. The basis atoms capture characteristic spectral shapes including vowel formant structures, consonant noise patterns, and transitional phonetic features.
 
@@ -46,15 +80,37 @@ This dictionary structure provides several advantages: explicit physical interpr
 
 ## Physics-Aware Decoder Architecture
 
-The decoder architecture combines sparse dictionary selection with transformer-based feature extraction, designed to exploit physical structure while retaining the flexibility to adapt to data variations not captured by the idealized dictionary.
+The decoder architecture combines sparse dictionary selection with transformer-based feature extraction, designed to exploit physical structure while retaining the flexibility to adapt to data variations not captured by the idealized dictionary. Conceptually, the architecture implements a deep unrolled network [@monga2021_unrolling], where each layer corresponds to one iteration of a physics-based optimization algorithm. This design provides several advantages over black-box approaches: the network structure directly encodes the forward physical model, intermediate representations have physical interpretations, and the learned parameters adapt the algorithm to data variations not captured by the idealized dictionary.
 
 The input spectrum (346-dimensional magnitude vector) is first embedded into a 128-dimensional feature space via a learned linear projection. This dimensionality was chosen to provide sufficient representational capacity while limiting model complexity. The embedded features are processed by a transformer encoder [@vaswani2017_attention] comprising a single layer with two attention heads. The transformer encoder learns to extract features relevant for direction discrimination through self-attention over the frequency dimension, enabling the model to learn which frequency bands and frequency relationships are most informative for direction estimation.
 
 The transformer output generates attention weights over dictionary atoms via scaled dot-product attention. Query vectors are computed from the transformer output, while key vectors are derived from the dictionary atoms through a learned projection. The attention mechanism implements soft selection over the 296 dictionary atoms, with the attention weights indicating which direction-conditioned spectral templates are relevant for the current input.
 
-Simultaneously, we compute the physical correlation **g** = **D**^T **y** between the input spectrum **y** and each dictionary atom, quantifying how well each direction-conditioned template explains the observation based on inner-product similarity. This physical correlation provides a complementary signal grounded in the forward model, encoding which atoms are geometrically aligned with the observation regardless of learned features.
+Specifically, the **learned attention weights** are computed as:
 
-The final routing decision combines both signals through element-wise multiplication of attention weights and normalized physical correlation. This gating mechanism ensures that only atoms receiving both high learned attention and high physical correlation contribute to the direction estimate, preventing the model from hallucinating directions unsupported by physical evidence while allowing the learned component to adapt to variations not captured by the idealized dictionary.
+$$
+\mathbf{w}_{\text{att}} = \text{softmax}\left(\frac{\mathbf{q} \cdot \mathbf{K}^T}{\sqrt{d_k}}\right)
+$$
+
+where **q** is the query vector from the transformer output, **K** is the key matrix derived from dictionary atoms, and d_k is the key dimension. This formulation enables the model to learn which frequency patterns and their combinations are diagnostic for direction discrimination.
+
+Simultaneously, we compute the **physical correlation** between the input spectrum **y** and each dictionary atom:
+
+$$
+\mathbf{g} = \mathbf{D}^T \mathbf{y}
+$$
+
+This inner product quantifies how well each direction-conditioned template explains the observation, encoding which atoms are geometrically aligned with the observation regardless of learned features.
+
+The final routing decision combines both signals through **element-wise multiplication**:
+
+$$
+\Delta\mathbf{x} = \mathbf{w}_{\text{att}} \odot \mathbf{g}
+$$
+
+where **w**_att are the learned attention weights and ⊙ denotes element-wise product. This gating mechanism ensures that only atoms receiving both high learned attention and high physical correlation contribute to the direction estimate, preventing the model from hallucinating directions unsupported by physical evidence while allowing the learned component to adapt to variations not captured by the idealized dictionary.
+
+This multiplicative gating structure mirrors the update rules of non-negative matrix factorization [@lee1999_nmf; @fevotte2009_is]. Sparse coding under Itakura-Saito divergence yields multiplicative updates where contributions are weighted by how well each atom explains the current residual (see Supplementary Information Eq. 19 for the complete form). The element-wise product of attention and correlation implements an analogous weighting: atoms must both match learned features (high attention) and align geometrically with the observation (high correlation) to contribute. This mathematical consistency ensures that the learned decoder respects the same structural constraints as the physics-based forward model, with the complete derivation from wave equation through sparse coding to network architecture provided in Supplementary Information.
 
 The gated representation is aggregated across atoms within each direction (L2 pooling) to produce 37 direction logits, which are trained with cross-entropy loss to maximize classification accuracy.
 
