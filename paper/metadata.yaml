@@ -1,0 +1,44 @@
+# Pandoc metadata for Interspeech 2026 paper
+title: "Frequency-Aware Decision Transformer for Acoustic Transfer Function Learning"
+
+# Authors (remove for anonymous submission)
+# author:
+#   - name: Author One
+#     affiliation: University A
+#   - name: Author Two
+#     affiliation: University B
+
+# Document settings
+documentclass: article
+papersize: a4
+fontsize: 10pt
+geometry:
+  - margin=2.5cm
+  - columnsep=0.5cm
+
+# For two-column layout (optional, depends on template)
+classoption:
+  - twocolumn
+
+# Language
+lang: en
+
+# PDF metadata
+pdf-engine: xelatex
+
+# Citation settings
+csl: ieee.csl
+link-citations: true
+
+# Table of contents (disable for paper)
+toc: false
+
+# Numbering
+number-sections: true
+
+# Header includes for math
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{graphicx}
+  - \usepackage{booktabs}
