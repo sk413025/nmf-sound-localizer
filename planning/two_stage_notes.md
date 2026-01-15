@@ -9,10 +9,44 @@
 | Property | Description |
 |----------|-------------|
 | **Source** | White noise recordings @ 37 angles (0°-180°, 5° step) |
-| **Form** | H(f, θ) - independent frequency response per angle |
-| **Property** | Content-independent (white noise excitation) |
+| **Form** | `H_cal(f, θ) ∈ ℂ` (angle-indexed complex transfer function) |
+| **Property** | Content-independent estimate under an LTI assumption (white-noise excitation) |
 
-**Key insight**: H is pre-computed, not learned. It captures the angle-dependent acoustic properties of the Mic-to-LDV system.
+**Key insight**: `H_cal` is measured (pre-computed), not learned. It captures the *angle-dependent* Mic→LDV transfer characteristics of the specific sensor+environment setup.
+
+---
+
+## Physical Model and Assumptions
+
+We use the following *explicit* assumptions when talking about “physics” in this project:
+
+- **Fixed geometry**: sensor placement and source direction are static within a recording.
+- **Linear, time-invariant (LTI) approximation**: within a clip, the Mic→LDV mapping can be approximated as an LTI system.
+- **Small-signal regime**: the LDV + vibro-acoustic response is treated as linear around the operating point.
+
+### Time-domain model (per angle)
+
+Let `x(t)` be the microphone waveform and `y_θ(t)` be the LDV waveform recorded at direction `θ`. We assume
+
+`y_θ(t) = (h_θ * x)(t) + ε(t)`,
+
+where `h_θ` is the (unknown) impulse response and `ε(t)` is measurement noise / mismatch.
+
+### STFT-domain model (narrowband approximation)
+
+Let `X(f, n)` and `Y_θ(f, n)` be complex STFTs (frequency bin `f`, frame index `n`). Under the usual narrowband approximation,
+
+`Y_θ(f, n) ≈ H_θ(f) · X(f, n)`,
+
+where `H_θ(f)` is a complex transfer function (magnitude + phase).
+
+### How `H_cal(f, θ)` is estimated from white noise
+
+With white-noise excitation, we estimate `H_cal(f, θ)` by time-averaging cross/auto spectra, e.g.
+
+`H_cal(f, θ) = S_yx(f, θ) / (S_xx(f, θ) + δ)`.
+
+This is “content-independent” only in the sense that the estimator targets the *system* under the LTI approximation.
 
 ---
 
@@ -67,7 +101,7 @@
 ### Method: Freq-Aware DTMin
 - OMP teacher provides optimal lag selection per frequency bin
 - DTMin learns to imitate OMP across multiple frequencies
-- Frequency embedding resolves phase ambiguity (Δφ = 2πf·Δτ)
+- Frequency embedding resolves phase-wrapping ambiguity (φ(f) = -2π·f·τ mod 2π)
 
 ### Output
 - Encoder that produces frequency-dependent transformation features
@@ -109,7 +143,7 @@ Mic Speech ──→ [Stage 1 Encoder] ──→ Features z
 | Section | Content |
 |---------|---------|
 | Method | Stage 1: Freq-Aware DTMin + Stage 2: Direction Head |
-| Results | Energy Reduction (97.11%) + Direction Accuracy (TBD) |
+| Results | Energy Reduction (97.11%) + Direction Accuracy (not yet measured) |
 | Ablation | Frozen vs Fine-tune vs End-to-End |
 
 ---

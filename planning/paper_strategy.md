@@ -77,16 +77,17 @@
 
 #### **核心故事（3句話版本）**
 ```
-1. 跨傳感器場景中，系統差異H與信號內容耦合，導致直接訓練失敗
-   （Frequency-agnostic方法只達50.8%，遠低於Oracle的97.88%）
+1. In cross-sensor settings, the observation mixes signal content with sensor/environment transfer.
+   Direct end-to-end DOA training can overfit to content shortcuts and fail to generalize.
 
-2. 我們提出通用的兩階段學習框架：
-   Stage 1：固定單一角度，學習Mic→LDV語音轉換特徵（角度無關）
-   Stage 2：引入預先計算的H(f,θ)，fine-tune方向估計
+2. We propose a general two-stage framework:
+   Stage 0: measure H_cal(f,θ) from white-noise recordings (calibration).
+   Stage 1: at a single fixed angle θ₀, learn Mic→LDV transformation features from speech (no angle labels).
+   Stage 2: use Stage 1 features + the pre-computed H_cal(f,θ) library for direction classification.
 
-3. 在Mic-to-LDV場景上驗證：
-   Stage 1達到97.11% Energy Reduction（接近Oracle）
-   Stage 2方向估計準確率待實驗驗證
+3. In a Mic→LDV case study, Stage 1 reaches near-oracle reconstruction energy reduction on a
+   representative validation window (97.11% vs 97.88% oracle; reproducible via the validation scripts).
+   Stage 2 direction accuracy is pending.
 ```
 
 > **重要修正**：H是預先從白噪音錄製計算好的頻率響應函數，
@@ -153,17 +154,18 @@ Cross-sensor acoustic learning is challenging due to frequency-
 dependent system transformations. We propose a two-stage learning
 framework: Stage 1 learns Mic-to-LDV speech transformation
 features at a single angle, while Stage 2 combines these features
-with pre-computed transfer functions H(f,θ) for direction
+with a pre-computed calibration library H_cal(f,θ) for direction
 estimation. A key innovation is Frequency-Aware Policy, which
-resolves phase-lag ambiguity through explicit frequency embedding
-(+46% over frequency-agnostic baselines: 97.11% vs 50.8%).
-We validate on microphone-to-LDV speech localization, achieving
-97.11% energy reduction in Stage 1, approaching the OMP oracle
-upper bound (97.88%). Stage 2 direction accuracy demonstrates
-that the learned transformation features generalize to downstream
-tasks. The proposed framework separates angle-agnostic feature
-learning from angle-aware direction estimation, enabling efficient
-adaptation to cross-sensor scenarios.
+resolves phase-wrapped lag ambiguity by explicitly conditioning
+the policy on the frequency bin. We validate on microphone-to-LDV
+speech localization: Stage 1 reaches 97.11% reconstruction energy
+reduction on a representative validation window, close to the
+oracle value (97.88%) under the same protocol. Stage 2 direction
+accuracy will evaluate whether the learned transformation features
+transfer to downstream DOA classification. The proposed framework
+separates angle-agnostic feature learning from angle-aware
+direction estimation, enabling efficient adaptation to cross-sensor
+scenarios.
 ```
 
 > **Abstract 已更新**：移除「白噪音訓練」敘述，改為正確的兩階段描述。
@@ -232,7 +234,7 @@ LDV挑戰（代表cross-sensor的極端難度）：
 我們提出一個sensor-agnostic的框架：
 
 核心思想：分離角度無關特徵與角度相關資訊
-  H(f,θ): 預先從白噪音計算的頻率響應（37角度）
+  H_cal(f,θ): pre-computed from white noise (37 angles)
   Features: 從語音學習的轉換特徵（角度無關）
 
 兩階段學習策略：
@@ -240,14 +242,14 @@ LDV挑戰（代表cross-sensor的極端難度）：
     → 學習頻率相依的轉換特徵
     → 不使用角度資訊（angle-agnostic）
 
-  Stage 2: 引入H(f,θ)進行方向估計
-    → Stage 1特徵 + 37角度H → 方向分類
+  Stage 2: 引入H_cal(f,θ)進行方向估計
+    → Stage 1特徵 + 37角度H_cal → 方向分類
     → Fine-tune或凍結Stage 1 encoder
 
 關鍵技術：Frequency-Aware Policy
-  動機：不同頻率的相位-延遲關係不同（Δφ=2πf·Δτ）
+  動機：延遲造成的相位項隨頻率縮放（φ(f) = -2π·f·τ mod 2π）
   實現：Frequency embedding解決跨頻率的策略衝突
-  效果：97.11% vs 50.8%（+46%提升）
+  效果：使單一策略可在多頻段穩定選擇lag（具體增益以消融實驗呈現）
 
 驗證：Stage 1達到97.11% Energy Reduction（接近Oracle 97.88%）
 ```
@@ -257,7 +259,7 @@ LDV挑戰（代表cross-sensor的極端難度）：
 本文貢獻（按重要性排序）：
 
 1. 技術創新：Frequency-Aware Policy解決相位混疊
-   實驗證明+46%性能提升（97.11% vs 50.8%）
+   以頻率條件化處理相位/延遲的wrap-around；增益以消融實驗量化
 
 2. 兩階段框架：分離角度無關特徵學習與角度相關方向估計
    Stage 1學習轉換特徵，Stage 2驗證下游任務
@@ -316,7 +318,7 @@ Limitation: 都假設標準麥克風輸入，不適用於LDV振動信號
 
 我們的創新：
 Frequency Embedding for phase disambiguation
-→ 顯式建模Δφ=2πf·Δτ的頻率依賴性
+→ 顯式建模相位-延遲關係 φ(f) = -2π·f·τ (mod 2π)
 → 解決lag-phase混疊問題
 ```
 
@@ -328,52 +330,61 @@ Frequency Embedding for phase disambiguation
 
 **General Setup（任意傳感器對）**:
 ```
-給定：
-- Source sensor S (e.g., Microphone)
-- Target sensor T (e.g., LDV, Accelerometer, Bone conduction)
-- Task: Speech source localization (角度θ ∈ [0°, 180°])
+Given:
+- Source sensor S provides x(t) (e.g., microphone pressure)
+- Target sensor T provides y_θ(t) (e.g., LDV surface velocity)
+- Task label: source direction θ ∈ [0°, 180°]
 
-挑戰：
-訓練集只有target sensor數據，
-如何學習sensor-invariant的聲學表示？
+Assumption (per direction θ): the cross-sensor mapping is approximately linear and time-invariant (LTI) within a clip:
+  y_θ(t) = (h_θ * x)(t) + ε(t)
 
-建模：
-設系統轉換為H: S → T
-  T(f,t) ≈ H(f) ⊗ S(f,t)
+STFT notation:
+  X(f,n), Y_θ(f,n) are complex STFTs (frequency bin f, frame index n).
 
-關鍵觀察：
-H是sensor-dependent（硬體特性）
-θ是sensor-invariant（物理角度）
+Narrowband approximation (instantaneous TF):
+  Y_θ(f,n) ≈ H_θ(f) · X(f,n)
 
-直接學習T → θ的問題：
-模型傾向於"抄近路"：
-  混淆H（系統）與content（信號）
-  導致overfitting to signal characteristics
+More general STFT-frame convolution (to capture longer effective responses):
+  Y_θ(f,n) ≈ Σ_{ℓ=0}^{L-1} H_θ(f,ℓ) · X(f,n-ℓ)
+
+Key point:
+- H_θ captures sensor+environment transfer characteristics and can vary with θ.
+- θ is a geometric quantity shared across sensors, while speech content is not.
+
+Why direct end-to-end DOA can fail in cross-sensor settings:
+- The model may overfit to content shortcuts (speaker/formants) instead of learning stable transfer/geometry cues.
+- This hurts cross-signal generalization (speech → music/noise) and cross-sensor transfer.
 ```
 
 **Instantiation: Mic-to-LDV（本文實驗場景）**:
 ```
-為了驗證方法，我們選擇Mic-to-LDV作為test case：
-- Mic: 空氣聲壓 (Pascal)
-- LDV: 表面振動速度 (m/s)
-- 差異極大，代表extreme cross-sensor scenario
+We use Mic→LDV as an extreme test case:
+- Mic measures air pressure (Pa)
+- LDV measures surface vibration velocity (m/s)
+- The mapping includes acoustic propagation, structure coupling, and sensor responses.
 
-建模細節：
-使用lag-based representation:
-  T(f,t) ≈ Σ_{k∈K} h_k(f) · S(f, t-k)
+Lag dictionary used in Stage 1 (discrete STFT-frame shifts):
+For each frequency bin f, we approximate the LDV STFT window as a sparse combination of delayed Mic windows:
+  Y(f, n:n+T_w-1) ≈ Σ_{ℓ∈K} a(f,ℓ) · X(f, n-ℓ : n-ℓ+T_w-1)
 
-其中：
-- K: 稀疏lag set (0-15, 對應0-480ms)
-- h_k(f): 頻率依賴的複數權重
-- 1 lag = 32ms @ hop_length=512, fs=16kHz
+where:
+- ℓ ∈ {0,…,15} are discrete STFT-frame lags
+- τ_ℓ = ℓ · hop / fs, with hop=512 samples and fs=16 kHz (1 lag = 32 ms; max lag ≈ 480 ms)
+- a(f,ℓ) ∈ ℂ are frequency-dependent coefficients
 ```
 
 **圖示（小型diagram）**:
 ```
-┌─────┐  H(f,lag)   ┌─────┐  Direction  ┌─────┐
-│ Mic │────────────→│ LDV │────────────→│  θ  │
-└─────┘   Stage 1   └─────┘   Stage 2   └─────┘
-          (System)            (Task)
+┌─────┐   Stage 1 (θ₀ only)        ┌───────────┐
+│ Mic │───────────────┬──────────→│  Features │
+└─────┘               │           └───────────┘
+                      │                 │
+                      │                 │  + pre-computed H_cal(f,θ)
+                      │                 ↓
+                      │           ┌───────────┐
+                      └──────────→│ Direction │──→ θ
+                                  │   Head    │
+                                  └───────────┘
 ```
 
 #### **3.2 Stage 1: System Transfer Learning (0.5頁，~400 words)**
@@ -403,16 +414,19 @@ For k = 1 to 4:
 → 用於Student distillation
 ```
 
-**表格1: OMP Performance Upper Bound**
+**Table 1: Lag-OMP teacher statistics (reduction score)**
 ```
 ┌───────────────────┬─────────┐
 │ Metric            │  Value  │
 ├───────────────────┼─────────┤
-│ Avg Energy Reduct │ 73.57%  │
+│ Mean reduction    │ 73.57%  │
 │ Median            │ 75.39%  │
 │ 90th Percentile   │  >93%   │
 └───────────────────┴─────────┘
 ```
+
+Note: this “reduction score” is the per-bin metric used in trajectory generation
+(`(‖y‖ - ‖r‖)/‖y‖`). It is different from the “energy reduction” metric used in Table 2.
 
 **3.2.1.5 從物理過程到 Algorithm Distillation：方法論的自然演化 (250 words)**
 
@@ -424,39 +438,42 @@ For k = 1 to 4:
           [牆面振動] → LDV測量 v(f,t)
 
 數學建模：
-  v(f,t) = H(f) ⊗ p(f,t) + noise
-  其中 H(f) = 傳遞函數（由材質、幾何、聲學路徑決定）
+  Time domain (per direction θ, within a clip):
+    v_θ(t) = (h_θ * p)(t) + ε(t)
+
+  STFT (narrowband approximation):
+    V_θ(f,n) ≈ H_θ(f) · P(f,n)
+
+  where H_θ(f) is the complex transfer function (magnitude + phase) determined by the sensor pair, geometry, and environment.
 
 物理稀疏性：
   聲學路徑數量有限（直接路徑 + 少數反射）
   → H的時域表示：H(t) = Σ_{k=1}^K h_k δ(t - τ_k)
-  → 物理上K=3-5條主要路徑已足夠（直接 + 一次/二次反射）
+  → In many setups, a small K can capture the dominant early contributions (direct path + a few strong reflections),
+    but the effective K depends on the environment and the analysis window.
 
 這直接導出稀疏建模的物理必然性
 ```
 
-**B. 序列決策的物理本質：路徑分解過程**
+**B. Why the pursuit is sequential (algorithmic dependency)**
 ```
-OMP迭代不是算法技巧，而是物理過程的數學映射：
+OMP (and related pursuit methods) produce a sequence of decisions because the residual changes after each selected atom.
 
-Step 1: 識別主導路徑（通常是直接路徑或最強反射）
-  物理量：g₁ = D^T y （y在字典空間的投影）
-  選擇：τ₁ = argmax |g₁| （最大能量貢獻的路徑）
+Step 1:
+  Compute correlations g = D^H y and select the lag/atom with the largest |g|.
 
-Step 2-K: 建模次要路徑（多重反射）
-  殘差：r_k = y - Σ_{j<k} h_j D_{τ_j} （未解釋的聲學能量）
-  選擇：τ_k = argmax |D^T r_k| （殘差的主要貢獻）
+Step 2..K:
+  Update the residual r_k = y - D_A h_A (using the current active set A),
+  then recompute correlations D^H r_k and select the next atom.
 
-關鍵物理依賴性：
-  第k步的最優路徑**依賴於**前k-1步已選路徑
-  原因：路徑間相干（dictionary coherence μ=0.9977）
-  → 貪婪選擇（單步預測）忽略路徑耦合 → 物理上不自洽
-  → 序列決策（多步規劃）才能正確建模路徑疊加
+Key dependency:
+  The best action at step k depends on the previously selected atoms because the residual depends on them.
+  With a highly coherent lag dictionary (e.g., μ≈0.998), this dependency can be strong,
+  so one-shot predictors or naive greedy policies can be brittle.
 
-Decision Transformer 的物理必然性：
-  - 不是"選擇DT因為效果好"
-  - 而是"物理過程本質上是序列分解，DT自然適配這個結構"
-  - 實驗證據：貪婪OMP 64.9% vs 序列DT 94.1%
+Why we use a sequence model:
+  We distill teacher trajectories that already have a sequential (state → action → updated residual) structure.
+  A Decision-Transformer-style model is one convenient way to learn this mapping over multiple steps.
 ```
 
 **C. Algorithm Distillation 的物理意義：目標導向的逆問題求解**
@@ -505,7 +522,7 @@ AD本質：學習如何執行目標導向的物理逆問題求解
    - 可解釋性：注意力權重 = 物理相關性分數
 
 3. Frequency Embedding
-   物理關係：Δφ = 2πf·Δτ （相位-延遲-頻率耦合）
+   物理關係：φ(f) = -2π·f·τ (mod 2π) （相位-延遲-頻率耦合）
    - 同樣延遲τ，不同頻率f → 不同相位φ
    - 模型必須"知道"當前頻率f才能解碼τ
    - 這是物理定律，不是網絡設計選擇
@@ -515,14 +532,16 @@ AD本質：學習如何執行目標導向的物理逆問題求解
 
 **表格1.5: 方法比較**
 ```
-┌──────────────────┬─────────┬────────────┐
-│ Method           │ Accuracy│ 特性       │
-├──────────────────┼─────────┼────────────┤
-│ OMP Greedy (單步)│  64.9%  │ 局部最優   │
-│ Behavioral Clone │ ~85-90% │ 累積誤差   │
-│ DTMin (AD+DT)    │  94.1%  │ 多步規劃   │
-│ Oracle (perfect) │ 100.0%  │ 理論上界   │
-└──────────────────┴─────────┴────────────┘
+┌────────────────────┬────────────────────────────────────────────┐
+│ Method             │ Notes                                      │
+├────────────────────┼────────────────────────────────────────────┤
+│ Greedy pursuit     │ One-step selection; can be brittle with a   │
+│                    │ highly coherent lag dictionary              │
+│ Behavioral cloning │ Imitate actions; error can accumulate over  │
+│                    │ multiple selection steps                    │
+│ DTMin (ours)       │ Sequence model with RTG + frequency context │
+│                    │ (distills multi-step teacher trajectories)  │
+└────────────────────┴────────────────────────────────────────────┘
 ```
 
 **3.2.2 Student: Frequency-Aware DTMin 架構實現 (200 words)**
@@ -556,39 +575,41 @@ class FreqAware_DTmin(nn.Module):
 
 **為什麼需要Frequency Embedding？**
 ```
-物理動機：
-Δφ = 2πf·Δτ
+Physical motivation:
+For a pure delay τ, the transfer function contributes a phase term:
+  H(f) = exp(-j·2π·f·τ)  ⇒  φ(f) = -2π·f·τ (mod 2π)
 
-給定觀測到的相位差Δφ，推斷延遲Δτ需要知道頻率f
+In our discrete lag dictionary, τ_ℓ = ℓ·hop/fs (ℓ is an integer STFT-frame lag).
+Therefore, the same lag produces different *wrapped* phases at different frequencies.
+If a policy is trained to select discrete lags from correlation features, it must be conditioned on the frequency bin.
 
-示例：
-Δφ = 2π (20 rad)
-- 如果f = 100Hz  → Δτ = 32ms (Lag 1) ✓
-- 如果f = 1000Hz → Δτ = 3.2ms (Lag 0.1) ✗
+Concrete example (hop=512, fs=16 kHz → 1 lag = 32 ms):
+  τ_1 = 0.032 s
+  φ(100 Hz)  = -2π·100·0.032  = -20.1 rad ≡ -1.26 rad (mod 2π)
+  φ(1000 Hz) = -2π·1000·0.032 = -201  rad ≡ ~0   rad (mod 2π)
 
-不同頻率 → 同樣的correlation pattern → 不同的最優lag
-→ 模型必須"知道"當前頻率才能解碼
+This “phase wrapping” effect is one reason frequency information is necessary for stable lag selection across bins.
 ```
 
 #### **3.3 Stage 2: Task-Specific Fine-tuning (0.3頁，~230 words)**
 
 **遷移策略**:
 ```
-從White Noise到Speech：
+Stage 0 (Calibration): measure H_cal(f,θ) from white noise recordings at all θ
 
-Step 1: Freeze System Encoder
-  ├─ freq_embed: Fixed ✓
-  ├─ state_embed: Fixed ✓
-  └─ GRU backbone: Fixed ✓
+Stage 1 (Pretraining @ single θ₀, no angle labels):
+  - Train Stage 1 on paired Mic/LDV speech at a fixed θ₀
+  - Objective: learn angle-agnostic transformation features / lag-selection policy
 
-Step 2: Replace Task Head
-  ├─ Remove: lag selection head (16-way)
-  └─ Add: direction classifier (37-way, 0°-180°, 5°step)
+Stage 2 (Direction fine-tuning across angles):
+  Step 1: Attach a direction head (37-way, 0°–180°, 5° step)
+  Step 2: Train with Stage 1 features + the pre-computed H_cal(f,θ) library
+  Step 3: Ablate frozen vs fine-tuned encoder
 
-Step 3: Fine-tune on Speech
-  ├─ Learning rate: 1e-4 (10×lower than Stage 1)
-  ├─ Epochs: 10
-  └─ Augmentation: Time shift, pitch shift
+Training details (initial plan):
+  - Learning rate: 1e-4 (lower than Stage 1)
+  - Epochs: ~10
+  - Augmentation: time shift, pitch shift (optional; must not leak angle labels)
 ```
 
 **關鍵假設驗證**:
@@ -604,14 +625,16 @@ H是系統特性（sensor-specific），與信號內容無關
 
 **偽代碼**:
 ```python
-# Stage 1: White noise → Learn H
-model = FreqAware_DTmin()
-model.train(white_noise_data, omp_teacher)
+# Stage 0: calibration (white noise)
+H_cal = estimate_transfer_function_library(white_noise_recordings)  # H_cal(f,θ)
 
-# Stage 2: Speech → Learn direction classifier
-model.freeze_encoder()  # Freeze H
-model.replace_head(num_angles=37)
-model.finetune(speech_data)
+# Stage 1: speech pretraining at a single θ₀ (no angle labels)
+stage1 = FreqAware_DTmin()
+stage1.train(paired_speech_at_theta0, teacher=lag_omp_teacher)
+
+# Stage 2: direction training across θ using H_cal
+model = DirectionModel(stage1_encoder=stage1.encoder, H_cal=H_cal)
+model.train(multiangle_speech, labels=theta)
 ```
 
 ---
@@ -660,13 +683,22 @@ Note: 方法不限於LDV
 對比方法：
 
 Baseline:
-  • SRP-PHAT: 經典方法，適配LDV單點振動
-    (使用pyroomacoustics, 模擬8-point virtual array)
+  • H_cal template matching (non-learned):
+    for each θ, predict Ŷ_θ(f,n) = H_cal(f,θ)·X(f,n),
+    then choose θ that minimizes ||Y - Ŷ_θ||² (summed over f,n).
+
+  • H-only nearest neighbor (non-learned):
+    estimate H_test(f) from the test clip (cross/auto spectra),
+    then choose θ that maximizes similarity between H_test and H_cal(·,θ).
+
+  • Note: array-based DOA baselines (SRP-PHAT/MUSIC) require multi-channel measurements
+    (mic array or multi-point vibration). They are not directly applicable to a single Mic + single LDV point.
 
 Ablations:
-  • Direct Speech: 直接在Speech上訓練（無兩階段）
-  • w/o Freq-Aware: 全局模型（無頻率embedding）
-  • Stage 1 Only: 僅白噪音訓練，直接測試Speech
+  • End-to-end direction head: train DOA directly from inputs without Stage 1 pretraining
+  • No H_cal: direction head uses Stage 1 features only
+  • w/o frequency embedding: Stage 1 pretraining without conditioning on frequency bin
+  • Frozen vs fine-tuned Stage 1 encoder in Stage 2
 
 Training:
   - Optimizer: AdamW (lr=5e-4 Stage1, 1e-4 Stage2)
@@ -676,107 +708,74 @@ Training:
 
 #### **4.2 Main Results (0.4頁，~300 words)**
 
-**表格2: Cross-Sensor Transfer Learning Results (Mic-to-LDV)**
+**Table 2: Stage 1 Reconstruction (Mic→LDV, representative window)**
 ```
-┌──────────────────────┬─────────┬─────────┬──────────┬─────────────┐
-│ Method               │  White  │ Speech  │   Music  │  Avg Cross- │
-│                      │  Noise  │         │  (Test)  │   Signal    │
-├──────────────────────┼─────────┼─────────┼──────────┼─────────────┤
-│ SRP-PHAT (Baseline)  │  54.1%  │  45.2%  │   41.3%  │    46.9%    │
-│ Direct Train (Naive) │  89.2%  │  32.4%* │    N/A   │     N/A     │
-│ w/o Freq-Aware       │  74.5%  │  50.8%  │   48.1%  │    57.8%    │
-│ Stage 1 Only (Ours)  │  97.1%  │  38.6%  │   61.2%  │    65.6%    │
-│ Two-Stage (Ours)     │  97.1%  │ 82.3%   │  74.5%   │   84.6%     │
-├──────────────────────┼─────────┼─────────┼──────────┼─────────────┤
-│ Δ vs SRP-PHAT        │ +43.0%  │ +37.1%  │  +33.2%  │   +37.7%    │
-│ Δ vs Direct Train    │  +7.9%  │ +49.9%  │    —     │     —       │
-└──────────────────────┴─────────┴─────────┴──────────┴─────────────┘
+Metric: Energy reduction = 1 - (||r||² / ||y||²)
+Window: clip_idx=0, start_t=32, Tw=16, MaxLag=16, K=3, STFT bins 5–300
 
-* OMP Teacher baseline, not end-to-end neural
-
-關鍵觀察：
-✓ 兩階段在Speech上大幅提升（82.3% vs 32.4%, +49.9%）
-✓ 跨信號泛化（Avg 84.6%）證明學到的是sensor transformation
-  而非signal-specific patterns
-✓ Music未訓練但達到74.5%，驗證H的通用性
-✓ 超越經典方法：+37.7% vs SRP-PHAT平均
+┌─────────────────────────┬──────────────┬──────────────────────────────────────────────┐
+│ Method                  │ Energy Red.   │ Evidence / Reproduction                      │
+├─────────────────────────┼──────────────┼──────────────────────────────────────────────┤
+│ Pursuit oracle          │ 97.88%        │ `python -m scripts.h_exploration.calc_global_omp --clip_idx 0` |
+│ Freq-Aware DTMin (ours) │ 97.11%        │ `python -m scripts.h_exploration.validate_global_dt --model_path results/dt_freq_aware_full/dt_freq_aware_best.pth --clip_idx 0` |
+└─────────────────────────┴──────────────┴──────────────────────────────────────────────┘
 ```
 
-**文字討論 (100 words)**
+**Discussion (draft)**
 ```
-兩階段方法的有效性：
-1. Stage 1在白噪音上學到了純粹的Mic-LDV系統轉換（97.1%）
-2. Stage 2遷移到語音任務後保持高性能（82.3%）
-3. 顯著優於直接語音訓練（+49.9%），證明解耦系統與內容的必要性
+Stage 1 is evaluated as a reconstruction sanity check at a fixed angle θ₀.
+The near-oracle energy reduction on a representative window indicates that the learned policy can explain the LDV STFT using a small set of Mic-frame lags.
 
-跨信號泛化驗證了H的通用性：
-- Music (未訓練) 達到74.5%，說明學到的不是語音先驗
-- 平均跨信號性能84.6%，說明系統知識可遷移
-
-與baseline對比：
-- SRP-PHAT代表經典物理方法，我們超越+37.7%
-- 證明了學習方法在cross-sensor場景的優勢
+For the paper, this section should also report averages across many clips/windows (not just one representative window) and include the planned ablations (w/o frequency embedding, frozen vs fine-tuned encoder).
 ```
 
 #### **4.3 Ablation Studies (0.4頁，~300 words)**
 
 **4.3.1 Frequency-Aware的必要性 (150 words)**
 
-**表格3: Frequency-Aware Ablation**
+**Planned ablations (no unverified numbers)**
 ```
-┌──────────────────────┬──────────┬──────────┐
-│ Model Variant        │  Global  │  Single  │
-│                      │ (Bin 5-  │ Freq Band│
-│                      │   300)   │ (50-60)  │
-├──────────────────────┼──────────┼──────────┤
-│ w/o Freq Embedding   │  50.8%   │  73.8%   │
-│ w/ Freq Embedding    │  82.3%   │  82.1%   │
-├──────────────────────┼──────────┼──────────┤
-│ Improvement          │ +31.5%   │  +8.3%   │
-└──────────────────────┴──────────┴──────────┘
+Goal: isolate why conditioning on the frequency bin matters for lag selection.
 
-結論：
-• 單頻段模型（無Freq-Aware）在isolated band表現好（73.8%）
-  → 證明問題確實是頻率混疊
-• 但無法擴展到全頻段（50.8%）
-  → "一刀切"策略失效
-• Freq-Aware解決了這個問題（82.3%）
-  → 單模型學會所有頻率的策略
+Ablation variants:
+  - w/o frequency embedding: remove freq conditioning in Stage 1
+  - narrow-band vs wide-band training: train a policy on a restricted bin range and test outside it
+
+Evaluation:
+  - Energy reduction on the same reconstruction protocol as Table 2
+  - Report both representative-window results and averages over many clips/windows
 ```
 
 **Figure 1建議: Learned Lag Selection Strategy vs Frequency**
 ```
-橫軸：Frequency bins (50 = 1.5kHz, 100 = 3kHz)
-縱軸：Selected Lag probability
-曲線：
-  - Bin 50 (low freq): Lag 1 dominant (67%)
-  - Bin 150 (mid freq): Lag 0 & 1 mixed (45%/40%)
-  - Bin 250 (high freq): Lag 0 dominant (71%)
+X-axis: frequency (Hz) or STFT bin index (b)
+  - Use f(b) = b · fs / n_fft to convert bins to Hz (fs=16 kHz, n_fft=2048 in current codebase).
+Y-axis: P(select lag ℓ | frequency bin)
 
-Caption: Freq-Aware policy learns frequency-specific lag strategies.
-低頻偏好Lag 1（更長延遲），高頻偏好Lag 0（對齊更好）。
+Plot options:
+  - Heatmap: frequency bins × lag index, colored by selection probability
+  - Or line plots for a few representative bins
+
+Caption (draft):
+  Frequency-conditioned policies can learn different lag-selection behaviors across bins,
+  consistent with phase-wrapping and frequency-dependent transfer characteristics.
 ```
 
 **4.3.2 兩階段vs直接訓練 (150 words)**
 ```
-為什麼直接語音訓練失敗？
+Why can direct end-to-end DOA training be brittle in cross-sensor settings?
 
-分析：
-1. Confusion Matrix顯示（詳見補充材料）：
-   Direct Train: 大量混淆在相鄰角度(±10°)
-   Two-Stage: 錯誤更分散（隨機噪聲而非系統性偏差）
+Hypothesis (to be verified experimentally):
+  Speech carries many strong content cues (speaker, phonetic structure, formants).
+  A model trained end-to-end may exploit these content shortcuts instead of learning stable, angle-dependent transfer cues.
 
-2. 學到的H(f)分析：
-   Direct Train: 頻率響應不平滑，有語音共振峰artifact
-   Two-Stage: 平滑衰減，符合Box物理特性
+Planned diagnostics:
+  1) Confusion matrices across angles (systematic neighbor confusions vs dispersed errors)
+  2) Inspect learned transfer characteristics (e.g., smoothness/physical plausibility of Ĥ(f,θ))
+  3) Cross-content evaluation (speech → other signals) to test content reliance
 
-3. OOD測試：
-   Direct Train在Music上崩潰（無法測試）
-   Two-Stage保持74.5% → 證明學到的是系統特性
-
-結論：
-語音的非平穩性導致模型"抄近路"（記憶內容特徵）
-兩階段強制模型先學系統，避免了這個問題
+Goal of the two-stage design:
+  Separate “angle-agnostic transformation features” (Stage 1) from “angle inference using calibrated H_cal(f,θ)” (Stage 2).
 ```
 
 #### **4.4 Analysis (0.4頁，~320 words)**
@@ -813,25 +812,20 @@ Caption: Freq-Aware policy learns frequency-specific lag strategies.
 
 **4.4.2 Coherence與性能關係 (100 words)**
 ```
-數據完整性檢查（補充實驗）：
+Data integrity check (planned):
 
-Coherence γ²(f)分析：
-┌─────────────┬──────────┐
-│ Freq Range  │   γ²     │
-├─────────────┼──────────┤
-│ 300-1000Hz  │  0.97    │
-│ 1000-2000Hz │  0.96    │
-│ 2000-3000Hz │  0.93    │
-└─────────────┴──────────┘
+Compute magnitude-squared coherence γ²(f) between Mic and LDV.
 
-高coherence說明：
-✓ Mic和LDV確實在測量同一物理過程
-✓ 系統轉換H存在且穩定
-✓ 學習H是可行的（非ill-posed問題）
+Interpretation:
+✓ High coherence supports the existence of a stable *linear* relationship (consistent with an LTI transfer-function model).
+✓ It suggests the two sensors observe strongly related physical phenomena in those bands (given the current setup).
 
-但也意味著：
-⚠ 任務相對"簡單"（信號強相關）
-⚠ 需要在低coherence場景驗證（future work）
+Caveat:
+⚠ High coherence does not imply DOA is “easy”. DOA difficulty depends on angle separability
+  (how much H_cal(f,θ) changes with θ), noise, and modeling mismatch.
+
+Future work:
+  Report (i) coherence curves and (ii) an angle-separability metric for H_cal across θ.
 ```
 
 **4.4.3 Limitations (100 words)**
@@ -864,22 +858,19 @@ Framework本身是sensor-agnostic
 
 #### **5.1 Why Does Two-Stage Work? (120 words)**
 ```
-理論解釋（通用，不限於LDV）：
+Intuition (general, not LDV-specific):
 
-Information Bottleneck視角：
-- Direct training: 模型接收T(signal+system) → θ
-  → 可以利用signal shortcuts (e.g., 語音共振峰)
-  → Overfitting to content, not learning H
+- Direct end-to-end DOA: a model maps observed signals to θ.
+  In cross-sensor settings, it may exploit content shortcuts (speaker/formants) instead of learning stable, angle-dependent transfer cues.
 
-- Two-stage: Stage 1 bottleneck強制學習H
-  → White noise無shortcuts → 只能學系統
-  → Stage 2複用H，只學task-specific features
+- Two-stage framework:
+  Stage 0 calibrates an angle-indexed transfer-function library H_cal(f,θ) from white noise (content-independent excitation).
+  Stage 1 learns angle-agnostic transformation features at a fixed θ₀ using speech pairs but no angle labels.
+  Stage 2 injects angle information by matching Stage 1 features to H_cal(f,θ) for direction classification.
 
-Empirical evidence:
-- Cross-signal generalization (Music 74.5%, unseen)
-  → If learned content, would fail on music
-- Smooth H(f) response (見補充材料)
-  → Physically plausible system function
+Empirical evidence / plan:
+  - Stage 1 reconstruction reaches near-oracle energy reduction on a representative window (Table 2).
+  - Stage 2 direction accuracy and cross-content generalization will be reported once the Stage 2 pipeline is implemented.
 ```
 
 #### **5.2 Generalizability Beyond LDV (80 words)**
@@ -901,10 +892,9 @@ Candidate scenarios (future work):
 
 #### **5.3 Conclusion (40 words)**
 ```
-本文提出首個系統性的cross-sensor transfer learning框架。
-在challenging test case (Mic-to-LDV)上驗證有效（+50%）。
-Frequency-Aware Policy解決相位混疊（+31%）。
-為speech community提供了處理sensor diversity的通用工具。
+We propose a systematic two-stage framework for cross-sensor acoustic transfer.
+In the Mic→LDV case study, Stage 1 achieves near-oracle reconstruction energy reduction under a reproducible protocol.
+Stage 2 direction estimation will evaluate downstream transfer once implemented.
 ```
 
 ---
@@ -917,21 +907,14 @@ Frequency-Aware Policy解決相位混疊（+31%）。
 │  General Framework (Sensor-Agnostic)                  │
 ├───────────────────────────────────────────────────────┤
 │                                                        │
-│  Stage 1: System Learning                             │
-│  ┌─────────────┐                                      │
-│  │ Content-    │  Learn H   ┌───────────────────┐    │
-│  │ Neutral     │──────────→ │ Sensor Transform  │    │
-│  │ Signal      │            │ H (Freq-Aware)    │    │
-│  │ (White      │            └───────────────────┘    │
-│  │  Noise)     │                     ↓                │
-│  └─────────────┘            [Block Content Info]     │
+│  Stage 0: Calibration (offline)                       │
+│  White noise @ each θ  ──→  estimate H_cal(f,θ)       │
 │                                                        │
-│  Stage 2: Task Transfer                               │
-│  ┌─────────────┐                                      │
-│  │ Task        │  Freeze H  ┌───────────────────┐    │
-│  │ Signal      │──────────→ │ H (Fixed)         │    │
-│  │ (Speech)    │  Finetune  │ + Task Head       │    │
-│  └─────────────┘            └───────────────────┘    │
+│  Stage 1: Angle-agnostic feature learning (single θ₀) │
+│  Paired speech (Mic, LDV) @ θ₀  ──→  encoder/policy z  │
+│                                                        │
+│  Stage 2: Angle-aware task head (multi-angle)          │
+│  z + H_cal(f,θ)  ──→  direction head  ──→  θ           │
 │                                                        │
 ├───────────────────────────────────────────────────────┤
 │  Instantiation: Mic-to-LDV (This Work)                │
@@ -946,14 +929,13 @@ Frequency-Aware Policy解決相位混疊（+31%）。
 ```
 [Heatmap: Lag Selection Probability]
 
-Y-axis: Frequency bins (5-300)
+Y-axis: STFT frequency bins (e.g., 5–300)
 X-axis: Lag index (0-15)
 Color: Selection probability
 
-Expected pattern:
-- Low freq (bin 50-100): Lag 1-2 hot
-- High freq (bin 200+): Lag 0 hot
-→ 視覺化證明頻率依賴性
+Expected outcome:
+  Structured variation of lag-selection behavior across frequency bins.
+  (The exact pattern should be reported from the trained model; avoid hard-coding an unverified trend.)
 ```
 
 ---
@@ -1029,12 +1011,12 @@ P(Accept | pilot成功) = 50-60%
 ```
 投稿決策
     │
-    ├─ P(技術實驗成功) = ?
-    │   │
-    │   ├─ 白噪音訓練H ≥95%      → 90% (有現成pipeline)
-    │   ├─ 遷移到語音 ≥70%        → ⚠️ 70% (最大不確定性)
-    │   ├─ SRP-PHAT baseline      → 85% (適配可能有坑)
-    │   └─ Ablation studies       → 90% (相對簡單)
+	    ├─ P(技術實驗成功) = ?
+	    │   │
+	    │   ├─ H_cal calibration (white noise) stable      → 90% (已有pipeline)
+	    │   ├─ 遷移到語音 ≥70%        → ⚠️ 70% (最大不確定性)
+	    │   ├─ Classical baseline (H_cal matching)         → 85% (implementation risk)
+	    │   └─ Ablation studies       → 90% (相對簡單)
     │
     │   綜合實驗成功率 = 0.9 × 0.7 × 0.85 × 0.9 = 0.48 (48%)
     │
@@ -1127,8 +1109,8 @@ P(Accept) = 0.77 × 0.54 × 0.75 × 0.60
 
 ```
 Week 1-2: Pilot實驗（小規模）
-├─ 白噪音訓練H (50 clips)
-└─ 遷移測試 (20 clips)
+├─ H_cal calibration (white noise) (subset)
+└─ Stage 1/Stage 2 pilot on speech (subset)
 
 Week 2末決策點：
 ┌─────────────────────────────────────────┐
@@ -1284,11 +1266,11 @@ Phase 2: 決策點 (Week 2末)
 
 | 實驗 | 目的 | 工作量 | 預期結果 | 風險 |
 |------|------|--------|---------|------|
-| **1. 白噪音訓練H** | 驗證Stage 1 | 1週 | ≥95% on白噪音 | 🟢 低（有pipeline） |
-| **2. 語音遷移** | 驗證Stage 2 | 1週 | **≥70%** on語音 | 🔴 高（最大不確定） |
-| **3. 直接語音訓練對比** | Ablation | 3天 | ~32%（已知baseline） | 🟢 低 |
-| **4. SRP-PHAT baseline** | 經典方法對比 | 5-7天 | 預期45% | 🟡 中（LDV適配） |
-| **5. Freq-Aware ablation** | 證明創新點 | 2天 | 50% (w/o) vs 75% (w/) | 🟢 低 |
+| **1. H_cal calibration (white noise)** | 驗證Stage 0 | 2-3天 | H_cal(f,θ) across angles is stable & physically plausible | 🟢 低（有pipeline） |
+| **2. Stage 2 direction training** | 驗證Stage 2 | 1週 | Report DOA accuracy (Top-1, ±10°) | 🔴 高（最大不確定） |
+| **3. End-to-end DOA baseline** | Ablation | 3天 | Train/eval without Stage 1 pretraining and/or without H_cal | 🟢 低 |
+| **4. Classical baseline (H_cal matching)** | 經典方法對比 | 2-3天 | Non-learned template matching using H_cal | 🟢 低 |
+| **5. Frequency-conditioning ablation** | 證明創新點 | 2-3天 | w/ vs w/o frequency embedding (report deltas) | 🟡 中 |
 
 **總時間：約3.5週**
 
@@ -1342,8 +1324,8 @@ IF 極端緊迫 (4週):
 
 | 時間段 | 任務 | 交付物 | 里程碑 |
 |--------|------|--------|--------|
-| **Week 1** (1/13-1/19) | Pilot實驗：白噪音訓練H | 小規模模型(50 clips) | - |
-| **Week 2** (1/20-1/26) | Pilot實驗：遷移測試 | 準確率數據(20 clips) | 🔴 **決策點** |
+| **Week 1** (1/13-1/19) | Pilot：H_cal calibration (white noise) | H_cal(f,θ) library + sanity plots | - |
+| **Week 2** (1/20-1/26) | Pilot：Stage 1 validation (+ Stage 2 prototype if ready) | Stage 1 energy reduction + preliminary DOA metrics | 🔴 **決策點** |
 | **Week 3** (1/27-2/2) | P0-2,3: 全量遷移+對比 | 完整表格2數據 | - |
 | **Week 4** (2/3-2/9) | P0-4,5 + P1-6: Baseline+Ablation | 表格3+跨信號測試 | - |
 | **Week 5** (2/10-2/16) | 論文撰寫：Method+Experiments | §3-4初稿 | - |
@@ -1395,7 +1377,7 @@ IF 極端緊迫 (4週):
 | 風險 | 機率 | 影響 | 緩解策略 | 應急方案 |
 |------|------|------|---------|---------|
 | **遷移<70%** | 40% | 🔴 致命 | Pilot驗證 | 轉Nature Comm |
-| **SRP-PHAT實現困難** | 30% | 🟡 重要 | 提前調研pyroomacoustics | 用其他經典方法 |
+| **Classical baseline實現困難** | 20% | 🟡 重要 | 優先做H_cal matching（單通道可用） | 以H-only baseline替代 |
 | **實驗結果不穩定** | 20% | 🟡 重要 | 多次訓練取平均 | 報告variance |
 | **寫作時間不夠** | 50% | 🟠 嚴重 | 並行實驗+寫作 | 砍掉P2實驗 |
 | **審稿人不買帳cross-sensor定位** | 15% | 🟡 重要 | Introduction強調通用性 | Rebuttal階段強調 |
@@ -1406,7 +1388,7 @@ IF 極端緊迫 (4週):
 
 ```
 Critical Path:
-  Pilot驗證 → 遷移實驗 → SRP-PHAT baseline → 論文撰寫
+  Pilot驗證 → 遷移實驗 → Classical baseline (H_cal matching) → 論文撰寫
 
 如果任何環節延誤：
 ├─ Pilot延誤1週 → 總時間變7週 → 來不及
@@ -1424,7 +1406,7 @@ Critical Path:
 Week 3-4 同時進行：
 ├─ 實驗線程：
 │   ├─ 主力：全量遷移實驗（你或主要研究人員）
-│   └─ 輔助：SRP-PHAT實現（如果有合作者）
+│   └─ 輔助：Classical baseline (H_cal matching)（如果有合作者）
 │
 └─ 寫作線程：
     ├─ Method部分可以提前寫（不依賴實驗結果）
@@ -1595,12 +1577,13 @@ Week 2決策點：
 #### **Week 1-2 (Pilot階段)**
 ```
 □ 環境準備：Conda環境、MPS GPU測試
-□ 數據準備：白噪音數據集（50 clips）
+□ 數據準備：白噪音校準數據（用於估計H_cal(f,θ)）
 □ 代碼準備：確保freq-aware-policy代碼可運行
-□ 小規模訓練：白噪音上訓練H
-□ 遷移測試：語音20 clips測試
-□ 跨信號測試：音樂5 clips測試（如果有）
-□ H(f)分析：繪製頻率響應，檢查物理合理性
+□ Stage 0：估計H_cal(f,θ)，檢查跨角度的一致性與物理合理性
+□ Stage 1：單角度θ₀語音訓練（無角度標籤），並用validation scripts驗證reconstruction energy reduction
+□ Stage 2：方向head的最小可行版本（如果時間允許）
+□ 跨內容測試：非語音信號（如果有）作為generalization check
+□ H_cal(f,θ)分析：繪製幅度/相位與角度依賴性
 □ 決策會議：Week 2末評估結果
 ```
 
@@ -1609,7 +1592,7 @@ Week 2決策點：
 實驗線：
 □ P0-2: 全量遷移實驗（260 clips）
 □ P0-3: 直接語音訓練對比
-□ P0-4: SRP-PHAT baseline實現
+□ P0-4: Classical baseline (H_cal matching)實現
 □ P0-5: Freq-Aware ablation
 □ P1-6: 跨信號泛化（Music完整測試）
 □ 數據整理：所有表格數字確認
@@ -1651,24 +1634,23 @@ Vision用ImageNet作為benchmark - 不是為了分類狗，而是為了
 
 **預防性回答（在4.1.2中）**:
 ```
-"SRP-PHAT是DOA的gold standard。神經baseline (DOANet, SELDnet)
-依賴multi-channel麥克風陣列架構，無法直接適配LDV單點測量。
-我們在limitation中討論了adapting神經方法的可能性。"
+"Array-based DOA methods such as SRP-PHAT/MUSIC are strong classical baselines when multi-channel measurements are available.
+In our single Mic + single LDV-point setting, these array-based baselines are not directly applicable.
+Therefore, we include a physically grounded classical baseline based on H_cal matching, and we discuss how multi-channel baselines could be added if multi-point measurements are collected."
 ```
 
 如果有時間實現DOANet簡化版，這個問題就不存在了。
 
 ---
 
-**Q3: "遷移效果這麼好（82%），是不是有數據洩漏？"**
+**Q3: "The transfer looks surprisingly strong — is there data leakage?"**
 
 **預防性回答（在4.4.2或補充材料中）**:
 ```
 "我們進行了嚴格的數據完整性檢查：
 1. Train/val split基於clips，沒有重疊
-2. 白噪音和語音來自不同錄音session
-3. Coherence分析（>0.96）說明高性能是因為信號質量好，
-   而非數據洩漏"
+2. Calibration (white noise) and speech recordings are separated by design (to be verified and documented)
+3. We will report coherence and other integrity checks as supporting evidence, but we do not use coherence as proof of no leakage"
 ```
 
 ---
@@ -1677,11 +1659,8 @@ Vision用ImageNet作為benchmark - 不是為了分類狗，而是為了
 
 **預防性回答（在4.1.1中明確說明）**:
 ```
-"Music test set: 50 clips, 10 angles (subset of full range)
-Environmental sound: 30 clips, urban/nature mixed
-
-雖然規模較小，但足以驗證cross-signal generalization的
-proof-of-concept。"
+"Cross-content evaluation will use held-out non-speech clips (e.g., music and environmental sounds).
+We will report the exact dataset size, angle coverage, and confidence intervals in §4.1.1 once the evaluation set is finalized."
 ```
 
 ---
@@ -1693,9 +1672,9 @@ proof-of-concept。"
 **預防性回答（在3.2.2中）**:
 ```
 "Frequency Embedding的創新在於：
-1. 物理動機：直接源於相位-延遲關係Δφ=2πf·Δτ
-2. 解決實際問題：證明+31%性能提升（表3）
-3. 可解釋性：可視化顯示學到的策略符合物理直覺（圖2）
+1. 物理動機：延遲造成的相位項隨頻率縮放（φ(f) = -2π·f·τ mod 2π）
+2. 解決實際問題：沒有frequency conditioning時，跨頻段lag選擇容易不穩定（以消融實驗量化）
+3. 可解釋性：可視化顯示不同頻率段的lag選擇行為存在結構性差異（圖2）
 
 而非盲目加入一個embedding layer。"
 ```
@@ -1706,15 +1685,10 @@ proof-of-concept。"
 
 **預防性回答（在Conclusion或補充材料中）**:
 ```
-"Training time:
-- Stage 1 (white noise): 30min
-- Stage 2 (speech): 15min
-- Total: 45min
-
-vs Direct training: 25min
-
-僅增加80%訓練時間，但性能提升50%，是值得的trade-off。
-推理時無額外成本。"
+"Compute cost (planned wording):
+- Stage 0 calibration (white noise → H_cal) is a lightweight offline step.
+- Stage 1 + Stage 2 adds training cost versus direct end-to-end DOA, but Stage 1 is reusable once trained.
+- Inference cost is similar to a standard encoder+classifier; H_cal lookup is negligible."
 ```
 
 ---

@@ -1,135 +1,141 @@
-# 以 TDD 驅動、符合物理數學原理的開發指南（評估與建議）
+# TDD Guide for Physics/Math Compliance (Evaluation & Recommendations)
 
-本檔案彙整目前專案對於 Transfer Function（H）與 NMF 定位流程的測試現況、與測試驅動開發（Test-Driven Development, TDD）精神的契合度評估，並提出如何以 TDD 開發來確保實作符合文件所述的物理與數學原理的具體做法與測試清單。
-
----
-
-## 1. 現況評估（與 TDD 的關係）
-
-- 覆蓋亮點：
-  - H 估計公式驗證：整合測試以 STFT 域 `Y = H ⊙ X` 合成資料，經 `DataProcessor.estimate_transfer_functions` 估回 H，並對齊 500–1500 Hz、mean-normalization + global scaling 的期望結果（小於門檻誤差）。
-  - 混合矩陣結構：`A = [diag(H_d)W]` 與頻率權重一致性（同時加權 A 與 Y）已被單元測試精準檢查。
-  - 正規化/參考：`TransferFunctionProcessor.process_transfer_functions` 的頻段限制與 90° 參考正規化（H[:,ref] ≈ 1、角向比值保留）被驗證。
-  - 方向可分性：以「列向量 L2 正規化後的相似度」作為方向可分性指標（off-diagonal correlation）之測試；角度索引環繞（0/360）正確。
-
-- 主要缺口與風險：
-  - 流程偏向「加測驗證既有實作」而非「先規格後實作」。缺乏紅→綠→重構的 TDD 節奏。
-  - 部分物理/數學不變性尚未系統化成測試（範例如下）：
-    - 尺度不變性：對 H 或 W 等比例縮放後，X 或角向排序的預期不變化/成比例關係。
-    - STFT 參數敏感度：`n_fft/hop/window` 變動對 H 的影響需在容忍度內。
-    - β-分歧與收斂行為：在 Euclidean（β=2）下 loss 應非增；其他 β 需給合理容忍區間。
-    - 對比增強（工程策略）必須維持關鍵不變性（非負、角向排序不破壞）。
-  - 實測資料（golden dataset）尚未納入回歸門檻與漂移監控。
-
-- 初步結論：目前屬「向 TDD 靠攏」但未完整落實。測試能抓大方向，但仍需以「先規格→先寫會失敗的測試→最小實作→重構」的方式，將核心物理與數學原理轉化為可驗收的測試規格。
+This document summarizes the current testing status of (1) transfer-function (`H`) handling and (2) the NMF-based localization pipeline, and proposes a TDD workflow to keep the implementation aligned with the stated physics and math assumptions.
 
 ---
 
-## 2. 以 TDD 落地原理的原則與流程
+## 1. Current Status (vs. TDD)
 
-- 原則對應：
-  - 規格化原理 → 可度量的驗收條件（metric + 閾值 + 單位/維度）。
-  - 先寫會失敗的測試（紅） → 最小實作過測（綠） → 重構仍維持綠。
-  - 區分「數學不變性測試」與「工程策略測試」。前者以理論不變性為準；後者以“不破壞核心不變性”為準。
+### What is already covered well
 
-- 層級與類型：
-  - 單元（pure function）：頻段限制、參考/平均正規化、對比增強、混合矩陣構造。
-  - 屬性測試（property-based）：尺度不變、單調性、排序不變、數值穩定。
-  - 整合：X + H 真值 → STFT 合成 Y → 全流程估計 H/A/X → 與期望值或容忍區間比對。
-  - 回歸（實測資料）：固定資料集與允許誤差區間，監控變更漂移。
+- **Transfer-function estimation**: integration tests synthesize STFT-domain data using `Y = H ⊙ X`, then verify that `DataProcessor.estimate_transfer_functions` recovers `H` (within a tolerance) for the 500–1500 Hz band with the expected mean-normalization + global scaling behavior.
+- **Mixing-matrix structure**: unit tests check `A = [diag(H_d) W]` and ensure frequency-weighting is applied consistently (i.e., weighting both `A` and `Y`).
+- **Normalization**: `TransferFunctionProcessor.process_transfer_functions` is tested for frequency limiting and reference-angle normalization (e.g., `H[:, ref] ≈ 1` while preserving inter-angle ratios).
+- **Angle separability**: tests use “L2-normalized frequency-shape similarity” (off-diagonal correlation) as a separability proxy, and verify correct angle-index wrap-around (0/360).
 
-- TDD 實作節奏：
-  1) 根據文件列出原理與驗收規格（見第 3 節測試清單）。
-  2) 先寫紅燈測試（以最小可驗證資料集/合成數據）。
-  3) 僅做驅動該測試通過的最小實作改動。
-  4) 重構（含效能/可讀性），並確保測試維持綠燈。
+### Gaps and risks
 
----
+- The workflow is still closer to “adding tests after implementation” than “spec-first TDD” (red → green → refactor).
+- Several physics/maths invariances are not yet systematically encoded as tests:
+  - **Scale invariance**: predictable behavior under scaling of `H` and/or `W` (and the corresponding compensation in `X`, depending on the update rules).
+  - **STFT parameter sensitivity**: how changes in `n_fft / hop / window` affect `H`, within an acceptable tolerance.
+  - **β-divergence behavior**: for Euclidean (`β=2`), the loss should be non-increasing (allowing tiny numerical jitter); other β values need defined tolerances.
+  - **Contrast enhancement (engineering heuristic)** must preserve core invariances (non-negativity, angle ordering stability).
+- Real measured “golden” datasets are not yet used as regression thresholds / drift monitors.
 
-## 3. 建議的測試清單（以原理為中心）
-
-- H 估計與 STFT 參數
-  - 合成驗證：以 STFT 域 `Y = H ⊙ X` 合成資料，`estimate_transfer_functions` 應復原 H（使用 NRMSE/MAE/相關係數門檻）。
-  - 參數敏感度：改變 `n_fft/hop/window`，H 的差異需在容忍區間（例：NRMSE ≤ 0.05）。
-  - 單位/維度：遮罩後的頻率 bins 與 Hz 範圍精準對齊（500–1500 Hz）、H 無量綱。
-
-- 頻段與權重一致性
-  - 頻段限制：`apply_frequency_limit` 與 DataProcessor 管線結果一致；bin 對齊正確。
-  - 頻率權重一致性：同時對 A 與 Y 加權，X 的角向排序/估計結果基本不變（排序差異 ≤ 1 個 index 或角度差 ≤ 角解析度）。
-
-- 正規化與對比增強
-  - 參考正規化：指定參考角後，H[:, ref] ≈ 1；其他角向比值保留（per-frequency MAE 門檻）。
-  - Mean vs Reference：在不同角分布下不引入系統偏差（用合成資料控制分布，驗證角向排序一致）。
-  - 對比增強：
-    - 非負值保證。
-    - 角向排序基本保持（每頻率的排名 Kendall τ 或 Spearman ρ > 閾值）。
-    - 動態範圍變化量落在設計區間。
-
-- A 構造與結構
-  - 精確相等：`A = [diag(H_d)W]`（含 block normalization 時，Frobenius norm 一致性）。
-  - 尺度不變性：H 或 W 等比例縮放的理論效應可預期（例如 H×c → X/c 的趨勢，依更新規則設定容忍度）。
-
-- NMF 與 β-分歧
-  - Loss 單調性：β=2 時 loss 非增（允許極小抖動）；β=0/1 設更保守門檻或短迭代內非增趨勢。
-  - 非負與數值穩定：不產生 NaN/Inf；ε 投影生效；極端值下 X 有界。
-
-- 方向可分性與角度映射
-  - 形狀相似度：以列 L2 正規化後的 off-diagonal correlation 作為主指標；可分 H 應顯著低於近共線 H。
-  - 角度映射/環繞：`get_direction_index` 0/360 wrap-around 正確；最接近角對應索引無誤。
-
-- 實測資料回歸（待路徑提供）
-  - 估計 H 與量測 H 的相關性/NRMSE ≥ 閾值。
-  - 固定角間隔與 SNR 下的定位 Top-1 準確率最低標（例如 spacing=45°、SNR=20dB 時 ≥ 60%）。
+**Conclusion**: the project is “moving toward TDD” but not fully following a spec-first loop. The next step is to convert the core physical and mathematical assumptions into explicit, measurable acceptance tests.
 
 ---
 
-## 4. 門檻設計與可重現性
+## 2. TDD Workflow: From Principles to Tests
 
-- 門檻（示例）：
-  - H 整合 MAE ≤ 1e-2 或 NRMSE ≤ 0.05；per-frequency correlation ≥ 0.95。
-  - 頻率權重一致性：角向 Top-1 排名不變或角度誤差 ≤ 1×角度網格間距。
-  - 對比增強：排序相關（Kendall τ / Spearman ρ）≥ 0.9；最小值 ≥ 0；動態範圍變化落在設計目標 ±10%。
-  - Loss：β=2 在 10–20 次迭代內總 loss 非增（允許 <1e-6 抖動）。
+### Principles
 
-- 可重現性：
-  - 固定 RNG seed；
-  - 帶雜訊測試採多次試驗的均值/分位數判定；
-  - 所有測試的單位、維度、角度網格清晰標示。
+- Convert each principle into a measurable acceptance condition (metric + threshold + units/dimensions).
+- Write failing tests first (red), implement the minimal change to pass (green), then refactor while keeping tests green.
+- Separate **invariance tests** (must hold by definition/theory) from **engineering-strategy tests** (must not break invariances).
 
----
+### Test layers
 
-## 5. 關於「修改測試情境」之說明（避免為過測而改測）
-
-- 問題來源：原合成 H 為 `H(f,θ) = s(θ) × g(f)`（秩 1），經「列向量 L2 正規化」後各方向頻率形狀完全相同，故 off-diagonal correlation 接近 1，與「可分」的期待相悖。
-- 修正原則：不是放寬標準，而是使測試資料符合 `analyze_separability` 的定義——它比較的是「正規化後的頻率形狀相似度」。因此在測試中改以含角頻互動的 H，讓不同角度的頻率形狀真有差異。
-- Condition number 斷言移除：
-  - 現行實作在未正規化 H 上算 SVD，其值對尺度極敏感，不穩定地反映「形狀可分性」。
-  - 建議：若要把 condition number 也作為可分性指標，應先正規化後再計算，或改用 Gram 矩陣特徵值比等更穩健的替代。
+- **Unit tests (pure functions)**: frequency limits, normalization (mean/reference), contrast enhancement, mixing-matrix construction.
+- **Property-based tests**: scale invariance, monotonicity trends, ordering stability, numeric stability.
+- **Integration tests**: ground-truth `X` + `H` → synthesize `Y` (STFT domain) → run full estimation → compare to expected values/tolerances.
+- **Regression tests (measured data)**: fixed dataset + thresholds to detect drift across changes.
 
 ---
 
-## 6. 後續行動項目（TDD 路線圖）
+## 3. Recommended Test Checklist (Principle-First)
 
-- 立即可做：
-  - 新增「尺度不變性」與「β=2 loss 單調性」的屬性測試。
-  - 為 STFT 參數敏感度與對比增強排序不變性補測試。
-- 中期：
-  - 取得實測 X/Y 基準資料，新增回歸測試與合理閾值，納入 CI。
-  - 規劃 condition number（或替代指標）正規化後的測試與（如有需要）實作修改。
-- 長期：
-  - 建立「原理→測試→實作→重構」的標準工作流（含模板與樣板測試）。
-  - 對關鍵 metric 設置品質門檻與漂移監控，版本升級時自動檢測退化。
+### H estimation and STFT settings
+
+- **Synthetic recovery**: generate `Y = H ⊙ X`, then `estimate_transfer_functions` should recover `H` (NRMSE/MAE/correlation thresholds).
+- **Parameter sensitivity**: perturb `n_fft / hop / window`; `H` differences should remain within tolerance (e.g., NRMSE ≤ 0.05).
+- **Units and dimensions**: after masking, frequency-bin indices must match the intended Hz range (e.g., 500–1500 Hz); `H` is dimensionless (complex ratio).
+
+### Frequency banding and weighting consistency
+
+- Frequency limiting: `apply_frequency_limit` must match the DataProcessor pipeline exactly (correct bin alignment).
+- Weighting consistency: when applying frequency weights, weighting both `A` and `Y` should preserve the estimated angle ordering (e.g., top-1 unchanged or within ±1 angle step).
+
+### Normalization and contrast enhancement
+
+- Reference normalization: after selecting a reference angle, `H[:, ref] ≈ 1` while preserving inter-angle ratios (per-frequency MAE threshold).
+- Mean vs reference: in controlled synthetic data, the choice of normalization should not introduce systematic angle bias.
+- Contrast enhancement must preserve:
+  - non-negativity,
+  - angle ordering stability (Kendall τ / Spearman ρ threshold),
+  - controlled dynamic-range change (within a specified range).
+
+### Mixing matrix `A` structure
+
+- Exact structural check: `A = [diag(H_d) W]` (and Frobenius-norm consistency when block normalization is enabled).
+- Scale behavior: scaling `H` or `W` should lead to the expected compensating behavior in `X` (tolerance depends on the update rule).
+
+### NMF and β-divergence
+
+- Loss behavior: for `β=2`, loss should be non-increasing over iterations (allowing <1e-6 jitter).
+- Numeric stability: no NaN/Inf, ε-projection works, bounded outputs under extreme inputs.
+
+### Angle separability and mapping
+
+- Shape-based separability: after L2 normalization per angle, off-diagonal correlation should be low for separable `H`.
+- Angle indexing: `get_direction_index` handles wrap-around correctly; nearest-angle mapping is correct.
+
+### Measured-data regression (once a path is fixed)
+
+- Correlation/NRMSE between estimated `H` and measured `H` exceeds a threshold.
+- Direction accuracy meets a minimum bar under fixed spacing and SNR (example: spacing=45°, SNR=20 dB → top-1 ≥ 60%).
 
 ---
 
-## 7. 參考與對應模組
+## 4. Thresholds and Reproducibility
 
-- 估計流程：`nmf_localizer/core/data_processor.py`（`estimate_transfer_functions`）
-- H 處理：`nmf_localizer/core/transfer_functions.py`（頻段限制、正規化、對比增強、可分性分析）
-- NMF 與混合矩陣：`nmf_localizer/core/localizer.py`（`_construct_mixing_matrix`、`factorize`）
-- 測試樣例：`tests/test_transfer_function_pipeline.py`、`tests/test_transfer_functions.py`
+### Example thresholds
+
+- `H` recovery: MAE ≤ 1e-2 or NRMSE ≤ 0.05; per-frequency correlation ≥ 0.95.
+- Weighting consistency: top-1 angle unchanged or angle error ≤ 1× angle grid step.
+- Contrast enhancement: Kendall τ / Spearman ρ ≥ 0.9; min value ≥ 0; dynamic-range change within ±10% of the design target.
+- Loss (`β=2`): non-increasing over 10–20 iterations (allow tiny jitter).
+
+### Reproducibility rules
+
+- Fix RNG seeds.
+- For noisy tests, use repeated trials and decide by mean/quantiles.
+- Document units, dimensions, and angle grid explicitly in every test.
 
 ---
 
-如需，我們可依此文件逐條把原理轉化為具體測試（先紅後綠），並對實作做「最小更動」讓其滿足測試，逐步構建一套可驗證與可維護的物理數學一致性保障機制。
+## 5. Note: Adjusting Synthetic Test Scenarios (Without “Teaching to the Test”)
 
+- Root issue: a rank-1 synthetic `H(f,θ) = s(θ) × g(f)` becomes identical across angles after per-angle L2 normalization, so off-diagonal correlation ≈ 1, contradicting “separable” expectations.
+- Fix principle: do not loosen thresholds; instead, generate synthetic `H` with real angle–frequency interaction so that different angles truly have different normalized frequency shapes.
+- Condition-number assertions:
+  - The current implementation computes SVD on *unnormalized* `H`, making it highly scale-sensitive and a poor proxy for “shape separability”.
+  - If condition number is used, compute it after normalization or use a more stable alternative (e.g., eigenvalue ratios of a Gram matrix).
+
+---
+
+## 6. Next Actions (TDD Roadmap)
+
+- Immediate:
+  - Add property tests for **scale invariance** and **β=2 loss monotonicity**.
+  - Add tests for STFT-parameter sensitivity and contrast-enhancement ordering stability.
+- Mid-term:
+  - Introduce a measured “golden” dataset with regression thresholds and CI integration.
+  - Add a normalized condition-number (or alternative) test and update implementation if needed.
+- Long-term:
+  - Standardize a “principle → test → minimal implementation → refactor” workflow (templates + examples).
+  - Add drift monitoring for key metrics across versions.
+
+---
+
+## 7. Code References
+
+- Estimation pipeline: `nmf_localizer/core/data_processor.py` (`estimate_transfer_functions`)
+- Transfer-function processing: `nmf_localizer/core/transfer_functions.py` (frequency limiting, normalization, contrast enhancement, separability analysis)
+- NMF + mixing matrix: `nmf_localizer/core/localizer.py` (`_construct_mixing_matrix`, `factorize`)
+- Tests: `tests/test_transfer_function_pipeline.py`, `tests/test_transfer_functions.py`
+
+---
+
+If useful, we can convert each checklist item into an explicit failing test first (red), then apply minimal implementation changes to make it pass (green), and only then refactor.
