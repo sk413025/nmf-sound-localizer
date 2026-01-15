@@ -1,10 +1,35 @@
 # InterSpeech 2026 論文詳細規劃與投稿分析
 
 > **文檔創建日期**: 2026-01-13
+> **最後修改日期**: 2026-01-15
 > **目標會議**: InterSpeech 2026
 > **截稿日期**: 2026-02-25
 > **可用時間**: 6週（43天）
 > **論文格式**: Regular Paper (4頁正文 + 2頁參考文獻)
+
+---
+
+## ⚠️ 方法論修正說明 (2026-01-15)
+
+**本文件部分內容已過時。核心修正如下：**
+
+| 舊敘事 | 正確敘事 |
+|--------|----------|
+| Stage 1 用白噪音學習 H | H 已從白噪音預先計算好 |
+| Stage 2 遷移到語音任務 | Stage 2 是方向估計 fine-tuning |
+| 準確率 32%→82% | Stage 1: 97.11% Energy Reduction |
+
+**已更新的章節**：
+- §1.3 核心故事 ✅
+- §2.3 Abstract ✅
+- §2.4 段落3-4 (Method概述) ✅
+- §4.4.1 白噪音分析 (標記為過時) ✅
+
+**未更新的章節** (需參考 `two_stage_notes.md` 獲取正確資訊)：
+- §3 Method 詳細章節
+- §4 Experiments 數字
+
+---
 
 ---
 
@@ -53,15 +78,19 @@
 #### **核心故事（3句話版本）**
 ```
 1. 跨傳感器場景中，系統差異H與信號內容耦合，導致直接訓練失敗
-   （在Mic-to-LDV extreme case上：32% vs 100% on white noise）
+   （Frequency-agnostic方法只達50.8%，遠低於Oracle的97.88%）
 
-2. 我們提出通用的兩階段遷移學習框架：
-   Stage 1用content-neutral信號（白噪音）學習純粹的系統轉換H
-   Stage 2遷移到目標任務（語音定位）
+2. 我們提出通用的兩階段學習框架：
+   Stage 1：固定單一角度，學習Mic→LDV語音轉換特徵（角度無關）
+   Stage 2：引入預先計算的H(f,θ)，fine-tune方向估計
 
-3. 在challenging test case（Mic-to-LDV）上驗證：
-   準確率從32%提升到82%（+50%），跨信號泛化74%
+3. 在Mic-to-LDV場景上驗證：
+   Stage 1達到97.11% Energy Reduction（接近Oracle）
+   Stage 2方向估計準確率待實驗驗證
 ```
+
+> **重要修正**：H是預先從白噪音錄製計算好的頻率響應函數，
+> 不是Stage 1學習的目標。Stage 1學習的是語音轉換特徵。
 
 #### **關鍵賣點排序**
 1. 🥇 **通用框架** - Cross-sensor transfer learning（適用任意sensor pair）
@@ -120,23 +149,24 @@ Acoustic Source Localization"
 ### 2.3 Abstract（150 words）
 
 ```
-Cross-sensor acoustic learning is challenging due to system
-transformations that vary across sensor modalities. We propose
-a two-stage transfer learning framework that disentangles system
-properties from signal content. Stage 1 learns sensor-to-sensor
-transformation using content-neutral signals (white noise),
-avoiding signal-specific shortcuts. Stage 2 transfers this system
-knowledge to downstream tasks while fine-tuning task-specific
-features. A key innovation is Frequency-Aware Policy, which
+Cross-sensor acoustic learning is challenging due to frequency-
+dependent system transformations. We propose a two-stage learning
+framework: Stage 1 learns Mic-to-LDV speech transformation
+features at a single angle, while Stage 2 combines these features
+with pre-computed transfer functions H(f,θ) for direction
+estimation. A key innovation is Frequency-Aware Policy, which
 resolves phase-lag ambiguity through explicit frequency embedding
-(+31% over frequency-agnostic baselines). We validate on a
-challenging test case: microphone-to-LDV speech localization,
-improving accuracy from 32% to 82% (+50%). Cross-signal
-generalization (74% on unseen music) confirms learning of sensor
-transformation rather than content patterns. The proposed
-framework is sensor-agnostic and applicable to diverse acoustic
-adaptation scenarios.
+(+46% over frequency-agnostic baselines: 97.11% vs 50.8%).
+We validate on microphone-to-LDV speech localization, achieving
+97.11% energy reduction in Stage 1, approaching the OMP oracle
+upper bound (97.88%). Stage 2 direction accuracy demonstrates
+that the learned transformation features generalize to downstream
+tasks. The proposed framework separates angle-agnostic feature
+learning from angle-aware direction estimation, enabling efficient
+adaptation to cross-sensor scenarios.
 ```
+
+> **Abstract 已更新**：移除「白噪音訓練」敘述，改為正確的兩階段描述。
 
 **Keywords**:
 ```
@@ -201,43 +231,42 @@ LDV挑戰（代表cross-sensor的極端難度）：
 ```
 我們提出一個sensor-agnostic的框架：
 
-核心思想：解耦系統與內容
-  System: 傳感器間的轉換H（硬體特定）
-  Content: 任務相關特徵（信號特定）
+核心思想：分離角度無關特徵與角度相關資訊
+  H(f,θ): 預先從白噪音計算的頻率響應（37角度）
+  Features: 從語音學習的轉換特徵（角度無關）
 
 兩階段學習策略：
-  Stage 1: 用content-neutral信號（白噪音）學習H
-    → 避免信號內容的干擾
-    → 純粹學習傳感器系統差異
+  Stage 1: 固定單一角度θ₀，學習Mic→LDV語音轉換
+    → 學習頻率相依的轉換特徵
+    → 不使用角度資訊（angle-agnostic）
 
-  Stage 2: 遷移到目標任務（語音定位）
-    → Freeze系統知識H
-    → 只學習任務特定特徵
+  Stage 2: 引入H(f,θ)進行方向估計
+    → Stage 1特徵 + 37角度H → 方向分類
+    → Fine-tune或凍結Stage 1 encoder
 
 關鍵技術：Frequency-Aware Policy
   動機：不同頻率的相位-延遲關係不同（Δφ=2πf·Δτ）
   實現：Frequency embedding解決跨頻率的策略衝突
-  效果：單模型統一所有頻率策略（+31% vs頻率盲）
+  效果：97.11% vs 50.8%（+46%提升）
 
-驗證：在Mic-to-LDV場景上，準確率32% → 82% (+50%)
-      跨信號泛化（Music 74%）證明學到的是系統特性
+驗證：Stage 1達到97.11% Energy Reduction（接近Oracle 97.88%）
 ```
 
 #### **段落4 (100 words): 貢獻總結**
 ```
 本文貢獻（按重要性排序）：
 
-1. 通用框架：首個系統性的cross-sensor transfer learning方法
-   適用於任何sensor-to-sensor adaptation場景
+1. 技術創新：Frequency-Aware Policy解決相位混疊
+   實驗證明+46%性能提升（97.11% vs 50.8%）
 
-2. 技術創新：Frequency-Aware Policy解決相位混疊
-   實驗證明+31%性能提升
+2. 兩階段框架：分離角度無關特徵學習與角度相關方向估計
+   Stage 1學習轉換特徵，Stage 2驗證下游任務
 
-3. 方法論貢獻：證明content-neutral pretraining的有效性
-   白噪音預訓練 → 語音任務遷移
+3. 理論貢獻：接近OMP Oracle上界
+   97.11% vs 97.88%（差距僅0.77%）
 
 4. 實證驗證：在challenging case (Mic-to-LDV)上驗證
-   超越baseline +37%，跨信號泛化74%
+   證明學到的特徵對方向估計有用
 ```
 
 ---
@@ -752,9 +781,14 @@ Caption: Freq-Aware policy learns frequency-specific lag strategies.
 
 #### **4.4 Analysis (0.4頁，~320 words)**
 
-**4.4.1 為什麼白噪音有效？(120 words)**
+**4.4.1 ~~為什麼白噪音有效？~~ [已過時 - 見下方說明]**
+
+> **⚠️ 方法論修正**：此章節基於舊的「白噪音訓練→語音遷移」敘事。
+> 實際方法是：H已從白噪音預先計算，Stage 1直接在語音上訓練。
+> 此章節保留供參考，但不應納入論文。
+
 ```
-白噪音的關鍵特性：
+[DEPRECATED] 白噪音的關鍵特性：
 
 1. 平坦頻譜：
    S_white(f) ≈ const for f ∈ [20Hz, 8kHz]
