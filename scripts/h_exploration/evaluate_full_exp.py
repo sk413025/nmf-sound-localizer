@@ -185,11 +185,11 @@ def evaluate():
         Targets = Y_chunk.T.unsqueeze(2)
         
         # 1. Oracle (OMP)
-        res_omp = run_omp_oracle(Dict_tensor, Targets)
+        res_omp = run_omp_oracle(Dict_tensor, Targets, K_max=8)
         
         # 2. DTmin
         freq_indices = torch.arange(start_bin, end_bin, device=device)
-        res_dt = run_dtmin_policy(model, Dict_tensor, Targets, freq_indices)
+        res_dt = run_dtmin_policy(model, Dict_tensor, Targets, freq_indices, K_max=8)
         
         # Calculate Energies
         init_E = torch.linalg.vector_norm(Targets, dim=1).squeeze()**2
@@ -209,24 +209,54 @@ def evaluate():
     all_dt = np.concatenate(dt_reductions)
     
     # Analyze by Bands
-    # Total bins per clip = 1019 (5 to 1024)
-    # We have flat array (N_clips * N_bins)
-    # Let's reshape to (N_clips, N_bins) for easier indexing if clips are uniform.
-    # dataset[i] might have different lengths? No, STFT F dim is constant.
-    n_clips = len(omp_reductions)
-    n_bins_per_clip = omp_reductions[0].shape[0]
+    # Total bins per clip might vary slightly if some are masked, but typically it is fixed range.
+    # We essentially flattened everything.
+    # But we know the order: It iterates clips, and for each clip it iterates bins start_bin to end_bin.
+    # So the stream is: [Clip0_Bin5, Clip0_Bin6... Clip0_Bin1024, Clip1_Bin5....]
     
-    omp_matrix = all_omp.reshape(n_clips, n_bins_per_clip) # (10, 1019)
+    n_bins_range = end_bin - start_bin # 1024 - 5 = 1019
+    total_samples = len(all_omp)
     
-    # Define Bands (Indices relative to start_bin=5)
-    # Low: Bin 5-100 (Indices 0-95)
-    # Mid: Bin 100-500 (Indices 95-495)
-    # High: Bin 500-1024 (Indices 495-1019)
-    
-    low_band = omp_matrix[:, 0:95]
-    mid_band = omp_matrix[:, 95:495]
-    high_band = omp_matrix[:, 495:]
-    
+    # Verify shape
+    if total_samples % n_bins_range != 0:
+        logger.warning(f"Shape Mismatch! Total {total_samples} not divisible by range {n_bins_range}")
+        # Fallback to global mean
+    else:
+        n_clips_actual = total_samples // n_bins_range
+        print(f"Reshaping data for {n_clips_actual} clips x {n_bins_range} bins...")
+        
+        omp_matrix = all_omp.reshape(n_clips_actual, n_bins_range)
+        dt_matrix = all_dt.reshape(n_clips_actual, n_bins_range)
+        
+        # Define Band Indices (Relative to start_bin 5)
+        # Low: 5 - 300  (Indices 0 - 295)
+        # Mid: 300 - 800 (Indices 295 - 795)
+        # High: 800 - 1024 (Indices 795 - 1019)
+        
+        idx_300 = 300 - start_bin
+        idx_800 = 800 - start_bin
+        
+        print("\n--- Detailed Band Analysis ---")
+        
+        bands = {
+            "Low (5-300Hz Bins)": (0, idx_300),
+            "Mid (300-800Hz Bins)": (idx_300, idx_800),
+            "High (800-1024Hz Bins)": (idx_800, n_bins_range)
+        }
+        
+        print(f"{'Band':<25} | {'OMP (Oracle)':<12} | {'DTmin':<12} | {'Recovery':<10}")
+        print("-" * 65)
+        
+        for name, (s, e) in bands.items():
+            omp_band = omp_matrix[:, s:e]
+            dt_band = dt_matrix[:, s:e]
+            
+            m_omp = np.mean(omp_band)
+            m_dt = np.mean(dt_band)
+            rec = m_dt / m_omp if m_omp > 1e-6 else 0
+            
+            print(f"{name:<25} | {m_omp:.2%}     | {m_dt:.2%}     | {rec:.2%}")
+            
     print("\n" + "="*40)
     print(" EVALUATION RESULTS (Energy Reduction)")
     print("="*40)
@@ -234,11 +264,6 @@ def evaluate():
     print(f"OMP (Oracle) Mean Reduction: {np.mean(all_omp):.2%}")
     print(f"DTmin (Model) Mean Reduction: {np.mean(all_dt):.2%}")
     print(f"Ratio (DT/OMP): {np.mean(all_dt)/np.mean(all_omp):.2%}")
-    
-    print("\n--- OMP Performance by Frequency Band ---")
-    print(f"Low Freq (Bin 5-100)   : {np.mean(low_band):.2%}")
-    print(f"Mid Freq (Bin 100-500) : {np.mean(mid_band):.2%}")
-    print(f"High Freq (Bin 500+)   : {np.mean(high_band):.2%}")
     print("-" * 40)
 
 if __name__ == "__main__":

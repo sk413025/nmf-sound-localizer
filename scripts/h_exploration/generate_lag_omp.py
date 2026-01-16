@@ -161,7 +161,7 @@ def main():
             if X_chunk.shape[0] < MaxLag+Tw or Y_chunk.shape[0] < Tw:
                 continue
                 
-            _, _, traj = run_omp_lag_capture(X_chunk, Y_chunk, K_max=3)
+            _, _, traj = run_omp_lag_capture(X_chunk, Y_chunk, K_max=8)
             
             corrs = traj["correlations"] # (F, K, M)
             actions = traj["actions"]

@@ -24,13 +24,19 @@ echo "[Step 1] Data Generation Complete."
 # 2. Model Training
 echo "[Step 2] Training Frequency-Aware DT Policy..."
 # Train on bins 5-1024 (Full spectrum except DC/Very Low Freq)
-# Epochs increased to 30 for full convergence
+# Epochs increased to 100 for full convergence
 python3 scripts/h_exploration/train_dt_lag_seq_rtg.py \
     --data_path results/full_data/lag_trajectories.pt \
-    --out_dir results/dt_freq_aware_full \
-    --epochs 30 \
+    --out_dir results/dt_freq_aware_full_k8_ep100 \
+    --epochs 100 \
     --batch_size 256 \
     --freq_range 5,1024
+
+echo "[Step 3] Visualizing Results..."
+python3 scripts/h_exploration/evaluate_full_exp.py \
+    --model_path results/dt_freq_aware_full_k8_ep100/dt_freq_aware_best.pth \
+    --data_path results/full_data/lag_trajectories.pt \
+    --out_dir results/dt_freq_aware_full_k8_ep100/viz
 
 echo "========================================"
 echo "Experiment Finished Successfully!"
