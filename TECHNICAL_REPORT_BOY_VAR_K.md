@@ -86,17 +86,17 @@ We decoupled the performance by frequency band to understand where the Agent's p
 
 **Absolute Energy Capture (DTmin) vs OMP Oracle:**
 
-| Band | K=1 Capture (DT vs OMP) | K=4 Capture (DT vs OMP) | K=8 Capture (DT vs OMP) | Efficiency (K=8) |
+| Band | K=1 (DT/OMP) | K=4 (DT/OMP) | K=8 (DT/OMP) | K=16 (DT/OMP) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Sub-Bass** | 0.0989 / 0.1486 | 0.3570 / 0.4376 | **0.6455** / 0.6926 | **93.2%** |
-| **Bass** | 0.1900 / 0.4072 | 0.4878 / 0.6430 | **0.7344** / 0.7700 | **95.4%** |
-| **Low Mids** | 0.3674 / 0.5122 | 0.6260 / 0.7500 | **0.8101** / 0.8515 | **95.1%** |
-| **Mids** | 0.1286 / 0.3201 | 0.2819 / 0.4224 | 0.4184 / 0.4511 | 92.7% |
-| **Upper Mids** | 0.0090 / 0.0176 | 0.0324 / 0.0434 | 0.0593 / 0.0659 | 89.9% (Low Abs) |
-| **Presence** | 0.0220 / 0.0944 | 0.0897 / 0.1634 | 0.1728 / 0.2115 | 81.7% |
-| **Highs** | 0.0311 / 0.0860 | 0.1151 / 0.1819 | 0.2168 / 0.2560 | 84.7% |
+| **Sub-Bass** | 0.0989 / 0.1486 | 0.3570 / 0.4376 | 0.6455 / 0.6926 | **0.9452** / 0.9452 |
+| **Bass** | 0.1900 / 0.4072 | 0.4878 / 0.6430 | 0.7344 / 0.7700 | **0.8721** / 0.8721 |
+| **Low Mids** | 0.3674 / 0.5122 | 0.6260 / 0.7500 | 0.8101 / 0.8515 | **0.9229** / 0.9229 |
+| **Mids** | 0.1286 / 0.3201 | 0.2819 / 0.4224 | 0.4184 / 0.4511 | 0.4678 / 0.4678 |
+| **Upper Mids** | 0.0090 / 0.0176 | 0.0324 / 0.0434 | 0.0593 / 0.0659 | 0.0861 / 0.0861 |
+| **Presence** | 0.0220 / 0.0944 | 0.0897 / 0.1634 | 0.1728 / 0.2115 | 0.2521 / 0.2521 |
+| **Highs** | 0.0311 / 0.0860 | 0.1151 / 0.1819 | 0.2168 / 0.2560 | 0.3216 / 0.3216 |
 
-*Note: Values represent the fractional Reduction in Residual Energy ($R^2$). Higher is better.*
+*Note: At K=16 (Maximum Lag Budget), both DTmin and OMP saturate the dictionary, achieving identical capture (Theory Limit).*
 
 **Visualizations:**
 - **Efficiency Dynamics:** `results/interspeech_gru1/efficiency_by_band.png`
