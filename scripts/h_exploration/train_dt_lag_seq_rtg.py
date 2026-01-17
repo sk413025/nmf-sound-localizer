@@ -78,21 +78,84 @@ class LagSequenceDataset(Dataset):
             
         if len(self.seq_corrs) == 0:
             raise ValueError("No valid data with 'reductions' found. Regenerate data.")
-            
-        self.corrs = torch.cat(self.seq_corrs, dim=0)   # (N_total, K, M)
-        self.actions = torch.cat(self.seq_actions, dim=0) # (N_total, K)
-        self.rtgs = torch.cat(self.seq_rtg, dim=0)    # (N_total, K)
-        self.freqs = torch.cat(self.seq_freqs, dim=0) # (N_total, )
         
-        self.N, self.K, self.M = self.corrs.shape
-        logger.info(f"Loaded {self.N} sequences. Feature dim: {self.M}")
+        # NOTE: Do NOT stack here easily because K varies!
+        # Instead, we flatten into a list of single-frequency samples
+        # Each sample is (K, M)
+        
+        self.flat_corrs = []
+        self.flat_actions = []
+        self.flat_rtgs = []
+        self.flat_freqs = []
+        
+        for i in range(len(self.seq_corrs)):
+             # seq_corrs[i]: (F_i, K_i, M)
+             # seq_actions[i]: (F_i, K_i)
+             # seq_rtgs[i]: (F_i, K_i)
+             # seq_freqs[i]: (F_i,)
+             
+             c_block = self.seq_corrs[i]
+             a_block = self.seq_actions[i]
+             r_block = self.seq_rtg[i]
+             f_block = self.seq_freqs[i]
+             
+             num_freqs = c_block.shape[0]
+             
+             for f in range(num_freqs):
+                 self.flat_corrs.append(c_block[f])   # (K_i, M)
+                 self.flat_actions.append(a_block[f]) # (K_i,)
+                 self.flat_rtgs.append(r_block[f])    # (K_i,)
+                 self.flat_freqs.append(f_block[f])   # Scalar
+        
+        self.N = len(self.flat_corrs)
+        logger.info(f"Loaded {self.N} variable-length sequences. Feature dim: {self.M}")
         
     def __len__(self):
         return self.N
     
     def __getitem__(self, idx):
         # Return: corr, action, rtg, freq_idx
-        return self.corrs[idx], self.actions[idx], self.rtgs[idx], self.freqs[idx]
+        # corr: (K, M)
+        # action: (K,)
+        # rtg: (K,)
+        # freq: scalar
+        return self.flat_corrs[idx], self.flat_actions[idx], self.flat_rtgs[idx], self.flat_freqs[idx]
+
+def pad_collate_fn(batch):
+    """
+    Collate variable length sequences:
+    x: (B, K_max, M)
+    a: (B, K_max)
+    r: (B, K_max)
+    f: (B,)
+    mask: (B, K_max) - 1 for valid, 0 for pad
+    """
+    batch_corrs = [b[0] for b in batch]
+    batch_actions = [b[1] for b in batch]
+    batch_rtgs = [b[2] for b in batch]
+    batch_freqs = torch.stack([b[3] for b in batch])
+    
+    # Pad sequences
+    # pad_sequence expects list of (L, *) -> (B, L, *) if batch_first=True
+    
+    # Corrs: Pad with 0
+    x_padded = torch.nn.utils.rnn.pad_sequence(batch_corrs, batch_first=True, padding_value=0.0)
+    
+    # Actions: Pad with -100 (standard ignore index for CE)
+    a_padded = torch.nn.utils.rnn.pad_sequence(batch_actions, batch_first=True, padding_value=-100)
+    
+    # RTGs: Pad with 0
+    r_padded = torch.nn.utils.rnn.pad_sequence(batch_rtgs, batch_first=True, padding_value=0.0)
+    
+    # Generate mask
+    lengths = torch.tensor([len(x) for x in batch_corrs])
+    max_len = x_padded.shape[1]
+    
+    mask = torch.arange(max_len).expand(len(lengths), max_len) < lengths.unsqueeze(1)
+    mask = mask.to(x_padded.device) # Will move later
+    
+    return x_padded, a_padded, r_padded, batch_freqs, mask
+
 
 class SeqDT_FreqAware(nn.Module):
     def __init__(self, M_lags=16, d_model=128, hidden_dim=256, n_layers=2, max_freq=1025):
@@ -128,10 +191,11 @@ class SeqDT_FreqAware(nn.Module):
             nn.Linear(d_model, M_lags)
         )
         
-    def forward(self, x, rtg, freq_idx):
+    def forward(self, x, rtg, freq_idx, mask=None):
         # x: (B, K, M)
         # rtg: (B, K)
         # freq_idx: (B,)
+        # mask: (B, K)
         B, K, M = x.shape
         
         # Apply Input Normalization
@@ -147,9 +211,9 @@ class SeqDT_FreqAware(nn.Module):
         emb = self.layer_norm(s_emb + r_emb + f_emb)
         
         # RNN
-        out, _ = self.rnn(emb)
+        out, _ = self.rnn(emb) # (B, K, hidden)
         
-        logits = self.head(out)
+        logits = self.head(out) # (B, K, M_actions)
         return logits
 
 def main():
@@ -179,13 +243,15 @@ def main():
     train_size = len(dataset) - val_size
     train_ds, val_ds = torch.utils.data.random_split(dataset, [train_size, val_size])
     
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, collate_fn=pad_collate_fn)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, collate_fn=pad_collate_fn)
     
     # Model
     model = SeqDT_FreqAware(M_lags=dataset.M).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    criterion = nn.CrossEntropyLoss()
+    
+    # CE Loss with ignore_index to handle padding
+    criterion = nn.CrossEntropyLoss(ignore_index=-100)
     
     best_loss = float("inf")
     
@@ -193,11 +259,12 @@ def main():
         model.train()
         total_loss = 0
         
-        for batch_idx, (bx, ba, br, bf) in enumerate(train_loader):
+        for batch_idx, (bx, ba, br, bf, mask) in enumerate(train_loader):
             bx, ba, br, bf = bx.to(device), ba.to(device), br.to(device), bf.to(device)
+            # mask is not strictly needed for GRU if padding is right-side and we ignore_index in loss
             
             optimizer.zero_grad()
-            logits = model(bx, br, bf) # (B, K, M_lags)
+            logits = model(bx, br, bf, mask) # (B, K, M_lags)
             
             # Flatten for CE
             # logits: (B*K, M_lags)
@@ -217,7 +284,7 @@ def main():
         correct = 0
         total = 0
         with torch.no_grad():
-             for bx, ba, br, bf in val_loader:
+             for bx, ba, br, bf, mask in val_loader:
                 bx, ba, br, bf = bx.to(device), ba.to(device), br.to(device), bf.to(device)
                 logits = model(bx, br, bf)
                 
@@ -225,8 +292,13 @@ def main():
                 val_loss += loss.item()
                 
                 preds = torch.argmax(logits, dim=-1)
-                correct += (preds == ba).sum().item()
-                total += ba.numel()
+                
+                # Accuracy masking: Only count valid positions
+                valid_mask = (ba != -100)
+                
+                correct += (preds[valid_mask] == ba[valid_mask]).sum().item()
+                total += valid_mask.sum().item()
+
         
         avg_val_loss = val_loss / len(val_loader)
         acc = correct / total

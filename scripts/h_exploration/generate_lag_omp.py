@@ -53,6 +53,7 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
     
     current_norms = initial_norms.clone()
     
+    # Run OMP to absolute max first
     for k in range(K_max):
         # 1. Correlations
         Corrs = torch.bmm(Dict_Norm.conj().transpose(1, 2), Residuals)
@@ -77,13 +78,11 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
         # 3. Projection & Weights
         for b in range(F):
             indices = Active_Sets[b, :k+1]
-            # Use NORMALIZED Dictionary for consistent projection scales
-            # This ensures that the 'Weights' correspond directly to the correlation magnitude scale
             A_active = Dict_Norm[b, :, indices] # (Tw, k+1)
             y_b = Targets[b, :, 0] # (Tw,)
             
             # LS
-            h = torch.linalg.lstsq(A_active, y_b).solution.flatten() # (k+1,)
+            h = torch.linalg.lstsq(A_active, y_b).solution.flatten()
             
             # Store current weights
             Weights[b, :k+1] = h
@@ -95,20 +94,13 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
         current_energy_vec = torch.norm(Residuals, dim=1).squeeze() ** 2
         reductions = (initial_energy - current_energy_vec) / (initial_energy + 1e-6)
         All_Reductions.append(reductions.cpu())
-            
-    final_energy_vec = torch.norm(Residuals, dim=1).squeeze() ** 2
-    
-    score_improvement = (initial_energy - final_energy_vec) / (initial_energy + 1e-6)
-    
-    traj = {
-        "correlations": torch.stack(All_Corrs, dim=1), # (F, K, M)
-        "actions": torch.stack(All_Actions, dim=1),    # (F, K)
-        "reductions": torch.stack(All_Reductions, dim=1), # (F, K)
-        "scores": score_improvement.cpu() # (F)
-    }
-            
-    return Active_Sets.cpu().numpy(), Weights.cpu().numpy(), traj
 
+    # Stack full execution
+    Full_Corrs = torch.stack(All_Corrs, dim=1)         # (F, K_max, M)
+    Full_Actions = torch.stack(All_Actions, dim=1)     # (F, K_max)
+    Full_Reductions = torch.stack(All_Reductions, dim=1) # (F, K_max)
+    
+    return Full_Corrs, Full_Actions, Full_Reductions
 
 def main():
     parser = argparse.ArgumentParser()
@@ -118,6 +110,7 @@ def main():
     parser.add_argument("--angle", type=float, default=90.0)
     parser.add_argument("--max_items", type=int, default=100)
     parser.add_argument("--hop_length", type=int, default=None, help="Override STFT hop length (e.g. 160 for 10ms)")
+    parser.add_argument("--variants_per_clip", type=int, default=5, help="Number of random K variants to extract per clip")
     args = parser.parse_args()
     
     out_path = Path(args.out_dir)
@@ -125,7 +118,9 @@ def main():
     
     # Params
     Tw = 16 
-    MaxLag = 16
+    MaxLag = 16 # Available Lags
+    Absolute_K = 16 # Max Budget
+
 
     dataset = DoALagDataset(args.mic_root, args.ldv_root, angle=args.angle, hop_length=args.hop_length)
     if args.max_items:
@@ -161,26 +156,46 @@ def main():
             if X_chunk.shape[0] < MaxLag+Tw or Y_chunk.shape[0] < Tw:
                 continue
                 
-            _, _, traj = run_omp_lag_capture(X_chunk, Y_chunk, K_max=8)
+            # Run OMP to absolute max K=16
+            f_corrs, f_actions, f_reds = run_omp_lag_capture(X_chunk, Y_chunk, K_max=Absolute_K)
             
-            corrs = traj["correlations"] # (F, K, M)
-            actions = traj["actions"]
-            reductions = traj["reductions"]
-            scores = traj["scores"]
+            # Generate Random Variants
+            # We want to create N variants with random K length \in [1, 16]
             
-            # Save block
-            all_trajectories.append({
-                "corrs": corrs.half(),
-                "actions": actions.to(torch.int8),
-                "reductions": reductions.half(),  # New
-                "scores": scores.half()
-            })
+            # Ensure we cover the full range if variants is large, or random if small
+            possible_ks = list(range(1, Absolute_K + 1))
+            
+            if args.variants_per_clip >= Absolute_K:
+                selected_ks = possible_ks
+            else:
+                # Random selection without replacement
+                selected_ks = np.random.choice(possible_ks, size=args.variants_per_clip, replace=False)
+            
+            for k_len in selected_ks:
+                # Slice the trajectory
+                # k_len is 1-based index, so slice [:k_len]
+                
+                sub_corrs = f_corrs[:, :k_len, :]
+                sub_actions = f_actions[:, :k_len]
+                sub_reductions = f_reds[:, :k_len]
+                
+                # The "Target" for this episode is the reduction achieved at the FINAL step of this sub-trajectory
+                # i.e. index [k_len-1]
+                
+                final_scores_k = sub_reductions[:, -1] # (F,)
+                
+                all_trajectories.append({
+                    "corrs": sub_corrs.half(),
+                    "actions": sub_actions.to(torch.int8),
+                    "reductions": sub_reductions.half(),
+                    "scores": final_scores_k.half() # This becomes the Initial RTG base
+                })
 
-            # if len(all_trajectories) > 500: break # Safety limit for quick test? 
-            # No, user said "start measuring". Let's run full set of 100 items.
+            # if len(all_trajectories) > 500: break 
     
     torch.save(all_trajectories, out_path / "lag_trajectories.pt")
-    logger.info(f"Saved {len(all_trajectories)} blocks to {out_path}")
+    logger.info(f"Saved {len(all_trajectories)} blocks to {out_path} (Variants: {args.variants_per_clip})")
+
 
 if __name__ == "__main__":
     main()
