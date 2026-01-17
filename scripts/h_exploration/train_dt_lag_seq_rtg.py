@@ -108,6 +108,11 @@ class LagSequenceDataset(Dataset):
                  self.flat_freqs.append(f_block[f])   # Scalar
         
         self.N = len(self.flat_corrs)
+        if self.N > 0:
+            self.M = self.flat_corrs[0].shape[-1]
+        else:
+            self.M = 0
+            
         logger.info(f"Loaded {self.N} variable-length sequences. Feature dim: {self.M}")
         
     def __len__(self):

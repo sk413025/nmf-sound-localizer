@@ -1,33 +1,27 @@
-Setup: Frequency-Aware Policy Architecture and Smoke Test
+Setup: Interspeech GRU1 Experiment Plan (boy1 data + Physics-Based MDP)
 
-Experiment context:
-- Background: Previous experiments showed that the global Decision Transformer (DTmin) failed to outperform OMP (Acc ~50% vs 74%), while a Single-Frequency model (Bin 50-60) matched OMP (74%). This implies the policy needs frequency context to resolve phase ambiguity.
-- Motivation: To scale the single-frequency success to the full spectrum, the model must be "Frequency-Aware" rather than blind.
-- Purpose: Implement and verify a Frequency-Conditional Architecture where the policy receives the `freq_bin_idx` as an explicit input embedding.
-- Expected: The model should compile and train without error, showing better-than-random accuracy on a small subset (Smoke Test).
+Detailed setup for reproducing the 'Full Spectrum K=8' experiment (b482ddf)
+using the 'boy1' subject dataset and the terminologies from the manuscript branch (c183fd4).
 
-Implementation details:
-- Refactored `dataset_lag.py` (via `generate_lag_omp.py`) and `train_dt_lag_seq_rtg.py`.
-- Added `freq_idx` field to `dataset_lag.py`.
-- Added `self.freq_embed = nn.Embedding(1025, d_model)` to `SeqDT_FreqAware`.
-- Input Logic: `Embedding = Physics(Corr) + Goal(RTG) + Context(Freq)`.
+1. Data Registry & Preprocessing Requirements
+   - Source Root: /Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1
+   - Input Structure: Flat MIC/*.wav and LDV/*.wav folders.
+   - Target Structure: Must transform to 'angle_{deg}/clip.npy' format for compatibility.
+   - Action Item: Duplicate normalization logic from 'normalize_datasets.py' but adapted for raw WAV parsing.
 
-Execution:
-- Data Gen: `python scripts/h_exploration/generate_lag_omp.py --max_items 1 --out_dir results/smoke_data`
-- Training: `python scripts/h_exploration/train_dt_lag_seq_rtg.py --data_path results/smoke_data/lag_trajectories.pt --epochs 2 --out_dir results/smoke_train_freq_aware`
+2. Terminology Mapping (Manuscript Alignment c183fd4)
+   - OMP -> Physics-motivated ℓ0 objective (Greedy Energy Capture).
+   - Decision Transformer -> MDP Agent (Frequency-Aware Policy).
+   - Return-to-Go (RTG) -> Physics-meaningful Energy Target.
+   - Lag Selection -> Phase Alignment Action.
+   - Correlation Profile -> Correlation State c_k(f).
 
-Results (Smoke Test):
-- Subsample: 2 clips (2050 freq-trajectories).
-- Train Acc: 36.42% (Epoch 1).
-- Val Acc: 36.42% (Epoch 1).
-- Baseline (Random): ~6.25% (1/16).
-- Status: PASSED. Pipeline works end-to-end.
+3. Experiment Replication Logic (b482ddf)
+   - Oracle Generation: generate_lag_omp.py (Teacher). Creates state-action pairs maximizing energy capture.
+   - Student Training: train_dt_lag_seq_rtg.py.
+     - Spectrum: Full (Bins 5-1024).
+     - Budget: K=8 steps (found optimal for Reverb Tail in previous exp).
+     - Epochs: 100.
+   - Objective: Validate that the single 'Frequency-Aware Policy' can generalize to a new physical subject ('boy1').
 
-Physical Analysis:
-- First principles: Phase difference $\Delta \phi = 2\pi f \Delta \tau$. Determining $\Delta \tau$ (Lag) from $\Delta \phi$ requires knowing $f$. Without $f$, the mapping is ambiguous (aliasing).
-- The Embedding Layer allows the network to learn a frequency-specific "Phase Unwrapping" transformation.
-
-Next Steps:
-- Run full-scale data generation (all clips).
-- Train on full dataset (Bins 5-300).
-- Compare Global vs Freq-Aware Accuracy.
+This commit establishes the docs/experiment_plans/interspeech_gru1_plan.md acting as the source of truth.
