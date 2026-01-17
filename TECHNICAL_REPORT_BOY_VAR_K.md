@@ -79,6 +79,30 @@ We evaluated the true physical energy capture of the trained Agent by executing 
 - **Early-Step Discrepancy:** At $K=1$, the Agent captures only 41% of the optimal energy. This suggests the Agent may prioritize atoms that enable *future* gains (planning) or simply struggles with the "Greedy Step 1" problem compared to OMP.
 - **Projected Fidelity:** The 62% Action Accuracy translates to nearly 90% Physical Effectiveness at $K=8$, confirming that "Exact Match" is an overly strict metric; the Agent finds *alternative* efficient atoms.
 
+### 4.3 Detailed Frequency Band Analysis
+We decoupled the performance by frequency band to understand where the Agent's physical understanding is strongest.
+
+**Efficiency (DTmin / OMP) at K=1, 4, 8:**
+
+| Band | Range | K=1 (Greedy) | K=4 (Mid) | K=8 (Full) | Converged? |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Sub-Bass** | 0-60 Hz | 66.6% | 81.6% | **93.2%** | ✅ Yes |
+| **Bass** | 60-250 Hz | 46.6% | 75.9% | **95.4%** | ✅ Yes |
+| **Low Mids** | 250-500 Hz | **71.7%** | **83.5%** | **95.1%** | ✅ **Strongest** |
+| **Mids** | 500-2k Hz | 40.2% | 66.7% | 92.7% | ✅ Yes |
+| **Upper Mids** | 2k-4k Hz | 51.4% | 74.7% | 89.9% | ⚠️ Lower Abs. |
+| **Presence** | 4k-6k Hz | *23.3%* | 54.9% | 81.7% | ❌ Slowest |
+| **Highs** | 6k-8k Hz | 36.1% | 63.3% | 84.7% | ⚠️ Noisy |
+
+**Visualizations:**
+- **Efficiency Dynamics:** `results/interspeech_gru1/efficiency_by_band.png`
+- **Absolute Capture:** `results/interspeech_gru1/capture_by_band.png`
+
+**Interpretation:**
+1.  **The "Sweet Spot" (Low Mids):** The Agent is incredibly effective here. Even its first greedy step captures **71.7%** of the optimal energy, suggesting the physical features in this band are "salient" and easy to learn.
+2.  **The Planning Gap (Presence):** In the 4k-6k Hz range, the Agent's first step is poor (23% efficiency), but it recovers to 81% by step 8. This suggests high-frequency correlations are non-obvious/sparse, requiring multiple "guesses" (shots) to find.
+3.  **Universal Convergence:** Across ALL bands, the Agent achieves >80% efficiency given enough budget (K=8). This proves the **Variable-K training strategy** successfully taught the model to perform "Iterative Refinement" regardless of frequency.
+
 ---
 
 ## 5. Conclusion & Recommendations

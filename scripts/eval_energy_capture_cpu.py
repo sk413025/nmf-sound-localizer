@@ -390,5 +390,190 @@ def main():
     for k in range(len(res_dt)):
         print(f"{k+1}\t{res_dt[k]:.4f}\t{res_omp[k]:.4f}\t{res_dt[k]/res_omp[k]*100:.1f}%")
 
+def safe_freq_slice(data, freq_idx):
+    if freq_idx is None: return data
+    return data[freq_idx]
+
+def run_band_analysis():
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    print(f"Using device: {device}")
+    
+    # 1. Setup
+    mic_root = "data/derived/boy1_processed/MIC"
+    ldv_root = "data/derived/boy1_processed/LDV"
+    angle = 0.0 # Test Angle 0
+    
+    # Load Broadband Dataset
+    # freq_min=0, freq_max=8000
+    dataset = DoALagDataset(
+        mic_root, ldv_root, angle=angle, 
+        freq_min=0, freq_max=8000
+    )
+    print(f"Dataset Size: {len(dataset)}")
+    
+    # 2. Load Model
+    model = SeqDT_FreqAware(M_lags=16, d_model=128, hidden_dim=256).to(device)
+    ckpt_path = "results/interspeech_gru1/model_varK/dt_freq_aware_best.pth"
+    try:
+        model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        print("Model Loaded.")
+    except Exception as e:
+        print(f"Model Load Failed: {e}")
+        return
+
+    # Freq setup
+    fs = 16000
+    n_fft = 2048
+    freq_bins = torch.linspace(0, fs/2, n_fft//2 + 1)
+    
+    BANDS = {
+        "Sub-Bass (0-60Hz)": (0, 60),
+        "Bass (60-250Hz)": (60, 250),
+        "Low Mids (250-500Hz)": (250, 500),
+        "Mids (500-2k Hz)": (500, 2000),
+        "Upper Mids (2k-4k Hz)": (2000, 4000),
+        "Presence (4k-6k Hz)": (4000, 6000),
+        "Highs (6k-8k Hz)": (6000, 8000)
+    }
+    
+    results = {} # Band -> {K -> {DT, OMP}}
+    
+    # Run full evaluation once
+    # Better to run evaluation and store per-freq results, then aggregate
+    
+    all_dt_E = []  # List of tensors (N_windows*F_total, K)
+    all_omp_E = [] 
+    
+    # We verify if eval_clip returns flattened freq?
+    # eval_clip returns torch.cat(dt_energies, dim=0) -> (N_windows * F, K)
+    # But it stacks along dim 0.
+    # Inside eval_clip: 
+    #   accum_dt.append(ratio_dt) # ratio_dt is (F,)
+    #   dt_energies.append(torch.stack(accum_dt, dim=1)) # (F, K)
+    #   returns torch.cat(dt_energies, dim=0) -> (Total_Windows * F, K)
+    # This structure LOSES the frequency mapping if windows > 1.
+    # Because we concat different windows.
+    # Wait, eval_clip iterates over 'valid_starts' (windows).
+    # If we want frequency-wise analysis, we need to know which F each row corresponds to.
+    
+    # Refactor Eval Loop to return structured data
+    # (Windows, F, K)
+    
+    print("Collecting raw data needed for band analysis...")
+    
+    N_clips = 10
+    
+    Total_DT = [] # List of (F, K) averaged over windows per clip
+    Total_OMP = [] 
+    
+    for i in tqdm(range(min(N_clips, len(dataset)))):
+        # We need a modified eval_clip or parse its output
+        # Let's peek at eval_clip. 
+        # It calls: dt_energies.append(torch.stack(accum_dt, dim=1)) # (F, K)
+        # Then cats dim 0.
+        # So output is (W1_F_rows, K), (W2_F_rows, K)...
+        # Since F is constant, we can reshape.
+        
+        # Get F from dataset item
+        item = dataset[i]
+        F_dim = item['mic_stft'].shape[1]
+        
+        dt_E_flat, omp_E_flat = eval_clip(model, dataset, i, device)
+        # dt_E_flat: (Windows * F, K)
+        
+        # Reshape to (Windows, F, K)
+        num_windows = dt_E_flat.shape[0] // F_dim
+        dt_E_3d = dt_E_flat.reshape(num_windows, F_dim, -1)
+        omp_E_3d = omp_E_flat.reshape(num_windows, F_dim, -1)
+        
+        # Average over windows -> (F, K)
+        dt_mean_F = dt_E_3d.mean(dim=0)
+        omp_mean_F = omp_E_3d.mean(dim=0)
+        
+        Total_DT.append(dt_mean_F.cpu())
+        Total_OMP.append(omp_mean_F.cpu())
+
+    # Aggregate over clips -> (F, K)
+    # Stack: (Clips, F, K)
+    Grand_DT = torch.stack(Total_DT, dim=0).mean(dim=0) # (F, K)
+    Grand_OMP = torch.stack(Total_OMP, dim=0).mean(dim=0) # (F, K)
+    
+    # Now Slice by Bands
+    plot_data = {} # Band -> {DT: [], OMP: [], Eff: []}
+    
+    for band_name, (f_start, f_end) in BANDS.items():
+        # Find indices
+        # bins s.t. f_start <= freq < f_end
+        mask = (freq_bins >= f_start) & (freq_bins < f_end)
+        # Ensure mask fits F dim (might be slight mismatch due to n_fft)
+        # dataset uses F = n_fft//2 + 1 usually.
+        indices = torch.where(mask)[0]
+        # Clip indices to max F contained in Grand_DT
+        indices = indices[indices < Grand_DT.shape[0]]
+        
+        if len(indices) == 0:
+            print(f"Warning: No bins for {band_name}")
+            continue
+            
+        # Get stats
+        band_dt = Grand_DT[indices, :].mean(dim=0).numpy() # (K,)
+        band_omp = Grand_OMP[indices, :].mean(dim=0).numpy()
+        band_eff = band_dt / (band_omp + 1e-6) * 100
+        
+        plot_data[band_name] = {
+            "DT": band_dt,
+            "OMP": band_omp,
+            "Eff": band_eff
+        }
+        
+    # --- PLOTTING ---
+    K_steps = np.arange(1, 9)
+    
+    # Figure 1: Efficiency
+    plt.figure(figsize=(10, 6))
+    for name, data in plot_data.items():
+        plt.plot(K_steps, data["Eff"], marker='o', label=name)
+    
+    plt.title("DTmin Efficiency (DT/OMP %) by Frequency Band")
+    plt.xlabel("Budget K (Steps)")
+    plt.ylabel("Efficiency %")
+    plt.ylim(0, 105)
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.savefig("results/interspeech_gru1/efficiency_by_band.png")
+    print("Saved efficiency_by_band.png")
+    
+    # Figure 2: Absolute Capture (Subplots)
+    n_bands = len(plot_data)
+    cols = 2
+    rows = (n_bands + 1) // 2
+    
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 4*rows))
+    axes = axes.flatten()
+    
+    for i, (name, data) in enumerate(plot_data.items()):
+        ax = axes[i]
+        ax.plot(K_steps, data["OMP"], 'k--', label="OMP Oracle")
+        ax.plot(K_steps, data["DT"], 'b-', marker='x', label="DTmin Agent")
+        ax.set_title(name)
+        ax.set_ylim(0, max(data["OMP"].max()*1.1, 0.1))
+        ax.grid(True)
+        if i == 0: ax.legend()
+        
+    plt.tight_layout()
+    plt.savefig("results/interspeech_gru1/capture_by_band.png")
+    print("Saved capture_by_band.png")
+    
+    # Print Table
+    print("\nXXX DETAILED BAND ANALYSIS XXX")
+    print(f"{'Band':<25} | {'K':<3} | {'DT':<6} | {'OMP':<6} | {'Eff %':<6}")
+    print("-" * 60)
+    for name, data in plot_data.items():
+        # Print for K=1, 4, 8
+        for k_idx in [0, 3, 7]: # K=1, 4, 8
+            k = k_idx + 1
+            print(f"{name:<25} | {k:<3} | {data['DT'][k_idx]:.4f} | {data['OMP'][k_idx]:.4f} | {data['Eff'][k_idx]:.1f}%")
+        print("-" * 60)
+
 if __name__ == "__main__":
-    main()
+    run_band_analysis()
