@@ -61,17 +61,23 @@ We analyzed the **Energy Capture** capability of the OMP Oracle across the frequ
 - **Validation Loss:** 1.027 (Converged)
 - **Generalization:** No sign of overfitting (Val Loss $\approx$ Train Loss), indicating the "Variable K" augmentation worked.
 
-### 4.2 Estimated Energy Capture (Proxy)
-Given the Action Accuracy of 62%, and assuming "Near-Miss" selections (2nd best lag) retain ~90% efficiency:
+### 4.2 Real Physics Energy Capture (Broadband 0-8kHz)
+We evaluated the true physical energy capture of the trained Agent by executing the selected dictionary atoms on the test set (`boy1`, Angle 0) and solving the Least Squares projection explicitly.
 
-$$ E_{DT} \approx \text{Acc} \times E_{OMP} + (1-\text{Acc}) \times 0.9 E_{OMP} $$
-$$ E_{DT} \approx 0.62 + 0.38(0.9) \approx 0.96 E_{OMP} $$
+**Energy Capture Efficiency vs. OMP Oracle:**
 
-**Projected Performance in Sweet Spot (250-500Hz):**
-- **OMP:** 90.22%
-- **DTmin:** ~86.6% (Estimated)
+| K Steps | DTmin Capture | OMP Capture | Efficiency (DT/OMP) |
+| :--- | :--- | :--- | :--- |
+| **1** | 5.63% | 13.61% | 41.4% |
+| **2** | 8.95% | 17.56% | 50.9% |
+| **4** | 14.58% | 21.82% | 66.8% |
+| **6** | 19.47% | 24.66% | 79.0% |
+| **8** | **23.81%** | **26.79%** | **88.9%** |
 
-This confirms the Agent is highly effective where physics allows, and fails only where the physics itself (OMP) fails.
+**Interpretation:**
+- **Convergent Physics:** As the budget ($K$) increases, the Agent's solution subspace converges to the OMP subspace, achieving **~89%** of the theoretical limit by $K=8$.
+- **Early-Step Discrepancy:** At $K=1$, the Agent captures only 41% of the optimal energy. This suggests the Agent may prioritize atoms that enable *future* gains (planning) or simply struggles with the "Greedy Step 1" problem compared to OMP.
+- **Projected Fidelity:** The 62% Action Accuracy translates to nearly 90% Physical Effectiveness at $K=8$, confirming that "Exact Match" is an overly strict metric; the Agent finds *alternative* efficient atoms.
 
 ---
 
