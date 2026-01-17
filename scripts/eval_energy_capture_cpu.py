@@ -110,7 +110,7 @@ def run_physics_step(Dict_Norm, Residuals, Active_Sets, k, device):
     
     pass 
 
-def eval_clip(model, dataset, idx, device, max_k=8, rtg_scale=1.0):
+def eval_clip(model, dataset, idx, device, max_k=16, rtg_scale=1.0):
     """
     Evaluates one clip.
     Returns: 
@@ -527,7 +527,7 @@ def run_band_analysis():
         }
         
     # --- PLOTTING ---
-    K_steps = np.arange(1, 9)
+    K_steps = np.arange(1, 17)
     
     # Figure 1: Efficiency
     plt.figure(figsize=(10, 6))
@@ -569,10 +569,11 @@ def run_band_analysis():
     print(f"{'Band':<25} | {'K':<3} | {'DT':<6} | {'OMP':<6} | {'Eff %':<6}")
     print("-" * 60)
     for name, data in plot_data.items():
-        # Print for K=1, 4, 8
-        for k_idx in [0, 3, 7]: # K=1, 4, 8
-            k = k_idx + 1
-            print(f"{name:<25} | {k:<3} | {data['DT'][k_idx]:.4f} | {data['OMP'][k_idx]:.4f} | {data['Eff'][k_idx]:.1f}%")
+        # Print for K=1, 4, 8, 16
+        for k_idx in [0, 3, 7, 15]: # K=1, 4, 8, 16
+            if k_idx < len(data['DT']):
+                k = k_idx + 1
+                print(f"{name:<25} | {k:<3} | {data['DT'][k_idx]:.4f} | {data['OMP'][k_idx]:.4f} | {data['Eff'][k_idx]:.1f}%")
         print("-" * 60)
 
 if __name__ == "__main__":

@@ -31,15 +31,17 @@ To prevent the model from overfitting to a fixed sequence length (e.g., always 8
 
 We analyzed the **Energy Capture** capability of the OMP Oracle across the frequency spectrum (0-8kHz).
 
-| Frequency Band | Range (Hz) | Energy Capture (OMP) | Physical Interpretation |
+*Note: The values below represent the **Theoretical Limit** achieved by full Oracle Expansion (K=16) on the evaluation set.*
+
+| Frequency Band | Range (Hz) | K=16 Capture (Limit) | Physical Interpretation |
 | :--- | :--- | :--- | :--- |
-| **Sub-Bass** | 0 - 60 Hz | **81.47%** | High coherence; dominated by fundamental structural modes. |
-| **Bass** | 60 - 250 Hz | **83.82%** | Strong linear coupling. |
-| **Low Mids** | 250 - 500 Hz | **90.22%** | **Sweet Spot.** Ideal wavelength-to-object ratio for linear transfer. |
-| **Mids** | 500 - 2k Hz | 47.26% | Transition zone. Speech intelligibility region. |
-| **Upper Mids** | 2k - 4k Hz | **9.01%** | **Failure Mode.** Scattering regime; Mic/LDV decoupled by object geometry. |
-| **Presence** | 4k - 6k Hz | 26.32% | Non-linear scattering dominates. |
-| **Highs** | 6k - 8k Hz | 32.39% | Coherent noise floor or simplified high-freq modes. |
+| **Sub-Bass** | 0 - 60 Hz | **94.52%** | High coherence; OMP saturates completely. |
+| **Bass** | 60 - 250 Hz | **87.21%** | Strong linear coupling. |
+| **Low Mids** | 250 - 500 Hz | **92.29%** | **Sweet Spot.** Ideal wavelength-to-object ratio for linear transfer. |
+| **Mids** | 500 - 2k Hz | 46.78% | Transition zone. Speech intelligibility region. |
+| **Upper Mids** | 2k - 4k Hz | **8.61%** | **Failure Mode.** Scattering regime; Mic/LDV decoupled. |
+| **Presence** | 4k - 6k Hz | 25.21% | Non-linear scattering dominates. |
+| **Highs** | 6k - 8k Hz | 32.16% | Coherent noise floor or simplified high-freq modes. |
 
 **Chart: Energy Capture vs. Frequency**
 ```
