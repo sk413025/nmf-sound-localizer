@@ -107,6 +107,22 @@ We decoupled the performance by frequency band to understand where the Agent's p
 2.  **The Planning Gap (Presence):** In the 4k-6k Hz range, the Agent's first step is poor (23% efficiency), but it recovers to 81% by step 8. This suggests high-frequency correlations are non-obvious/sparse, requiring multiple "guesses" (shots) to find.
 3.  **Universal Convergence:** Across ALL bands, the Agent achieves >80% efficiency given enough budget (K=8). This proves the **Variable-K training strategy** successfully taught the model to perform "Iterative Refinement" regardless of frequency.
 
+### 4.4 Convergence Rate Analysis (K=8 vs K=16)
+
+The discrepancy between K=8 and K=16 performance reveals the **time-domain density** of the signal.
+
+| Band | K=8 OMP (Mid-Budget) | K=16 OMP (Full-Budget) | Kinetic Gain (K8->K16) | Physical Density |
+| :--- | :--- | :--- | :--- | :--- |
+| **Sub-Bass** | 69.26% | **94.52%** | **+25.26%** | **Highly Dense / Resonant.** Requires many taps to capture long-ringing room modes. |
+| **Bass** | 77.00% | 87.21% | +10.21% | Moderate Density. |
+| **Low Mids** | 85.15% | 92.29% | +7.14% | **Sparse / Concentrated.** Energy is localized in a few dominant lags. |
+| **Mids** | 45.11% | 46.78% | +1.67% | **Saturated.** Increasing budget yields minimal gain (Ceiling reached early). |
+
+**Implication for Agent Design:**
+*   For **Sub-Bass**, a budget of $K=8$ is mathematically insufficient. The Agent *must* be allowed longer horizons (e.g., $K=32$) to fully solve this band.
+*   For **Low Mids**, $K=8$ is already near-optimal.
+*   For **Mids**, the bottleneck is not budget ($K$) but coherence ($Coherence^2$). No amount of extra planning will fix it.
+
 ---
 
 ## 5. Conclusion & Recommendations
