@@ -10,9 +10,13 @@ from scripts.h_exploration.dataset_lag import DoALagDataset
 
 # --- MODEL DEFINITION ---
 class SeqDT_FreqAware(nn.Module):
-    def __init__(self, M_lags=16, d_model=128, hidden_dim=256, n_layers=2, max_freq=1025):
+    def __init__(self, M_lags=16, d_model=128, hidden_dim=256, n_layers=2, max_freq=1025, rtg_dim: int = 2):
         super().__init__()
-        self.rtg_embed = nn.Linear(1, d_model)
+        if rtg_dim not in (1, 2):
+            raise ValueError("rtg_dim must be 1 or 2")
+        self.rtg_dim = rtg_dim
+
+        self.rtg_embed = nn.Linear(rtg_dim, d_model)
         self.state_embed = nn.Linear(M_lags, d_model)
         self.freq_embed = nn.Embedding(max_freq, d_model)
         self.corr_norm = nn.LayerNorm(M_lags)
@@ -34,7 +38,11 @@ class SeqDT_FreqAware(nn.Module):
         # x: (B, K, M)
         B, K, M = x.shape
         x_emb = self.state_embed(x)
-        r_emb = self.rtg_embed(rtg.unsqueeze(-1))
+        if rtg.dim() == 2:
+            rtg_in = rtg.unsqueeze(-1)
+        else:
+            rtg_in = rtg
+        r_emb = self.rtg_embed(rtg_in)
         f_emb = self.freq_embed(freq_idx).unsqueeze(1).expand(-1, K, -1) # (B, K, D)
         
         h = x_emb + r_emb + f_emb
@@ -63,7 +71,7 @@ def gather_atoms(Dict, Ids_till_k):
     Ids_exp = Ids_till_k.unsqueeze(1).expand(-1, Tw, -1)
     return torch.gather(Dict, 2, Ids_exp)
 
-def eval_clip(model, dataset, idx, device, max_lag=16, max_k=16, Tw=16):
+def eval_clip(model, dataset, idx, device, max_lag=50, max_k=16, Tw=32, gain=100.0, rtg_dim: int = 2):
     """
     Evaluates one clip.
     Returns: 
@@ -80,6 +88,10 @@ def eval_clip(model, dataset, idx, device, max_lag=16, max_k=16, Tw=16):
     item = dataset[idx]
     mic_stft = item['mic_stft'].to(device) # (T, F)
     ldv_stft = item['ldv_stft'].to(device) # (T, F)
+
+    if gain != 1.0:
+        mic_stft = mic_stft * float(gain)
+        ldv_stft = ldv_stft * float(gain)
     
     T_total, F = ldv_stft.shape
    
@@ -157,7 +169,11 @@ def eval_clip(model, dataset, idx, device, max_lag=16, max_k=16, Tw=16):
             # DT Agent
             cur_E_dt = manual_complex_norm(res_dt.squeeze(), dim=1)**2
             vals = cur_E_dt / (initial_energy + 1e-6) 
-            rtg_in = vals # We want to eliminate remaining energy
+            if int(rtg_dim) == 2:
+                remaining = float(max_k - k) / max(float(max_k), 1.0)
+                rtg_in = torch.stack([vals, torch.full_like(vals, remaining)], dim=-1)
+            else:
+                rtg_in = vals
             
             # Forward
             # x input: correlations (F, M). Reshape to (F, 1, M) as seq len 1
@@ -179,9 +195,9 @@ def eval_clip(model, dataset, idx, device, max_lag=16, max_k=16, Tw=16):
             indices_omp[:, k] = act_omp
             
             # 3. Physics Update (Projection) - CPU Batch
-            # Move to CPU for solve to avoid MPS complex issues
-            D_cpu = D_norm.cpu()
-            Y_cpu = Y.cpu() # Should be original Y for projection
+            # Project in the original (unnormalized) dictionary space.
+            D_cpu = D.cpu()
+            Y_cpu = Y.cpu() # original Y for projection
             
             # Note: We should project onto ORIGINAL Y for correct OMP behavior.
             # But the code inside eval_energy_capture_cpu.py was using Residuals?
@@ -243,9 +259,13 @@ def main():
     parser.add_argument("--ldv_root", type=str, required=True)
     parser.add_argument("--ckpt_path", type=str, required=True)
     parser.add_argument("--out_dir", type=str, default="results/eval_capture")
-    parser.add_argument("--max_lag", type=int, default=32)
-    parser.add_argument("--max_k", type=int, default=32)
-    parser.add_argument("--tw", type=int, default=16)
+    parser.add_argument("--hop_length", type=int, default=160, help="STFT hop length (samples)")
+    parser.add_argument("--max_lag", type=int, default=50)
+    parser.add_argument("--max_k", type=int, default=16)
+    parser.add_argument("--tw", type=int, default=32)
+    parser.add_argument("--gain", type=float, default=100.0)
+    parser.add_argument("--rtg_dim", type=int, default=2, help="RTG dimension: 1 or 2")
+    parser.add_argument("--num_clips", type=int, default=10, help="Number of clips to evaluate")
     parser.add_argument("--visualize", action="store_true")
     args = parser.parse_args()
     
@@ -257,7 +277,7 @@ def main():
     # Dataset
     # We use broadband to scan all freqs
     dataset = DoALagDataset(
-        args.mic_root, args.ldv_root, angle=90.0, # Default angle 90
+        args.mic_root, args.ldv_root, angle=90.0, hop_length=int(args.hop_length), # Default angle 90
         freq_min=0, freq_max=8000
     )
     print(f"Dataset Size: {len(dataset)}")
@@ -268,7 +288,7 @@ def main():
     M_lags = args.max_lag * 2 + 1
     print(f"Initializing Model with M_lags={M_lags}")
     
-    model = SeqDT_FreqAware(M_lags=M_lags, d_model=128, hidden_dim=256).to(device)
+    model = SeqDT_FreqAware(M_lags=M_lags, d_model=128, hidden_dim=256, rtg_dim=int(args.rtg_dim)).to(device)
     
     try:
         # Load weights only option if strict check fails?
@@ -286,14 +306,20 @@ def main():
     Total_DT = [] 
     Total_OMP = [] 
     
-    # Eval 10 clips
-    N_clips = min(10, len(dataset))
+    N_clips = min(int(args.num_clips), len(dataset))
     
     for i in tqdm(range(N_clips)):
         # Gets (N_windows * F, K)
         dt_flat, omp_flat = eval_clip(
-            model, dataset, i, device, 
-            max_lag=args.max_lag, max_k=args.max_k, Tw=args.tw
+            model,
+            dataset,
+            i,
+            device,
+            max_lag=args.max_lag,
+            max_k=args.max_k,
+            Tw=args.tw,
+            gain=args.gain,
+            rtg_dim=int(args.rtg_dim),
         )
         
         if dt_flat.shape[0] == 0: continue

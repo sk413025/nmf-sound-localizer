@@ -1,6 +1,6 @@
 #!/bin/bash
-# Pipeline for M=32 (Lags -32..32, Total 65), K=32
-# Full 200 Epoch training
+# Pipeline for Tw=32, max_lag=50 (Lags -50..50, Total 101), K=16
+# Full 50 Epoch training
 
 # Setup Environment
 export PYTHONPATH=$PWD
@@ -24,10 +24,10 @@ fi
 
 echo "Using Python: $PYTHON_EXE"
 
-EXP_NAME="exp_m32_k32_full"
-DATA_ROOT="/Users/sbplab/LDV-data-processed"
-MIC_ROOT="$DATA_ROOT/speech260_original_16k_no_edge_sync_vad_normalized"
-LDV_ROOT="$DATA_ROOT/speech260_box_16k_no_edge_sync_vad_normalized"
+EXP_NAME="exp_interspeech_gru2_tw32_lag50_k16_ep50"
+DATA_ROOT="/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1"
+MIC_ROOT="$DATA_ROOT/MIC"
+LDV_ROOT="$DATA_ROOT/LDV"
 
 OUT_DIR="results/$EXP_NAME"
 mkdir -p $OUT_DIR
@@ -36,15 +36,17 @@ mkdir -p $OUT_DIR
 echo "Starting Pipeline $EXP_NAME at $(date)" | tee "$OUT_DIR/pipeline.log"
 
 # 1. Generation
-echo "=== 1. Generating Trajectories (M=65, K=32) ===" | tee -a "$OUT_DIR/pipeline.log"
+echo "=== 1. Generating Trajectories (Tw=32, Lag=50, K=16) ===" | tee -a "$OUT_DIR/pipeline.log"
 # We increase max_items to cover most/all of the dataset (approx 700 clips usually)
-$PYTHON_EXE scripts/h_exploration/generate_lag_omp.py \
+$PYTHON_EXE -u scripts/h_exploration/generate_lag_omp.py \
     --mic_root "$MIC_ROOT" \
     --ldv_root "$LDV_ROOT" \
     --out_dir "$OUT_DIR/data" \
-    --max_lag 32 \
-    --max_k 32 \
-    --tw 16 \
+    --hop_length 160 \
+    --max_lag 50 \
+    --max_k 16 \
+    --tw 32 \
+    --gain 100.0 \
     --variants_per_clip 5 \
     --max_items 1000 \
     --angle 90.0 >> "$OUT_DIR/pipeline.log" 2>&1
@@ -54,14 +56,32 @@ if [ ! -f "$OUT_DIR/data/lag_trajectories.pt" ]; then
     exit 1
 fi
 
+# 1b. OMP vs Random gap (Tw sensitivity)
+echo "=== 1b. OMP vs Random (gap diagnostic) ===" | tee -a "$OUT_DIR/pipeline.log"
+$PYTHON_EXE -u scripts/h_exploration/eval_lag_capture_omp_vs_random.py \
+    --mic_root "$MIC_ROOT" \
+    --ldv_root "$LDV_ROOT" \
+    --out_dir "$OUT_DIR/omp_vs_random" \
+    --hop_length 160 \
+    --max_items 10 \
+    --max_lag 50 \
+    --max_k 16 \
+    --tw 32 \
+    --gain 100.0 \
+    --random_trials 50 \
+    --seed 0 >> "$OUT_DIR/pipeline.log" 2>&1
+
 # 2. Training
-echo "=== 2. Training DTmin Agent (200 Epochs) ===" | tee -a "$OUT_DIR/pipeline.log"
-$PYTHON_EXE scripts/h_exploration/train_dt_lag_seq_rtg.py \
+echo "=== 2. Training DTmin Agent (50 Epochs) ===" | tee -a "$OUT_DIR/pipeline.log"
+$PYTHON_EXE -u scripts/h_exploration/train_dt_lag_seq_rtg.py \
     --data_path "$OUT_DIR/data/lag_trajectories.pt" \
     --out_dir "$OUT_DIR/model" \
-    --epochs 200 \
+    --epochs 50 \
     --batch_size 256 \
-    --lr 5e-4 >> "$OUT_DIR/pipeline.log" 2>&1
+    --lr 5e-4 \
+    --rtg_dim 2 \
+    --rtg_mode target1 \
+    --target_return 1.0 >> "$OUT_DIR/pipeline.log" 2>&1
 
 if [ ! -f "$OUT_DIR/model/dt_freq_aware_best.pth" ]; then
     echo "Error: Training failed (no checkpoint)." | tee -a "$OUT_DIR/pipeline.log"
@@ -69,15 +89,34 @@ if [ ! -f "$OUT_DIR/model/dt_freq_aware_best.pth" ]; then
 fi
 
 # 3. Evaluation
-echo "=== 3. Evaluation ===" | tee -a "$OUT_DIR/pipeline.log"
-$PYTHON_EXE scripts/eval_energy_capture_generic.py \
+echo "=== 3. Evaluation (DT vs OMP) ===" | tee -a "$OUT_DIR/pipeline.log"
+$PYTHON_EXE -u scripts/eval_energy_capture_generic.py \
     --mic_root "$MIC_ROOT" \
     --ldv_root "$LDV_ROOT" \
     --ckpt_path "$OUT_DIR/model/dt_freq_aware_best.pth" \
     --out_dir "$OUT_DIR/eval" \
-    --max_lag 32 \
-    --max_k 32 \
-    --tw 16 \
+    --hop_length 160 \
+    --max_lag 50 \
+    --max_k 16 \
+    --tw 32 \
+    --gain 100.0 \
+    --rtg_dim 2 \
+    --num_clips 10 \
     --visualize >> "$OUT_DIR/pipeline.log" 2>&1
+
+# 3b. RTG1 override grid (sanity that RTG2D matters)
+echo "=== 3b. RTG1 override grid ===" | tee -a "$OUT_DIR/pipeline.log"
+$PYTHON_EXE -u scripts/h_exploration/run_rtg_override_grid_eval.py \
+    --mic_root "$MIC_ROOT" \
+    --ldv_root "$LDV_ROOT" \
+    --ckpt_path "$OUT_DIR/model/dt_freq_aware_best.pth" \
+    --out_dir "$OUT_DIR/rtg_grid" \
+    --num_clips 3 \
+    --hop_length 160 \
+    --max_lag 50 \
+    --max_k 16 \
+    --tw 32 \
+    --gain 100.0 \
+    --rtg1_values 0.0,0.25,0.5,0.75,1.0 >> "$OUT_DIR/pipeline.log" 2>&1
 
 echo "=== Pipeline Completed Successfully at $(date) ===" | tee -a "$OUT_DIR/pipeline.log"

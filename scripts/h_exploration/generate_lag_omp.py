@@ -140,6 +140,7 @@ def main():
     parser.add_argument("--max_items", type=int, default=100)
     parser.add_argument("--hop_length", type=int, default=None, help="Override STFT hop length (e.g. 160 for 10ms)")
     parser.add_argument("--variants_per_clip", type=int, default=5, help="Number of random K variants to extract per clip")
+    parser.add_argument("--gain", type=float, default=1.0, help="Scale mic/ldv STFT by this factor to avoid epsilon-floor artifacts")
     
     # New Params for MaxLag
     parser.add_argument("--max_lag", type=int, default=32, help="Max lag (both future and past). i.e. [-max_lag, max_lag]")
@@ -157,7 +158,7 @@ def main():
     Lag_Min = -args.max_lag # Symmetric
     Absolute_K = args.max_k 
 
-    logger.info(f"Config: Lag [{Lag_Min}, {Lag_Max}], Tw={Tw}, K={Absolute_K}")
+    logger.info(f"Config: Lag [{Lag_Min}, {Lag_Max}], Tw={Tw}, K={Absolute_K}, Gain={args.gain}")
 
     dataset = DoALagDataset(args.mic_root, args.ldv_root, angle=args.angle, hop_length=args.hop_length)
     if args.max_items:
@@ -198,6 +199,10 @@ def main():
             
             X_chunk = mic_stft[chunk_start : chunk_end]
             Y_chunk = ldv_stft[t : t+Tw]
+
+            if args.gain != 1.0:
+                X_chunk = X_chunk * float(args.gain)
+                Y_chunk = Y_chunk * float(args.gain)
             
             if X_chunk.shape[0] < (chunk_end - chunk_start) or Y_chunk.shape[0] < Tw:
                 continue

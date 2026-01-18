@@ -6,17 +6,39 @@ import numpy as np
 from pathlib import Path
 import argparse
 import logging
+import random
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
 class LagSequenceDataset(Dataset):
-    def __init__(self, pt_path, freq_idx_range=None):
+    def __init__(
+        self,
+        pt_path,
+        freq_idx_range=None,
+        rtg_dim: int = 2,
+        rtg_mode: str = "target1",
+        target_return: float = 1.0,
+    ):
         raw_data = torch.load(pt_path, weights_only=False)
         self.seq_corrs = []
         self.seq_actions = []
         self.seq_rtg = [] # Return-to-Go
         self.seq_freqs = [] # Frequency Indices
+
+        if rtg_dim not in (1, 2):
+            raise ValueError("rtg_dim must be 1 or 2")
+        if rtg_mode not in ("teacher_final", "target1"):
+            raise ValueError("rtg_mode must be one of: teacher_final, target1")
+        self.rtg_dim = rtg_dim
+        self.rtg_mode = rtg_mode
+        self.target_return = float(target_return)
 
         logger.info(f"Loading sequence data with RTG from {pt_path}...")
         for block in raw_data:
@@ -56,14 +78,34 @@ class LagSequenceDataset(Dataset):
             final_target = final_target.float()
             
             F, K, M = c.shape
-            rtgs = torch.zeros(F, K)
+            if self.rtg_dim == 2:
+                rtgs = torch.zeros(F, K, 2)
+            else:
+                rtgs = torch.zeros(F, K)
+
+            remaining_steps = (
+                (torch.arange(K, dtype=torch.float32).mul(-1).add(K) / max(K, 1))
+                .view(1, K)
+                .expand(F, -1)
+            )
             
             for k in range(K):
                 if k == 0:
                     prev_red = 0.0
                 else:
                     prev_red = red[:, k-1]
-                rtgs[:, k] = final_target - prev_red
+
+                if self.rtg_mode == "teacher_final":
+                    gap = final_target - prev_red
+                else:
+                    # Align with eval: rtg0 == remaining energy ratio == (1 - reduction_so_far)
+                    gap = self.target_return - prev_red
+
+                if self.rtg_dim == 2:
+                    rtgs[:, k, 0] = gap
+                    rtgs[:, k, 1] = remaining_steps[:, k]
+                else:
+                    rtgs[:, k] = gap
                 
             self.seq_corrs.append(c)
             self.seq_actions.append(a)
@@ -163,11 +205,15 @@ def pad_collate_fn(batch):
 
 
 class SeqDT_FreqAware(nn.Module):
-    def __init__(self, M_lags=16, d_model=128, hidden_dim=256, n_layers=2, max_freq=1025):
+    def __init__(self, M_lags=16, d_model=128, hidden_dim=256, n_layers=2, max_freq=1025, rtg_dim: int = 2):
         super().__init__()
         
+        if rtg_dim not in (1, 2):
+            raise ValueError("rtg_dim must be 1 or 2")
+        self.rtg_dim = rtg_dim
+
         # RTG Embedding
-        self.rtg_embed = nn.Linear(1, d_model)
+        self.rtg_embed = nn.Linear(rtg_dim, d_model)
         
         # State Embedding
         self.state_embed = nn.Linear(M_lags, d_model)
@@ -198,7 +244,7 @@ class SeqDT_FreqAware(nn.Module):
         
     def forward(self, x, rtg, freq_idx, mask=None):
         # x: (B, K, M)
-        # rtg: (B, K)
+        # rtg: (B, K) or (B, K, rtg_dim)
         # freq_idx: (B,)
         # mask: (B, K)
         B, K, M = x.shape
@@ -207,7 +253,11 @@ class SeqDT_FreqAware(nn.Module):
         x = self.corr_norm(x)
         
         s_emb = self.state_embed(x) # (B, K, d)
-        r_emb = self.rtg_embed(rtg.unsqueeze(-1)) # (B, K, d)
+        if rtg.dim() == 2:
+            rtg_in = rtg.unsqueeze(-1)
+        else:
+            rtg_in = rtg
+        r_emb = self.rtg_embed(rtg_in) # (B, K, d)
         
         # Freq Embedding: (B, d) -> (B, 1, d) -> Expand to (B, K, d)
         f_emb = self.freq_embed(freq_idx).unsqueeze(1).expand(-1, K, -1)
@@ -229,11 +279,28 @@ def main():
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--freq_range", type=str, default=None, help="Start,End bin indices e.g. 50,60")
+    parser.add_argument("--rtg_dim", type=int, default=2, help="RTG dimension: 1 or 2")
+    parser.add_argument(
+        "--rtg_mode",
+        type=str,
+        default="target1",
+        choices=["teacher_final", "target1"],
+        help="RTG0 definition: teacher_final uses per-sample OMP final score; target1 uses fixed target_return (default 1.0)",
+    )
+    parser.add_argument(
+        "--target_return",
+        type=float,
+        default=1.0,
+        help="Target return used when rtg_mode=target1. Typically 1.0 (full reduction).",
+    )
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for split and training")
     args = parser.parse_args()
     
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     logger.info(f"Using device: {device}")
+
+    set_seed(int(args.seed))
 
     # Dataset
     f_range = None
@@ -241,7 +308,13 @@ def main():
         parts = args.freq_range.split(",")
         f_range = (int(parts[0]), int(parts[1]))
     
-    dataset = LagSequenceDataset(args.data_path, freq_idx_range=f_range)
+    dataset = LagSequenceDataset(
+        args.data_path,
+        freq_idx_range=f_range,
+        rtg_dim=int(args.rtg_dim),
+        rtg_mode=str(args.rtg_mode),
+        target_return=float(args.target_return),
+    )
     
     # Train/Val Split
     val_size = int(0.1 * len(dataset))
@@ -252,7 +325,7 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, collate_fn=pad_collate_fn)
     
     # Model
-    model = SeqDT_FreqAware(M_lags=dataset.M).to(device)
+    model = SeqDT_FreqAware(M_lags=dataset.M, rtg_dim=int(args.rtg_dim)).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     
     # CE Loss with ignore_index to handle padding
