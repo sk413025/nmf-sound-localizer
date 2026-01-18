@@ -1,27 +1,69 @@
-Setup: Interspeech GRU1 Experiment Plan (boy1 data + Physics-Based MDP)
+Results: exp_m32_k16_full_gain100_ep50 — Gain=100 soft-metric fix + leakage audit
 
-Detailed setup for reproducing the 'Full Spectrum K=8' experiment (b482ddf)
-using the 'boy1' subject dataset and the terminologies from the manuscript branch (c183fd4).
+Experiment context (REQUIRED):
+- Background: Prior reports showed “soft capture” collapsing in Mids/Highs due to an epsilon floor (denominator uses +1e-6) when signal energies are ~1e-8.
+- Motivation: Verify that applying Gain=100 consistently (generation + evaluation) removes this numeric artifact and yields sensible band-wise ceilings.
+- Purpose: Rerun the M=65 (lags −32..32), K=16, Tw=16 DT-vs-OMP pipeline on speech260 (angle=90°), then perform a structured leakage/bug audit because results looked “too good to be true”.
+- Expected: Soft capture should no longer be pinned near 0% at high frequencies; at K=16, DT should approach OMP’s oracle ceiling (but not necessarily generalize).
 
-1. Data Registry & Preprocessing Requirements
-   - Source Root: /Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1
-   - Input Structure: Flat MIC/*.wav and LDV/*.wav folders.
-   - Target Structure: Must transform to 'angle_{deg}/clip.npy' format for compatibility.
-   - Action Item: Duplicate normalization logic from 'normalize_datasets.py' but adapted for raw WAV parsing.
+Setup:
+- Device: MPS (training/eval forward); CPU `torch.linalg.lstsq` for complex projection
+- Python: workspace venv `.venv`
 
-2. Terminology Mapping (Manuscript Alignment c183fd4)
-   - OMP -> Physics-motivated ℓ0 objective (Greedy Energy Capture).
-   - Decision Transformer -> MDP Agent (Frequency-Aware Policy).
-   - Return-to-Go (RTG) -> Physics-meaningful Energy Target.
-   - Lag Selection -> Phase Alignment Action.
-   - Correlation Profile -> Correlation State c_k(f).
+Exact commands to reproduce:
+```bash
+cd /Users/jnrle/Documents/LDVReorientation/worktrees/exp-interspeech-GRU1
 
-3. Experiment Replication Logic (b482ddf)
-   - Oracle Generation: generate_lag_omp.py (Teacher). Creates state-action pairs maximizing energy capture.
-   - Student Training: train_dt_lag_seq_rtg.py.
-     - Spectrum: Full (Bins 5-1024).
-     - Budget: K=8 steps (found optimal for Reverb Tail in previous exp).
-     - Epochs: 100.
-   - Objective: Validate that the single 'Frequency-Aware Policy' can generalize to a new physical subject ('boy1').
+# Full pipeline
+bash run_pipeline_m32.sh
 
-This commit establishes the docs/experiment_plans/interspeech_gru1_plan.md acting as the source of truth.
+# If interrupted after trajectory generation
+bash run_train_eval_only_m32_k16_gain100_ep50.sh
+```
+
+Data lineage:
+- Mic root: /Users/sbplab/LDV-data-processed/speech260_original_16k_no_edge_sync_vad_normalized
+- LDV root: /Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized
+- Angle subset: angle_90
+- Paired clips: 260
+- Dataset fingerprint (md5 of per-file md5s): d1c64313535935f52a25677473dd174b
+	- Stored at: results/exp_m32_k16_full_gain100_ep50/checks/data_fingerprint.txt
+
+Actual training results:
+- 50 epochs completed (see pipeline log)
+- Final Val Acc: ~0.1845 (sequence-level split; see leakage audit caveat)
+
+Actual evaluation results (10 clips; capture ratio = ||Y_hat||^2/(||Y||^2+1e-6)):
+- K=16 ceilings by band:
+	- Sub-Bass: DT=1.0000, OMP=1.0000
+	- Bass: DT=1.0000, OMP=1.0000
+	- Low Mids: DT=1.0000, OMP=1.0000
+	- Mids: DT=0.9971, OMP=0.9971
+	- Upper Mids: DT=0.9807, OMP=0.9807
+	- Presence: DT=0.9464, OMP=0.9464
+	- Highs: DT=0.9241, OMP=0.9241
+
+Key findings:
+- Gain=100 eliminates the epsilon-floor artifact; soft capture is no longer artificially near-zero in Mids/Highs.
+- DT can exceed OMP at small K (efficiency > 100%) because DT is not constrained to follow OMP’s greedy path.
+- “Perfect” capture at K=16 is not necessarily suspicious: with Tw=16 and K=16, per-frequency LS can behave like an interpolator over a short window if dictionary atoms are sufficiently independent.
+
+Leakage / bug audit (high-level):
+- No trivial duplication: 0 exact duplicate blocks under signature sha1(actions||scores).
+- Trajectory blocks do not include clip identifiers; therefore rigorous clip-level leakage quantification is not possible for this run.
+- Training likely has train/val contamination because the dataset is flattened into one sample per frequency per time-window block and `random_split` operates at this flat-sample level.
+- Evaluation is in-distribution (same dataset roots as generation). RTG is computed from residual energy over the observed LDV window Y; this is fine for offline/windowed inference but is a lookahead feature if deployment requires streaming without access to the full Tw-block.
+
+Artifacts:
+- Run log: results/exp_m32_k16_full_gain100_ep50/pipeline.log
+- Checkpoint: results/exp_m32_k16_full_gain100_ep50/model/dt_freq_aware_best.pth
+- Eval: results/exp_m32_k16_full_gain100_ep50/eval/{efficiency.png,capture.png,eval_stats.pt}
+- Audit outputs: results/exp_m32_k16_full_gain100_ep50/checks/{audit_summary.json,subset_manifest.json,file_md5.json,data_fingerprint.txt,code_state.json}
+- Reports:
+	- docs/experiment_reports/2026-01-18_exp_m32_k16_gain100_ep50_report.md
+	- docs/experiment_reports/2026-01-18_exp_m32_k16_gain100_ep50_audit.md
+
+Next steps:
+- Add clip/window IDs into trajectory blocks and enforce clip-level splits (train/val/test).
+- Add held-out evaluation (unseen clips/angles) to measure generalization.
+- If streaming/causal deployment is required, replace lookahead RTG with a deployable proxy.

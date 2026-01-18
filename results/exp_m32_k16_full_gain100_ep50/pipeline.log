@@ -1,0 +1,154 @@
+Starting Pipeline exp_m32_k16_full_gain100_ep50 at Sun Jan 18 11:48:22 CST 2026
+=== 1. Generating Trajectories (M=65, K=32) ===
+INFO:__main__:Config: Lag [-32, 32], Tw=16, K=16, Gain=100.0
+INFO:scripts.h_exploration.dataset_lag:Found 260 clips for angle 90.0
+INFO:__main__:Processing Trajectories... Hop: Default
+0it [00:00, ?it/s]1it [00:00,  1.50it/s]2it [00:01,  1.53it/s]3it [00:01,  1.54it/s]4it [00:02,  1.54it/s]5it [00:03,  1.54it/s]6it [00:03,  1.55it/s]7it [00:04,  1.55it/s]8it [00:05,  1.55it/s]9it [00:05,  1.55it/s]10it [00:06,  1.55it/s]11it [00:07,  1.55it/s]12it [00:07,  1.55it/s]13it [00:08,  1.55it/s]14it [00:09,  1.54it/s]15it [00:09,  1.54it/s]16it [00:10,  1.54it/s]17it [00:11,  1.54it/s]18it [00:11,  1.54it/s]19it [00:12,  1.54it/s]21it [00:12,  2.00it/s]22it [00:13,  1.86it/s]23it [00:14,  1.77it/s]24it [00:14,  1.70it/s]25it [00:15,  1.66it/s]26it [00:16,  1.62it/s]27it [00:16,  1.60it/s]28it [00:17,  1.58it/s]29it [00:18,  1.57it/s]30it [00:18,  1.56it/s]31it [00:19,  1.55it/s]32it [00:20,  1.55it/s]33it [00:20,  1.55it/s]34it [00:21,  1.54it/s]35it [00:22,  1.55it/s]36it [00:22,  1.55it/s]37it [00:23,  1.55it/s]38it [00:23,  1.55it/s]39it [00:24,  1.55it/s]42it [00:25,  2.47it/s]43it [00:25,  2.19it/s]44it [00:26,  2.00it/s]45it [00:27,  1.86it/s]47it [00:27,  2.23it/s]48it [00:28,  2.03it/s]49it [00:29,  1.88it/s]50it [00:29,  1.78it/s]51it [00:30,  1.70it/s]52it [00:31,  1.65it/s]53it [00:31,  1.62it/s]54it [00:32,  1.60it/s]55it [00:34,  1.08s/it]56it [00:35,  1.05it/s]57it [00:35,  1.15it/s]58it [00:36,  1.25it/s]59it [00:37,  1.32it/s]60it [00:37,  1.38it/s]61it [00:38,  1.42it/s]63it [00:39,  1.89it/s]64it [00:39,  1.78it/s]65it [00:40,  1.70it/s]66it [00:41,  1.64it/s]67it [00:41,  1.58it/s]68it [00:43,  1.21it/s]69it [00:44,  1.01s/it]70it [00:46,  1.17s/it]71it [00:47,  1.31s/it]72it [00:49,  1.41s/it]73it [00:51,  1.53s/it]74it [00:53,  1.65s/it]75it [00:55,  1.76s/it]76it [00:57,  1.83s/it]77it [00:59,  1.88s/it]78it [01:01,  1.90s/it]79it [01:03,  1.89s/it]80it [01:04,  1.85s/it]81it [01:06,  1.81s/it]82it [01:08,  1.79s/it]84it [01:09,  1.36s/it]87it [01:11,  1.03it/s]88it [01:13,  1.12s/it]89it [01:15,  1.27s/it]90it [01:19,  1.88s/it]91it [01:21,  1.94s/it]92it [01:22,  1.88s/it]93it [01:25,  2.06s/it]94it [01:27,  1.99s/it]95it [01:28,  1.76s/it]97it [01:29,  1.12s/it]98it [01:29,  1.00s/it]99it [01:30,  1.09it/s]100it [01:31,  1.18it/s]101it [01:31,  1.26it/s]102it [01:32,  1.33it/s]103it [01:33,  1.38it/s]104it [01:33,  1.42it/s]105it [01:34,  1.45it/s]106it [01:35,  1.48it/s]107it [01:35,  1.49it/s]108it [01:36,  1.50it/s]109it [01:37,  1.51it/s]110it [01:37,  1.52it/s]111it [01:38,  1.53it/s]115it [01:38,  2.90it/s]116it [01:39,  2.49it/s]117it [01:40,  2.21it/s]118it [01:40,  2.01it/s]119it [01:41,  1.87it/s]120it [01:42,  1.77it/s]121it [01:42,  1.70it/s]122it [01:43,  1.65it/s]123it [01:44,  1.61it/s]124it [01:44,  1.59it/s]125it [01:45,  1.58it/s]126it [01:46,  1.57it/s]127it [01:46,  1.56it/s]128it [01:47,  1.56it/s]129it [01:48,  1.55it/s]130it [01:48,  1.55it/s]131it [01:49,  1.55it/s]132it [01:49,  1.54it/s]133it [01:50,  1.54it/s]135it [01:51,  2.01it/s]136it [01:51,  1.87it/s]139it [01:52,  2.69it/s]140it [01:53,  2.34it/s]141it [01:53,  2.10it/s]143it [01:54,  2.39it/s]144it [01:55,  2.13it/s]145it [01:55,  1.95it/s]146it [01:56,  1.83it/s]147it [01:57,  1.74it/s]148it [01:57,  1.68it/s]149it [01:58,  1.63it/s]150it [01:59,  1.60it/s]151it [01:59,  1.58it/s]152it [02:00,  1.56it/s]153it [02:01,  1.54it/s]154it [02:01,  1.49it/s]155it [02:02,  1.43it/s]156it [02:03,  1.38it/s]157it [02:04,  1.32it/s]158it [02:05,  1.24it/s]159it [02:06,  1.16it/s]160it [02:07,  1.06it/s]161it [02:08,  1.07s/it]163it [02:10,  1.04it/s]164it [02:12,  1.17s/it]165it [02:16,  1.92s/it]166it [02:17,  1.88s/it]167it [02:18,  1.60s/it]168it [02:19,  1.33s/it]170it [02:20,  1.14it/s]171it [02:20,  1.21it/s]172it [02:21,  1.28it/s]173it [02:22,  1.32it/s]174it [02:23,  1.09it/s]175it [02:24,  1.03s/it]176it [02:26,  1.12s/it]177it [02:27,  1.18s/it]178it [02:28,  1.22s/it]180it [02:30,  1.03it/s]181it [02:31,  1.05s/it]182it [02:32,  1.12s/it]183it [02:33,  1.17s/it]184it [02:35,  1.21s/it]185it [02:36,  1.24s/it]186it [02:37,  1.26s/it]187it [02:39,  1.28s/it]188it [02:40,  1.29s/it]189it [02:41,  1.30s/it]190it [02:43,  1.30s/it]191it [02:44,  1.31s/it]192it [02:45,  1.31s/it]193it [02:47,  1.32s/it]195it [02:48,  1.02s/it]196it [02:50,  1.15s/it]197it [02:51,  1.28s/it]198it [02:53,  1.41s/it]199it [02:55,  1.55s/it]200it [02:57,  1.72s/it]201it [03:00,  1.95s/it]202it [03:02,  2.24s/it]203it [03:06,  2.70s/it]204it [03:08,  2.36s/it]205it [03:08,  1.85s/it]206it [03:09,  1.49s/it]207it [03:10,  1.24s/it]208it [03:10,  1.07s/it]209it [03:11,  1.06it/s]210it [03:12,  1.08it/s]211it [03:13,  1.04s/it]212it [03:15,  1.13s/it]213it [03:16,  1.19s/it]214it [03:17,  1.22s/it]215it [03:19,  1.25s/it]216it [03:20,  1.27s/it]217it [03:21,  1.29s/it]218it [03:23,  1.29s/it]219it [03:24,  1.30s/it]220it [03:25,  1.30s/it]221it [03:26,  1.31s/it]222it [03:28,  1.31s/it]223it [03:29,  1.31s/it]224it [03:30,  1.31s/it]225it [03:32,  1.31s/it]226it [03:33,  1.31s/it]227it [03:34,  1.32s/it]228it [03:36,  1.37s/it]229it [03:37,  1.45s/it]230it [03:39,  1.54s/it]231it [03:41,  1.65s/it]232it [03:43,  1.80s/it]233it [03:46,  2.01s/it]235it [03:49,  1.77s/it]236it [03:52,  2.02s/it]237it [03:55,  2.29s/it]238it [03:56,  2.16s/it]239it [03:58,  2.04s/it]240it [03:59,  1.76s/it]241it [04:00,  1.43s/it]242it [04:00,  1.21s/it]243it [04:01,  1.04s/it]244it [04:02,  1.08it/s]245it [04:02,  1.19it/s]246it [04:04,  1.03it/s]247it [04:05,  1.07s/it]248it [04:06,  1.02s/it]249it [04:07,  1.10it/s]251it [04:07,  1.56it/s]252it [04:08,  1.56it/s]253it [04:09,  1.55it/s]254it [04:09,  1.54it/s]255it [04:10,  1.54it/s]256it [04:10,  1.54it/s]257it [04:11,  1.54it/s]258it [04:12,  1.54it/s]259it [04:12,  1.54it/s]260it [04:13,  1.54it/s]260it [04:13,  1.03it/s]
+INFO:__main__:Saved 1190 blocks to results/exp_m32_k16_full_gain100_ep50/data (Variants: 5)
+=== 2. Training DTmin Agent (50 Epochs) ===
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/exp_m32_k16_full_gain100_ep50/data/lag_trajectories.pt...
+INFO:__main__:Loaded 1219750 variable-length sequences. Feature dim: 65
+INFO:__main__:Epoch 1: Train Loss=3.7744, Val Loss=3.6618, Acc=0.1200
+INFO:__main__:Epoch 2: Train Loss=3.6235, Val Loss=3.5810, Acc=0.1324
+INFO:__main__:Epoch 3: Train Loss=3.5577, Val Loss=3.5298, Acc=0.1415
+INFO:__main__:Epoch 4: Train Loss=3.5128, Val Loss=3.4963, Acc=0.1476
+INFO:__main__:Epoch 5: Train Loss=3.4805, Val Loss=3.4720, Acc=0.1527
+Traceback (most recent call last):
+  File "/Users/jnrle/Documents/LDVReorientation/worktrees/exp-interspeech-GRU1/scripts/h_exploration/train_dt_lag_seq_rtg.py", line 318, in <module>
+    main()
+    ~~~~^^
+  File "/Users/jnrle/Documents/LDVReorientation/worktrees/exp-interspeech-GRU1/scripts/h_exploration/train_dt_lag_seq_rtg.py", line 279, in main
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/Users/jnrle/Documents/LDVReorientation/worktrees/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 625, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jnrle/Documents/LDVReorientation/worktrees/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 354, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/jnrle/Documents/LDVReorientation/worktrees/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 841, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+KeyboardInterrupt
+=== Resume Pipeline (train+eval only) exp_m32_k16_full_gain100_ep50 @ Sun Jan 18 12:01:16 CST 2026 ===
+Data: results/exp_m32_k16_full_gain100_ep50/data/lag_trajectories.pt
+./run_train_eval_only_m32_k16_gain100_ep50.sh: line 29: python: command not found
+=== Resume Pipeline (train+eval only) exp_m32_k16_full_gain100_ep50 @ Sun Jan 18 12:02:09 CST 2026 ===
+Data: results/exp_m32_k16_full_gain100_ep50/data/lag_trajectories.pt
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/exp_m32_k16_full_gain100_ep50/data/lag_trajectories.pt...
+INFO:__main__:Loaded 1219750 variable-length sequences. Feature dim: 65
+INFO:__main__:Epoch 1: Train Loss=3.7746, Val Loss=3.6623, Acc=0.1198
+INFO:__main__:Epoch 2: Train Loss=3.6215, Val Loss=3.5819, Acc=0.1324
+INFO:__main__:Epoch 3: Train Loss=3.5560, Val Loss=3.5304, Acc=0.1417
+INFO:__main__:Epoch 4: Train Loss=3.5110, Val Loss=3.4962, Acc=0.1477
+INFO:__main__:Epoch 5: Train Loss=3.4786, Val Loss=3.4709, Acc=0.1527
+INFO:__main__:Epoch 6: Train Loss=3.4536, Val Loss=3.4516, Acc=0.1567
+INFO:__main__:Epoch 7: Train Loss=3.4332, Val Loss=3.4360, Acc=0.1597
+INFO:__main__:Epoch 8: Train Loss=3.4161, Val Loss=3.4227, Acc=0.1628
+INFO:__main__:Epoch 9: Train Loss=3.4019, Val Loss=3.4120, Acc=0.1650
+INFO:__main__:Epoch 10: Train Loss=3.3896, Val Loss=3.4034, Acc=0.1671
+INFO:__main__:Epoch 11: Train Loss=3.3795, Val Loss=3.3964, Acc=0.1679
+INFO:__main__:Epoch 12: Train Loss=3.3704, Val Loss=3.3878, Acc=0.1700
+INFO:__main__:Epoch 13: Train Loss=3.3625, Val Loss=3.3828, Acc=0.1711
+INFO:__main__:Epoch 14: Train Loss=3.3557, Val Loss=3.3792, Acc=0.1718
+INFO:__main__:Epoch 15: Train Loss=3.3494, Val Loss=3.3734, Acc=0.1726
+INFO:__main__:Epoch 16: Train Loss=3.3441, Val Loss=3.3689, Acc=0.1740
+INFO:__main__:Epoch 17: Train Loss=3.3390, Val Loss=3.3665, Acc=0.1737
+INFO:__main__:Epoch 18: Train Loss=3.3349, Val Loss=3.3608, Acc=0.1754
+INFO:__main__:Epoch 19: Train Loss=3.3309, Val Loss=3.3574, Acc=0.1760
+INFO:__main__:Epoch 20: Train Loss=3.3272, Val Loss=3.3542, Acc=0.1766
+INFO:__main__:Epoch 21: Train Loss=3.3239, Val Loss=3.3516, Acc=0.1773
+INFO:__main__:Epoch 22: Train Loss=3.3204, Val Loss=3.3491, Acc=0.1777
+INFO:__main__:Epoch 23: Train Loss=3.3178, Val Loss=3.3472, Acc=0.1785
+INFO:__main__:Epoch 24: Train Loss=3.3150, Val Loss=3.3448, Acc=0.1787
+INFO:__main__:Epoch 25: Train Loss=3.3127, Val Loss=3.3419, Acc=0.1795
+INFO:__main__:Epoch 26: Train Loss=3.3101, Val Loss=3.3434, Acc=0.1788
+INFO:__main__:Epoch 27: Train Loss=3.3083, Val Loss=3.3406, Acc=0.1793
+INFO:__main__:Epoch 28: Train Loss=3.3061, Val Loss=3.3377, Acc=0.1800
+INFO:__main__:Epoch 29: Train Loss=3.3041, Val Loss=3.3363, Acc=0.1805
+INFO:__main__:Epoch 30: Train Loss=3.3024, Val Loss=3.3349, Acc=0.1809
+INFO:__main__:Epoch 31: Train Loss=3.3007, Val Loss=3.3337, Acc=0.1808
+INFO:__main__:Epoch 32: Train Loss=3.2991, Val Loss=3.3322, Acc=0.1810
+INFO:__main__:Epoch 33: Train Loss=3.2975, Val Loss=3.3309, Acc=0.1816
+INFO:__main__:Epoch 34: Train Loss=3.2961, Val Loss=3.3295, Acc=0.1821
+INFO:__main__:Epoch 35: Train Loss=3.2947, Val Loss=3.3279, Acc=0.1822
+INFO:__main__:Epoch 36: Train Loss=3.2932, Val Loss=3.3268, Acc=0.1824
+INFO:__main__:Epoch 37: Train Loss=3.2922, Val Loss=3.3266, Acc=0.1824
+INFO:__main__:Epoch 38: Train Loss=3.2910, Val Loss=3.3248, Acc=0.1830
+INFO:__main__:Epoch 39: Train Loss=3.2895, Val Loss=3.3240, Acc=0.1827
+INFO:__main__:Epoch 40: Train Loss=3.2886, Val Loss=3.3221, Acc=0.1835
+INFO:__main__:Epoch 41: Train Loss=3.2876, Val Loss=3.3228, Acc=0.1832
+INFO:__main__:Epoch 42: Train Loss=3.2863, Val Loss=3.3208, Acc=0.1837
+INFO:__main__:Epoch 43: Train Loss=3.2853, Val Loss=3.3201, Acc=0.1836
+INFO:__main__:Epoch 44: Train Loss=3.2841, Val Loss=3.3213, Acc=0.1831
+INFO:__main__:Epoch 45: Train Loss=3.2832, Val Loss=3.3190, Acc=0.1832
+INFO:__main__:Epoch 46: Train Loss=3.2826, Val Loss=3.3183, Acc=0.1842
+INFO:__main__:Epoch 47: Train Loss=3.2818, Val Loss=3.3168, Acc=0.1840
+INFO:__main__:Epoch 48: Train Loss=3.2810, Val Loss=3.3177, Acc=0.1840
+INFO:__main__:Epoch 49: Train Loss=3.2802, Val Loss=3.3165, Acc=0.1843
+INFO:__main__:Epoch 50: Train Loss=3.2794, Val Loss=3.3154, Acc=0.1845
+Using device: mps
+Using gain scaling: 100.0
+Dataset Size: 260
+Initializing Model with M_lags=65
+Model Loaded.
+Collecting raw data...
+  0%|          | 0/10 [00:00<?, ?it/s] 10%|█         | 1/10 [00:00<00:04,  1.82it/s] 20%|██        | 2/10 [00:01<00:05,  1.58it/s] 30%|███       | 3/10 [00:01<00:03,  1.96it/s] 40%|████      | 4/10 [00:01<00:02,  2.27it/s] 50%|█████     | 5/10 [00:02<00:02,  2.46it/s] 60%|██████    | 6/10 [00:02<00:01,  2.62it/s] 70%|███████   | 7/10 [00:02<00:01,  2.72it/s] 80%|████████  | 8/10 [00:03<00:00,  2.14it/s] 90%|█████████ | 9/10 [00:03<00:00,  2.31it/s]100%|██████████| 10/10 [00:04<00:00,  1.96it/s]100%|██████████| 10/10 [00:04<00:00,  2.14it/s]
+
+XXX DETAILED BAND ANALYSIS XXX
+Band                      | K   | DT     | OMP    | Eff % 
+------------------------------------------------------------
+Sub-Bass (0-60Hz)         | 1   | 0.1033 | 0.1391 | 74.2%
+Sub-Bass (0-60Hz)         | 4   | 0.4058 | 0.4646 | 87.3%
+Sub-Bass (0-60Hz)         | 8   | 0.7132 | 0.7577 | 94.1%
+Sub-Bass (0-60Hz)         | 16  | 1.0000 | 1.0000 | 100.0%
+------------------------------------------------------------
+Bass (60-250Hz)           | 1   | 0.3700 | 0.3879 | 95.4%
+Bass (60-250Hz)           | 4   | 0.7006 | 0.7268 | 96.4%
+Bass (60-250Hz)           | 8   | 0.9098 | 0.8868 | 102.6%
+Bass (60-250Hz)           | 16  | 1.0000 | 1.0000 | 100.0%
+------------------------------------------------------------
+Low Mids (250-500Hz)      | 1   | 0.6087 | 0.5765 | 105.6%
+Low Mids (250-500Hz)      | 4   | 0.8829 | 0.8528 | 103.5%
+Low Mids (250-500Hz)      | 8   | 0.9788 | 0.9459 | 103.5%
+Low Mids (250-500Hz)      | 16  | 1.0000 | 1.0000 | 100.0%
+------------------------------------------------------------
+Mids (500-2k Hz)          | 1   | 0.8296 | 0.4768 | 174.0%
+Mids (500-2k Hz)          | 4   | 0.9028 | 0.7869 | 114.7%
+Mids (500-2k Hz)          | 8   | 0.9577 | 0.9248 | 103.6%
+Mids (500-2k Hz)          | 16  | 0.9971 | 0.9971 | 100.0%
+------------------------------------------------------------
+Upper Mids (2k-4k Hz)     | 1   | 0.6138 | 0.3213 | 191.0%
+Upper Mids (2k-4k Hz)     | 4   | 0.7342 | 0.6308 | 116.4%
+Upper Mids (2k-4k Hz)     | 8   | 0.8729 | 0.8472 | 103.0%
+Upper Mids (2k-4k Hz)     | 16  | 0.9807 | 0.9807 | 100.0%
+------------------------------------------------------------
+Presence (4k-6k Hz)       | 1   | 0.3620 | 0.2723 | 133.0%
+Presence (4k-6k Hz)       | 4   | 0.5504 | 0.5908 | 93.2%
+Presence (4k-6k Hz)       | 8   | 0.7687 | 0.8172 | 94.1%
+Presence (4k-6k Hz)       | 16  | 0.9464 | 0.9464 | 100.0%
+------------------------------------------------------------
+Highs (6k-8k Hz)          | 1   | 0.2262 | 0.2033 | 111.3%
+Highs (6k-8k Hz)          | 4   | 0.4498 | 0.5314 | 84.6%
+Highs (6k-8k Hz)          | 8   | 0.7119 | 0.7831 | 90.9%
+Highs (6k-8k Hz)          | 16  | 0.9241 | 0.9241 | 100.0%
+------------------------------------------------------------
+2026-01-18 13:09:52.803 Python[29699:7958839] +[NSXPCSharedListener endpointForReply:withListenerName:replyErrorCode:]: an error occurred while attempting to obtain endpoint for listener 'ClientCallsAuxiliary': Connection interrupted
+=== Done exp_m32_k16_full_gain100_ep50 @ Sun Jan 18 13:09:53 CST 2026 ===
