@@ -22,7 +22,7 @@ class DoALagDataset(Dataset):
     def __init__(self, 
                  mic_root: str, 
                  ldv_root: str, 
-                 angle: float = 90.0,
+                 angle: Optional[float] = 90.0,
                  max_lag: int = 16,
                  fs: int = 16000,
                  n_fft: int = 2048,
@@ -47,36 +47,57 @@ class DoALagDataset(Dataset):
         self.clips = []
         
         # Mic path: .../angle_90/clip_X.npy
-        angle_str = f"angle_{int(angle)}"
-        mic_dir = self.mic_root / angle_str
-        
-        if not mic_dir.exists():
-            # Fallback to Flat WAV search for boy1 structure
-            logger.warning(f"Angle dir {mic_dir} not found. Searching for WAV files matching pattern *{int(angle):03d}.wav")
-            pattern = f"*{int(angle):03d}.wav"
-            wav_files = sorted(list(self.mic_root.glob(pattern)))
-            
-            if not wav_files:
-                logger.error(f"No WAV files found usage {pattern} in {self.mic_root}")
-                return
-                
-            for mic_path in wav_files:
-                # boy1_papercup_MIC_090.wav -> replace MIC with LDV for pair
+        if angle is None:
+            # Load all available pairs (all angles)
+            # 1) NPY structure: mic_root/angle_XX/*.npy
+            for mic_dir in sorted(self.mic_root.glob("angle_*")):
+                if not mic_dir.is_dir():
+                    continue
+                for mic_path in sorted(mic_dir.glob("*.npy")):
+                    rel_path = mic_path.relative_to(self.mic_root)
+                    ldv_path = self.ldv_root / rel_path
+                    if ldv_path.exists():
+                        self.clips.append((mic_path, ldv_path))
+
+            # 2) WAV structure (boy1): flat wavs under MIC/LDV
+            for mic_path in sorted(self.mic_root.glob("*.wav")):
                 ldv_name = mic_path.name.replace("MIC", "LDV")
                 ldv_path = self.ldv_root / ldv_name
-                
                 if ldv_path.exists():
                     self.clips.append((mic_path, ldv_path))
-            
-            logger.info(f"Found {len(self.clips)} WAV pairs for angle {angle}")
+
+            logger.info(f"Found {len(self.clips)} total WAV/NPY pairs across all angles")
         else:
-            for mic_path in sorted(mic_dir.glob("*.npy")):
-                # Find Pair
-                rel_path = mic_path.relative_to(self.mic_root)
-                ldv_path = self.ldv_root / rel_path
+            angle_str = f"angle_{int(angle)}"
+            mic_dir = self.mic_root / angle_str
+            
+            if not mic_dir.exists():
+                # Fallback to Flat WAV search for boy1 structure
+                logger.warning(f"Angle dir {mic_dir} not found. Searching for WAV files matching pattern *{int(angle):03d}.wav")
+                pattern = f"*{int(angle):03d}.wav"
+                wav_files = sorted(list(self.mic_root.glob(pattern)))
                 
-                if ldv_path.exists():
-                    self.clips.append((mic_path, ldv_path))
+                if not wav_files:
+                    logger.error(f"No WAV files found usage {pattern} in {self.mic_root}")
+                    return
+                    
+                for mic_path in wav_files:
+                    # boy1_papercup_MIC_090.wav -> replace MIC with LDV for pair
+                    ldv_name = mic_path.name.replace("MIC", "LDV")
+                    ldv_path = self.ldv_root / ldv_name
+                    
+                    if ldv_path.exists():
+                        self.clips.append((mic_path, ldv_path))
+                
+                logger.info(f"Found {len(self.clips)} WAV pairs for angle {angle}")
+            else:
+                for mic_path in sorted(mic_dir.glob("*.npy")):
+                    # Find Pair
+                    rel_path = mic_path.relative_to(self.mic_root)
+                    ldv_path = self.ldv_root / rel_path
+                    
+                    if ldv_path.exists():
+                        self.clips.append((mic_path, ldv_path))
                 
         logger.info(f"Total clips avail: {len(self.clips)}")
 

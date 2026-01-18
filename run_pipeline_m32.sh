@@ -49,7 +49,7 @@ $PYTHON_EXE -u scripts/h_exploration/generate_lag_omp.py \
     --gain 100.0 \
     --variants_per_clip 5 \
     --max_items 1000 \
-    --angle 90.0 >> "$OUT_DIR/pipeline.log" 2>&1
+    --all_angles >> "$OUT_DIR/pipeline.log" 2>&1
 
 if [ ! -f "$OUT_DIR/data/lag_trajectories.pt" ]; then
     echo "Error: Trajectory generation failed. Check $OUT_DIR/pipeline.log" | tee -a "$OUT_DIR/pipeline.log"
@@ -69,7 +69,8 @@ $PYTHON_EXE -u scripts/h_exploration/eval_lag_capture_omp_vs_random.py \
     --tw 32 \
     --gain 100.0 \
     --random_trials 50 \
-    --seed 0 >> "$OUT_DIR/pipeline.log" 2>&1
+    --seed 0 \
+    --all_angles >> "$OUT_DIR/pipeline.log" 2>&1
 
 # 2. Training
 echo "=== 2. Training DTmin Agent (50 Epochs) ===" | tee -a "$OUT_DIR/pipeline.log"
@@ -102,6 +103,7 @@ $PYTHON_EXE -u scripts/eval_energy_capture_generic.py \
     --gain 100.0 \
     --rtg_dim 2 \
     --num_clips 10 \
+    --all_angles \
     --visualize >> "$OUT_DIR/pipeline.log" 2>&1
 
 # 3b. RTG1 override grid (sanity that RTG2D matters)
@@ -117,6 +119,7 @@ $PYTHON_EXE -u scripts/h_exploration/run_rtg_override_grid_eval.py \
     --max_k 16 \
     --tw 32 \
     --gain 100.0 \
-    --rtg1_values 0.0,0.25,0.5,0.75,1.0 >> "$OUT_DIR/pipeline.log" 2>&1
+    --rtg1_values 0.0,0.25,0.5,0.75,1.0 \
+    --all_angles >> "$OUT_DIR/pipeline.log" 2>&1
 
 echo "=== Pipeline Completed Successfully at $(date) ===" | tee -a "$OUT_DIR/pipeline.log"

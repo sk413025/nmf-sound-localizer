@@ -137,6 +137,7 @@ def main():
     parser.add_argument("--ldv_root", type=str, default="/Users/sbplab/LDV-data-processed/speech260_box_16k_no_edge_sync_vad_normalized")
     parser.add_argument("--out_dir", type=str, required=True)
     parser.add_argument("--angle", type=float, default=90.0)
+    parser.add_argument("--all_angles", action="store_true")
     parser.add_argument("--max_items", type=int, default=100)
     parser.add_argument("--hop_length", type=int, default=None, help="Override STFT hop length (e.g. 160 for 10ms)")
     parser.add_argument("--variants_per_clip", type=int, default=5, help="Number of random K variants to extract per clip")
@@ -160,7 +161,12 @@ def main():
 
     logger.info(f"Config: Lag [{Lag_Min}, {Lag_Max}], Tw={Tw}, K={Absolute_K}, Gain={args.gain}")
 
-    dataset = DoALagDataset(args.mic_root, args.ldv_root, angle=args.angle, hop_length=args.hop_length)
+    dataset = DoALagDataset(
+        args.mic_root,
+        args.ldv_root,
+        angle=None if args.all_angles else args.angle,
+        hop_length=args.hop_length,
+    )
     if args.max_items:
         indices = list(range(min(len(dataset), args.max_items)))
         dataset = torch.utils.data.Subset(dataset, indices)

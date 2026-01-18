@@ -45,7 +45,7 @@ $PYTHON_EXE -u scripts/h_exploration/generate_lag_omp.py \
   --gain 100.0 \
   --variants_per_clip 1 \
   --max_items 3 \
-  --angle 90.0 2>&1 | tee -a "$LOG"
+  --all_angles 2>&1 | tee -a "$LOG"
 
 test -f "$OUT_DIR/data/lag_trajectories.pt"
 
@@ -74,7 +74,8 @@ $PYTHON_EXE -u scripts/h_exploration/eval_lag_capture_omp_vs_random.py \
   --tw 32 \
   --gain 100.0 \
   --random_trials 10 \
-  --seed 0 2>&1 | tee -a "$LOG"
+  --seed 0 \
+  --all_angles 2>&1 | tee -a "$LOG"
 
 test -f "$OUT_DIR/omp_vs_random/omp_vs_random_summary.json"
 
@@ -90,7 +91,8 @@ $PYTHON_EXE -u scripts/eval_energy_capture_generic.py \
   --tw 32 \
   --gain 100.0 \
   --rtg_dim 2 \
-  --num_clips 2 2>&1 | tee -a "$LOG"
+  --num_clips 2 \
+  --all_angles 2>&1 | tee -a "$LOG"
 
 echo "=== 5) RTG1 override grid (sanity) ===" | tee -a "$LOG"
 $PYTHON_EXE -u scripts/h_exploration/run_rtg_override_grid_eval.py \
@@ -104,7 +106,8 @@ $PYTHON_EXE -u scripts/h_exploration/run_rtg_override_grid_eval.py \
   --max_k 16 \
   --tw 32 \
   --gain 100.0 \
-  --rtg1_values 0.0,0.5,1.0 2>&1 | tee -a "$LOG"
+  --rtg1_values 0.0,0.5,1.0 \
+  --all_angles 2>&1 | tee -a "$LOG"
 
 test -f "$OUT_DIR/rtg_grid/rtg1_override_grid.json"
 

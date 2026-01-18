@@ -183,6 +183,7 @@ def main():
     p.add_argument("--ldv_root", type=str, required=True)
     p.add_argument("--out_dir", type=str, required=True)
     p.add_argument("--angle", type=float, default=90.0)
+    p.add_argument("--all_angles", action="store_true")
     p.add_argument("--hop_length", type=int, default=160, help="STFT hop length (samples)")
     p.add_argument("--max_items", type=int, default=3)
     p.add_argument("--max_lag", type=int, default=50)
@@ -201,7 +202,10 @@ def main():
     logger.info(f"Using device: {device}")
 
     dataset = DoALagDataset(
-        args.mic_root, args.ldv_root, angle=float(args.angle), hop_length=int(args.hop_length)
+        args.mic_root,
+        args.ldv_root,
+        angle=None if args.all_angles else float(args.angle),
+        hop_length=int(args.hop_length),
     )
     n = min(int(args.max_items), len(dataset))
 
@@ -209,7 +213,8 @@ def main():
         "config": {
             "mic_root": args.mic_root,
             "ldv_root": args.ldv_root,
-            "angle": float(args.angle),
+            "angle": None if args.all_angles else float(args.angle),
+            "all_angles": bool(args.all_angles),
             "max_items": int(n),
             "max_lag": int(args.max_lag),
             "max_k": int(args.max_k),

@@ -266,6 +266,8 @@ def main():
     parser.add_argument("--gain", type=float, default=100.0)
     parser.add_argument("--rtg_dim", type=int, default=2, help="RTG dimension: 1 or 2")
     parser.add_argument("--num_clips", type=int, default=10, help="Number of clips to evaluate")
+    parser.add_argument("--angle", type=float, default=90.0)
+    parser.add_argument("--all_angles", action="store_true")
     parser.add_argument("--visualize", action="store_true")
     args = parser.parse_args()
     
@@ -277,8 +279,12 @@ def main():
     # Dataset
     # We use broadband to scan all freqs
     dataset = DoALagDataset(
-        args.mic_root, args.ldv_root, angle=90.0, hop_length=int(args.hop_length), # Default angle 90
-        freq_min=0, freq_max=8000
+        args.mic_root,
+        args.ldv_root,
+        angle=None if args.all_angles else float(args.angle),
+        hop_length=int(args.hop_length),
+        freq_min=0,
+        freq_max=8000,
     )
     print(f"Dataset Size: {len(dataset)}")
     

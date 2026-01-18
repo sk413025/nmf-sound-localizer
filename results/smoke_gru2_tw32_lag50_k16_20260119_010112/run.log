@@ -1,0 +1,77 @@
+Starting SMOKE smoke_gru2_tw32_lag50_k16_20260119_010112 at Mon Jan 19 01:01:12 CST 2026
+=== 1) Generate trajectories ===
+INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.0
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]1it [00:12, 12.52s/it]2it [00:21, 10.68s/it]3it [00:26,  7.88s/it]3it [00:26,  8.82s/it]
+INFO:__main__:Saved 15 blocks to results/smoke_gru2_tw32_lag50_k16_20260119_010112/data (Variants: 1)
+=== 2) Train (2 epochs) ===
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/smoke_gru2_tw32_lag50_k16_20260119_010112/data/lag_trajectories.pt...
+INFO:__main__:Loaded 15375 variable-length sequences. Feature dim: 101
+INFO:__main__:Epoch 1: Train Loss=4.5288, Val Loss=4.4595, Acc=0.0392
+INFO:__main__:Epoch 2: Train Loss=4.4172, Val Loss=4.3960, Acc=0.0491
+=== 3) OMP vs Random gap check ===
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+OMP vs Random:   0%|          | 0/2 [00:00<?, ?it/s]OMP vs Random:  50%|█████     | 1/2 [00:02<00:02,  2.23s/it]OMP vs Random: 100%|██████████| 2/2 [00:04<00:00,  2.12s/it]OMP vs Random: 100%|██████████| 2/2 [00:04<00:00,  2.14s/it]
+INFO:__main__:Wrote results/smoke_gru2_tw32_lag50_k16_20260119_010112/omp_vs_random/omp_vs_random_summary.json
+INFO:__main__:Summary(Weighted): OMP=0.9618, Random=0.9964, Gap=-0.0346
+INFO:__main__:Summary(Unweighted): OMP=0.9854, Random=0.9985
+=== 4) DT vs OMP capture eval (fast) ===
+Using device: mps
+Dataset Size: 416
+Initializing Model with M_lags=101
+Model Loaded.
+Collecting raw data...
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:02<00:02,  2.43s/it]100%|██████████| 2/2 [00:04<00:00,  2.32s/it]100%|██████████| 2/2 [00:04<00:00,  2.33s/it]
+
+XXX DETAILED BAND ANALYSIS XXX
+Band                      | K   | DT     | OMP    | Eff % 
+------------------------------------------------------------
+Sub-Bass (0-60Hz)         | 1   | 0.1413 | 0.1860 | 75.9%
+Sub-Bass (0-60Hz)         | 4   | 0.5183 | 0.5254 | 98.6%
+Sub-Bass (0-60Hz)         | 8   | 0.8063 | 0.7860 | 102.6%
+Sub-Bass (0-60Hz)         | 16  | 0.9748 | 0.9783 | 99.6%
+------------------------------------------------------------
+Bass (60-250Hz)           | 1   | 0.2308 | 0.2945 | 78.4%
+Bass (60-250Hz)           | 4   | 0.6245 | 0.5962 | 104.7%
+Bass (60-250Hz)           | 8   | 0.8920 | 0.8037 | 111.0%
+Bass (60-250Hz)           | 16  | 0.9964 | 0.9796 | 101.7%
+------------------------------------------------------------
+Low Mids (250-500Hz)      | 1   | 0.2257 | 0.3315 | 68.1%
+Low Mids (250-500Hz)      | 4   | 0.6021 | 0.6324 | 95.2%
+Low Mids (250-500Hz)      | 8   | 0.8951 | 0.8315 | 107.7%
+Low Mids (250-500Hz)      | 16  | 0.9967 | 0.9781 | 101.9%
+------------------------------------------------------------
+Mids (500-2k Hz)          | 1   | 0.2155 | 0.2655 | 81.2%
+Mids (500-2k Hz)          | 4   | 0.6130 | 0.5638 | 108.7%
+Mids (500-2k Hz)          | 8   | 0.8963 | 0.7899 | 113.5%
+Mids (500-2k Hz)          | 16  | 0.9983 | 0.9776 | 102.1%
+------------------------------------------------------------
+Upper Mids (2k-4k Hz)     | 1   | 0.1680 | 0.1806 | 93.0%
+Upper Mids (2k-4k Hz)     | 4   | 0.5927 | 0.5260 | 112.7%
+Upper Mids (2k-4k Hz)     | 8   | 0.9159 | 0.8075 | 113.4%
+Upper Mids (2k-4k Hz)     | 16  | 0.9987 | 0.9893 | 100.9%
+------------------------------------------------------------
+Presence (4k-6k Hz)       | 1   | 0.1735 | 0.1973 | 87.9%
+Presence (4k-6k Hz)       | 4   | 0.5862 | 0.5302 | 110.6%
+Presence (4k-6k Hz)       | 8   | 0.9116 | 0.8000 | 114.0%
+Presence (4k-6k Hz)       | 16  | 0.9989 | 0.9879 | 101.1%
+------------------------------------------------------------
+Highs (6k-8k Hz)          | 1   | 0.1579 | 0.1940 | 81.4%
+Highs (6k-8k Hz)          | 4   | 0.5731 | 0.5298 | 108.2%
+Highs (6k-8k Hz)          | 8   | 0.9050 | 0.7960 | 113.7%
+Highs (6k-8k Hz)          | 16  | 0.9988 | 0.9864 | 101.3%
+------------------------------------------------------------
+=== 5) RTG1 override grid (sanity) ===
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+rtg1=0.0:   0%|          | 0/1 [00:00<?, ?it/s]rtg1=0.0: 100%|██████████| 1/1 [00:01<00:00,  1.42s/it]rtg1=0.0: 100%|██████████| 1/1 [00:01<00:00,  1.42s/it]
+rtg1=0.5:   0%|          | 0/1 [00:00<?, ?it/s]rtg1=0.5: 100%|██████████| 1/1 [00:01<00:00,  1.26s/it]rtg1=0.5: 100%|██████████| 1/1 [00:01<00:00,  1.26s/it]
+rtg1=1.0:   0%|          | 0/1 [00:00<?, ?it/s]rtg1=1.0: 100%|██████████| 1/1 [00:01<00:00,  1.28s/it]rtg1=1.0: 100%|██████████| 1/1 [00:01<00:00,  1.28s/it]
+INFO:__main__:Wrote results/smoke_gru2_tw32_lag50_k16_20260119_010112/rtg_grid/rtg1_override_grid.json
+SMOKE completed OK at Mon Jan 19 01:02:06 CST 2026

@@ -1,0 +1,10 @@
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Verifying OMP vs Random on 3 clips. Tw=32, MaxLag=50
+INFO:__main__:K     | OMP (W%)     | Rnd (W%)     | Gap          | Ratio(O/R)  
+INFO:__main__:-----------------------------------------------------------------
+INFO:__main__:1     | 0.9140       | 0.1555       | +0.7586       | 5.88x
+INFO:__main__:2     | 0.9565       | 0.3166       | +0.6399       | 3.02x
+INFO:__main__:4     | 0.9767       | 0.5337       | +0.4430       | 1.83x
+INFO:__main__:8     | 0.9914       | 0.7898       | +0.2017       | 1.26x
+INFO:__main__:16    | 0.9989       | 0.8556       | +0.1433       | 1.17x
