@@ -72,7 +72,12 @@ def eval_one_clip(
     if len(valid_starts) == 0:
         return None
 
-    # Accumulate final energy reduction per window (flattened across freq)
+    # Accumulate numerators and denominators for weighted average
+    total_reduced_energy_omp = 0.0
+    total_reduced_energy_rnd = 0.0
+    total_initial_energy = 0.0
+    
+    # Also keep track of unweighted for debug
     final_red_omp = []
     final_red_rnd = []
 
@@ -93,6 +98,9 @@ def eval_one_clip(
 
         Y = y_block.unsqueeze(2)  # (F, Tw, 1)
         initial_energy = manual_complex_norm(Y.squeeze(), dim=1) ** 2  # (F,)
+        
+        # Accumulate Global Energy
+        total_initial_energy += initial_energy.sum().item()
 
         # === OMP ===
         res = Y.clone()
@@ -113,13 +121,19 @@ def eval_one_clip(
             res = (Y_cpu - recon).to(device)
 
         res_energy = manual_complex_norm((Y_cpu - recon).squeeze(), dim=1) ** 2
-        red = (initial_energy.cpu() - res_energy) / (initial_energy.cpu() + 1e-6)
+        # Energy Reduced = Initial - Residual
+        reduced_e = (initial_energy.cpu() - res_energy)
+        total_reduced_energy_omp += reduced_e.sum().item()
+        
+        red = reduced_e / (initial_energy.cpu() + 1e-6)
         final_red_omp.append(red)
 
         # === Random ===
         # For each trial, sample a random set of K unique lags per frequency, project, and score.
         # Report the mean across trials.
-        trial_reds = []
+        trial_reduced_e = []
+        trial_ratios = []
+        
         for _t in range(random_trials):
             # Per-frequency random permutation of [0..M-1], take first K
             rand_ids = torch.empty(F, max_k, dtype=torch.long)
@@ -133,19 +147,31 @@ def eval_one_clip(
             recon_r = active_r @ sol_r
 
             res_energy_r = manual_complex_norm((Y_cpu - recon_r).squeeze(), dim=1) ** 2
-            red_r = (initial_energy.cpu() - res_energy_r) / (initial_energy.cpu() + 1e-6)
-            trial_reds.append(red_r)
+            
+            e_red = (initial_energy.cpu() - res_energy_r)
+            trial_reduced_e.append(e_red)
+            trial_ratios.append(e_red / (initial_energy.cpu() + 1e-6))
 
-        mean_red_r = torch.stack(trial_reds, dim=0).mean(dim=0)
-        final_red_rnd.append(mean_red_r)
+        # Mean over trials
+        mean_reduced_e = torch.stack(trial_reduced_e, dim=0).mean(dim=0) # (F,)
+        mean_ratio_r = torch.stack(trial_ratios, dim=0).mean(dim=0)
+        
+        total_reduced_energy_rnd += mean_reduced_e.sum().item()
+        final_red_rnd.append(mean_ratio_r)
 
     omp_all = torch.cat(final_red_omp, dim=0)
     rnd_all = torch.cat(final_red_rnd, dim=0)
+    
+    # Calculate Weighted Scores
+    weighted_omp = total_reduced_energy_omp / (total_initial_energy + 1e-6)
+    weighted_rnd = total_reduced_energy_rnd / (total_initial_energy + 1e-6)
 
     return {
-        "omp_mean": float(omp_all.mean().item()),
-        "rnd_mean": float(rnd_all.mean().item()),
-        "gap_mean": float((omp_all.mean() - rnd_all.mean()).item()),
+        "omp_mean": float(weighted_omp), # Return Weighted!
+        "rnd_mean": float(weighted_rnd),
+        "gap_mean": float(weighted_omp - weighted_rnd),
+        "raw_omp_unweighted": float(omp_all.mean().item()), # For debug visibility
+        "raw_rnd_unweighted": float(rnd_all.mean().item()),
         "n_windows": int(len(valid_starts)),
         "F": int(F),
     }
@@ -221,6 +247,10 @@ def main():
     rnd_mean = float(np.mean([c["rnd_mean"] for c in results["per_clip"]]))
     gap_mean = float(np.mean([c["gap_mean"] for c in results["per_clip"]]))
 
+    # Add unweighted log
+    uw_omp = float(np.mean([x["raw_omp_unweighted"] for x in results["per_clip"]]))
+    uw_rnd = float(np.mean([x["raw_rnd_unweighted"] for x in results["per_clip"]]))
+
     results["summary"] = {
         "omp_mean": omp_mean,
         "rnd_mean": rnd_mean,
@@ -231,7 +261,8 @@ def main():
     out_path = out_dir / "omp_vs_random_summary.json"
     out_path.write_text(json.dumps(results, indent=2))
     logger.info(f"Wrote {out_path}")
-    logger.info(f"Summary: OMP={omp_mean:.4f}, Random={rnd_mean:.4f}, Gap={gap_mean:.4f}")
+    logger.info(f"Summary(Weighted): OMP={omp_mean:.4f}, Random={rnd_mean:.4f}, Gap={gap_mean:.4f}")
+    logger.info(f"Summary(Unweighted): OMP={uw_omp:.4f}, Random={uw_rnd:.4f}")
 
 
 if __name__ == "__main__":
