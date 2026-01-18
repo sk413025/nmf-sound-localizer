@@ -9,8 +9,13 @@ from scripts.h_exploration.dataset_lag import DoALagDataset, create_dataloader
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def run_omp_lag_capture(X_history, y_target, K_max=4):
+def run_omp_lag_capture(X_history, y_target, K_max=16, Lag_Min=-32, Lag_Max=32):
     """
+    X_history: (L, F) where L is large enough to cover range.
+               With Lag_Min=-32 (Future), Lag_Max=32 (Past).
+               Convention: y[t] = sum x[t-k] * w_k
+    y_target: (Tw, F)
+    
     Returns:
         Active_Sets: (F, K)
         Weights: (F, K) complex
@@ -18,20 +23,44 @@ def run_omp_lag_capture(X_history, y_target, K_max=4):
     """
     
     Tw, F = y_target.shape
-    M = X_history.shape[0] - Tw # Max Lag
-    M = min(M, 16) # Clamp M just in case logic drifts
+    device = X_history.device
+    
+    # Lag Range
+    # Lags k from Lag_Min to Lag_Max
+    # e.g. -32 to 32
+    # Total Atoms M = Lag_Max - Lag_Min + 1 (e.g. 65)
+    Lags = torch.arange(Lag_Min, Lag_Max + 1, device=device)
+    M = len(Lags)
 
-    Dict_tensor = torch.zeros(F, Tw, M, dtype=X_history.dtype, device=X_history.device)
-    for k in range(M):
-        slice_k = X_history[16-k : 16+Tw-k, :] # Fixed indexing relative to MaxLag=16 assumed
-        # Actually passed X_history is sized: MaxLag + Tw
-        # If MaxLag=16, then indices 0..15 are history, 16 is t0.
-        # k=0 (Lag 0) -> X at t, t+1... -> indices [16 : 16+Tw]
-        # k=1 (Lag 1) -> X at t-1... -> indices [15 : 15+Tw]
-        start = 16 - k
-        end = 16 + Tw - k
-        slice_k = X_history[start : end, :]
-        Dict_tensor[:, :, k] = slice_k.T # (F, Tw)
+    # Dictionary Construction
+    # D[:, :, m] corresponds to Lag Lags[m]
+    # x[t - Lags[m]]
+    # X_history passed in should center around t=0 at some specific index.
+    # To simplify, we assume X_history is passed as [t - Lag_Max : t + Tw - Lag_Min]
+    # Let's define the center.
+    # Actually, simpler: Main loop ensures X_history is big enough.
+    # We define X_history as starting from (t - Lag_Max).
+    # So index 0 corresponds to t - Lag_Max.
+    # Index at t is Lag_Max.
+    # For Lag k: need x[t-k ... t+Tw-k]
+    # Start idx in X_history: (t-k) - (t-Lag_Max) = Lag_Max - k
+    
+    Dict_tensor = torch.zeros(F, Tw, M, dtype=X_history.dtype, device=device)
+    
+    for m, k in enumerate(Lags):
+        # k is the actual lag value (e.g. -32)
+        # Start index in X_history relative to t=0
+        # If X_history starts at t - Lag_Max
+        start_idx = int(Lag_Max - k)
+        end_idx = int(start_idx + Tw)
+        
+        # Valid check?
+        if end_idx > X_history.shape[0]:
+             # Pad or clamp? Should be handled by data fetcher
+             raise ValueError(f"X_history too short for Lag {k}. Need {end_idx}, got {X_history.shape[0]}")
+
+        slice_k = X_history[start_idx : end_idx, :] 
+        Dict_tensor[:, :, m] = slice_k.T # (F, Tw)
         
     Targets = y_target.T.unsqueeze(2) # (F, Tw, 1)
     
@@ -111,16 +140,24 @@ def main():
     parser.add_argument("--max_items", type=int, default=100)
     parser.add_argument("--hop_length", type=int, default=None, help="Override STFT hop length (e.g. 160 for 10ms)")
     parser.add_argument("--variants_per_clip", type=int, default=5, help="Number of random K variants to extract per clip")
+    
+    # New Params for MaxLag
+    parser.add_argument("--max_lag", type=int, default=32, help="Max lag (both future and past). i.e. [-max_lag, max_lag]")
+    parser.add_argument("--max_k", type=int, default=32, help="Max OMP steps (budget K)")
+    parser.add_argument("--tw", type=int, default=16, help="Time window length for prediction")
+    
     args = parser.parse_args()
     
     out_path = Path(args.out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     
     # Params
-    Tw = 16 
-    MaxLag = 16 # Available Lags
-    Absolute_K = 16 # Max Budget
+    Tw = args.tw
+    Lag_Max = args.max_lag
+    Lag_Min = -args.max_lag # Symmetric
+    Absolute_K = args.max_k 
 
+    logger.info(f"Config: Lag [{Lag_Min}, {Lag_Max}], Tw={Tw}, K={Absolute_K}")
 
     dataset = DoALagDataset(args.mic_root, args.ldv_root, angle=args.angle, hop_length=args.hop_length)
     if args.max_items:
@@ -134,9 +171,6 @@ def main():
     logger.info(f"Processing Trajectories... Hop: {args.hop_length if args.hop_length else 'Default'}")
     
     stride = 32
-    # Ensure dataset_lag returns context of length MaxLag + Tw
-    # Actually my previous implementation of dataset_lag might need checking on chunk sizes.
-    # dataset_lag returns FULL CLIP stft.
     
     for i, batch in tqdm(enumerate(loader)):
         mic_stft = batch["mic_stft"][0] 
@@ -144,25 +178,42 @@ def main():
         
         T_full, F_bins = mic_stft.shape
         
-        for t in range(MaxLag, T_full - Tw, stride):
-            # Context window: [t - MaxLag : t + Tw]
-            # MaxLag=16, Tw=16 -> Length 32
-            # Indices: 0..15 (History), 16..31 (Target Win)
-            # t needs to be at least MaxLag
+        # Determine strict bounds for t
+        # Valid t must allow [t - Lag_Max] to be >= 0
+        # And [t + Tw - 1 - Lag_Min] to be < T_full
+        # Note: end index in slice is exclusive, so [t + Tw - Lag_Min] <= T_full
+        
+        start_t = Lag_Max
+        end_t_limit = T_full - Tw + Lag_Min # Lag_Min is negative, so this shrinks the range
+        
+        if end_t_limit <= start_t:
+            continue
             
-            X_chunk = mic_stft[t-MaxLag : t+Tw]
+        for t in range(start_t, end_t_limit, stride):
+            # Context window: 
+            # Needs to cover from [t - Lag_Max] to [t + Tw - Lag_Min]
+            
+            chunk_start = t - Lag_Max
+            chunk_end = t + Tw - Lag_Min
+            
+            X_chunk = mic_stft[chunk_start : chunk_end]
             Y_chunk = ldv_stft[t : t+Tw]
             
-            if X_chunk.shape[0] < MaxLag+Tw or Y_chunk.shape[0] < Tw:
+            if X_chunk.shape[0] < (chunk_end - chunk_start) or Y_chunk.shape[0] < Tw:
                 continue
                 
-            # Run OMP to absolute max K=16
-            f_corrs, f_actions, f_reds = run_omp_lag_capture(X_chunk, Y_chunk, K_max=Absolute_K)
+            # Run OMP to absolute max K
+            # Lag_Min, Lag_Max must be passed
+            f_corrs, f_actions, f_reds = run_omp_lag_capture(
+                X_chunk, Y_chunk, 
+                K_max=Absolute_K,
+                Lag_Min=Lag_Min,
+                Lag_Max=Lag_Max
+            )
             
             # Generate Random Variants
-            # We want to create N variants with random K length \in [1, 16]
+            # We want to create N variants with random K length \in [1, MaxK]
             
-            # Ensure we cover the full range if variants is large, or random if small
             possible_ks = list(range(1, Absolute_K + 1))
             
             if args.variants_per_clip >= Absolute_K:

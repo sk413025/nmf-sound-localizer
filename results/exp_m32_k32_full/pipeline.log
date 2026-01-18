@@ -1,0 +1,518 @@
+Starting Pipeline exp_m32_k32_full at Sun Jan 18 01:16:13 CST 2026
+=== 1. Generating Trajectories (M=65, K=32) ===
+INFO:__main__:Config: Lag [-32, 32], Tw=16, K=32
+INFO:scripts.h_exploration.dataset_lag:Found 260 clips for angle 90.0
+INFO:__main__:Processing Trajectories... Hop: Default
+
+0it [00:00, ?it/s]
+1it [00:01,  1.55s/it]
+2it [00:03,  1.54s/it]
+3it [00:04,  1.53s/it]
+4it [00:06,  1.53s/it]
+5it [00:07,  1.52s/it]
+6it [00:09,  1.52s/it]
+7it [00:10,  1.52s/it]
+8it [00:12,  1.52s/it]
+9it [00:13,  1.52s/it]
+10it [00:15,  1.52s/it]
+11it [00:16,  1.52s/it]
+12it [00:18,  1.52s/it]
+13it [00:19,  1.52s/it]
+14it [00:21,  1.52s/it]
+15it [00:22,  1.52s/it]
+16it [00:24,  1.52s/it]
+17it [00:25,  1.52s/it]
+18it [00:27,  1.52s/it]
+19it [00:28,  1.52s/it]
+21it [00:30,  1.17s/it]
+22it [00:31,  1.26s/it]
+23it [00:33,  1.33s/it]
+24it [00:35,  1.54s/it]
+25it [00:37,  1.53s/it]
+26it [00:38,  1.53s/it]
+27it [00:40,  1.53s/it]
+28it [00:41,  1.53s/it]
+29it [00:43,  1.52s/it]
+30it [00:44,  1.52s/it]
+31it [00:46,  1.52s/it]
+32it [00:47,  1.52s/it]
+33it [00:49,  1.52s/it]
+34it [00:50,  1.52s/it]
+35it [00:52,  1.52s/it]
+36it [00:53,  1.52s/it]
+37it [00:55,  1.52s/it]
+38it [00:56,  1.52s/it]
+39it [00:58,  1.52s/it]
+42it [00:59,  1.05it/s]
+43it [01:01,  1.07s/it]
+44it [01:03,  1.18s/it]
+45it [01:04,  1.26s/it]
+47it [01:06,  1.05s/it]
+48it [01:07,  1.16s/it]
+49it [01:09,  1.26s/it]
+50it [01:10,  1.33s/it]
+51it [01:12,  1.38s/it]
+52it [01:13,  1.42s/it]
+53it [01:15,  1.45s/it]
+54it [01:16,  1.47s/it]
+55it [01:18,  1.49s/it]
+56it [01:19,  1.50s/it]
+57it [01:21,  1.50s/it]
+58it [01:22,  1.51s/it]
+59it [01:24,  1.69s/it]
+60it [01:26,  1.64s/it]
+61it [01:28,  1.60s/it]
+63it [01:29,  1.21s/it]
+64it [01:31,  1.29s/it]
+65it [01:32,  1.35s/it]
+66it [01:34,  1.40s/it]
+67it [01:35,  1.43s/it]
+68it [01:37,  1.46s/it]
+69it [01:38,  1.48s/it]
+70it [01:40,  1.49s/it]
+71it [01:41,  1.50s/it]
+72it [01:43,  1.51s/it]
+73it [01:44,  1.52s/it]
+74it [01:46,  1.52s/it]
+75it [01:47,  1.52s/it]
+76it [01:49,  1.52s/it]
+77it [01:50,  1.52s/it]
+78it [01:52,  1.52s/it]
+79it [01:53,  1.52s/it]
+80it [01:55,  1.52s/it]
+81it [01:56,  1.52s/it]
+82it [01:58,  1.52s/it]
+84it [01:59,  1.17s/it]
+87it [02:01,  1.19it/s]
+88it [02:03,  1.03it/s]
+89it [02:04,  1.09s/it]
+90it [02:06,  1.19s/it]
+91it [02:07,  1.27s/it]
+92it [02:09,  1.34s/it]
+93it [02:10,  1.39s/it]
+94it [02:12,  1.42s/it]
+95it [02:14,  1.64s/it]
+97it [02:15,  1.25s/it]
+98it [02:17,  1.32s/it]
+99it [02:18,  1.38s/it]
+100it [02:20,  1.42s/it]
+101it [02:22,  1.45s/it]
+102it [02:23,  1.47s/it]
+103it [02:25,  1.49s/it]
+104it [02:26,  1.50s/it]
+105it [02:28,  1.51s/it]
+106it [02:29,  1.51s/it]
+107it [02:31,  1.52s/it]
+108it [02:32,  1.52s/it]
+109it [02:34,  1.52s/it]
+110it [02:35,  1.52s/it]
+111it [02:37,  1.52s/it]
+115it [02:38,  1.25it/s]
+116it [02:40,  1.07it/s]
+117it [02:41,  1.06s/it]
+118it [02:43,  1.16s/it]
+119it [02:44,  1.25s/it]
+120it [02:46,  1.32s/it]
+121it [02:47,  1.38s/it]
+122it [02:49,  1.42s/it]
+123it [02:50,  1.45s/it]
+124it [02:52,  1.46s/it]
+125it [02:53,  1.48s/it]
+126it [02:55,  1.49s/it]
+127it [02:57,  1.50s/it]
+128it [02:58,  1.50s/it]
+129it [03:00,  1.51s/it]
+130it [03:01,  1.51s/it]
+131it [03:03,  1.78s/it]
+132it [03:05,  1.70s/it]
+133it [03:07,  1.65s/it]
+135it [03:08,  1.24s/it]
+136it [03:10,  1.32s/it]
+139it [03:12,  1.12s/it]
+140it [03:16,  1.64s/it]
+141it [03:21,  2.24s/it]
+143it [03:26,  2.33s/it]
+144it [03:30,  2.85s/it]
+145it [03:35,  3.29s/it]
+146it [03:39,  3.57s/it]
+147it [03:44,  3.86s/it]
+148it [03:49,  4.08s/it]
+149it [03:53,  4.27s/it]
+150it [03:56,  3.84s/it]
+151it [03:58,  3.22s/it]
+152it [03:59,  2.73s/it]
+153it [04:02,  2.55s/it]
+154it [04:04,  2.52s/it]
+155it [04:06,  2.23s/it]
+156it [04:07,  2.02s/it]
+157it [04:09,  1.87s/it]
+158it [04:10,  1.78s/it]
+159it [04:12,  1.71s/it]
+160it [04:13,  1.65s/it]
+161it [04:15,  1.61s/it]
+163it [04:16,  1.22s/it]
+164it [04:18,  1.30s/it]
+165it [04:19,  1.36s/it]
+166it [04:21,  1.40s/it]
+167it [04:22,  1.44s/it]
+168it [04:24,  1.46s/it]
+170it [04:25,  1.15s/it]
+171it [04:27,  1.24s/it]
+172it [04:28,  1.31s/it]
+173it [04:30,  1.37s/it]
+174it [04:32,  1.41s/it]
+175it [04:33,  1.44s/it]
+176it [04:35,  1.46s/it]
+177it [04:36,  1.48s/it]
+178it [04:38,  1.49s/it]
+180it [04:39,  1.16s/it]
+181it [04:41,  1.24s/it]
+182it [04:44,  1.84s/it]
+183it [04:46,  1.76s/it]
+184it [04:47,  1.70s/it]
+185it [04:49,  1.65s/it]
+186it [04:50,  1.63s/it]
+187it [04:53,  2.08s/it]
+188it [04:55,  1.92s/it]
+189it [04:57,  1.80s/it]
+190it [04:58,  1.72s/it]
+191it [05:00,  1.66s/it]
+192it [05:01,  1.62s/it]
+193it [05:03,  1.59s/it]
+195it [05:04,  1.21s/it]
+196it [05:06,  1.28s/it]
+197it [05:07,  1.35s/it]
+198it [05:09,  1.39s/it]
+199it [05:10,  1.43s/it]
+200it [05:12,  1.46s/it]
+201it [05:13,  1.47s/it]
+202it [05:15,  1.49s/it]
+203it [05:16,  1.50s/it]
+204it [05:18,  1.51s/it]
+205it [05:19,  1.51s/it]
+206it [05:21,  1.52s/it]
+207it [05:22,  1.52s/it]
+208it [05:24,  1.52s/it]
+209it [05:25,  1.52s/it]
+210it [05:27,  1.52s/it]
+211it [05:29,  1.52s/it]
+212it [05:30,  1.52s/it]
+213it [05:32,  1.69s/it]
+214it [05:34,  1.65s/it]
+215it [05:35,  1.61s/it]
+216it [05:37,  1.59s/it]
+217it [05:38,  1.57s/it]
+218it [05:40,  1.55s/it]
+219it [05:41,  1.54s/it]
+220it [05:43,  1.54s/it]
+221it [05:44,  1.54s/it]
+222it [05:46,  1.54s/it]
+223it [05:47,  1.54s/it]
+224it [05:49,  1.53s/it]
+225it [05:51,  1.54s/it]
+226it [05:52,  1.53s/it]
+227it [05:54,  1.53s/it]
+228it [05:55,  1.54s/it]
+229it [05:57,  1.53s/it]
+230it [05:58,  1.53s/it]
+231it [06:00,  1.53s/it]
+232it [06:01,  1.52s/it]
+233it [06:03,  1.52s/it]
+235it [06:04,  1.17s/it]
+236it [06:06,  1.26s/it]
+237it [06:07,  1.33s/it]
+238it [06:09,  1.38s/it]
+239it [06:10,  1.42s/it]
+240it [06:12,  1.45s/it]
+241it [06:13,  1.47s/it]
+242it [06:15,  1.48s/it]
+243it [06:16,  1.50s/it]
+244it [06:18,  1.51s/it]
+245it [06:19,  1.51s/it]
+246it [06:22,  1.68s/it]
+247it [06:23,  1.64s/it]
+248it [06:25,  1.61s/it]
+249it [06:26,  1.59s/it]
+251it [06:28,  1.21s/it]
+252it [06:29,  1.29s/it]
+253it [06:31,  1.35s/it]
+254it [06:32,  1.40s/it]
+255it [06:34,  1.43s/it]
+256it [06:35,  1.46s/it]
+257it [06:37,  1.47s/it]
+258it [06:38,  1.49s/it]
+259it [06:40,  1.50s/it]
+260it [06:41,  1.51s/it]
+260it [06:41,  1.55s/it]
+INFO:__main__:Saved 1190 blocks to results/exp_m32_k32_full/data (Variants: 5)
+=== 2. Training DTmin Agent (200 Epochs) ===
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/exp_m32_k32_full/data/lag_trajectories.pt...
+INFO:__main__:Loaded 1219750 variable-length sequences. Feature dim: 65
+INFO:__main__:Epoch 1: Train Loss=3.9399, Val Loss=3.8812, Acc=0.0638
+INFO:__main__:Epoch 2: Train Loss=3.8672, Val Loss=3.8470, Acc=0.0694
+INFO:__main__:Epoch 3: Train Loss=3.8352, Val Loss=3.8236, Acc=0.0736
+INFO:__main__:Epoch 4: Train Loss=3.8146, Val Loss=3.8086, Acc=0.0758
+INFO:__main__:Epoch 5: Train Loss=3.7999, Val Loss=3.7957, Acc=0.0779
+INFO:__main__:Epoch 6: Train Loss=3.7877, Val Loss=3.7870, Acc=0.0794
+INFO:__main__:Epoch 7: Train Loss=3.7769, Val Loss=3.7787, Acc=0.0811
+INFO:__main__:Epoch 8: Train Loss=3.7674, Val Loss=3.7728, Acc=0.0820
+INFO:__main__:Epoch 9: Train Loss=3.7588, Val Loss=3.7669, Acc=0.0827
+INFO:__main__:Epoch 10: Train Loss=3.7515, Val Loss=3.7612, Acc=0.0838
+INFO:__main__:Epoch 11: Train Loss=3.7451, Val Loss=3.7569, Acc=0.0846
+INFO:__main__:Epoch 12: Train Loss=3.7397, Val Loss=3.7523, Acc=0.0857
+INFO:__main__:Epoch 13: Train Loss=3.7346, Val Loss=3.7490, Acc=0.0862
+INFO:__main__:Epoch 14: Train Loss=3.7304, Val Loss=3.7465, Acc=0.0867
+INFO:__main__:Epoch 15: Train Loss=3.7268, Val Loss=3.7429, Acc=0.0875
+INFO:__main__:Epoch 16: Train Loss=3.7233, Val Loss=3.7401, Acc=0.0876
+INFO:__main__:Epoch 17: Train Loss=3.7206, Val Loss=3.7379, Acc=0.0883
+INFO:__main__:Epoch 18: Train Loss=3.7178, Val Loss=3.7362, Acc=0.0885
+INFO:__main__:Epoch 19: Train Loss=3.7153, Val Loss=3.7346, Acc=0.0887
+INFO:__main__:Epoch 20: Train Loss=3.7139, Val Loss=3.7322, Acc=0.0894
+INFO:__main__:Epoch 21: Train Loss=3.7109, Val Loss=3.7312, Acc=0.0891
+INFO:__main__:Epoch 22: Train Loss=3.7099, Val Loss=3.7297, Acc=0.0895
+INFO:__main__:Epoch 23: Train Loss=3.7076, Val Loss=3.7291, Acc=0.0899
+INFO:__main__:Epoch 24: Train Loss=3.7057, Val Loss=3.7256, Acc=0.0904
+INFO:__main__:Epoch 25: Train Loss=3.7046, Val Loss=3.7246, Acc=0.0905
+INFO:__main__:Epoch 26: Train Loss=3.7042, Val Loss=3.7248, Acc=0.0901
+INFO:__main__:Epoch 27: Train Loss=3.7014, Val Loss=3.7235, Acc=0.0910
+INFO:__main__:Epoch 28: Train Loss=3.7005, Val Loss=3.7217, Acc=0.0912
+INFO:__main__:Epoch 29: Train Loss=3.6990, Val Loss=3.7202, Acc=0.0912
+INFO:__main__:Epoch 30: Train Loss=3.6978, Val Loss=3.7194, Acc=0.0915
+INFO:__main__:Epoch 31: Train Loss=3.6963, Val Loss=3.7183, Acc=0.0915
+INFO:__main__:Epoch 32: Train Loss=3.6962, Val Loss=3.7198, Acc=0.0919
+INFO:__main__:Epoch 33: Train Loss=3.6960, Val Loss=3.7177, Acc=0.0918
+INFO:__main__:Epoch 34: Train Loss=3.6939, Val Loss=3.7162, Acc=0.0924
+INFO:__main__:Epoch 35: Train Loss=3.6927, Val Loss=3.7153, Acc=0.0922
+INFO:__main__:Epoch 36: Train Loss=3.6921, Val Loss=3.7158, Acc=0.0923
+INFO:__main__:Epoch 37: Train Loss=3.6909, Val Loss=3.7134, Acc=0.0922
+INFO:__main__:Epoch 38: Train Loss=3.6906, Val Loss=3.7124, Acc=0.0927
+INFO:__main__:Epoch 39: Train Loss=3.6896, Val Loss=3.7099, Acc=0.0932
+INFO:__main__:Epoch 40: Train Loss=3.6887, Val Loss=3.7151, Acc=0.0922
+INFO:__main__:Epoch 41: Train Loss=3.6879, Val Loss=3.7117, Acc=0.0926
+INFO:__main__:Epoch 42: Train Loss=3.6882, Val Loss=3.7093, Acc=0.0934
+INFO:__main__:Epoch 43: Train Loss=3.6863, Val Loss=3.7092, Acc=0.0934
+INFO:__main__:Epoch 44: Train Loss=3.6855, Val Loss=3.7096, Acc=0.0934
+INFO:__main__:Epoch 45: Train Loss=3.6848, Val Loss=3.7077, Acc=0.0934
+INFO:__main__:Epoch 46: Train Loss=3.6845, Val Loss=3.7122, Acc=0.0923
+INFO:__main__:Epoch 47: Train Loss=3.6845, Val Loss=3.7082, Acc=0.0936
+INFO:__main__:Epoch 48: Train Loss=3.6823, Val Loss=3.7075, Acc=0.0929
+INFO:__main__:Epoch 49: Train Loss=3.6824, Val Loss=3.7061, Acc=0.0939
+INFO:__main__:Epoch 50: Train Loss=3.6825, Val Loss=3.7054, Acc=0.0940
+INFO:__main__:Epoch 51: Train Loss=3.6842, Val Loss=3.7080, Acc=0.0934
+INFO:__main__:Epoch 52: Train Loss=3.6812, Val Loss=3.7057, Acc=0.0934
+INFO:__main__:Epoch 53: Train Loss=3.6801, Val Loss=3.7065, Acc=0.0932
+INFO:__main__:Epoch 54: Train Loss=3.6816, Val Loss=3.7056, Acc=0.0939
+INFO:__main__:Epoch 55: Train Loss=3.6805, Val Loss=3.7039, Acc=0.0942
+INFO:__main__:Epoch 56: Train Loss=3.6790, Val Loss=3.7019, Acc=0.0945
+INFO:__main__:Epoch 57: Train Loss=3.6789, Val Loss=3.7033, Acc=0.0945
+INFO:__main__:Epoch 58: Train Loss=3.6780, Val Loss=3.7017, Acc=0.0945
+INFO:__main__:Epoch 59: Train Loss=3.6772, Val Loss=3.7013, Acc=0.0946
+INFO:__main__:Epoch 60: Train Loss=3.6766, Val Loss=3.7034, Acc=0.0939
+INFO:__main__:Epoch 61: Train Loss=3.6767, Val Loss=3.7017, Acc=0.0947
+INFO:__main__:Epoch 62: Train Loss=3.6770, Val Loss=3.7010, Acc=0.0947
+INFO:__main__:Epoch 63: Train Loss=3.6761, Val Loss=3.7017, Acc=0.0945
+INFO:__main__:Epoch 64: Train Loss=3.6790, Val Loss=3.7049, Acc=0.0933
+INFO:__main__:Epoch 65: Train Loss=3.6750, Val Loss=3.7011, Acc=0.0948
+INFO:__main__:Epoch 66: Train Loss=3.6745, Val Loss=3.7007, Acc=0.0948
+INFO:__main__:Epoch 67: Train Loss=3.6740, Val Loss=3.6983, Acc=0.0950
+INFO:__main__:Epoch 68: Train Loss=3.6747, Val Loss=3.7010, Acc=0.0947
+INFO:__main__:Epoch 69: Train Loss=3.6746, Val Loss=3.7012, Acc=0.0941
+INFO:__main__:Epoch 70: Train Loss=3.6727, Val Loss=3.6979, Acc=0.0951
+INFO:__main__:Epoch 71: Train Loss=3.6726, Val Loss=3.6978, Acc=0.0949
+INFO:__main__:Epoch 72: Train Loss=3.6723, Val Loss=3.7001, Acc=0.0948
+INFO:__main__:Epoch 73: Train Loss=3.6718, Val Loss=3.6982, Acc=0.0954
+INFO:__main__:Epoch 74: Train Loss=3.6710, Val Loss=3.6986, Acc=0.0952
+INFO:__main__:Epoch 75: Train Loss=3.6708, Val Loss=3.6958, Acc=0.0956
+INFO:__main__:Epoch 76: Train Loss=3.6712, Val Loss=3.6983, Acc=0.0948
+INFO:__main__:Epoch 77: Train Loss=3.6709, Val Loss=3.6971, Acc=0.0954
+INFO:__main__:Epoch 78: Train Loss=3.6714, Val Loss=3.6949, Acc=0.0953
+INFO:__main__:Epoch 79: Train Loss=3.6696, Val Loss=3.6970, Acc=0.0955
+INFO:__main__:Epoch 80: Train Loss=3.6711, Val Loss=3.6989, Acc=0.0948
+INFO:__main__:Epoch 81: Train Loss=3.6693, Val Loss=3.6976, Acc=0.0946
+INFO:__main__:Epoch 82: Train Loss=3.6707, Val Loss=3.6990, Acc=0.0945
+INFO:__main__:Epoch 83: Train Loss=3.6691, Val Loss=3.6938, Acc=0.0956
+INFO:__main__:Epoch 84: Train Loss=3.6702, Val Loss=3.6964, Acc=0.0952
+INFO:__main__:Epoch 85: Train Loss=3.6705, Val Loss=3.6939, Acc=0.0956
+INFO:__main__:Epoch 86: Train Loss=3.6678, Val Loss=3.6953, Acc=0.0955
+INFO:__main__:Epoch 87: Train Loss=3.6724, Val Loss=3.7017, Acc=0.0945
+INFO:__main__:Epoch 88: Train Loss=3.6684, Val Loss=3.6952, Acc=0.0955
+INFO:__main__:Epoch 89: Train Loss=3.6673, Val Loss=3.6927, Acc=0.0958
+INFO:__main__:Epoch 90: Train Loss=3.6675, Val Loss=3.6993, Acc=0.0953
+INFO:__main__:Epoch 91: Train Loss=3.6670, Val Loss=3.6935, Acc=0.0957
+INFO:__main__:Epoch 92: Train Loss=3.6734, Val Loss=3.6935, Acc=0.0953
+INFO:__main__:Epoch 93: Train Loss=3.6669, Val Loss=3.6988, Acc=0.0950
+INFO:__main__:Epoch 94: Train Loss=3.6668, Val Loss=3.6973, Acc=0.0947
+INFO:__main__:Epoch 95: Train Loss=3.6663, Val Loss=3.6962, Acc=0.0947
+INFO:__main__:Epoch 96: Train Loss=3.6653, Val Loss=3.6917, Acc=0.0966
+INFO:__main__:Epoch 97: Train Loss=3.6664, Val Loss=3.6928, Acc=0.0959
+INFO:__main__:Epoch 98: Train Loss=3.6699, Val Loss=3.6956, Acc=0.0948
+INFO:__main__:Epoch 99: Train Loss=3.6670, Val Loss=3.6924, Acc=0.0962
+INFO:__main__:Epoch 100: Train Loss=3.6704, Val Loss=3.6932, Acc=0.0958
+INFO:__main__:Epoch 101: Train Loss=3.6666, Val Loss=3.6913, Acc=0.0962
+INFO:__main__:Epoch 102: Train Loss=3.6658, Val Loss=3.6909, Acc=0.0957
+INFO:__main__:Epoch 103: Train Loss=3.6766, Val Loss=3.7061, Acc=0.0933
+INFO:__main__:Epoch 104: Train Loss=3.6703, Val Loss=3.6939, Acc=0.0957
+INFO:__main__:Epoch 105: Train Loss=3.6660, Val Loss=3.6923, Acc=0.0963
+INFO:__main__:Epoch 106: Train Loss=3.6656, Val Loss=3.6948, Acc=0.0960
+INFO:__main__:Epoch 107: Train Loss=3.6651, Val Loss=3.6903, Acc=0.0966
+INFO:__main__:Epoch 108: Train Loss=3.6654, Val Loss=3.6974, Acc=0.0948
+INFO:__main__:Epoch 109: Train Loss=3.6903, Val Loss=3.7070, Acc=0.0933
+INFO:__main__:Epoch 110: Train Loss=3.6697, Val Loss=3.6905, Acc=0.0963
+INFO:__main__:Epoch 111: Train Loss=3.6635, Val Loss=3.6925, Acc=0.0959
+INFO:__main__:Epoch 112: Train Loss=3.6714, Val Loss=3.6940, Acc=0.0958
+INFO:__main__:Epoch 113: Train Loss=3.6645, Val Loss=3.6911, Acc=0.0966
+INFO:__main__:Epoch 114: Train Loss=3.6653, Val Loss=3.6898, Acc=0.0965
+INFO:__main__:Epoch 115: Train Loss=3.6641, Val Loss=3.6925, Acc=0.0957
+INFO:__main__:Epoch 116: Train Loss=3.6681, Val Loss=3.6915, Acc=0.0967
+INFO:__main__:Epoch 117: Train Loss=3.6640, Val Loss=3.6925, Acc=0.0965
+INFO:__main__:Epoch 118: Train Loss=3.6626, Val Loss=3.6889, Acc=0.0965
+INFO:__main__:Epoch 119: Train Loss=3.6647, Val Loss=3.6893, Acc=0.0964
+INFO:__main__:Epoch 120: Train Loss=3.6638, Val Loss=3.6887, Acc=0.0968
+INFO:__main__:Epoch 121: Train Loss=3.6631, Val Loss=3.6903, Acc=0.0962
+INFO:__main__:Epoch 122: Train Loss=3.6665, Val Loss=3.7002, Acc=0.0950
+INFO:__main__:Epoch 123: Train Loss=3.6643, Val Loss=3.6898, Acc=0.0967
+INFO:__main__:Epoch 124: Train Loss=3.6703, Val Loss=3.7069, Acc=0.0934
+INFO:__main__:Epoch 125: Train Loss=3.6653, Val Loss=3.6904, Acc=0.0962
+INFO:__main__:Epoch 126: Train Loss=3.6653, Val Loss=3.6912, Acc=0.0960
+INFO:__main__:Epoch 127: Train Loss=3.6665, Val Loss=3.6947, Acc=0.0951
+INFO:__main__:Epoch 128: Train Loss=3.6660, Val Loss=3.6909, Acc=0.0958
+INFO:__main__:Epoch 129: Train Loss=3.6645, Val Loss=3.6906, Acc=0.0961
+INFO:__main__:Epoch 130: Train Loss=3.6667, Val Loss=3.6929, Acc=0.0960
+INFO:__main__:Epoch 131: Train Loss=3.6693, Val Loss=3.6906, Acc=0.0964
+INFO:__main__:Epoch 132: Train Loss=3.6639, Val Loss=3.6901, Acc=0.0963
+INFO:__main__:Epoch 133: Train Loss=3.6628, Val Loss=3.6893, Acc=0.0967
+INFO:__main__:Epoch 134: Train Loss=3.6638, Val Loss=3.6878, Acc=0.0965
+INFO:__main__:Epoch 135: Train Loss=3.6633, Val Loss=3.6889, Acc=0.0965
+INFO:__main__:Epoch 136: Train Loss=3.6624, Val Loss=3.6922, Acc=0.0954
+INFO:__main__:Epoch 137: Train Loss=3.6623, Val Loss=3.6879, Acc=0.0969
+INFO:__main__:Epoch 138: Train Loss=3.6610, Val Loss=3.6856, Acc=0.0972
+INFO:__main__:Epoch 139: Train Loss=3.6626, Val Loss=3.6858, Acc=0.0970
+INFO:__main__:Epoch 140: Train Loss=3.6636, Val Loss=3.6895, Acc=0.0957
+INFO:__main__:Epoch 141: Train Loss=3.6629, Val Loss=3.6917, Acc=0.0965
+INFO:__main__:Epoch 142: Train Loss=3.6599, Val Loss=3.6921, Acc=0.0954
+INFO:__main__:Epoch 143: Train Loss=3.6602, Val Loss=3.6866, Acc=0.0970
+INFO:__main__:Epoch 144: Train Loss=3.6598, Val Loss=3.6862, Acc=0.0972
+INFO:__main__:Epoch 145: Train Loss=3.6745, Val Loss=3.6881, Acc=0.0962
+INFO:__main__:Epoch 146: Train Loss=3.6586, Val Loss=3.6859, Acc=0.0971
+INFO:__main__:Epoch 147: Train Loss=3.6598, Val Loss=3.6870, Acc=0.0970
+INFO:__main__:Epoch 148: Train Loss=3.6647, Val Loss=3.6880, Acc=0.0972
+INFO:__main__:Epoch 149: Train Loss=3.6617, Val Loss=3.6864, Acc=0.0970
+INFO:__main__:Epoch 150: Train Loss=3.6604, Val Loss=3.6892, Acc=0.0965
+INFO:__main__:Epoch 151: Train Loss=3.6641, Val Loss=3.6919, Acc=0.0960
+INFO:__main__:Epoch 152: Train Loss=3.6598, Val Loss=3.6887, Acc=0.0967
+INFO:__main__:Epoch 153: Train Loss=3.6607, Val Loss=3.6860, Acc=0.0973
+INFO:__main__:Epoch 154: Train Loss=3.6659, Val Loss=3.6975, Acc=0.0953
+INFO:__main__:Epoch 155: Train Loss=3.6647, Val Loss=3.6890, Acc=0.0965
+INFO:__main__:Epoch 156: Train Loss=3.6679, Val Loss=3.6876, Acc=0.0967
+INFO:__main__:Epoch 157: Train Loss=3.6640, Val Loss=3.6967, Acc=0.0947
+INFO:__main__:Epoch 158: Train Loss=3.6655, Val Loss=3.6885, Acc=0.0961
+INFO:__main__:Epoch 159: Train Loss=3.6610, Val Loss=3.6853, Acc=0.0972
+INFO:__main__:Epoch 160: Train Loss=3.6657, Val Loss=3.6884, Acc=0.0967
+INFO:__main__:Epoch 161: Train Loss=3.6638, Val Loss=3.6932, Acc=0.0956
+INFO:__main__:Epoch 162: Train Loss=3.6631, Val Loss=3.6896, Acc=0.0963
+INFO:__main__:Epoch 163: Train Loss=3.6643, Val Loss=3.7199, Acc=0.0911
+INFO:__main__:Epoch 164: Train Loss=3.6692, Val Loss=3.7012, Acc=0.0948
+INFO:__main__:Epoch 165: Train Loss=3.6750, Val Loss=3.6971, Acc=0.0956
+INFO:__main__:Epoch 166: Train Loss=3.6787, Val Loss=3.6983, Acc=0.0947
+INFO:__main__:Epoch 167: Train Loss=3.6750, Val Loss=3.7031, Acc=0.0943
+INFO:__main__:Epoch 168: Train Loss=3.6788, Val Loss=3.7086, Acc=0.0934
+INFO:__main__:Epoch 169: Train Loss=3.6830, Val Loss=3.7061, Acc=0.0938
+INFO:__main__:Epoch 170: Train Loss=3.6804, Val Loss=3.7030, Acc=0.0933
+INFO:__main__:Epoch 171: Train Loss=3.6792, Val Loss=3.7054, Acc=0.0938
+INFO:__main__:Epoch 172: Train Loss=3.6814, Val Loss=3.7053, Acc=0.0941
+INFO:__main__:Epoch 173: Train Loss=3.6896, Val Loss=3.7080, Acc=0.0936
+INFO:__main__:Epoch 174: Train Loss=3.6883, Val Loss=3.7072, Acc=0.0937
+INFO:__main__:Epoch 175: Train Loss=3.6892, Val Loss=3.7108, Acc=0.0928
+INFO:__main__:Epoch 176: Train Loss=3.6869, Val Loss=3.7105, Acc=0.0934
+INFO:__main__:Epoch 177: Train Loss=3.6850, Val Loss=3.7099, Acc=0.0928
+INFO:__main__:Epoch 178: Train Loss=3.6860, Val Loss=3.7117, Acc=0.0914
+INFO:__main__:Epoch 179: Train Loss=3.6869, Val Loss=3.7088, Acc=0.0931
+INFO:__main__:Epoch 180: Train Loss=3.6825, Val Loss=3.7062, Acc=0.0929
+INFO:__main__:Epoch 181: Train Loss=3.6829, Val Loss=3.7018, Acc=0.0942
+INFO:__main__:Epoch 182: Train Loss=3.6777, Val Loss=3.7011, Acc=0.0947
+INFO:__main__:Epoch 183: Train Loss=3.6788, Val Loss=3.7016, Acc=0.0943
+INFO:__main__:Epoch 184: Train Loss=3.6808, Val Loss=3.7028, Acc=0.0937
+INFO:__main__:Epoch 185: Train Loss=3.6820, Val Loss=3.7011, Acc=0.0947
+INFO:__main__:Epoch 186: Train Loss=3.6814, Val Loss=3.7058, Acc=0.0933
+INFO:__main__:Epoch 187: Train Loss=3.6775, Val Loss=3.7008, Acc=0.0945
+INFO:__main__:Epoch 188: Train Loss=3.6773, Val Loss=3.6985, Acc=0.0953
+INFO:__main__:Epoch 189: Train Loss=3.6789, Val Loss=3.7021, Acc=0.0945
+INFO:__main__:Epoch 190: Train Loss=3.6779, Val Loss=3.6997, Acc=0.0949
+INFO:__main__:Epoch 191: Train Loss=3.6773, Val Loss=3.6972, Acc=0.0951
+INFO:__main__:Epoch 192: Train Loss=3.6774, Val Loss=3.6993, Acc=0.0952
+INFO:__main__:Epoch 193: Train Loss=3.6762, Val Loss=3.7034, Acc=0.0931
+INFO:__main__:Epoch 194: Train Loss=3.6758, Val Loss=3.6995, Acc=0.0946
+INFO:__main__:Epoch 195: Train Loss=3.6745, Val Loss=3.6960, Acc=0.0954
+INFO:__main__:Epoch 196: Train Loss=3.6743, Val Loss=3.6998, Acc=0.0941
+INFO:__main__:Epoch 197: Train Loss=3.6766, Val Loss=3.6987, Acc=0.0950
+INFO:__main__:Epoch 198: Train Loss=3.6780, Val Loss=3.7002, Acc=0.0944
+INFO:__main__:Epoch 199: Train Loss=3.6773, Val Loss=3.6989, Acc=0.0943
+INFO:__main__:Epoch 200: Train Loss=3.6873, Val Loss=3.6996, Acc=0.0945
+=== 3. Evaluation ===
+Using device: mps
+Dataset Size: 260
+Initializing Model with M_lags=65
+Model Loaded.
+Collecting raw data...
+
+  0%|          | 0/10 [00:00<?, ?it/s]
+ 10%|█         | 1/10 [00:01<00:14,  1.65s/it]
+ 20%|██        | 2/10 [00:04<00:16,  2.07s/it]
+ 30%|███       | 3/10 [00:05<00:11,  1.67s/it]
+ 40%|████      | 4/10 [00:06<00:08,  1.48s/it]
+ 50%|█████     | 5/10 [00:07<00:06,  1.37s/it]
+ 60%|██████    | 6/10 [00:08<00:05,  1.31s/it]
+ 70%|███████   | 7/10 [00:09<00:03,  1.27s/it]
+ 80%|████████  | 8/10 [00:12<00:03,  1.62s/it]
+ 90%|█████████ | 9/10 [00:13<00:01,  1.49s/it]
+100%|██████████| 10/10 [00:15<00:00,  1.76s/it]
+100%|██████████| 10/10 [00:15<00:00,  1.59s/it]
+2026-01-18 09:54:37.411 Python[24470:7563537] +[NSXPCSharedListener endpointForReply:withListenerName:replyErrorCode:]: an error occurred while attempting to obtain endpoint for listener 'ClientCallsAuxiliary': Connection interrupted
+
+XXX DETAILED BAND ANALYSIS XXX
+Band                      | K   | DT     | OMP    | Eff % 
+------------------------------------------------------------
+Sub-Bass (0-60Hz)         | 1   | 0.0747 | 0.1360 | 54.9%
+Sub-Bass (0-60Hz)         | 4   | 0.3313 | 0.4544 | 72.9%
+Sub-Bass (0-60Hz)         | 8   | 0.6355 | 0.7404 | 85.8%
+Sub-Bass (0-60Hz)         | 16  | 0.9782 | 0.9782 | 100.0%
+Sub-Bass (0-60Hz)         | 32  | 0.9782 | 0.9782 | 100.0%
+------------------------------------------------------------
+Bass (60-250Hz)           | 1   | 0.1074 | 0.3828 | 28.1%
+Bass (60-250Hz)           | 4   | 0.4278 | 0.7147 | 59.9%
+Bass (60-250Hz)           | 8   | 0.7551 | 0.8711 | 86.7%
+Bass (60-250Hz)           | 16  | 0.9814 | 0.9814 | 100.0%
+Bass (60-250Hz)           | 32  | 0.9814 | 0.9814 | 100.0%
+------------------------------------------------------------
+Low Mids (250-500Hz)      | 1   | 0.1065 | 0.5677 | 18.8%
+Low Mids (250-500Hz)      | 4   | 0.3796 | 0.8390 | 45.2%
+Low Mids (250-500Hz)      | 8   | 0.8236 | 0.9304 | 88.5%
+Low Mids (250-500Hz)      | 16  | 0.9833 | 0.9833 | 100.0%
+Low Mids (250-500Hz)      | 32  | 0.9833 | 0.9833 | 100.0%
+------------------------------------------------------------
+Mids (500-2k Hz)          | 1   | 0.0290 | 0.1783 | 16.3%
+Mids (500-2k Hz)          | 4   | 0.1147 | 0.2624 | 43.7%
+Mids (500-2k Hz)          | 8   | 0.2185 | 0.2906 | 75.2%
+Mids (500-2k Hz)          | 16  | 0.3040 | 0.3040 | 100.0%
+Mids (500-2k Hz)          | 32  | 0.3040 | 0.3040 | 100.0%
+------------------------------------------------------------
+Upper Mids (2k-4k Hz)     | 1   | 0.0049 | 0.0233 | 20.9%
+Upper Mids (2k-4k Hz)     | 4   | 0.0166 | 0.0347 | 47.7%
+Upper Mids (2k-4k Hz)     | 8   | 0.0322 | 0.0399 | 80.8%
+Upper Mids (2k-4k Hz)     | 16  | 0.0430 | 0.0430 | 100.0%
+Upper Mids (2k-4k Hz)     | 32  | 0.0430 | 0.0430 | 100.0%
+------------------------------------------------------------
+Presence (4k-6k Hz)       | 1   | 0.0007 | 0.0022 | 30.7%
+Presence (4k-6k Hz)       | 4   | 0.0018 | 0.0036 | 49.7%
+Presence (4k-6k Hz)       | 8   | 0.0035 | 0.0044 | 79.0%
+Presence (4k-6k Hz)       | 16  | 0.0049 | 0.0049 | 100.0%
+Presence (4k-6k Hz)       | 32  | 0.0049 | 0.0049 | 100.0%
+------------------------------------------------------------
+Highs (6k-8k Hz)          | 1   | 0.0003 | 0.0006 | 50.3%
+Highs (6k-8k Hz)          | 4   | 0.0008 | 0.0013 | 65.6%
+Highs (6k-8k Hz)          | 8   | 0.0015 | 0.0017 | 85.9%
+Highs (6k-8k Hz)          | 16  | 0.0020 | 0.0020 | 99.9%
+Highs (6k-8k Hz)          | 32  | 0.0020 | 0.0020 | 99.9%
+------------------------------------------------------------
+=== Pipeline Completed Successfully at Sun Jan 18 09:54:37 CST 2026 ===
