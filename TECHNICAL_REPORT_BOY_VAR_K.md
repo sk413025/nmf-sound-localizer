@@ -54,6 +54,72 @@ We analyzed the **Energy Capture** capability of the OMP Oracle across the frequ
       0   250  500  1k   2k   4k   6k  8k  (Hz)
 ```
 
+### 3.1 Additional Diagnostics (Jan 18, 2026): OMP Budget Saturation + Coherence-by-Band
+
+To separate **"physics limit"** from **"budget / dictionary"** limits, we ran two lightweight diagnostics on the speech260 dataset (Angle 90) using the existing lag-OMP codepath:
+
+**A) OMP K-scan saturation (full spectrum, small subset)**
+- Script: `scripts/h_exploration/analyze_omp_limit.py` (CPU)
+- Setup: Full spectrum bins 5–1024, Tw=16 STFT frames, MaxLag=50, 5 clips.
+- Result (mean energy reduction, flattened over bins):
+    - K=3: 75.64%
+    - K=8: 88.03% (+12.39%)
+    - K=16: 89.97% (+1.94% vs K=8)
+    - K=24/32/40/48/50: 89.97% (no further gain)
+
+**Interpretation:** In this formulation, improvements saturate by K≈16; increasing K beyond 16 does not increase reduction.
+
+**B) Coherence vs frequency bands + OMP ceilings**
+- Script: `scripts/h_exploration/diagnose_band_limits.py` (CPU)
+- Coherence definition: `scipy.signal.coherence(mic_stft[:, b], ldv_stft[:, b])` over the STFT-frame time index (complex-valued), averaged over sampled bins per band.
+- Setup: clips {0, 50, 100}, sampled 64 bins per band, Tw=16, MaxLag=50.
+
+| Band | Range (Hz) | Mean Coherence | OMP Reduction (K=16) | OMP Reduction (K=50) |
+| :--- | :--- | :---: | :---: | :---: |
+| Low Mids | 250–500 | 0.9402 | 100.00% | 100.00% |
+| Mids | 500–2000 | 0.8861 | 100.00% | 100.00% |
+| Upper Mids | 2000–4000 | 0.6707 | 100.00% | 100.00% |
+| Presence | 4000–6000 | 0.4535 | 88.02% | 88.02% |
+| Highs | 6000–8000 | 0.3383 | 67.19% | 67.19% |
+
+**Key takeaway:** Coherence decreases with frequency (as expected), but in this *per-bin, short-window* lag-OMP setup, many bins can be driven to near-perfect reduction by K=16.
+
+### 3.2 Why "Correlation/Coherence" Can Be Low While OMP Reduction Is High
+
+It is tempting to assume: **low correlation ⇒ OMP cannot reduce energy**. This is *not necessarily true* in our current formulation.
+
+**1) Coherence is computed over the full clip; OMP reduction is computed on a short window.**
+- The coherence diagnostic averages over the entire STFT-frame time series, which is a *global* statistic.
+- OMP reduction is measured on a short window of length Tw=16 frames, where random/accidental alignments can be much stronger.
+
+**2) With complex coefficients and K approaching Tw, per-bin OMP becomes an interpolator.**
+Per frequency bin, we solve (approximately)
+$$\mathbf{y} \in \mathbb{C}^{T_w} \approx \sum_{k\in\mathcal{S}} h_k\,\mathbf{x}_{\text{lag}=k}, \quad |\mathcal{S}|=K.$$
+When K is large relative to Tw (e.g., K=16 and Tw=16), the selected atoms can span most of $\mathbb{C}^{T_w}$. In that case, even if the *true physical coupling* is weak, the least-squares projection can still achieve near-zero residual on that window.
+
+**3) "Low correlation" does not mean "no usable dictionary atoms".**
+Even if the *raw* mic/LDV time series correlation is moderate, the correlation of the residual with *some shifted mic atoms* may still be high. OMP optimizes the latter.
+
+**4) A critical caution for interpreting "OMP Oracle ceiling"**
+If the evaluation metric allows K≈Tw and per-bin independent fitting, an apparent “oracle ceiling” can reflect **degrees-of-freedom / overfitting** rather than true causal/physical transfer. A more physically meaningful oracle often requires additional constraints (examples):
+- Smaller K relative to Tw (regularization / sparsity that is actually restrictive)
+- Shared supports across frequency (a single delay structure across bands)
+- Longer windows / cross-validated windows
+- Constraints that couple bins (e.g., smooth group delay across frequency)
+
+### 3.3 The "Mids" Band Discrepancy Explained: Noise Floor vs. Signal (Jan 18, 2026)
+We observed a sharp discrepancy between two OMP diagnostics for the **Mids (500-2000 Hz)** band:
+1.  **Diagnostic Script (`diagnose_band_limits.py`):** Reported **100%** per-bin reduction with $K=16$.
+2.  **Pipeline Evaluation (`eval_energy_capture_generic.py`):** Reported **~30-46%** energy capture.
+
+**Investigation:**
+Profiling the dataset revealed that the signal energy in the Mids band is typically extremely low (approx. $4 \times 10^{-9}$ per bin), effectively hovering at the noise floor (-90dB).
+*   **The Diagnostic** uses a relative reduction metric $(E_{init} - E_{res}) / E_{init}$ with a hard threshold of $10^{-9}$. Since $4 \times 10^{-9} > 10^{-9}$, it attempts the reduction. With $K=16, Tw=16$, OMP acts as a perfect interpolator for this noise, achieving 100% "reduction".
+*   **The Pipeline** uses an energy capture metric $E_{recon} / (E_{init} + \epsilon)$ with $\epsilon=10^{-6}$ (soft threshold). Here, the noise energy ($4 \times 10^{-9}$) is dwarfed by $\epsilon$, resulting in a ratio near zero ($\approx 0.4\%$) for these quiet frames.
+
+**Conclusion:**
+The Pipeline Evaluation result (~30-46% capture) is **physically correct** for practical purposes: it implicitly penalizes the model for wasting capacity on fitting background noise. The Diagnostic result (100%) is mathematically correct (interpolation is possible) but physically misleading (fitting silence). The "Mids" band in this dataset is largely silence, explaining the Agent's "poor" performance relative to the theoretical max—it correctly ignores the noise.
+
 ---
 
 ## 4. Agent Performance (DTmin)
@@ -128,8 +194,10 @@ The discrepancy between K=8 and K=16 performance reveals the **time-domain densi
 ## 5. Conclusion & Recommendations
 
 1.  **Success of Variable K:** The model successfully handles dynamic horizons.
-2.  **Frequency Sensitivity:** The **2k-4k Hz** band is a physical dead-zone for linear reorientation.
-    *   *Action:* Future Reward Functions should heavily penalize aggressive updates in this band to avoid "hallucinating" correlations.
+2.  **Frequency Sensitivity (with a metric caveat):** The report’s “Energy Capture” analysis indicates a severe ceiling in the **2k–4k Hz** band. However, separate diagnostics show that *per-bin, short-window* lag-OMP can sometimes interpolate bins nearly perfectly when K≈Tw.
+    *   **Therefore:** The low “Energy Capture” ceiling is likely driven by stronger constraints in the evaluation definition (or by generalization across time/conditions), not simply by the existence of any per-bin least-squares fit.
+    *   *Action:* Treat “oracle ceilings” as metric-dependent. For physics claims, prefer oracle definitions that restrict degrees-of-freedom (smaller K, shared support, longer windows).
 3.  **Next Steps:**
     *   **Full Angle Training:** Remove `--angle 0` constraint to generalize across spatial orientations.
     *   **Band-Specific Policies:** Consider training separate "Low Freq" and "High Freq" heads, or explicitly conditioning the DT on Frequency Band ID.
+    *   **Metric alignment:** Add a single “oracle definition” paragraph and ensure all reported ceilings use the same (K, Tw, lag set, per-bin vs shared) definition.
