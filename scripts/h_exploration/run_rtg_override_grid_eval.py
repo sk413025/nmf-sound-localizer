@@ -25,6 +25,7 @@ def eval_clip_rtg1_override(
     max_k: int,
     tw: int,
     gain: float,
+    rtg0_override: float | None,
     rtg1_override: float,
 ):
     Lag_Min = -max_lag
@@ -50,7 +51,6 @@ def eval_clip_rtg1_override(
     valid_starts = range(start_limit, end_limit, tw)
     if len(list(valid_starts)) == 0:
         return None
-
     model.eval()
 
     final_ratios = []
@@ -81,8 +81,11 @@ def eval_clip_rtg1_override(
             abs_corrs_dt = torch.abs(corrs_dt)
             abs_corrs_dt[mask_dt] = -1.0
 
-            cur_E_dt = manual_complex_norm(res_dt.squeeze(), dim=1) ** 2
-            rtg0 = (cur_E_dt / (initial_energy + 1e-6)).clamp(0.0, 1.0)
+            if rtg0_override is None:
+                cur_E_dt = manual_complex_norm(res_dt.squeeze(), dim=1) ** 2
+                rtg0 = (cur_E_dt / (initial_energy + 1e-6)).clamp(0.0, 1.0)
+            else:
+                rtg0 = torch.full_like(initial_energy, float(rtg0_override))
             rtg_in = torch.stack([rtg0, torch.full_like(rtg0, float(rtg1_override))], dim=-1)
 
             logits = model(abs_corrs_dt.unsqueeze(1), rtg_in.unsqueeze(1), freq_ids).squeeze(1)
@@ -112,14 +115,19 @@ def main():
     p.add_argument("--ldv_root", type=str, required=True)
     p.add_argument("--ckpt_path", type=str, required=True)
     p.add_argument("--out_dir", type=str, required=True)
-    p.add_argument("--angle", type=float, default=90.0)
-    p.add_argument("--all_angles", action="store_true")
+    p.add_argument("--angle", type=float, default=None)
     p.add_argument("--num_clips", type=int, default=3)
     p.add_argument("--hop_length", type=int, default=160, help="STFT hop length (samples)")
     p.add_argument("--max_lag", type=int, default=50)
     p.add_argument("--max_k", type=int, default=16)
     p.add_argument("--tw", type=int, default=32)
     p.add_argument("--gain", type=float, default=100.0)
+    p.add_argument(
+        "--rtg0_values",
+        type=str,
+        default="",
+        help="Comma-separated constants to override RTG0 (remaining_energy). If empty, use computed RTG0.",
+    )
     p.add_argument(
         "--rtg1_values",
         type=str,
@@ -137,7 +145,7 @@ def main():
     dataset = DoALagDataset(
         args.mic_root,
         args.ldv_root,
-        angle=None if args.all_angles else float(args.angle),
+        angle=args.angle,
         hop_length=int(args.hop_length),
         freq_min=0,
         freq_max=8000,
@@ -149,44 +157,75 @@ def main():
     state = torch.load(args.ckpt_path, map_location=device)
     model.load_state_dict(state)
 
+    rtg0_vals = [float(x) for x in str(args.rtg0_values).split(",") if x.strip() != ""]
     rtg1_vals = [float(x) for x in str(args.rtg1_values).split(",") if x.strip() != ""]
+    angle_value = None if args.angle is None else float(args.angle)
 
     grid = []
-    for v in rtg1_vals:
-        per_clip = []
-        for i in tqdm(range(n), desc=f"rtg1={v}"):
-            score = eval_clip_rtg1_override(
-                model,
-                dataset,
-                i,
-                device,
-                max_lag=int(args.max_lag),
-                max_k=int(args.max_k),
-                tw=int(args.tw),
-                gain=float(args.gain),
-                rtg1_override=float(v),
-            )
-            if score is not None:
-                per_clip.append(score)
-        grid.append({"rtg1": float(v), "dt_final_mean": float(np.mean(per_clip)) if per_clip else None})
+    if rtg0_vals:
+        for v0 in rtg0_vals:
+            for v1 in rtg1_vals:
+                per_clip = []
+                for i in tqdm(range(n), desc=f"rtg0={v0},rtg1={v1}"):
+                    score = eval_clip_rtg1_override(
+                        model,
+                        dataset,
+                        i,
+                        device,
+                        max_lag=int(args.max_lag),
+                        max_k=int(args.max_k),
+                        tw=int(args.tw),
+                        gain=float(args.gain),
+                        rtg0_override=float(v0),
+                        rtg1_override=float(v1),
+                    )
+                    if score is not None:
+                        per_clip.append(score)
+                grid.append(
+                    {
+                        "rtg0": float(v0),
+                        "rtg1": float(v1),
+                        "dt_final_mean": float(np.mean(per_clip)) if per_clip else None,
+                    }
+                )
+    else:
+        for v in rtg1_vals:
+            per_clip = []
+            for i in tqdm(range(n), desc=f"rtg1={v}"):
+                score = eval_clip_rtg1_override(
+                    model,
+                    dataset,
+                    i,
+                    device,
+                    max_lag=int(args.max_lag),
+                    max_k=int(args.max_k),
+                    tw=int(args.tw),
+                    gain=float(args.gain),
+                    rtg0_override=None,
+                    rtg1_override=float(v),
+                )
+                if score is not None:
+                    per_clip.append(score)
+            grid.append({"rtg1": float(v), "dt_final_mean": float(np.mean(per_clip)) if per_clip else None})
 
     payload = {
         "config": {
             "mic_root": args.mic_root,
             "ldv_root": args.ldv_root,
             "ckpt_path": args.ckpt_path,
-            "angle": float(args.angle),
+            "angle": angle_value,
             "num_clips": int(n),
             "max_lag": int(args.max_lag),
             "max_k": int(args.max_k),
             "tw": int(args.tw),
             "gain": float(args.gain),
+            "rtg0_values": rtg0_vals,
             "rtg1_values": rtg1_vals,
         },
         "grid": grid,
     }
 
-    out_path = out_dir / "rtg1_override_grid.json"
+    out_path = out_dir / ("rtg0_rtg1_override_grid.json" if rtg0_vals else "rtg1_override_grid.json")
     out_path.write_text(json.dumps(payload, indent=2))
     logger.info(f"Wrote {out_path}")
 
