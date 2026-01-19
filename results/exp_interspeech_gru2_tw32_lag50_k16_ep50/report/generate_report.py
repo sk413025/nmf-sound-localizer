@@ -43,6 +43,7 @@ OMP = stats["OMP"]
 DT_mean = DT.mean(dim=0).numpy()
 OMP_mean = OMP.mean(dim=0).numpy()
 K_full = np.arange(1, DT_mean.shape[0] + 1)
+dt_sparse = [DT_mean[k - 1] for k in ks]
 
 fs = 16000
 n_fft = 2048
@@ -105,7 +106,8 @@ if epochs:
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.plot(ks, omp_k, marker="o", label="OMP")
 ax.plot(ks, rand_k, marker="o", label="Random")
-ax.set_title("OMP vs Random (K-sweep)")
+ax.plot(ks, dt_sparse, marker="o", label="DT (overall mean)")
+ax.set_title("OMP vs Random (K-sweep) + DT")
 ax.set_xlabel("K")
 ax.set_ylabel("Energy Capture")
 ax.grid(True, alpha=0.3)

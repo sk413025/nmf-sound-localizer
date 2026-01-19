@@ -25,14 +25,12 @@
 - OMP acts as the oracle teacher per frequency bin for each block.
 - Total OMP teacher blocks: 9870
 - Each block produces a per-frequency selection of K atoms over M=101 lags.
-- Selection uses normalized dictionary correlations; reconstruction uses least-squares projection in the original (unnormalized) dictionary space.
-- Per block, OMP provides supervision for 1025 frequency bins across K=1..16 steps.
 
 ## DTmin Student Setup
 - Single DTmin student trained across all OMP teacher blocks.
 - Model: SeqDT_FreqAware (GRU-based), rtg_dim=2.
 - RTG inputs: remaining energy (rtg0) + remaining steps (rtg1).
-- Student traverses all 1025 frequency bins and K=1..16 steps to match OMP teacher behavior.
+- Student traverses all frequencies and K steps to match OMP teacher behavior.
 
 ## Training Curves
 ![Training Curves](figures/training_curves.png)
