@@ -151,6 +151,8 @@ datasets/
 root/
 experiments/
 results/
+# Block large trajectory artifacts even when results are force-added
+results/**/lag_trajectories.pt
 # Allow tests/data/ for test audio files
 !tests/data/
 
