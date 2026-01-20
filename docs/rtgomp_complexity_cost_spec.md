@@ -231,7 +231,9 @@ We redefine RTG0 to encode `c` (or `λ`) rather than “remaining energy ratio�
 
 For each trajectory:
 - `rtg0 = normalize_log_c(c)` (constant across all steps in that sequence)
-- `rtg1 = remaining_steps_fraction = (K_max - k) / K_max` (optional; keep to match existing 2D RTG interface)
+- `rtg1` encodes remaining steps (optional; for 2D RTG only)
+
+**RTG1 must be explicitly defined with a mode (see 6.2).**
 
 **Normalization spec (must be deterministic):**
 - parse `c` as float
@@ -243,25 +245,45 @@ For each trajectory:
   - `rtg0 = (logc - logc_min) / (logc_max - logc_min)`
 - clamp `[0,1]`
 
-### 6.2 Model output dimension
+### 6.2 RTG1 semantics (E1 alignment requirement)
+RTG1 is the **remaining step fraction**. Two modes are allowed and MUST be explicit:
+
+- `seq_len`:
+  - `rtg1(t) = (seq_len - t) / seq_len`
+  - `seq_len` is the per-sample sequence length (including STOP if enabled)
+- `max_k`:
+  - `rtg1(t) = (max_k - t) / max_k`
+  - `max_k` is the global budget used at eval time
+
+**E1 requirement:** when testing the E1 fix, training MUST use `max_k` so RTG1 matches eval semantics.
+
+Required CLI additions to `train_dt_lag_seq_rtg.py`:
+- `--rtg1_mode` with choices `{seq_len, max_k}`
+- `--rtg1_max_k` (int; default should equal training `K_max`)
+
+Required logging (train diagnostics):
+- `rtg1_mode`
+- `rtg1_max_k`
+
+### 6.3 Model output dimension
 Because we add STOP:
 - output logits dimension MUST be `M + 1`
 - STOP token id is `M`
 
-### 6.3 Training loss / masking
+### 6.4 Training loss / masking
 Use cross-entropy with padding ignore index:
 - actions padded with `-100`
 - `nn.CrossEntropyLoss(ignore_index=-100)`
 
-### 6.4 Required modifications to training script
+### 6.5 Required modifications to training script
 Modify `scripts/h_exploration/train_dt_lag_seq_rtg.py`:
 - add `--rtg_mode lambda_cost` (new choice)
 - add `--lambda_c_values` (string list) for normalization bounds
 - update dataset loader to read `block["lambda_c"]` (or infer from `lambda_abs/E0`)
 - update model head to output `M+1` if `--use_stop_action` is enabled
-- log RTG ablations and grad norms (see 6.5)
+- log RTG ablations and grad norms (see 6.6)
 
-### 6.5 Required training-time diagnostics (to rule out “dead RTG”)
+### 6.6 Required training-time diagnostics (to rule out “dead RTG”)
 Each training run MUST write:
 - `results/<run_name>/train/diagnostics.json`
 containing at least:
@@ -478,4 +500,3 @@ Symptoms:
 Fix:
 - teacher decisions must use absolute energies `E0/E_res/deltaE` only
 - log `E0` distribution and avoid using `+1e-6` denominators for decision logic
-

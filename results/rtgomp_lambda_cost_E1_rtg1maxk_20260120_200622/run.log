@@ -1,0 +1,100 @@
+INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]1it [00:29, 29.27s/it]2it [01:02, 31.79s/it]3it [01:33, 31.22s/it]3it [01:33, 31.12s/it]
+INFO:__main__:Saved 75 blocks to results/rtgomp_lambda_cost_E1_rtg1maxk_20260120_200622/data (Variants: 1)
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_E1_rtg1maxk_20260120_200622/data/lag_trajectories.pt...
+INFO:__main__:Loaded 76875 variable-length sequences. Feature dim: 101
+INFO:__main__:Epoch 1: Train Loss=4.2059, Val Loss=4.0297, Acc=0.1288
+INFO:__main__:Epoch 2: Train Loss=3.9145, Val Loss=3.8000, Acc=0.1490
+INFO:__main__:Epoch 3: Train Loss=3.7033, Val Loss=3.6089, Acc=0.1748
+INFO:__main__:Epoch 4: Train Loss=3.5032, Val Loss=3.4312, Acc=0.1974
+INFO:__main__:Epoch 5: Train Loss=3.3013, Val Loss=3.2531, Acc=0.2240
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]lambda_c sweep:  20%|██        | 1/5 [01:44<06:57, 104.25s/it]lambda_c sweep:  40%|████      | 2/5 [03:29<05:15, 105.01s/it]lambda_c sweep:  60%|██████    | 3/5 [06:05<04:16, 128.24s/it]lambda_c sweep:  80%|████████  | 4/5 [07:53<01:59, 120.00s/it]lambda_c sweep: 100%|██████████| 5/5 [09:57<00:00, 121.57s/it]lambda_c sweep: 100%|██████████| 5/5 [09:57<00:00, 119.48s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_E1_rtg1maxk_20260120_200622/eval/lambda_grid.json
+{
+  "overall_pass": false,
+  "lambda_grid_path": "results/rtgomp_lambda_cost_E1_rtg1maxk_20260120_200622/eval/lambda_grid.json",
+  "checks": {
+    "teacher_monotonicity": {
+      "value": 1.0,
+      "threshold": -0.6,
+      "pass": false
+    },
+    "teacher_non_degenerate_steps": {
+      "value": {
+        "min": 15.97580487804878,
+        "max": 15.980487804878049
+      },
+      "pass": true
+    },
+    "student_action_change": {
+      "value": 0.43525035208693746,
+      "threshold": 0.05,
+      "pass": true
+    },
+    "student_logits_kl": {
+      "value": 1.8726172322000834,
+      "threshold": 0.0,
+      "pass": true
+    },
+    "tradeoff_non_degenerate": {
+      "value": {
+        "steps_range": 0.004682926829268297,
+        "capture_range": 7.321996223641491e-05
+      },
+      "pass": true
+    }
+  },
+  "per_entry_summary": [
+    {
+      "lambda_c": 0.0001,
+      "rtg0": 0.0,
+      "steps_used_mean": 15.97580487804878,
+      "final_capture_mean": 0.9985310631147245,
+      "action_change_rate_vs_ref": 0.0,
+      "logits_kl_mean_vs_ref": 0.0
+    },
+    {
+      "lambda_c": 0.0003,
+      "rtg0": 0.2385606273598313,
+      "steps_used_mean": 15.976780487804879,
+      "final_capture_mean": 0.9985630904988545,
+      "action_change_rate_vs_ref": 0.136809299643446,
+      "logits_kl_mean_vs_ref": 0.5638894013669052
+    },
+    {
+      "lambda_c": 0.001,
+      "rtg0": 0.5,
+      "steps_used_mean": 15.977365853658537,
+      "final_capture_mean": 0.9984898705366181,
+      "action_change_rate_vs_ref": 0.2608150889760646,
+      "logits_kl_mean_vs_ref": 1.0900848574672668
+    },
+    {
+      "lambda_c": 0.003,
+      "rtg0": 0.7385606273598313,
+      "steps_used_mean": 15.978341463414635,
+      "final_capture_mean": 0.9985330802405753,
+      "action_change_rate_vs_ref": 0.3533282449258059,
+      "logits_kl_mean_vs_ref": 1.500212092161907
+    },
+    {
+      "lambda_c": 0.01,
+      "rtg0": 1.0,
+      "steps_used_mean": 15.980487804878049,
+      "final_capture_mean": 0.9985162262451358,
+      "action_change_rate_vs_ref": 0.43525035208693746,
+      "logits_kl_mean_vs_ref": 1.8726172322000834
+    }
+  ],
+  "notes": [
+    "This checker only validates the eval JSON structure and summary statistics; full reproducibility requires rerunning commands with the same manifest and seeds.",
+    "If only stopping changes but early actions do not, action_change_rate may be small; consider adding STOP token, variable-horizon eval, or lookahead teacher to induce action-level differences."
+  ]
+}

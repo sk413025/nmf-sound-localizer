@@ -37,6 +37,8 @@ class LagSequenceDataset(Dataset):
         target_return: float = 1.0,
         lambda_c_values: str | None = None,
         use_stop_action: bool = False,
+        rtg1_mode: str = "seq_len",
+        rtg1_max_k: int | None = None,
     ):
         raw_data = torch.load(pt_path, weights_only=False)
         self.seq_corrs = []
@@ -57,11 +59,17 @@ class LagSequenceDataset(Dataset):
         self.target_return = float(target_return)
         self.use_stop_action = bool(use_stop_action)
         self.lambda_c_values = lambda_c_values
+        self.rtg1_mode = rtg1_mode
+        self.rtg1_max_k = rtg1_max_k
         self._logc_min = None
         self._logc_max = None
         if self.rtg_mode == "lambda_cost":
             if not self.lambda_c_values:
                 raise ValueError("lambda_cost requires --lambda_c_values")
+            if self.rtg1_mode not in ("seq_len", "max_k"):
+                raise ValueError("rtg1_mode must be one of: seq_len, max_k")
+            if self.rtg1_mode == "max_k" and self.rtg1_max_k is None:
+                raise ValueError("rtg1_mode=max_k requires --rtg1_max_k")
             c_vals = [float(x) for x in str(self.lambda_c_values).split(",") if x.strip() != ""]
             if not c_vals:
                 raise ValueError("lambda_cost requires non-empty --lambda_c_values")
@@ -136,9 +144,15 @@ class LagSequenceDataset(Dataset):
 
                     seq_len = corr_seq.shape[0]
                     if self.rtg_dim == 2:
-                        remaining = (
-                            torch.arange(seq_len, dtype=torch.float32).mul(-1).add(seq_len) / max(seq_len, 1)
-                        )
+                        if self.rtg1_mode == "max_k":
+                            denom = max(int(self.rtg1_max_k), 1)
+                            remaining = (
+                                torch.arange(seq_len, dtype=torch.float32).mul(-1).add(denom) / float(denom)
+                            ).clamp(min=0.0)
+                        else:
+                            remaining = (
+                                torch.arange(seq_len, dtype=torch.float32).mul(-1).add(seq_len) / max(seq_len, 1)
+                            )
                         rtg_seq = torch.stack([torch.full((seq_len,), rtg0), remaining], dim=1)
                     else:
                         rtg_seq = torch.full((seq_len,), rtg0)
@@ -374,6 +388,19 @@ def main():
         default=1.0,
         help="Target return used when rtg_mode=target1. Typically 1.0 (full reduction).",
     )
+    parser.add_argument(
+        "--rtg1_mode",
+        type=str,
+        default="seq_len",
+        choices=["seq_len", "max_k"],
+        help="RTG1 definition for lambda_cost: seq_len uses per-sample length; max_k uses a fixed global budget.",
+    )
+    parser.add_argument(
+        "--rtg1_max_k",
+        type=int,
+        default=None,
+        help="Global K_max used when rtg1_mode=max_k (required in that mode).",
+    )
     parser.add_argument("--use_stop_action", action="store_true", help="Enable STOP token (action_dim=M+1).")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for split and training")
     args = parser.parse_args()
@@ -398,6 +425,8 @@ def main():
         target_return=float(args.target_return),
         lambda_c_values=str(args.lambda_c_values),
         use_stop_action=bool(args.use_stop_action),
+        rtg1_mode=str(args.rtg1_mode),
+        rtg1_max_k=(int(args.rtg1_max_k) if args.rtg1_max_k is not None else None),
     )
     
     # Train/Val Split
@@ -519,6 +548,8 @@ def main():
         "rtg_mode": args.rtg_mode,
         "rtg_dim": int(args.rtg_dim),
         "use_stop_action": bool(args.use_stop_action),
+        "rtg1_mode": str(args.rtg1_mode),
+        "rtg1_max_k": (int(args.rtg1_max_k) if args.rtg1_max_k is not None else None),
         "lambda_c_values": args.lambda_c_values,
     }
     (diag_dir / "diagnostics.json").write_text(json.dumps(diagnostics, indent=2))
