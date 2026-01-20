@@ -1,0 +1,228 @@
+Run: rtgomp_lambda_cost_smoke_20260120_175600
+Start: Tue Jan 20 17:56:00 CST 2026
+MIC_ROOT=/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/MIC
+LDV_ROOT=/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/LDV
+INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]1it [00:14, 14.72s/it]2it [00:29, 14.75s/it]3it [00:44, 14.78s/it]3it [00:44, 14.77s/it]
+INFO:__main__:Saved 75 blocks to results/rtgomp_lambda_cost_smoke_20260120_175600/data (Variants: 1)
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_smoke_20260120_175600/data/lag_trajectories.pt...
+INFO:__main__:Loaded 76875 variable-length sequences. Feature dim: 101
+INFO:__main__:Epoch 1: Train Loss=4.1677, Val Loss=4.0100, Acc=0.1295
+INFO:__main__:Epoch 2: Train Loss=3.9064, Val Loss=3.7994, Acc=0.1499
+INFO:__main__:Epoch 3: Train Loss=3.7019, Val Loss=3.6036, Acc=0.1746
+INFO:__main__:Epoch 4: Train Loss=3.4946, Val Loss=3.4173, Acc=0.2011
+INFO:__main__:Epoch 5: Train Loss=3.2837, Val Loss=3.2366, Acc=0.2288
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_lambda_override_grid_eval.py", line 416, in <module>
+    main()
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_lambda_override_grid_eval.py", line 317, in main
+    ref_actions, ref_logits, ref_steps, ref_capture = simulate_for_lambda(
+                                                      ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_lambda_override_grid_eval.py", line 196, in simulate_for_lambda
+    logits[mask_dt] = -float("inf")
+    ~~~~~~^^^^^^^^^
+IndexError: The shape of the mask [1025, 101] at index 1 does not match the shape of the indexed tensor [1025, 102] at index 1
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]lambda_c sweep:  20%|██        | 1/5 [01:32<06:10, 92.67s/it]lambda_c sweep:  40%|████      | 2/5 [03:08<04:43, 94.38s/it]lambda_c sweep:  60%|██████    | 3/5 [04:41<03:07, 93.84s/it]lambda_c sweep:  80%|████████  | 4/5 [06:35<01:41, 101.65s/it]lambda_c sweep: 100%|██████████| 5/5 [08:34<00:00, 108.06s/it]lambda_c sweep: 100%|██████████| 5/5 [08:34<00:00, 102.90s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_smoke_20260120_175600/eval/lambda_grid.json
+{
+  "overall_pass": false,
+  "lambda_grid_path": "results/rtgomp_lambda_cost_smoke_20260120_175600/eval/lambda_grid.json",
+  "checks": {
+    "teacher_monotonicity": {
+      "value": 1.0,
+      "threshold": -0.6,
+      "pass": false
+    },
+    "teacher_non_degenerate_steps": {
+      "value": {
+        "min": 12.567414634146342,
+        "max": 13.081756097560975
+      },
+      "pass": true
+    },
+    "student_action_change": {
+      "value": 0.5421025716830595,
+      "threshold": 0.05,
+      "pass": true
+    },
+    "student_logits_kl": {
+      "value": 2.017368736555923,
+      "threshold": 0.0,
+      "pass": true
+    },
+    "tradeoff_non_degenerate": {
+      "value": {
+        "steps_range": 0.5143414634146328,
+        "capture_range": 0.0033413470198468964
+      },
+      "pass": true
+    }
+  },
+  "per_entry_summary": [
+    {
+      "lambda_c": 0.0001,
+      "rtg0": 0.0,
+      "steps_used_mean": 12.567414634146342,
+      "final_capture_mean": 0.9861060615981497,
+      "action_change_rate_vs_ref": 0.0,
+      "logits_kl_mean_vs_ref": 0.0
+    },
+    {
+      "lambda_c": 0.0003,
+      "rtg0": 0.2385606273598313,
+      "steps_used_mean": 12.682536585365854,
+      "final_capture_mean": 0.9867762302770847,
+      "action_change_rate_vs_ref": 0.2086502451478061,
+      "logits_kl_mean_vs_ref": 0.7069904227855417
+    },
+    {
+      "lambda_c": 0.001,
+      "rtg0": 0.5,
+      "steps_used_mean": 12.821073170731708,
+      "final_capture_mean": 0.9875542495192551,
+      "action_change_rate_vs_ref": 0.3637210865015743,
+      "logits_kl_mean_vs_ref": 1.2805495755476444
+    },
+    {
+      "lambda_c": 0.003,
+      "rtg0": 0.7385606273598313,
+      "steps_used_mean": 12.92819512195122,
+      "final_capture_mean": 0.9880676229639751,
+      "action_change_rate_vs_ref": 0.4681412998925193,
+      "logits_kl_mean_vs_ref": 1.6952951954170137
+    },
+    {
+      "lambda_c": 0.01,
+      "rtg0": 1.0,
+      "steps_used_mean": 13.081756097560975,
+      "final_capture_mean": 0.9894474086179966,
+      "action_change_rate_vs_ref": 0.5421025716830595,
+      "logits_kl_mean_vs_ref": 2.017368736555923
+    }
+  ],
+  "notes": [
+    "This checker only validates the eval JSON structure and summary statistics; full reproducibility requires rerunning commands with the same manifest and seeds.",
+    "If only stopping changes but early actions do not, action_change_rate may be small; consider adding STOP token, variable-horizon eval, or lookahead teacher to induce action-level differences."
+  ]
+}
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_smoke_20260120_175600/data/lag_trajectories.pt...
+INFO:__main__:Loaded 76875 variable-length sequences. Feature dim: 101
+INFO:__main__:Epoch 1: Train Loss=4.1676, Val Loss=4.0100, Acc=0.1295
+INFO:__main__:Epoch 2: Train Loss=3.9062, Val Loss=3.7991, Acc=0.1501
+INFO:__main__:Epoch 3: Train Loss=3.7016, Val Loss=3.6032, Acc=0.1746
+INFO:__main__:Epoch 4: Train Loss=3.4942, Val Loss=3.4167, Acc=0.2012
+INFO:__main__:Epoch 5: Train Loss=3.2832, Val Loss=3.2360, Acc=0.2288
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]lambda_c sweep:  20%|██        | 1/5 [01:48<07:13, 108.48s/it]lambda_c sweep:  40%|████      | 2/5 [03:25<05:04, 101.66s/it]lambda_c sweep:  60%|██████    | 3/5 [05:00<03:16, 98.46s/it] lambda_c sweep:  80%|████████  | 4/5 [06:33<01:36, 96.39s/it]lambda_c sweep: 100%|██████████| 5/5 [08:08<00:00, 95.89s/it]lambda_c sweep: 100%|██████████| 5/5 [08:08<00:00, 97.65s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_smoke_20260120_175600/eval/lambda_grid.json
+{
+  "overall_pass": false,
+  "lambda_grid_path": "results/rtgomp_lambda_cost_smoke_20260120_175600/eval/lambda_grid.json",
+  "checks": {
+    "teacher_monotonicity": {
+      "value": 1.0,
+      "threshold": -0.6,
+      "pass": false
+    },
+    "teacher_non_degenerate_steps": {
+      "value": {
+        "min": 12.562926829268292,
+        "max": 13.063024390243902
+      },
+      "pass": true
+    },
+    "student_action_change": {
+      "value": 0.5411425609620731,
+      "threshold": 0.05,
+      "pass": true
+    },
+    "student_logits_kl": {
+      "value": 2.011600182417665,
+      "threshold": 0.0,
+      "pass": true
+    },
+    "tradeoff_non_degenerate": {
+      "value": {
+        "steps_range": 0.5000975609756093,
+        "capture_range": 0.0032627630233764693
+      },
+      "pass": true
+    }
+  },
+  "per_entry_summary": [
+    {
+      "lambda_c": 0.0001,
+      "rtg0": 0.0,
+      "steps_used_mean": 12.562926829268292,
+      "final_capture_mean": 0.9860237832883509,
+      "action_change_rate_vs_ref": 0.0,
+      "logits_kl_mean_vs_ref": 0.0
+    },
+    {
+      "lambda_c": 0.0003,
+      "rtg0": 0.2385606273598313,
+      "steps_used_mean": 12.677658536585366,
+      "final_capture_mean": 0.986708893380514,
+      "action_change_rate_vs_ref": 0.2129600727186093,
+      "logits_kl_mean_vs_ref": 0.7253818631289167
+    },
+    {
+      "lambda_c": 0.001,
+      "rtg0": 0.5,
+      "steps_used_mean": 12.801756097560975,
+      "final_capture_mean": 0.9874910287740754,
+      "action_change_rate_vs_ref": 0.36502371801640093,
+      "logits_kl_mean_vs_ref": 1.2934309158361899
+    },
+    {
+      "lambda_c": 0.003,
+      "rtg0": 0.7385606273598313,
+      "steps_used_mean": 12.926829268292684,
+      "final_capture_mean": 0.9879924851626884,
+      "action_change_rate_vs_ref": 0.46799297450516963,
+      "logits_kl_mean_vs_ref": 1.6993821604123847
+    },
+    {
+      "lambda_c": 0.01,
+      "rtg0": 1.0,
+      "steps_used_mean": 13.063024390243902,
+      "final_capture_mean": 0.9892865463117274,
+      "action_change_rate_vs_ref": 0.5411425609620731,
+      "logits_kl_mean_vs_ref": 2.011600182417665
+    }
+  ],
+  "notes": [
+    "This checker only validates the eval JSON structure and summary statistics; full reproducibility requires rerunning commands with the same manifest and seeds.",
+    "If only stopping changes but early actions do not, action_change_rate may be small; consider adding STOP token, variable-horizon eval, or lookahead teacher to induce action-level differences."
+  ]
+}

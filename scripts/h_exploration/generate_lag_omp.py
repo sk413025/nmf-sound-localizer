@@ -131,6 +131,129 @@ def run_omp_lag_capture(X_history, y_target, K_max=16, Lag_Min=-32, Lag_Max=32):
     
     return Full_Corrs, Full_Actions, Full_Reductions
 
+
+def run_penalty_omp_lag_capture(
+    X_history,
+    y_target,
+    *,
+    K_max: int,
+    Lag_Min: int,
+    Lag_Max: int,
+    lambda_c: float,
+    min_k: int,
+):
+    """
+    Penalty-OMP: greedily select lag atoms while the marginal energy gain exceeds lambda.
+
+    Returns:
+        Full_Corrs: (F, K_max, M)
+        Full_Actions: (F, K_max)
+        Full_Reductions: (F, K_max) ratio-based for compatibility only
+        E0: (F,) initial energy
+        E_res: (F, K_max) residual energy after each step
+        deltaE: (F, K_max) marginal energy gains per step
+        valid_len: (F,) number of selected atoms before stop
+        lambda_abs: (F,) absolute lambda in energy units
+    """
+    Tw, F = y_target.shape
+    device = X_history.device
+
+    Lags = torch.arange(Lag_Min, Lag_Max + 1, device=device)
+    M = len(Lags)
+
+    Dict_tensor = torch.zeros(F, Tw, M, dtype=X_history.dtype, device=device)
+    for m, k in enumerate(Lags):
+        start_idx = int(Lag_Max - k)
+        end_idx = int(start_idx + Tw)
+        if end_idx > X_history.shape[0]:
+            raise ValueError(f"X_history too short for Lag {k}. Need {end_idx}, got {X_history.shape[0]}")
+        Dict_tensor[:, :, m] = X_history[start_idx:end_idx, :].T
+
+    Targets = y_target.T.unsqueeze(2)  # (F, Tw, 1)
+    Residuals = Targets.clone()
+
+    Active_Sets = torch.zeros(F, K_max, dtype=torch.long, device=device) - 1
+
+    Norms = torch.norm(Dict_tensor, dim=1, keepdim=True) + 1e-8
+    Dict_Norm = Dict_tensor / Norms
+
+    initial_energy = torch.norm(Targets, dim=1).squeeze() ** 2  # (F,)
+    lambda_abs = initial_energy * float(lambda_c)
+
+    stopped = torch.zeros(F, dtype=torch.bool, device=device)
+    valid_len = torch.full((F,), K_max, dtype=torch.long, device=device)
+
+    All_Corrs = []
+    All_Actions = []
+    All_Reductions = []
+    All_Eres = []
+    All_DeltaE = []
+
+    for k in range(K_max):
+        Corrs = torch.bmm(Dict_Norm.conj().transpose(1, 2), Residuals)
+        Abs_Corrs = torch.abs(Corrs).squeeze(2)  # (F, M)
+
+        # Mask already selected atoms.
+        if k > 0:
+            for b in range(F):
+                prev = Active_Sets[b, :k]
+                valid_prev = prev[prev >= 0]
+                Abs_Corrs[b, valid_prev] = -1.0
+
+        All_Corrs.append(Abs_Corrs.cpu())
+
+        # Select greedy atom for each frequency (ignored if already stopped).
+        Best_Lags = torch.argmax(Abs_Corrs, dim=1)
+        Best_Lags[stopped] = 0
+        Active_Sets[:, k] = Best_Lags
+        All_Actions.append(Best_Lags.cpu())
+
+        # Energy before update
+        E_before = torch.norm(Residuals, dim=1).squeeze() ** 2
+
+        # Projection & residual update (skip stopped freqs)
+        for b in range(F):
+            if stopped[b]:
+                continue
+            indices = Active_Sets[b, : k + 1]
+            A_active = Dict_Norm[b, :, indices]
+            y_b = Targets[b, :, 0]
+            h = torch.linalg.lstsq(A_active, y_b).solution.flatten()
+            recon = A_active @ h
+            Residuals[b, :, 0] = y_b - recon
+
+        E_after = torch.norm(Residuals, dim=1).squeeze() ** 2
+        delta = (E_before - E_after).clamp(min=0.0)
+        delta[stopped] = 0.0
+
+        All_Eres.append(E_after.cpu())
+        All_DeltaE.append(delta.cpu())
+
+        reductions = (initial_energy - E_after) / (initial_energy + 1e-6)
+        All_Reductions.append(reductions.cpu())
+
+        if k + 1 >= int(min_k):
+            newly_stop = (~stopped) & (delta <= lambda_abs)
+            stopped[newly_stop] = True
+            valid_len[newly_stop] = k + 1
+
+    Full_Corrs = torch.stack(All_Corrs, dim=1)
+    Full_Actions = torch.stack(All_Actions, dim=1)
+    Full_Reductions = torch.stack(All_Reductions, dim=1)
+    Full_Eres = torch.stack(All_Eres, dim=1)
+    Full_DeltaE = torch.stack(All_DeltaE, dim=1)
+
+    return (
+        Full_Corrs,
+        Full_Actions,
+        Full_Reductions,
+        initial_energy.cpu(),
+        Full_Eres,
+        Full_DeltaE,
+        valid_len.cpu(),
+        lambda_abs.cpu(),
+    )
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mic_root", type=str, default="/Users/sbplab/LDV-data-processed/speech260_original_16k_no_edge_sync_vad_normalized")
@@ -142,6 +265,21 @@ def main():
     parser.add_argument("--hop_length", type=int, default=None, help="Override STFT hop length (e.g. 160 for 10ms)")
     parser.add_argument("--variants_per_clip", type=int, default=5, help="Number of random K variants to extract per clip")
     parser.add_argument("--gain", type=float, default=1.0, help="Scale mic/ldv STFT by this factor to avoid epsilon-floor artifacts")
+    parser.add_argument(
+        "--teacher_mode",
+        type=str,
+        default="omp",
+        choices=["omp", "penalty_omp"],
+        help="Teacher mode: standard OMP or penalty-OMP with lambda cost.",
+    )
+    parser.add_argument(
+        "--lambda_c_values",
+        type=str,
+        default="",
+        help="Comma-separated lambda scaling values for penalty_omp (e.g., 1e-4,3e-4,1e-3).",
+    )
+    parser.add_argument("--min_k", type=int, default=1, help="Minimum steps before allowing STOP in penalty_omp.")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
     
     # New Params for MaxLag
     parser.add_argument("--max_lag", type=int, default=32, help="Max lag (both future and past). i.e. [-max_lag, max_lag]")
@@ -159,7 +297,18 @@ def main():
     Lag_Min = -args.max_lag # Symmetric
     Absolute_K = args.max_k 
 
-    logger.info(f"Config: Lag [{Lag_Min}, {Lag_Max}], Tw={Tw}, K={Absolute_K}, Gain={args.gain}")
+    np.random.seed(int(args.seed))
+    torch.manual_seed(int(args.seed))
+
+    logger.info(
+        "Config: Lag [%d, %d], Tw=%d, K=%d, Gain=%.3f, Mode=%s",
+        Lag_Min,
+        Lag_Max,
+        Tw,
+        Absolute_K,
+        float(args.gain),
+        str(args.teacher_mode),
+    )
 
     dataset = DoALagDataset(
         args.mic_root,
@@ -179,6 +328,10 @@ def main():
     
     stride = 32
     
+    lambda_c_values = [float(x) for x in str(args.lambda_c_values).split(",") if x.strip() != ""]
+    if args.teacher_mode == "penalty_omp" and not lambda_c_values:
+        raise ValueError("penalty_omp requires --lambda_c_values with at least one value.")
+
     for i, batch in tqdm(enumerate(loader)):
         mic_stft = batch["mic_stft"][0] 
         ldv_stft = batch["ldv_stft"][0]
@@ -213,45 +366,75 @@ def main():
             if X_chunk.shape[0] < (chunk_end - chunk_start) or Y_chunk.shape[0] < Tw:
                 continue
                 
-            # Run OMP to absolute max K
-            # Lag_Min, Lag_Max must be passed
-            f_corrs, f_actions, f_reds = run_omp_lag_capture(
-                X_chunk, Y_chunk, 
-                K_max=Absolute_K,
-                Lag_Min=Lag_Min,
-                Lag_Max=Lag_Max
-            )
-            
-            # Generate Random Variants
-            # We want to create N variants with random K length \in [1, MaxK]
-            
-            possible_ks = list(range(1, Absolute_K + 1))
-            
-            if args.variants_per_clip >= Absolute_K:
-                selected_ks = possible_ks
+            if args.teacher_mode == "penalty_omp":
+                for lambda_c in lambda_c_values:
+                    (
+                        f_corrs,
+                        f_actions,
+                        f_reds,
+                        f_E0,
+                        f_Eres,
+                        f_deltaE,
+                        f_valid_len,
+                        f_lambda_abs,
+                    ) = run_penalty_omp_lag_capture(
+                        X_chunk,
+                        Y_chunk,
+                        K_max=Absolute_K,
+                        Lag_Min=Lag_Min,
+                        Lag_Max=Lag_Max,
+                        lambda_c=float(lambda_c),
+                        min_k=int(args.min_k),
+                    )
+
+                    final_idx = torch.clamp(f_valid_len - 1, min=0)
+                    final_scores = f_reds.gather(1, final_idx.unsqueeze(1)).squeeze(1)
+
+                    all_trajectories.append(
+                        {
+                            "corrs": f_corrs.half(),
+                            "actions": f_actions.to(torch.int16),
+                            "reductions": f_reds.half(),
+                            "scores": final_scores.half(),
+                            "lambda_c": torch.full_like(f_E0, float(lambda_c)),
+                            "lambda_abs": f_lambda_abs.float(),
+                            "E0": f_E0.float(),
+                            "E_res": f_Eres.float(),
+                            "deltaE": f_deltaE.float(),
+                            "valid_len": f_valid_len.to(torch.int16),
+                        }
+                    )
             else:
-                # Random selection without replacement
-                selected_ks = np.random.choice(possible_ks, size=args.variants_per_clip, replace=False)
-            
-            for k_len in selected_ks:
-                # Slice the trajectory
-                # k_len is 1-based index, so slice [:k_len]
-                
-                sub_corrs = f_corrs[:, :k_len, :]
-                sub_actions = f_actions[:, :k_len]
-                sub_reductions = f_reds[:, :k_len]
-                
-                # The "Target" for this episode is the reduction achieved at the FINAL step of this sub-trajectory
-                # i.e. index [k_len-1]
-                
-                final_scores_k = sub_reductions[:, -1] # (F,)
-                
-                all_trajectories.append({
-                    "corrs": sub_corrs.half(),
-                    "actions": sub_actions.to(torch.int8),
-                    "reductions": sub_reductions.half(),
-                    "scores": final_scores_k.half() # This becomes the Initial RTG base
-                })
+                # Run OMP to absolute max K
+                f_corrs, f_actions, f_reds = run_omp_lag_capture(
+                    X_chunk,
+                    Y_chunk,
+                    K_max=Absolute_K,
+                    Lag_Min=Lag_Min,
+                    Lag_Max=Lag_Max,
+                )
+
+                # Generate random K variants
+                possible_ks = list(range(1, Absolute_K + 1))
+                if args.variants_per_clip >= Absolute_K:
+                    selected_ks = possible_ks
+                else:
+                    selected_ks = np.random.choice(possible_ks, size=args.variants_per_clip, replace=False)
+
+                for k_len in selected_ks:
+                    sub_corrs = f_corrs[:, :k_len, :]
+                    sub_actions = f_actions[:, :k_len]
+                    sub_reductions = f_reds[:, :k_len]
+                    final_scores_k = sub_reductions[:, -1]
+
+                    all_trajectories.append(
+                        {
+                            "corrs": sub_corrs.half(),
+                            "actions": sub_actions.to(torch.int8),
+                            "reductions": sub_reductions.half(),
+                            "scores": final_scores_k.half(),
+                        }
+                    )
 
             # if len(all_trajectories) > 500: break 
     
