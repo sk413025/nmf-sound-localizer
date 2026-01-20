@@ -117,6 +117,8 @@ def simulate_for_lambda(
     rtg_dim: int,
     use_stop_action: bool,
     eps_energy: float,
+    rollout_mode: str,
+    teacher_min_k: int,
 ) -> tuple[list[list[int]], list[list[np.ndarray]], list[int], list[float]]:
     Lag_Min = -max_lag
     Lag_Max = max_lag
@@ -131,6 +133,9 @@ def simulate_for_lambda(
     all_logits: list[list[np.ndarray]] = []
     steps_used: list[int] = []
     final_capture: list[float] = []
+    teacher_steps: list[int] = []
+    student_stop_before_teacher: list[int] = []
+    student_stop_at_teacher: list[int] = []
 
     model.eval()
 
@@ -175,14 +180,25 @@ def simulate_for_lambda(
             mask_dt = torch.zeros(F, action_dim, dtype=torch.bool, device=device)
             indices_dt = torch.full((F, max_k), -1, dtype=torch.long, device=device)
 
+            # Teacher-forced state path uses a separate residual and mask.
+            res_teacher = Y.clone()
+            mask_teacher = torch.zeros(F, M_lags, dtype=torch.bool, device=device)
+            indices_teacher = torch.full((F, max_k), -1, dtype=torch.long, device=device)
+            teacher_stop_mask = torch.zeros(F, dtype=torch.bool, device=device)
+            teacher_stop_step = torch.full((F,), -1, dtype=torch.long, device=device)
+
             stop_mask = torch.zeros(F, dtype=torch.bool, device=device)
             per_freq_actions = [[] for _ in range(F)]
             per_freq_logits = [[] for _ in range(F)]
-            per_freq_steps = torch.zeros(F, dtype=torch.long, device=device)
+            per_freq_steps = torch.full((F,), -1, dtype=torch.long, device=device)
 
             for k in range(max_k):
-                corrs_dt = torch.bmm(D_norm.conj().transpose(1, 2), res_dt).squeeze(2)
-                abs_corrs_dt = torch.abs(corrs_dt)
+                if rollout_mode == "teacher_forced":
+                    corrs_state = torch.bmm(D_norm.conj().transpose(1, 2), res_teacher).squeeze(2)
+                else:
+                    corrs_state = torch.bmm(D_norm.conj().transpose(1, 2), res_dt).squeeze(2)
+
+                abs_corrs_dt = torch.abs(corrs_state)
                 abs_corrs_dt[mask_dt[:, :M_lags]] = -1.0
 
                 if rtg_dim == 2:
@@ -210,37 +226,86 @@ def simulate_for_lambda(
                     mask_dt[f, act] = True
                     indices_dt[f, k] = act
 
-                if bool(stop_mask.all()):
-                    break
+                if rollout_mode == "teacher_forced":
+                    # Teacher greedy action + residual update, with penalty-OMP stop rule.
+                    abs_corrs_teacher = torch.abs(corrs_state)
+                    abs_corrs_teacher[mask_teacher] = -1.0
+                    best_teacher = torch.argmax(abs_corrs_teacher, dim=1)
+                    best_teacher[teacher_stop_mask] = 0
+                    indices_teacher[:, k] = best_teacher
 
-                # Update residuals for active freqs only
-                D_cpu = D.cpu()
-                Y_cpu = Y.cpu()
-                for f in range(F):
-                    if stop_mask[f]:
-                        continue
-                    active_ids = indices_dt[f, : k + 1].cpu()
-                    if (active_ids < 0).any():
-                        continue
-                    A_active = gather_atoms(D_cpu[f : f + 1], active_ids.unsqueeze(0))
-                    y_f = Y_cpu[f : f + 1]
-                    sol_f = torch.linalg.lstsq(A_active, y_f).solution
-                    recon_f = A_active @ sol_f
-                    res_dt[f : f + 1] = (y_f - recon_f).to(device)
+                    # Energy before update (teacher residual)
+                    E_before = manual_complex_norm(res_teacher.squeeze(), dim=1) ** 2
+
+                    D_cpu = D.cpu()
+                    Y_cpu = Y.cpu()
+                    for f in range(F):
+                        if teacher_stop_mask[f]:
+                            continue
+                        active_ids = indices_teacher[f, : k + 1].cpu()
+                        if (active_ids < 0).any():
+                            continue
+                        A_active = gather_atoms(D_cpu[f : f + 1], active_ids.unsqueeze(0))
+                        y_f = Y_cpu[f : f + 1]
+                        sol_f = torch.linalg.lstsq(A_active, y_f).solution
+                        recon_f = A_active @ sol_f
+                        res_teacher[f : f + 1] = (y_f - recon_f).to(device)
+
+                    E_after = manual_complex_norm(res_teacher.squeeze(), dim=1) ** 2
+                    delta = (E_before - E_after).clamp(min=0.0)
+                    if k + 1 >= int(teacher_min_k):
+                        lambda_abs = initial_energy * float(lambda_c)
+                        newly_stop = (~teacher_stop_mask) & (delta <= lambda_abs)
+                        teacher_stop_mask[newly_stop] = True
+                        teacher_stop_step[newly_stop] = k
+
+                    if bool(stop_mask.all()):
+                        break
+                else:
+                    if bool(stop_mask.all()):
+                        break
+
+                    # Update residuals for active freqs only (student actions)
+                    D_cpu = D.cpu()
+                    Y_cpu = Y.cpu()
+                    for f in range(F):
+                        if stop_mask[f]:
+                            continue
+                        active_ids = indices_dt[f, : k + 1].cpu()
+                        if (active_ids < 0).any():
+                            continue
+                        A_active = gather_atoms(D_cpu[f : f + 1], active_ids.unsqueeze(0))
+                        y_f = Y_cpu[f : f + 1]
+                        sol_f = torch.linalg.lstsq(A_active, y_f).solution
+                        recon_f = A_active @ sol_f
+                        res_dt[f : f + 1] = (y_f - recon_f).to(device)
 
             # Final energies after stopping
-            E_res = manual_complex_norm(res_dt.squeeze(), dim=1) ** 2
+            if rollout_mode == "teacher_forced":
+                E_res = manual_complex_norm(res_teacher.squeeze(), dim=1) ** 2
+            else:
+                E_res = manual_complex_norm(res_dt.squeeze(), dim=1) ** 2
             capture = 1.0 - (E_res / torch.clamp(initial_energy, min=eps_energy))
 
             for f in range(F):
-                if not stop_mask[f]:
-                    per_freq_steps[f] = max_k
+                if per_freq_steps[f] < 0:
+                    if rollout_mode == "teacher_forced" and teacher_stop_step[f] >= 0:
+                        per_freq_steps[f] = teacher_stop_step[f]
+                    else:
+                        per_freq_steps[f] = max_k
                 all_actions.append(per_freq_actions[f])
                 all_logits.append(per_freq_logits[f])
                 steps_used.append(int(per_freq_steps[f].item()))
                 final_capture.append(float(capture[f].item()))
 
-    return all_actions, all_logits, steps_used, final_capture
+                if rollout_mode == "teacher_forced":
+                    t_step = int(teacher_stop_step[f].item()) if teacher_stop_step[f] >= 0 else max_k
+                    teacher_steps.append(t_step)
+                    s_step = int(per_freq_steps[f].item())
+                    student_stop_before_teacher.append(int(s_step < t_step))
+                    student_stop_at_teacher.append(int(s_step == t_step))
+
+    return all_actions, all_logits, steps_used, final_capture, teacher_steps, student_stop_before_teacher, student_stop_at_teacher
 
 
 def main() -> None:
@@ -262,6 +327,19 @@ def main() -> None:
     p.add_argument("--rtg_dim", type=int, default=2)
     p.add_argument("--eps_energy", type=float, default=1e-12)
     p.add_argument("--use_stop_action", action="store_true")
+    p.add_argument(
+        "--rollout_mode",
+        type=str,
+        default="free",
+        choices=["free", "teacher_forced"],
+        help="free: student updates residuals; teacher_forced: teacher updates residuals, student only decides STOP.",
+    )
+    p.add_argument(
+        "--teacher_min_k",
+        type=int,
+        default=1,
+        help="Minimum steps before teacher STOP in teacher_forced mode (penalty-OMP rule).",
+    )
     p.add_argument(
         "--lambda_c_values",
         type=str,
@@ -315,7 +393,7 @@ def main() -> None:
     model.load_state_dict(state)
 
     ref_c = lambda_c_values[0]
-    ref_actions, ref_logits, ref_steps, ref_capture = simulate_for_lambda(
+    ref_actions, ref_logits, ref_steps, ref_capture, ref_teacher_steps, ref_before_rate, ref_at_rate = simulate_for_lambda(
         model,
         dataset,
         clip_indices,
@@ -330,11 +408,13 @@ def main() -> None:
         rtg_dim=int(args.rtg_dim),
         use_stop_action=bool(args.use_stop_action),
         eps_energy=float(args.eps_energy),
+        rollout_mode=str(args.rollout_mode),
+        teacher_min_k=int(args.teacher_min_k),
     )
 
     grid = []
     for lambda_c in tqdm(lambda_c_values, desc="lambda_c sweep"):
-        actions, logits, steps_used, final_capture = simulate_for_lambda(
+        actions, logits, steps_used, final_capture, teacher_steps, student_before, student_at = simulate_for_lambda(
             model,
             dataset,
             clip_indices,
@@ -349,6 +429,8 @@ def main() -> None:
             rtg_dim=int(args.rtg_dim),
             use_stop_action=bool(args.use_stop_action),
             eps_energy=float(args.eps_energy),
+            rollout_mode=str(args.rollout_mode),
+            teacher_min_k=int(args.teacher_min_k),
         )
 
         action_change_rates: list[float] = []
@@ -377,6 +459,14 @@ def main() -> None:
             "action_change_rate_vs_ref": float(np.mean(action_change_rates)) if action_change_rates else 0.0,
             "logits_kl_mean_vs_ref": float(np.mean(logits_kls)) if logits_kls else 0.0,
         }
+        if str(args.rollout_mode) == "teacher_forced":
+            summary.update(
+                {
+                    "teacher_steps_mean": float(np.mean(teacher_steps)) if teacher_steps else None,
+                    "student_stop_before_teacher_rate": float(np.mean(student_before)) if student_before else None,
+                    "student_stop_at_teacher_rate": float(np.mean(student_at)) if student_at else None,
+                }
+            )
 
         grid.append(
             {
@@ -403,6 +493,8 @@ def main() -> None:
             "rtg1_semantics": "remaining_steps_fraction",
             "rtg_dim": int(args.rtg_dim),
             "use_stop_action": bool(args.use_stop_action),
+            "rollout_mode": str(args.rollout_mode),
+            "teacher_min_k": int(args.teacher_min_k),
             "eps_energy": float(args.eps_energy),
         },
         "grid": grid,

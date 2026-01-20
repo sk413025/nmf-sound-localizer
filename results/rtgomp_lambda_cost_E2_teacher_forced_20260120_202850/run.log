@@ -1,0 +1,86 @@
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]lambda_c sweep:  20%|██        | 1/5 [01:17<05:10, 77.51s/it]lambda_c sweep:  40%|████      | 2/5 [02:35<03:53, 77.71s/it]lambda_c sweep:  60%|██████    | 3/5 [04:07<02:48, 84.36s/it]lambda_c sweep:  80%|████████  | 4/5 [05:22<01:20, 80.54s/it]lambda_c sweep: 100%|██████████| 5/5 [06:57<00:00, 85.89s/it]lambda_c sweep: 100%|██████████| 5/5 [06:57<00:00, 83.54s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_E2_teacher_forced_20260120_202850/eval/lambda_grid.json
+{
+  "overall_pass": true,
+  "lambda_grid_path": "results/rtgomp_lambda_cost_E2_teacher_forced_20260120_202850/eval/lambda_grid.json",
+  "checks": {
+    "teacher_monotonicity": {
+      "value": -1.0,
+      "threshold": -0.6,
+      "pass": true
+    },
+    "teacher_non_degenerate_steps": {
+      "value": {
+        "min": 2.593170731707317,
+        "max": 3.283121951219512
+      },
+      "pass": true
+    },
+    "student_action_change": {
+      "value": 0.43963514994490605,
+      "threshold": 0.05,
+      "pass": true
+    },
+    "student_logits_kl": {
+      "value": 1.8973129178326735,
+      "threshold": 0.0,
+      "pass": true
+    },
+    "tradeoff_non_degenerate": {
+      "value": {
+        "steps_range": 0.6899512195121948,
+        "capture_range": 0.01053686279203836
+      },
+      "pass": true
+    }
+  },
+  "per_entry_summary": [
+    {
+      "lambda_c": 0.0001,
+      "rtg0": 0.0,
+      "steps_used_mean": 3.283121951219512,
+      "final_capture_mean": 0.4106856187843695,
+      "action_change_rate_vs_ref": 0.0,
+      "logits_kl_mean_vs_ref": 0.0
+    },
+    {
+      "lambda_c": 0.0003,
+      "rtg0": 0.2385606273598313,
+      "steps_used_mean": 3.221658536585366,
+      "final_capture_mean": 0.41065166013996773,
+      "action_change_rate_vs_ref": 0.14406645224694006,
+      "logits_kl_mean_vs_ref": 0.5858654278394312
+    },
+    {
+      "lambda_c": 0.001,
+      "rtg0": 0.5,
+      "steps_used_mean": 3.115317073170732,
+      "final_capture_mean": 0.410150256133661,
+      "action_change_rate_vs_ref": 0.26760703713630546,
+      "logits_kl_mean_vs_ref": 1.1126039180678422
+    },
+    {
+      "lambda_c": 0.003,
+      "rtg0": 0.7385606273598313,
+      "steps_used_mean": 2.9324878048780487,
+      "final_capture_mean": 0.4083367874680496,
+      "action_change_rate_vs_ref": 0.3595083117424581,
+      "logits_kl_mean_vs_ref": 1.5226594368551745
+    },
+    {
+      "lambda_c": 0.01,
+      "rtg0": 1.0,
+      "steps_used_mean": 2.593170731707317,
+      "final_capture_mean": 0.40014875599233113,
+      "action_change_rate_vs_ref": 0.43963514994490605,
+      "logits_kl_mean_vs_ref": 1.8973129178326735
+    }
+  ],
+  "notes": [
+    "This checker only validates the eval JSON structure and summary statistics; full reproducibility requires rerunning commands with the same manifest and seeds.",
+    "If only stopping changes but early actions do not, action_change_rate may be small; consider adding STOP token, variable-horizon eval, or lookahead teacher to induce action-level differences."
+  ]
+}
