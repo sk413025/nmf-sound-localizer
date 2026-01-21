@@ -233,6 +233,9 @@ def simulate_for_lambda(
                     best_teacher = torch.argmax(abs_corrs_teacher, dim=1)
                     best_teacher[teacher_stop_mask] = 0
                     indices_teacher[:, k] = best_teacher
+                    active_teacher = ~teacher_stop_mask
+                    if active_teacher.any():
+                        mask_teacher[active_teacher, best_teacher[active_teacher]] = True
 
                     # Energy before update (teacher residual)
                     E_before = manual_complex_norm(res_teacher.squeeze(), dim=1) ** 2

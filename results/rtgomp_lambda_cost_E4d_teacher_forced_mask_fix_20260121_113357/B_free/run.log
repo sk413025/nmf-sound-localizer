@@ -1,0 +1,13 @@
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]
+lambda_c sweep:  20%|██        | 1/5 [05:35<22:21, 335.39s/it]
+lambda_c sweep:  40%|████      | 2/5 [11:01<16:29, 329.83s/it]
+lambda_c sweep:  60%|██████    | 3/5 [17:00<11:26, 343.31s/it]
+lambda_c sweep:  80%|████████  | 4/5 [22:14<05:31, 331.77s/it]
+lambda_c sweep: 100%|██████████| 5/5 [27:17<00:00, 321.47s/it]
+lambda_c sweep: 100%|██████████| 5/5 [27:17<00:00, 327.59s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_E4d_teacher_forced_mask_fix_20260121_113357/B_free/lambda_grid.json
+
