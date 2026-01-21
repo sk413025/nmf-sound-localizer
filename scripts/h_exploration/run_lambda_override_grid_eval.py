@@ -221,19 +221,19 @@ def simulate_for_lambda(
                     per_freq_logits[f].append(logits[f].detach().cpu().numpy())
                     if use_stop_action and act == stop_id:
                         stop_mask[f] = True
-                        per_freq_steps[f] = k
+                        per_freq_steps[f] = k + 1
                         continue
                     mask_dt[f, act] = True
                     indices_dt[f, k] = act
 
                 if rollout_mode == "teacher_forced":
-                    # Teacher greedy action + residual update, with penalty-OMP stop rule.
+                    # Teacher greedy action + residual update; penalty-OMP stop is diagnostic only.
                     abs_corrs_teacher = torch.abs(corrs_state)
                     abs_corrs_teacher[mask_teacher] = -1.0
                     best_teacher = torch.argmax(abs_corrs_teacher, dim=1)
-                    best_teacher[teacher_stop_mask] = 0
+                    best_teacher[stop_mask] = 0
                     indices_teacher[:, k] = best_teacher
-                    active_teacher = ~teacher_stop_mask
+                    active_teacher = ~stop_mask
                     if active_teacher.any():
                         mask_teacher[active_teacher, best_teacher[active_teacher]] = True
 
@@ -243,7 +243,7 @@ def simulate_for_lambda(
                     D_cpu = D.cpu()
                     Y_cpu = Y.cpu()
                     for f in range(F):
-                        if teacher_stop_mask[f]:
+                        if stop_mask[f]:
                             continue
                         active_ids = indices_teacher[f, : k + 1].cpu()
                         if (active_ids < 0).any():
@@ -258,9 +258,9 @@ def simulate_for_lambda(
                     delta = (E_before - E_after).clamp(min=0.0)
                     if k + 1 >= int(teacher_min_k):
                         lambda_abs = initial_energy * float(lambda_c)
-                        newly_stop = (~teacher_stop_mask) & (delta <= lambda_abs)
+                        newly_stop = active_teacher & (delta <= lambda_abs)
                         teacher_stop_mask[newly_stop] = True
-                        teacher_stop_step[newly_stop] = k
+                        teacher_stop_step[newly_stop] = k + 1
 
                     if bool(stop_mask.all()):
                         break
@@ -292,10 +292,7 @@ def simulate_for_lambda(
 
             for f in range(F):
                 if per_freq_steps[f] < 0:
-                    if rollout_mode == "teacher_forced" and teacher_stop_step[f] >= 0:
-                        per_freq_steps[f] = teacher_stop_step[f]
-                    else:
-                        per_freq_steps[f] = max_k
+                    per_freq_steps[f] = max_k
                 all_actions.append(per_freq_actions[f])
                 all_logits.append(per_freq_logits[f])
                 steps_used.append(int(per_freq_steps[f].item()))
