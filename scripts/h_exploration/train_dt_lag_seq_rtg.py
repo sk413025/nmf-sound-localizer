@@ -129,11 +129,13 @@ class LagSequenceDataset(Dataset):
                     L = int(valid_len[f].item())
                     if L <= 0:
                         continue
-                    corr_seq = c[f, :L]
-                    act_seq = a[f, :L]
-                    if self.use_stop_action:
-                        corr_seq = torch.cat([corr_seq, torch.zeros(1, M, dtype=corr_seq.dtype)], dim=0)
-                        act_seq = torch.cat([act_seq, torch.tensor([stop_id], dtype=act_seq.dtype)], dim=0)
+
+                    if self.use_stop_action and L < K:
+                        corr_seq = c[f, : L + 1]
+                        act_seq = torch.cat([a[f, :L], torch.tensor([stop_id], dtype=a.dtype)], dim=0)
+                    else:
+                        corr_seq = c[f, :L]
+                        act_seq = a[f, :L]
 
                     c_val = float(lambda_c[f].item())
                     if self._logc_max == self._logc_min:
