@@ -1,6 +1,10 @@
 import argparse
 import json
 import logging
+import sys
+import time
+import faulthandler
+import signal
 from pathlib import Path
 from typing import List
 
@@ -37,6 +41,8 @@ def collect_dagger_blocks(
     rtg1_mode: str,
     rtg1_max_k: int,
     min_k: int,
+    stride: int,
+    log_every_windows: int,
 ) -> List[dict]:
     Lag_Min = -max_lag
     Lag_Max = max_lag
@@ -49,9 +55,9 @@ def collect_dagger_blocks(
     all_blocks: List[dict] = []
 
     model.eval()
-    stride = 32
-
+    run_start_s = time.time()
     for idx in clip_indices:
+        clip_start_s = time.time()
         item = dataset[idx]
         mic_stft = item["mic_stft"].to(device)
         ldv_stft = item["ldv_stft"].to(device)
@@ -67,8 +73,12 @@ def collect_dagger_blocks(
             continue
 
         freq_ids = torch.arange(F, device=device)
+        total_windows = max(0, (end_limit - start_limit + max(int(stride), 1) - 1) // max(int(stride), 1))
+        if total_windows == 0:
+            continue
+        logger.info("DAgger clip_idx=%d: T=%d F=%d windows=%d stride=%d tw=%d", idx, T_total, F, total_windows, stride, tw)
 
-        for start_t in range(start_limit, end_limit, stride):
+        for win_i, start_t in enumerate(range(start_limit, end_limit, stride), start=1):
             end_t = start_t + tw
             y_block = ldv_stft[start_t:end_t, :].T  # (F, Tw)
 
@@ -85,6 +95,9 @@ def collect_dagger_blocks(
 
             Y = y_block.unsqueeze(2)  # (F, Tw, 1)
             initial_energy = manual_complex_norm(Y.squeeze(), dim=1) ** 2  # (F,)
+
+            D_cpu = D.cpu()
+            Y_cpu = Y.cpu()
 
             for lambda_c in lambda_c_values:
                 rtg0 = normalize_logc(lambda_c, logc_min, logc_max)
@@ -117,9 +130,6 @@ def collect_dagger_blocks(
 
                     # Compute teacher deltaE on label residual (separate from student residual).
                     E_before = manual_complex_norm(res_label.squeeze(), dim=1) ** 2
-
-                    D_cpu = D.cpu()
-                    Y_cpu = Y.cpu()
                     for f in range(F):
                         if teacher_stop[f]:
                             continue
@@ -196,6 +206,23 @@ def collect_dagger_blocks(
                     }
                 )
 
+            if log_every_windows > 0 and (win_i % log_every_windows == 0 or win_i == total_windows):
+                elapsed_s = time.time() - clip_start_s
+                rate = win_i / max(elapsed_s, 1e-6)
+                remaining = total_windows - win_i
+                eta_s = remaining / max(rate, 1e-6)
+                total_elapsed_s = time.time() - run_start_s
+                logger.info(
+                    "DAgger progress clip_idx=%d window=%d/%d blocks=%d (%.3f win/s, clip_eta=%.1f min, total_elapsed=%.1f min)",
+                    idx,
+                    win_i,
+                    total_windows,
+                    len(all_blocks),
+                    rate,
+                    eta_s / 60.0,
+                    total_elapsed_s / 60.0,
+                )
+
     return all_blocks
 
 
@@ -219,6 +246,13 @@ def main() -> None:
     p.add_argument("--rtg1_max_k", type=int, default=16)
     p.add_argument("--use_stop_action", action="store_true")
     p.add_argument("--min_k", type=int, default=1)
+    p.add_argument("--stride", type=int, default=32, help="Window stride in frames for DAgger collection.")
+    p.add_argument(
+        "--log_every_windows",
+        type=int,
+        default=25,
+        help="Log progress every N windows per clip (0 disables).",
+    )
     p.add_argument(
         "--lambda_c_values",
         type=str,
@@ -228,11 +262,20 @@ def main() -> None:
     p.set_defaults(use_stop_action=True)
     args = p.parse_args()
 
+    if hasattr(signal, "SIGUSR1"):
+        try:
+            faulthandler.register(signal.SIGUSR1, file=sys.stderr, all_threads=True)
+            logger.info("Debug: send SIGUSR1 to dump Python stack traces to stderr.")
+        except Exception:
+            pass
+
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     logger.info(f"Using device: {device}")
+    if device.type == "mps":
+        logger.info("Note: least-squares solves currently run on CPU; MPS utilization may appear low.")
 
     dataset = DoALagDataset(
         args.mic_root,
@@ -274,6 +317,8 @@ def main() -> None:
         rtg1_mode=str(args.rtg1_mode),
         rtg1_max_k=int(args.rtg1_max_k),
         min_k=int(args.min_k),
+        stride=int(args.stride),
+        log_every_windows=int(args.log_every_windows),
     )
 
     out_path = out_dir / "dagger_trajectories.pt"
@@ -298,6 +343,7 @@ def main() -> None:
         "rtg1_max_k": int(args.rtg1_max_k),
         "use_stop_action": bool(args.use_stop_action),
         "min_k": int(args.min_k),
+        "stride": int(args.stride),
     }
     (out_dir / "dagger_config.json").write_text(json.dumps(config, indent=2))
 

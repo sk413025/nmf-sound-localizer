@@ -1,0 +1,162 @@
+RUN=rtgomp_lambda_cost_E4b_ratio3_20260121_020725
+MIC_ROOT=/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/MIC
+LDV_ROOT=/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/LDV
+LAMBDAS=1e-4,3e-4,1e-3,3e-3,1e-2
+ROLLOUT_CKPT=results/rtgomp_lambda_cost_E4_daggerlite_20260120_204838/model/dt_freq_aware_best.pth
+DATE=Wed Jan 21 02:08:19 CST 2026
+GIT_HEAD=ef44d93ba2a8276e76c470fca9ddc6c084672840
+GIT_STATUS_PORCELAIN:
+A  docs/rtgomp_complexity_cost_E4b_acceptance_report_template.md
+A  docs/rtgomp_complexity_cost_E4b_engineer_prompt.md
+A  docs/rtgomp_complexity_cost_E4b_plan.md
+A  docs/rtgomp_complexity_cost_E4b_spec.md
+M  scripts/h_exploration/run_dagger_collect.py
+?? docs/COMPILATION_SUMMARY.md
+?? docs/E4_RESULTS_ANALYSIS.md
+?? docs/LATEX_README.md
+?? docs/LATEX_USAGE_GUIDE.md
+?? docs/compile.sh
+?? docs/latex_example_document.aux
+?? docs/latex_example_document.tex
+?? docs/latex_tables_figures.tex
+?? docs/latex_tables_simple.tex
+?? docs/rtg_derived.,md
+?? docs/rtg_omp_physics_derived_zh_tw.md
+?? docs/rtgomp_complexity_cost_implementation_plan_zh_tw.md
+?? docs/rtgomp_lambda_cost_followup_plan.md
+?? docs/test_simple_tables.aux
+?? docs/test_simple_tables.tex
+[1/6] generate_lag_omp
+INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]1it [00:14, 14.16s/it]2it [00:29, 14.68s/it]3it [00:43, 14.62s/it]3it [00:43, 14.58s/it]
+INFO:__main__:Saved 75 blocks to results/rtgomp_lambda_cost_E4b_ratio3_20260121_020725/data (Variants: 1)
+[2/6] run_dagger_collect
+INFO:__main__:Debug: send SIGUSR1 to dump Python stack traces to stderr.
+INFO:__main__:Using device: mps
+INFO:__main__:Note: least-squares solves currently run on CPU; MPS utilization may appear low.
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:DAgger clip_idx=0: T=267 F=1025 windows=2 stride=128 tw=32
+Current thread 0x00000001fc7c2c40 (most recent call first):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_dagger_collect.py", line 136 in collect_dagger_blocks
+  File "/opt/anaconda3/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120 in decorate_context
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_dagger_collect.py", line 305 in main
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/run_dagger_collect.py", line 352 in <module>
+INFO:__main__:DAgger progress clip_idx=0 window=2/2 blocks=10 (0.006 win/s, clip_eta=0.0 min, total_elapsed=5.8 min)
+INFO:__main__:DAgger clip_idx=1: T=283 F=1025 windows=2 stride=128 tw=32
+INFO:__main__:DAgger progress clip_idx=1 window=2/2 blocks=20 (0.005 win/s, clip_eta=0.0 min, total_elapsed=12.1 min)
+INFO:__main__:DAgger clip_idx=2: T=277 F=1025 windows=2 stride=128 tw=32
+INFO:__main__:DAgger progress clip_idx=2 window=2/2 blocks=30 (0.005 win/s, clip_eta=0.0 min, total_elapsed=18.5 min)
+INFO:__main__:Saved 30 DAgger blocks to results/rtgomp_lambda_cost_E4b_ratio3_20260121_020725/data/dagger_trajectories.pt
+[3/6] merge_dagger_data
+[4/6] train_dt_lag_seq_rtg
+INFO:__main__:Using device: mps
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_E4b_ratio3_20260121_020725/data/merged_trajectories.pt...
+INFO:__main__:Loaded 107625 variable-length sequences. Feature dim: 101
+INFO:__main__:Epoch 1: Train Loss=4.0209, Val Loss=3.7215, Acc=0.1637
+INFO:__main__:Epoch 2: Train Loss=3.5690, Val Loss=3.4103, Acc=0.2021
+INFO:__main__:Epoch 3: Train Loss=3.2822, Val Loss=3.1629, Acc=0.2395
+INFO:__main__:Epoch 4: Train Loss=3.0140, Val Loss=2.9216, Acc=0.2783
+INFO:__main__:Epoch 5: Train Loss=2.7669, Val Loss=2.6990, Acc=0.3193
+INFO:__main__:Epoch 6: Train Loss=2.5572, Val Loss=2.5108, Acc=0.3569
+INFO:__main__:Epoch 7: Train Loss=2.3879, Val Loss=2.3564, Acc=0.3918
+INFO:__main__:Epoch 8: Train Loss=2.2559, Val Loss=2.2227, Acc=0.4201
+INFO:__main__:Epoch 9: Train Loss=2.1434, Val Loss=2.1110, Acc=0.4491
+INFO:__main__:Epoch 10: Train Loss=2.0576, Val Loss=2.0156, Acc=0.4714
+INFO:__main__:Epoch 11: Train Loss=1.9808, Val Loss=1.9362, Acc=0.4921
+INFO:__main__:Epoch 12: Train Loss=1.9192, Val Loss=1.8701, Acc=0.5103
+INFO:__main__:Epoch 13: Train Loss=1.8646, Val Loss=1.8059, Acc=0.5281
+INFO:__main__:Epoch 14: Train Loss=1.8151, Val Loss=1.7547, Acc=0.5410
+INFO:__main__:Epoch 15: Train Loss=1.7745, Val Loss=1.7080, Acc=0.5549
+[5/6] run_lambda_override_grid_eval (free)
+INFO:__main__:Using device: mps
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+lambda_c sweep:   0%|          | 0/5 [00:00<?, ?it/s]lambda_c sweep:  20%|██        | 1/5 [05:25<21:41, 325.32s/it]lambda_c sweep:  40%|████      | 2/5 [10:52<16:19, 326.35s/it]lambda_c sweep:  60%|██████    | 3/5 [15:51<10:28, 314.08s/it]lambda_c sweep:  80%|████████  | 4/5 [20:52<05:08, 308.77s/it]lambda_c sweep: 100%|██████████| 5/5 [26:03<00:00, 309.40s/it]lambda_c sweep: 100%|██████████| 5/5 [26:03<00:00, 312.60s/it]
+INFO:__main__:Wrote results/rtgomp_lambda_cost_E4b_ratio3_20260121_020725/eval/lambda_grid.json
+[6/6] check_rtgomp_acceptance
+{
+  "overall_pass": false,
+  "lambda_grid_path": "results/rtgomp_lambda_cost_E4b_ratio3_20260121_020725/eval/lambda_grid.json",
+  "checks": {
+    "teacher_monotonicity": {
+      "value": -0.3,
+      "threshold": -0.6,
+      "pass": false
+    },
+    "teacher_non_degenerate_steps": {
+      "value": {
+        "min": 15.175024390243902,
+        "max": 15.179121951219512
+      },
+      "pass": true
+    },
+    "student_action_change": {
+      "value": 0.21176197758880685,
+      "threshold": 0.05,
+      "pass": true
+    },
+    "student_logits_kl": {
+      "value": 2.279046741200136,
+      "threshold": 0.0,
+      "pass": true
+    },
+    "tradeoff_non_degenerate": {
+      "value": {
+        "steps_range": 0.004097560975610648,
+        "capture_range": 0.00033895331281952323
+      },
+      "pass": true
+    }
+  },
+  "per_entry_summary": [
+    {
+      "lambda_c": 0.0001,
+      "rtg0": 0.0,
+      "steps_used_mean": 15.179121951219512,
+      "final_capture_mean": 0.9840801900693071,
+      "action_change_rate_vs_ref": 0.0,
+      "logits_kl_mean_vs_ref": 0.0
+    },
+    {
+      "lambda_c": 0.0003,
+      "rtg0": 0.2385606273598313,
+      "steps_used_mean": 15.176195121951219,
+      "final_capture_mean": 0.98400066902967,
+      "action_change_rate_vs_ref": 0.054772241760046636,
+      "logits_kl_mean_vs_ref": 0.5790836212968975
+    },
+    {
+      "lambda_c": 0.001,
+      "rtg0": 0.5,
+      "steps_used_mean": 15.177235772357724,
+      "final_capture_mean": 0.9837935082427854,
+      "action_change_rate_vs_ref": 0.1128722459112703,
+      "logits_kl_mean_vs_ref": 1.2009891616966029
+    },
+    {
+      "lambda_c": 0.003,
+      "rtg0": 0.7385606273598313,
+      "steps_used_mean": 15.175024390243902,
+      "final_capture_mean": 0.9837443971982817,
+      "action_change_rate_vs_ref": 0.16097890952769,
+      "logits_kl_mean_vs_ref": 1.7164159710617193
+    },
+    {
+      "lambda_c": 0.01,
+      "rtg0": 1.0,
+      "steps_used_mean": 15.178926829268292,
+      "final_capture_mean": 0.9837412367564876,
+      "action_change_rate_vs_ref": 0.21176197758880685,
+      "logits_kl_mean_vs_ref": 2.279046741200136
+    }
+  ],
+  "notes": [
+    "This checker only validates the eval JSON structure and summary statistics; full reproducibility requires rerunning commands with the same manifest and seeds.",
+    "If only stopping changes but early actions do not, action_change_rate may be small; consider adding STOP token, variable-horizon eval, or lookahead teacher to induce action-level differences."
+  ]
+}
+DONE RUN=rtgomp_lambda_cost_E4b_ratio3_20260121_020725
