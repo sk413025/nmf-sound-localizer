@@ -1,0 +1,13 @@
+
+  0%|          | 0/3 [00:00<?, ?it/s]
+ 33%|███▎      | 1/3 [01:01<02:02, 61.29s/it]
+ 67%|██████▋   | 2/3 [02:19<01:11, 71.19s/it]
+100%|██████████| 3/3 [03:21<00:00, 67.01s/it]
+100%|██████████| 3/3 [03:21<00:00, 67.15s/it]
+
+Using device: mps
+Dataset Size: 416
+Initializing Model with M_lags=101 (stop-action)
+Model Loaded.
+Wrote results/rtgomp_lambda_cost_E4f_omp_dtmin_random_stop_action_20260122_003006/B_dt_vs_omp_stop_action/eval_stats.pt
+
