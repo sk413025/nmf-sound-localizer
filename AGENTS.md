@@ -157,6 +157,9 @@ Agent guidance:
 - **Accelerator**: MPS (Metal Performance Shaders) for Apple Silicon GPU
 - **Python Path**: Must be set to the project root when running scripts
 
+## Device Stability Note
+- If evaluation runs that mix GPU and CPU operations stall, prefer a CPU run and document the device choice in the acceptance report.
+
 ## Essential Commands
 ```bash
 # Activate conda environment
