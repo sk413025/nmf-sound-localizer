@@ -14,6 +14,7 @@
 
 - Granularity: Each commit must correspond to a single, self‑contained experiment or test (or a tightly coupled pair such as SFT warm‑start + immediate PPO smoke). Do not batch unrelated changes; split into multiple commits.
 - Atomicity: Commit the exact executed code together with its artifacts (logs, manifests, fingerprints, metrics). Results‑only or code‑only commits are prohibited.
+- Planning/spec/acceptance docs: Any planning, specification, or acceptance document created or updated for an experiment must be committed together with the **results commit** for that experiment (do not leave these docs untracked).
 - Content requirements (must be explicit in the commit message body):
   - Background: What state/problem existed?
   - Motivation: Why was this change/run needed now?
