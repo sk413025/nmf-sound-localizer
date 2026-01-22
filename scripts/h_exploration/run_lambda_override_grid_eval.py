@@ -328,6 +328,13 @@ def main() -> None:
     p.add_argument("--eps_energy", type=float, default=1e-12)
     p.add_argument("--use_stop_action", action="store_true")
     p.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        choices=["auto", "cpu", "mps"],
+        help="Device selection: auto picks mps if available else cpu.",
+    )
+    p.add_argument(
         "--rollout_mode",
         type=str,
         default="free",
@@ -352,7 +359,14 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    if args.device == "auto":
+        device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    elif args.device == "mps":
+        if not torch.backends.mps.is_available():
+            raise RuntimeError("Requested --device mps, but MPS is not available.")
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     logger.info(f"Using device: {device}")
 
     subset_manifest = None

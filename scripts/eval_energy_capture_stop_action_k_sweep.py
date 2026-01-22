@@ -235,12 +235,26 @@ def main():
     parser.add_argument("--angle", type=float, default=90.0)
     parser.add_argument("--all_angles", action="store_true")
     parser.add_argument("--use_stop_action", action="store_true")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        choices=["auto", "cpu", "mps"],
+        help="Device selection: auto picks mps if available else cpu.",
+    )
     args = parser.parse_args()
 
     if not args.use_stop_action:
         raise SystemExit("use_stop_action is required for stop-action evaluator.")
 
-    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    if args.device == "auto":
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+    elif args.device == "mps":
+        if not torch.backends.mps.is_available():
+            raise RuntimeError("Requested --device mps, but MPS is not available.")
+        device = "mps"
+    else:
+        device = "cpu"
     print(f"Using device: {device}")
 
     os.makedirs(args.out_dir, exist_ok=True)
