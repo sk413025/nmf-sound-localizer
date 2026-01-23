@@ -16,6 +16,17 @@ from scripts.h_exploration.dataset_lag import DoALagDataset
 logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
+CAPTURE_TOL = 1e-6
+
+
+@dataclass
+class RandomCaptureResult:
+    capture_mean: torch.Tensor
+    capture_trials: List[torch.Tensor]
+    rand_ids_trials: List[np.ndarray]
+    duplicate_count: int
+    duplicate_rate: float
+
 
 class SeqDT_FreqAware(nn.Module):
     def __init__(
@@ -288,6 +299,76 @@ def spearmanr(values_x: List[float], values_y: List[float]) -> Optional[float]:
     return float(corr)
 
 
+def update_capture_integrity(
+    *,
+    method: str,
+    capture_val: float,
+    e0: float,
+    e_res: float,
+    eval_context: str,
+    lambda_c: Optional[float],
+    k_selected: Optional[int],
+    steps_decision: Optional[int],
+    clip_idx: int,
+    window_idx: int,
+    freq_idx: int,
+    random_trial: Optional[int],
+    unique_count: Optional[int],
+    duplicate_count: Optional[int],
+    capture_minmax: Dict[str, Dict[str, float]],
+    out_of_range_counts: Dict[str, int],
+    worst_violation: Dict[str, object],
+    diag_fp,
+    capture_tol: float,
+) -> None:
+    minmax = capture_minmax[method]
+    if capture_val < minmax["min"]:
+        minmax["min"] = capture_val
+    if capture_val > minmax["max"]:
+        minmax["max"] = capture_val
+
+    if capture_val < -capture_tol or capture_val > 1.0 + capture_tol:
+        out_of_range_counts[method] += 1
+        violation = max(-capture_val, capture_val - 1.0)
+        if violation > worst_violation["abs"]:
+            worst_violation["abs"] = violation
+            worst_violation["details"] = {
+                "method": method,
+                "eval_context": eval_context,
+                "capture": capture_val,
+                "violation": violation,
+                "lambda_c": lambda_c,
+                "k_selected": k_selected,
+                "steps_decision": steps_decision,
+                "clip_idx": int(clip_idx),
+                "window_idx": int(window_idx),
+                "freq_idx": int(freq_idx),
+                "random_trial": random_trial,
+                "unique_count": unique_count,
+                "duplicate_count": duplicate_count,
+                "E0": e0,
+                "E_res": e_res,
+            }
+        if diag_fp is not None:
+            row = {
+                "method": method,
+                "eval_context": eval_context,
+                "capture": capture_val,
+                "lambda_c": lambda_c,
+                "k_selected": k_selected,
+                "steps_decision": steps_decision,
+                "clip_idx": int(clip_idx),
+                "window_idx": int(window_idx),
+                "freq_idx": int(freq_idx),
+                "random_trial": random_trial,
+                "unique_count": unique_count,
+                "duplicate_count": duplicate_count,
+                "E0": e0,
+                "E_res": e_res,
+            }
+            diag_fp.write(json.dumps(row) + "\n")
+
+
 def compute_omp_capture_by_k(
     D: torch.Tensor,
     D_norm: torch.Tensor,
@@ -339,23 +420,55 @@ def compute_random_capture_by_k(
     random_trials: int,
     rng: np.random.Generator,
     eps_energy: float,
-) -> torch.Tensor:
+    random_sampling: str,
+) -> RandomCaptureResult:
     F, _, M_lags = D.shape
-    captures = torch.zeros(F, max_k)
+    if random_sampling not in ("without_replacement", "with_replacement"):
+        raise ValueError(f"Unsupported random_sampling: {random_sampling}")
+    if random_sampling == "without_replacement" and max_k > M_lags:
+        raise ValueError(f"max_k={max_k} exceeds M_lags={M_lags} for without-replacement sampling.")
+
+    capture_trials: List[torch.Tensor] = []
+    rand_ids_trials: List[np.ndarray] = []
+    captures_sum = torch.zeros(F, max_k)
+    duplicate_count = 0
+    duplicate_possible = 0
 
     for _ in range(random_trials):
-        rand_ids = rng.integers(0, M_lags, size=(F, max_k))
-        rand_ids = torch.from_numpy(rand_ids).long()
+        if random_sampling == "with_replacement":
+            rand_ids_np = rng.integers(0, M_lags, size=(F, max_k))
+            unique_counts = np.apply_along_axis(lambda row: np.unique(row).size, 1, rand_ids_np)
+            duplicate_count += int(np.sum(max_k - unique_counts))
+            duplicate_possible += int(F * max_k)
+        else:
+            rand_ids_np = np.empty((F, max_k), dtype=np.int64)
+            for f in range(F):
+                rand_ids_np[f] = rng.choice(M_lags, size=max_k, replace=False)
+            duplicate_possible += int(F * max_k)
+
+        rand_ids_trials.append(rand_ids_np)
+        rand_ids = torch.from_numpy(rand_ids_np).long()
+        captures = torch.zeros(F, max_k)
         for k in range(max_k):
             active = gather_atoms(D, rand_ids[:, : k + 1])
             sol = torch.linalg.lstsq(active, Y).solution
             recon = active @ sol
             res_energy = manual_complex_norm((Y - recon).squeeze(), dim=1) ** 2
             capture = 1.0 - (res_energy / torch.clamp(initial_energy, min=eps_energy))
-            captures[:, k] += capture
+            captures[:, k] = capture
 
-    captures /= float(random_trials)
-    return captures
+        capture_trials.append(captures)
+        captures_sum += captures
+
+    captures_mean = captures_sum / float(random_trials)
+    duplicate_rate = float(duplicate_count) / float(duplicate_possible) if duplicate_possible > 0 else 0.0
+    return RandomCaptureResult(
+        capture_mean=captures_mean,
+        capture_trials=capture_trials,
+        rand_ids_trials=rand_ids_trials,
+        duplicate_count=duplicate_count,
+        duplicate_rate=duplicate_rate,
+    )
 
 
 def compute_dt_forced_k_capture(
@@ -437,7 +550,7 @@ def compute_dt_free_rollout(
     stop_id: int,
     eps_energy: float,
     freq_ids: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     F, _, M_lags = D.shape
     device = D.device
     action_dim = M_lags + 1
@@ -448,7 +561,7 @@ def compute_dt_free_rollout(
     mask = torch.zeros(F, action_dim, dtype=torch.bool, device=device)
     indices = torch.full((F, max_k), -1, dtype=torch.long, device=device)
     stop_mask = torch.zeros(F, dtype=torch.bool, device=device)
-    steps_used = torch.full((F,), -1, dtype=torch.long, device=device)
+    steps_decision = torch.full((F,), -1, dtype=torch.long, device=device)
 
     rtg0 = normalize_logc(lambda_c, logc_min, logc_max)
 
@@ -476,7 +589,7 @@ def compute_dt_free_rollout(
             a = int(act[f].item())
             if a == stop_id:
                 stop_mask[f] = True
-                steps_used[f] = k + 1
+                steps_decision[f] = k + 1
                 continue
             mask[f, a] = True
             indices[f, k] = a
@@ -498,12 +611,13 @@ def compute_dt_free_rollout(
             res = res_cpu.to(device)
 
     for f in range(F):
-        if steps_used[f] < 0:
-            steps_used[f] = max_k
+        if steps_decision[f] < 0:
+            steps_decision[f] = max_k
 
     res_energy = manual_complex_norm(res.squeeze(), dim=1) ** 2
     capture = 1.0 - (res_energy / torch.clamp(initial_energy, min=eps_energy))
-    return steps_used, capture
+    k_selected = torch.sum(indices >= 0, dim=1)
+    return k_selected, steps_decision, capture, res_energy
 
 
 def main() -> None:
@@ -528,6 +642,12 @@ def main() -> None:
     p.add_argument("--eps_energy", type=float, default=1e-12)
     p.add_argument("--lambda_c_values", type=str, required=True)
     p.add_argument("--random_trials", type=int, default=3)
+    p.add_argument(
+        "--random_sampling",
+        type=str,
+        choices=["without_replacement", "with_replacement"],
+        default="without_replacement",
+    )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--write_per_sample", type=int, default=0)
     p.add_argument(
@@ -629,9 +749,14 @@ def main() -> None:
 
     per_sample_path = out_dir / "per_sample.jsonl"
     per_sample_fp = per_sample_path.open("w", encoding="utf-8") if int(args.write_per_sample) == 1 else None
+    diagnostics_path = out_dir / "integrity_diagnostics.jsonl"
+    diagnostics_fp = diagnostics_path.open("w", encoding="utf-8")
 
     stats_by_lambda = {}
-    steps_stats = {}
+    steps_decision_stats = {}
+    k_selected_stats = {}
+    k_selected_quantiles = {}
+    k_selected_hist = {}
     medians_by_lambda = {}
     for lambda_c in lambda_c_values:
         stats_by_lambda[lambda_c] = {
@@ -639,7 +764,14 @@ def main() -> None:
             "omp": RunningStats(),
             "random": RunningStats(),
         }
-        steps_stats[lambda_c] = RunningStats()
+        steps_decision_stats[lambda_c] = RunningStats()
+        k_selected_stats[lambda_c] = RunningStats()
+        k_selected_quantiles[lambda_c] = {
+            "p50": P2Quantile(0.5),
+            "p90": P2Quantile(0.9),
+            "p99": P2Quantile(0.99),
+        }
+        k_selected_hist[lambda_c] = np.zeros(int(args.max_k) + 1, dtype=np.int64)
         medians_by_lambda[lambda_c] = {
             "dt": P2Quantile(0.5),
             "omp": P2Quantile(0.5),
@@ -657,9 +789,24 @@ def main() -> None:
     num_samples_total = 0
     num_samples_used = 0
     num_nan_or_inf = 0
-    num_capture_out_of_range = 0
+    num_capture_out_of_range_dt = 0
+    num_capture_out_of_range_omp = 0
+    num_capture_out_of_range_random = 0
     num_omp_monotonicity_violations = 0
     num_dt_duplicate_actions_forced_k = 0
+    capture_minmax = {
+        "dt": {"min": float("inf"), "max": float("-inf")},
+        "omp": {"min": float("inf"), "max": float("-inf")},
+        "random": {"min": float("inf"), "max": float("-inf")},
+    }
+    out_of_range_counts = {
+        "dt": 0,
+        "omp": 0,
+        "random": 0,
+    }
+    worst_violation = {"abs": float("-inf"), "details": None}
+    random_duplicate_total = 0
+    random_duplicate_possible = 0
 
     rng = np.random.default_rng(int(args.seed))
     freq_ids = None
@@ -737,7 +884,7 @@ def main() -> None:
 
             rand_seed = int(args.seed) + clip_idx * 100000 + w_idx
             rng = np.random.default_rng(rand_seed)
-            random_capture_by_k = compute_random_capture_by_k(
+            random_result = compute_random_capture_by_k(
                 D,
                 Y,
                 initial_energy,
@@ -745,6 +892,7 @@ def main() -> None:
                 random_trials=int(args.random_trials),
                 rng=rng,
                 eps_energy=float(args.eps_energy),
+                random_sampling=str(args.random_sampling),
             )
 
             rtg0_forced = normalize_logc(lambda_c_values[0], logc_min, logc_max)
@@ -764,30 +912,106 @@ def main() -> None:
             num_dt_duplicate_actions_forced_k += int(dupes)
 
             F_band = int(Y.shape[0])
+            random_duplicate_total += int(random_result.duplicate_count)
+            random_duplicate_possible += int(F_band * int(args.max_k) * int(args.random_trials))
             for k in forced_k_values:
                 idx_k = k - 1
                 dt_vals = dt_forced_capture_by_k[:, idx_k]
                 omp_vals = omp_capture_by_k[:, idx_k]
-                rnd_vals = random_capture_by_k[:, idx_k]
+                rnd_vals = random_result.capture_mean[:, idx_k]
                 for f in range(F_band):
                     dt_val = float(dt_vals[f].item())
                     omp_val = float(omp_vals[f].item())
                     rnd_val = float(rnd_vals[f].item())
+                    e0 = float(initial_energy[f].item())
+                    e0_clamped = max(e0, float(args.eps_energy))
+
+                    for trial_idx in range(int(args.random_trials)):
+                        trial_val = float(random_result.capture_trials[trial_idx][f, idx_k].item())
+                        if not np.isfinite(trial_val):
+                            num_nan_or_inf += 1
+                            continue
+                        if str(args.random_sampling) == "with_replacement":
+                            ids = random_result.rand_ids_trials[trial_idx][f, :k]
+                            unique_count = int(np.unique(ids).size)
+                            duplicate_count = int(k - unique_count)
+                        else:
+                            unique_count = int(k)
+                            duplicate_count = 0
+                        e_res = float((1.0 - trial_val) * e0_clamped)
+                        update_capture_integrity(
+                            method="random",
+                            capture_val=trial_val,
+                            e0=e0,
+                            e_res=e_res,
+                            eval_context="forced_k",
+                            lambda_c=None,
+                            k_selected=int(k),
+                            steps_decision=None,
+                            clip_idx=clip_idx,
+                            window_idx=w_idx,
+                            freq_idx=f,
+                            random_trial=trial_idx,
+                            unique_count=unique_count,
+                            duplicate_count=duplicate_count,
+                            capture_minmax=capture_minmax,
+                            out_of_range_counts=out_of_range_counts,
+                            worst_violation=worst_violation,
+                            diag_fp=diagnostics_fp,
+                            capture_tol=CAPTURE_TOL,
+                        )
+
                     if not np.isfinite(dt_val) or not np.isfinite(omp_val) or not np.isfinite(rnd_val):
                         num_nan_or_inf += 1
                         continue
-                    if dt_val < -1e-6 or dt_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
-                    if omp_val < -1e-6 or omp_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
-                    if rnd_val < -1e-6 or rnd_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
+                    update_capture_integrity(
+                        method="dt",
+                        capture_val=dt_val,
+                        e0=e0,
+                        e_res=float((1.0 - dt_val) * e0_clamped),
+                        eval_context="forced_k",
+                        lambda_c=None,
+                        k_selected=int(k),
+                        steps_decision=None,
+                        clip_idx=clip_idx,
+                        window_idx=w_idx,
+                        freq_idx=f,
+                        random_trial=None,
+                        unique_count=None,
+                        duplicate_count=None,
+                        capture_minmax=capture_minmax,
+                        out_of_range_counts=out_of_range_counts,
+                        worst_violation=worst_violation,
+                        diag_fp=diagnostics_fp,
+                        capture_tol=CAPTURE_TOL,
+                    )
+                    update_capture_integrity(
+                        method="omp",
+                        capture_val=omp_val,
+                        e0=e0,
+                        e_res=float((1.0 - omp_val) * e0_clamped),
+                        eval_context="forced_k",
+                        lambda_c=None,
+                        k_selected=int(k),
+                        steps_decision=None,
+                        clip_idx=clip_idx,
+                        window_idx=w_idx,
+                        freq_idx=f,
+                        random_trial=None,
+                        unique_count=None,
+                        duplicate_count=None,
+                        capture_minmax=capture_minmax,
+                        out_of_range_counts=out_of_range_counts,
+                        worst_violation=worst_violation,
+                        diag_fp=diagnostics_fp,
+                        capture_tol=CAPTURE_TOL,
+                    )
                     forced_stats[k]["dt"].update(dt_val)
                     forced_stats[k]["omp"].update(omp_val)
                     forced_stats[k]["random"].update(rnd_val)
 
             for lambda_c in lambda_c_values:
-                steps_used, dt_capture = compute_dt_free_rollout(
+                k_selected, steps_decision, dt_capture, dt_res_energy = compute_dt_free_rollout(
                     model,
                     D_device,
                     D_norm_device,
@@ -803,19 +1027,105 @@ def main() -> None:
                     freq_ids=freq_ids,
                 )
                 for f in range(F_band):
-                    steps = int(steps_used[f].item())
+                    k_sel = int(k_selected[f].item())
+                    steps = int(steps_decision[f].item())
                     dt_val = float(dt_capture[f].item())
-                    omp_val = float(omp_capture_by_k[f, steps - 1].item())
-                    rnd_val = float(random_capture_by_k[f, steps - 1].item())
+                    if k_sel < 0 or k_sel > int(args.max_k):
+                        raise RuntimeError(f"Invalid k_selected={k_sel} (max_k={args.max_k}).")
+                    if steps < 1 or steps > int(args.max_k):
+                        raise RuntimeError(f"Invalid steps_decision={steps} (max_k={args.max_k}).")
+                    if k_sel == 0:
+                        omp_val = 0.0
+                        rnd_val = 0.0
+                    else:
+                        omp_val = float(omp_capture_by_k[f, k_sel - 1].item())
+                        rnd_val = float(random_result.capture_mean[f, k_sel - 1].item())
                     if not np.isfinite(dt_val) or not np.isfinite(omp_val) or not np.isfinite(rnd_val):
                         num_nan_or_inf += 1
                         continue
-                    if dt_val < -1e-6 or dt_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
-                    if omp_val < -1e-6 or omp_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
-                    if rnd_val < -1e-6 or rnd_val > 1.0 + 1e-6:
-                        num_capture_out_of_range += 1
+
+                    e0 = float(initial_energy[f].item())
+                    e0_clamped = max(e0, float(args.eps_energy))
+                    update_capture_integrity(
+                        method="dt",
+                        capture_val=dt_val,
+                        e0=e0,
+                        e_res=float(dt_res_energy[f].item()),
+                        eval_context="compute_matched",
+                        lambda_c=float(lambda_c),
+                        k_selected=k_sel,
+                        steps_decision=steps,
+                        clip_idx=clip_idx,
+                        window_idx=w_idx,
+                        freq_idx=f,
+                        random_trial=None,
+                        unique_count=None,
+                        duplicate_count=None,
+                        capture_minmax=capture_minmax,
+                        out_of_range_counts=out_of_range_counts,
+                        worst_violation=worst_violation,
+                        diag_fp=diagnostics_fp,
+                        capture_tol=CAPTURE_TOL,
+                    )
+                    update_capture_integrity(
+                        method="omp",
+                        capture_val=omp_val,
+                        e0=e0,
+                        e_res=float((1.0 - omp_val) * e0_clamped),
+                        eval_context="compute_matched",
+                        lambda_c=float(lambda_c),
+                        k_selected=k_sel,
+                        steps_decision=steps,
+                        clip_idx=clip_idx,
+                        window_idx=w_idx,
+                        freq_idx=f,
+                        random_trial=None,
+                        unique_count=None,
+                        duplicate_count=None,
+                        capture_minmax=capture_minmax,
+                        out_of_range_counts=out_of_range_counts,
+                        worst_violation=worst_violation,
+                        diag_fp=diagnostics_fp,
+                        capture_tol=CAPTURE_TOL,
+                    )
+
+                    for trial_idx in range(int(args.random_trials)):
+                        if k_sel == 0:
+                            trial_val = 0.0
+                        else:
+                            trial_val = float(random_result.capture_trials[trial_idx][f, k_sel - 1].item())
+                        if not np.isfinite(trial_val):
+                            num_nan_or_inf += 1
+                            continue
+                        if str(args.random_sampling) == "with_replacement":
+                            ids = random_result.rand_ids_trials[trial_idx][f, :k_sel]
+                            unique_count = int(np.unique(ids).size)
+                            duplicate_count = int(k_sel - unique_count)
+                        else:
+                            unique_count = int(k_sel)
+                            duplicate_count = 0
+                        e_res = float((1.0 - trial_val) * e0_clamped)
+                        update_capture_integrity(
+                            method="random",
+                            capture_val=trial_val,
+                            e0=e0,
+                            e_res=e_res,
+                            eval_context="compute_matched",
+                            lambda_c=float(lambda_c),
+                            k_selected=k_sel,
+                            steps_decision=steps,
+                            clip_idx=clip_idx,
+                            window_idx=w_idx,
+                            freq_idx=f,
+                            random_trial=trial_idx,
+                            unique_count=unique_count,
+                            duplicate_count=duplicate_count,
+                            capture_minmax=capture_minmax,
+                            out_of_range_counts=out_of_range_counts,
+                            worst_violation=worst_violation,
+                            diag_fp=diagnostics_fp,
+                            capture_tol=CAPTURE_TOL,
+                        )
 
                     stats_by_lambda[lambda_c]["dt"].update(dt_val)
                     stats_by_lambda[lambda_c]["omp"].update(omp_val)
@@ -823,7 +1133,12 @@ def main() -> None:
                     medians_by_lambda[lambda_c]["dt"].update(dt_val)
                     medians_by_lambda[lambda_c]["omp"].update(omp_val)
                     medians_by_lambda[lambda_c]["random"].update(rnd_val)
-                    steps_stats[lambda_c].update(float(steps))
+                    steps_decision_stats[lambda_c].update(float(steps))
+                    k_selected_stats[lambda_c].update(float(k_sel))
+                    k_selected_quantiles[lambda_c]["p50"].update(float(k_sel))
+                    k_selected_quantiles[lambda_c]["p90"].update(float(k_sel))
+                    k_selected_quantiles[lambda_c]["p99"].update(float(k_sel))
+                    k_selected_hist[lambda_c][k_sel] += 1
 
                     if per_sample_fp is not None:
                         row = {
@@ -831,7 +1146,8 @@ def main() -> None:
                             "window_idx": int(w_idx),
                             "freq_idx": int(f),
                             "lambda_c": float(lambda_c),
-                            "steps_used": int(steps),
+                            "k_selected": int(k_sel),
+                            "steps_decision": int(steps),
                             "dt_capture": dt_val,
                             "omp_capture": omp_val,
                             "random_capture": rnd_val,
@@ -845,9 +1161,11 @@ def main() -> None:
 
     if per_sample_fp is not None:
         per_sample_fp.close()
+    diagnostics_fp.close()
 
     compute_rows = []
-    steps_means = []
+    k_selected_means = []
+    steps_decision_means = []
     for lambda_c in lambda_c_values:
         dt_mean = stats_by_lambda[lambda_c]["dt"].mean()
         omp_mean = stats_by_lambda[lambda_c]["omp"].mean()
@@ -855,8 +1173,12 @@ def main() -> None:
         dt_med = medians_by_lambda[lambda_c]["dt"].result()
         omp_med = medians_by_lambda[lambda_c]["omp"].result()
         rnd_med = medians_by_lambda[lambda_c]["random"].result()
-        steps_mean = steps_stats[lambda_c].mean()
-        steps_means.append(steps_mean)
+        k_sel_mean = k_selected_stats[lambda_c].mean()
+        k_sel_std = k_selected_stats[lambda_c].std()
+        steps_mean = steps_decision_stats[lambda_c].mean()
+        steps_std = steps_decision_stats[lambda_c].std()
+        k_selected_means.append(k_sel_mean)
+        steps_decision_means.append(steps_mean)
         compute_rows.append(
             {
                 "lambda_c": float(lambda_c),
@@ -868,8 +1190,10 @@ def main() -> None:
                 "random_capture_median": rnd_med,
                 "dt_over_omp_mean": None if dt_mean is None or omp_mean is None else float(dt_mean / (omp_mean + 1e-12)),
                 "dt_minus_random_mean": None if dt_mean is None or rnd_mean is None else float(dt_mean - rnd_mean),
-                "steps_used_mean": steps_mean,
-                "steps_used_std": steps_stats[lambda_c].std(),
+                "k_selected_mean": k_sel_mean,
+                "k_selected_std": k_sel_std,
+                "steps_decision_mean": steps_mean,
+                "steps_decision_std": steps_std,
             }
         )
 
@@ -889,25 +1213,56 @@ def main() -> None:
             }
         )
 
-    steps_for_corr = [row["steps_used_mean"] for row in compute_rows]
-    if any(s is None for s in steps_for_corr):
-        spearman = None
+    if any(s is None for s in k_selected_means):
+        spearman_k = None
     else:
-        spearman = spearmanr(lambda_c_values, steps_for_corr)
-    steps_range = None
-    if steps_means and all(s is not None for s in steps_means):
-        steps_range = float(max(steps_means) - min(steps_means))
+        spearman_k = spearmanr(lambda_c_values, k_selected_means)
+    if any(s is None for s in steps_decision_means):
+        spearman_steps = None
+    else:
+        spearman_steps = spearmanr(lambda_c_values, steps_decision_means)
+
+    k_selected_range = None
+    if k_selected_means and all(s is not None for s in k_selected_means):
+        k_selected_range = float(max(k_selected_means) - min(k_selected_means))
+    steps_decision_range = None
+    if steps_decision_means and all(s is not None for s in steps_decision_means):
+        steps_decision_range = float(max(steps_decision_means) - min(steps_decision_means))
 
     num_samples_used = num_samples_total
+    for method, stats in capture_minmax.items():
+        if not np.isfinite(stats["min"]):
+            stats["min"] = None
+        if not np.isfinite(stats["max"]):
+            stats["max"] = None
+    num_capture_out_of_range_dt = out_of_range_counts["dt"]
+    num_capture_out_of_range_omp = out_of_range_counts["omp"]
+    num_capture_out_of_range_random = out_of_range_counts["random"]
+    num_capture_out_of_range_total = (
+        num_capture_out_of_range_dt + num_capture_out_of_range_omp + num_capture_out_of_range_random
+    )
+    random_duplicate_rate = (
+        float(random_duplicate_total) / float(random_duplicate_possible)
+        if random_duplicate_possible > 0
+        else 0.0
+    )
     integrity = {
         "num_samples_total": int(num_samples_total),
         "num_samples_used": int(num_samples_used),
         "num_missing_files": int(missing_files),
         "num_md5_mismatches": int(md5_mismatches),
         "num_nan_or_inf": int(num_nan_or_inf),
-        "num_capture_out_of_range": int(num_capture_out_of_range),
+        "num_capture_out_of_range_total": int(num_capture_out_of_range_total),
+        "num_capture_out_of_range_dt": int(num_capture_out_of_range_dt),
+        "num_capture_out_of_range_omp": int(num_capture_out_of_range_omp),
+        "num_capture_out_of_range_random": int(num_capture_out_of_range_random),
         "num_omp_monotonicity_violations": int(num_omp_monotonicity_violations),
         "num_dt_duplicate_actions_forced_k": int(num_dt_duplicate_actions_forced_k),
+        "capture_minmax": capture_minmax,
+        "worst_violation": worst_violation["details"],
+        "random_duplicate_count": int(random_duplicate_total),
+        "random_duplicate_possible": int(random_duplicate_possible),
+        "random_duplicate_rate": float(random_duplicate_rate),
     }
 
     compute_summary = {
@@ -931,7 +1286,7 @@ def main() -> None:
             "eps_energy": float(args.eps_energy),
             "lambda_c_values": lambda_c_values,
             "random_trials": int(args.random_trials),
-            "random_sampling": "with_replacement",
+            "random_sampling": str(args.random_sampling),
             "forced_k_rtg0_lambda_c": float(lambda_c_values[0]),
             "device": str(device),
             "write_per_sample": bool(int(args.write_per_sample)),
@@ -948,9 +1303,30 @@ def main() -> None:
 
     controllability_summary = {
         "lambda_c_values": lambda_c_values,
-        "steps_used_mean": [row["steps_used_mean"] for row in compute_rows],
-        "spearman_lambda_steps": spearman,
-        "steps_range": steps_range,
+        "k_selected_mean": k_selected_means,
+        "k_selected_std": [row["k_selected_std"] for row in compute_rows],
+        "k_selected_range": k_selected_range,
+        "k_selected_quantiles": {
+            "p50": [k_selected_quantiles[l]["p50"].result() for l in lambda_c_values],
+            "p90": [k_selected_quantiles[l]["p90"].result() for l in lambda_c_values],
+            "p99": [k_selected_quantiles[l]["p99"].result() for l in lambda_c_values],
+        },
+        "k_selected_histogram": {
+            str(l): [int(v) for v in k_selected_hist[l].tolist()] for l in lambda_c_values
+        },
+        "p_k_selected_lt_max_k": [
+            float(np.sum(k_selected_hist[l][:-1]) / max(int(np.sum(k_selected_hist[l])), 1))
+            for l in lambda_c_values
+        ],
+        "p_k_selected_leq_12": [
+            float(np.sum(k_selected_hist[l][: min(12, int(args.max_k)) + 1]) / max(int(np.sum(k_selected_hist[l])), 1))
+            for l in lambda_c_values
+        ],
+        "steps_decision_mean": steps_decision_means,
+        "steps_decision_std": [row["steps_decision_std"] for row in compute_rows],
+        "steps_decision_range": steps_decision_range,
+        "spearman_lambda_k_selected": spearman_k,
+        "spearman_lambda_steps_decision": spearman_steps,
     }
 
     (out_dir / "summary" / "compute_matched_summary.json").write_text(
