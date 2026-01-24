@@ -280,6 +280,12 @@ def main():
     )
     parser.add_argument("--min_k", type=int, default=1, help="Minimum steps before allowing STOP in penalty_omp.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducibility.")
+    parser.add_argument(
+        "--stride",
+        type=int,
+        default=32,
+        help="Window stride in frames when iterating t over the STFT timeline.",
+    )
     
     # New Params for MaxLag
     parser.add_argument("--max_lag", type=int, default=32, help="Max lag (both future and past). i.e. [-max_lag, max_lag]")
@@ -326,7 +332,7 @@ def main():
     
     logger.info(f"Processing Trajectories... Hop: {args.hop_length if args.hop_length else 'Default'}")
     
-    stride = 32
+    stride = int(args.stride)
     
     lambda_c_values = [float(x) for x in str(args.lambda_c_values).split(",") if x.strip() != ""]
     if args.teacher_mode == "penalty_omp" and not lambda_c_values:

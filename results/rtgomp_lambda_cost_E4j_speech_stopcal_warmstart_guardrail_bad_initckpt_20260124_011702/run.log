@@ -1,0 +1,21 @@
+data_path=results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt
+bad_init_ckpt=results/exp_m32_k16_full_gain100_ep50/model/dt_freq_aware_best.pth
+INFO:__main__:Using device: cpu
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt...
+INFO:__main__:Loaded 39790 variable-length sequences. Feature dim: 101
+INFO:__main__:Warm-start: loading init checkpoint: results/exp_m32_k16_full_gain100_ep50/model/dt_freq_aware_best.pth
+Traceback (most recent call last):
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/train_dt_lag_seq_rtg.py", line 574, in <module>
+    main()
+  File "/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2/scripts/h_exploration/train_dt_lag_seq_rtg.py", line 457, in main
+    model.load_state_dict(init_state, strict=True)
+  File "/opt/anaconda3/envs/trl-training/lib/python3.11/site-packages/torch/nn/modules/module.py", line 2624, in load_state_dict
+    raise RuntimeError(
+RuntimeError: Error(s) in loading state_dict for SeqDT_FreqAware:
+	size mismatch for rtg_embed.weight: copying a param with shape torch.Size([128, 1]) from checkpoint, the shape in current model is torch.Size([128, 2]).
+	size mismatch for state_embed.weight: copying a param with shape torch.Size([128, 65]) from checkpoint, the shape in current model is torch.Size([128, 101]).
+	size mismatch for corr_norm.weight: copying a param with shape torch.Size([65]) from checkpoint, the shape in current model is torch.Size([101]).
+	size mismatch for corr_norm.bias: copying a param with shape torch.Size([65]) from checkpoint, the shape in current model is torch.Size([101]).
+	size mismatch for head.2.weight: copying a param with shape torch.Size([65, 128]) from checkpoint, the shape in current model is torch.Size([102, 128]).
+	size mismatch for head.2.bias: copying a param with shape torch.Size([65]) from checkpoint, the shape in current model is torch.Size([102]).
+ERROR conda.cli.main_run:execute(125): `conda run python -u scripts/h_exploration/train_dt_lag_seq_rtg.py --data_path results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt --out_dir results/rtgomp_lambda_cost_E4j_speech_stopcal_warmstart_guardrail_bad_initckpt_20260124_011702/model --init_ckpt results/exp_m32_k16_full_gain100_ep50/model/dt_freq_aware_best.pth --epochs 1 --batch_size 64 --lr 1e-4 --freq_range 39,385 --rtg_dim 2 --rtg_mode lambda_cost --lambda_c_values 1e-5,3e-5,1e-4,2e-4,3e-4 --rtg1_mode max_k --rtg1_max_k 16 --use_stop_action --seed 0` failed. (See above for error)

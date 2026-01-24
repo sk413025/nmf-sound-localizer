@@ -366,9 +366,34 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--out_dir", type=str, default="results/dtmin_freq_aware")
+    parser.add_argument(
+        "--init_ckpt",
+        type=str,
+        default=None,
+        help="Optional warm-start checkpoint (.pth state_dict). Loaded with strict=True; mismatches fail fast.",
+    )
+    parser.add_argument(
+        "--freeze_backbone",
+        action="store_true",
+        help="Freeze all params except rtg_embed and head (useful for STOP/cost recalibration).",
+    )
+    parser.add_argument(
+        "--train_stepwise_eval",
+        action="store_true",
+        help=(
+            "Train in evaluator style: treat every (state, rtg) step independently with K=1, matching "
+            "run_rtgomp_e4h_paper_eval.py which resets the GRU hidden state every decision."
+        ),
+    )
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--batch_size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument(
+        "--stop_weight",
+        type=float,
+        default=1.0,
+        help="Optional class-weight multiplier for STOP label (only used when --use_stop_action).",
+    )
     parser.add_argument("--freq_range", type=str, default=None, help="Start,End bin indices e.g. 50,60")
     parser.add_argument("--rtg_dim", type=int, default=2, help="RTG dimension: 1 or 2")
     parser.add_argument(
@@ -442,10 +467,37 @@ def main():
     # Model
     action_dim = dataset.M + (1 if bool(args.use_stop_action) else 0)
     model = SeqDT_FreqAware(M_lags=dataset.M, rtg_dim=int(args.rtg_dim), action_dim=action_dim).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    if args.init_ckpt:
+        init_path = Path(str(args.init_ckpt))
+        if not init_path.exists():
+            raise FileNotFoundError(f"--init_ckpt not found: {init_path}")
+        logger.info("Warm-start: loading init checkpoint: %s", str(init_path))
+        init_state = torch.load(str(init_path), map_location=device)
+        model.load_state_dict(init_state, strict=True)
+        logger.info("Warm-start: init checkpoint loaded successfully.")
+
+    if bool(args.freeze_backbone):
+        for p in model.parameters():
+            p.requires_grad = False
+        for p in model.rtg_embed.parameters():
+            p.requires_grad = True
+        for p in model.head.parameters():
+            p.requires_grad = True
+        trainable = sum(int(p.requires_grad) for p in model.parameters())
+        total = sum(1 for _ in model.parameters())
+        logger.info("Freeze backbone: trainable_params=%d/%d (rtg_embed + head).", trainable, total)
+
+    optimizer = optim.Adam((p for p in model.parameters() if p.requires_grad), lr=args.lr)
     
     # CE Loss with ignore_index to handle padding
-    criterion = nn.CrossEntropyLoss(ignore_index=-100)
+    if bool(args.use_stop_action) and float(args.stop_weight) != 1.0:
+        stop_id = dataset.M
+        weights = torch.ones(int(action_dim), dtype=torch.float32, device=device)
+        weights[stop_id] = float(args.stop_weight)
+        logger.info("Using class weights: stop_id=%d stop_weight=%.4f", int(stop_id), float(args.stop_weight))
+        criterion = nn.CrossEntropyLoss(ignore_index=-100, weight=weights)
+    else:
+        criterion = nn.CrossEntropyLoss(ignore_index=-100)
     
     best_loss = float("inf")
     grad_history = {
@@ -463,12 +515,25 @@ def main():
             # mask is not strictly needed for GRU if padding is right-side and we ignore_index in loss
             
             optimizer.zero_grad()
-            logits = model(bx, br, bf, mask) # (B, K, M_lags)
-            
-            # Flatten for CE
-            # logits: (B*K, M_lags)
-            # actions: (B*K)
-            loss = criterion(logits.reshape(-1, logits.shape[-1]), ba.reshape(-1))
+            if bool(args.train_stepwise_eval):
+                # Evaluator calls the model with K=1 each step (hidden reset). Match that here.
+                B, K, M = bx.shape
+                rtg_dim = br.shape[-1] if br.dim() == 3 else 1
+
+                bx_flat = bx.reshape(B * K, M).unsqueeze(1)
+                if br.dim() == 3:
+                    br_flat = br.reshape(B * K, rtg_dim).unsqueeze(1)
+                else:
+                    br_flat = br.reshape(B * K).unsqueeze(1)
+                bf_flat = bf.unsqueeze(1).expand(-1, K).reshape(B * K)
+                ba_flat = ba.reshape(B * K)
+
+                valid = ba_flat != -100
+                logits = model(bx_flat[valid], br_flat[valid], bf_flat[valid])  # (N, 1, action_dim)
+                loss = criterion(logits.squeeze(1), ba_flat[valid])
+            else:
+                logits = model(bx, br, bf, mask) # (B, K, action_dim)
+                loss = criterion(logits.reshape(-1, logits.shape[-1]), ba.reshape(-1))
             
             loss.backward()
             grad_history["rtg_embed"].append(grad_norm(model.rtg_embed))
@@ -488,18 +553,31 @@ def main():
         with torch.no_grad():
              for bx, ba, br, bf, mask in val_loader:
                 bx, ba, br, bf = bx.to(device), ba.to(device), br.to(device), bf.to(device)
-                logits = model(bx, br, bf)
-                
-                loss = criterion(logits.reshape(-1, logits.shape[-1]), ba.reshape(-1))
-                val_loss += loss.item()
-                
-                preds = torch.argmax(logits, dim=-1)
-                
-                # Accuracy masking: Only count valid positions
-                valid_mask = (ba != -100)
-                
-                correct += (preds[valid_mask] == ba[valid_mask]).sum().item()
-                total += valid_mask.sum().item()
+                if bool(args.train_stepwise_eval):
+                    B, K, M = bx.shape
+                    rtg_dim = br.shape[-1] if br.dim() == 3 else 1
+                    bx_flat = bx.reshape(B * K, M).unsqueeze(1)
+                    if br.dim() == 3:
+                        br_flat = br.reshape(B * K, rtg_dim).unsqueeze(1)
+                    else:
+                        br_flat = br.reshape(B * K).unsqueeze(1)
+                    bf_flat = bf.unsqueeze(1).expand(-1, K).reshape(B * K)
+                    ba_flat = ba.reshape(B * K)
+                    valid = ba_flat != -100
+                    logits = model(bx_flat[valid], br_flat[valid], bf_flat[valid]).squeeze(1)
+                    loss = criterion(logits, ba_flat[valid])
+                    val_loss += loss.item()
+                    preds = torch.argmax(logits, dim=-1)
+                    correct += (preds == ba_flat[valid]).sum().item()
+                    total += valid.sum().item()
+                else:
+                    logits = model(bx, br, bf)
+                    loss = criterion(logits.reshape(-1, logits.shape[-1]), ba.reshape(-1))
+                    val_loss += loss.item()
+                    preds = torch.argmax(logits, dim=-1)
+                    valid_mask = (ba != -100)
+                    correct += (preds[valid_mask] == ba[valid_mask]).sum().item()
+                    total += valid_mask.sum().item()
 
         
         avg_val_loss = val_loss / len(val_loader)

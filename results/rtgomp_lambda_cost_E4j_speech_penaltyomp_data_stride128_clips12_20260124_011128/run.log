@@ -1,0 +1,17 @@
+[Preflight]
+num_pairs 416
+first_pair (PosixPath('/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/MIC/boy1_papercup_MIC_001.wav'), PosixPath('/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/LDV/boy1_papercup_LDV_001.wav'))
+last_pair (PosixPath('/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/MIC/boy1_papercup_MIC_xnonoise_320.wav'), PosixPath('/Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/LDV/boy1_papercup_LDV_xnonoise_320.wav'))
+lambda_grid=1e-5,3e-5,1e-4,2e-4,3e-4
+INFO:__main__:Config: Lag [-50, 50], Tw=32, K=16, Gain=100.000, Mode=penalty_omp
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Processing Trajectories... Hop: 160
+0it [00:00, ?it/s]1it [00:07,  7.78s/it]2it [00:14,  7.13s/it]3it [00:21,  6.97s/it]4it [00:27,  6.86s/it]5it [00:34,  6.87s/it]6it [00:47,  8.98s/it]7it [00:56,  8.91s/it]8it [01:00,  7.14s/it]9it [01:03,  5.94s/it]10it [01:13,  7.17s/it]11it [01:19,  7.03s/it]12it [01:29,  7.71s/it]12it [01:29,  7.43s/it]
+INFO:__main__:Saved 115 blocks to results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data (Variants: 5)
+subset_manifest.fingerprint_md5 72499de7e7c0b0c8d650954ae52fcb48
+{'lambda_c': 9.999999747378752e-06, 'valid_len_mean_band': 15.62000502638854, 'p_valid_len_lt_16_band': 0.13470721286755466}
+{'lambda_c': 2.9999999242136255e-05, 'valid_len_mean_band': 14.93603920583061, 'p_valid_len_lt_16_band': 0.34242271927620005}
+{'lambda_c': 9.999999747378752e-05, 'valid_len_mean_band': 13.282231716511687, 'p_valid_len_lt_16_band': 0.7609952249308871}
+{'lambda_c': 0.00019999999494757503, 'valid_len_mean_band': 12.023875345564212, 'p_valid_len_lt_16_band': 0.9252324704699674}
+{'lambda_c': 0.0003000000142492354, 'valid_len_mean_band': 11.252199044986178, 'p_valid_len_lt_16_band': 0.9714752450364413}
