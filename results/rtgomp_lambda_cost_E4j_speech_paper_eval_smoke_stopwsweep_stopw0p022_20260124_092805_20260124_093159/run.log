@@ -1,0 +1,16 @@
+date=Sat Jan 24 09:31:59 CST 2026
+pwd=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2
+OUT_DIR=results/rtgomp_lambda_cost_E4j_speech_paper_eval_smoke_stopwsweep_stopw0p022_20260124_092805_20260124_093159
+train_dir=results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805
+ckpt_path=results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805/model/dt_freq_aware_best.pth
+lambda_grid=1e-5,3e-5,1e-4,2e-4,3e-4
+CMD: MPLCONFIGDIR=/tmp/mpl PYTHONPATH=. conda run -n trl-training python -u scripts/h_exploration/run_rtgomp_e4h_paper_eval.py       --mic_root /Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/MIC --ldv_root /Users/jnrle/Documents/LDVReorientation/data/SpeechData/boy1/LDV       --ckpt_path results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805/model/dt_freq_aware_best.pth       --out_dir results/rtgomp_lambda_cost_E4j_speech_paper_eval_smoke_stopwsweep_stopw0p022_20260124_092805_20260124_093159       --mode smoke       --lambda_c_values 1e-5,3e-5,1e-4,2e-4,3e-4       --random_trials 1       --random_sampling without_replacement       --seed 0       --device cpu       --write_per_sample 0
+INFO:__main__:Using device: cpu
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Wrote subset manifest: results/rtgomp_lambda_cost_E4j_speech_paper_eval_smoke_stopwsweep_stopw0p022_20260124_092805_20260124_093159/subset_manifest.json
+INFO:__main__:Processed clip 1 / 3
+INFO:__main__:Processed clip 2 / 3
+INFO:__main__:Processed clip 3 / 3
+INFO:__main__:Wrote summaries to results/rtgomp_lambda_cost_E4j_speech_paper_eval_smoke_stopwsweep_stopw0p022_20260124_092805_20260124_093159/summary
+

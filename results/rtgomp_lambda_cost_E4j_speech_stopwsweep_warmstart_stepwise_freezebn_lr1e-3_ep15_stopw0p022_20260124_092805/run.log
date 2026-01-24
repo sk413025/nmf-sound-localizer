@@ -1,0 +1,32 @@
+date=Sat Jan 24 09:28:05 CST 2026
+pwd=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2
+OUT_DIR=results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805
+MODEL_DIR=results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805/model
+data_path=results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt
+init_ckpt=results/rtgomp_lambda_cost_E4c_stopstatefix_ratio3_20260121_030820/model/dt_freq_aware_best.pth
+lambda_grid=1e-5,3e-5,1e-4,2e-4,3e-4
+stop_weight=0.022
+CMD: MPLCONFIGDIR=/tmp/mpl PYTHONPATH=. conda run -n trl-training python -u scripts/h_exploration/train_dt_lag_seq_rtg.py       --data_path results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt       --out_dir results/rtgomp_lambda_cost_E4j_speech_stopwsweep_warmstart_stepwise_freezebn_lr1e-3_ep15_stopw0p022_20260124_092805/model       --init_ckpt results/rtgomp_lambda_cost_E4c_stopstatefix_ratio3_20260121_030820/model/dt_freq_aware_best.pth       --freeze_backbone       --train_stepwise_eval       --stop_weight 0.022       --epochs 15 --batch_size 256 --lr 1e-3       --freq_range 39,385       --rtg_dim 2 --rtg_mode lambda_cost --lambda_c_values 1e-5,3e-5,1e-4,2e-4,3e-4       --rtg1_mode max_k --rtg1_max_k 16       --use_stop_action --seed 0
+INFO:__main__:Using device: cpu
+INFO:__main__:Loading sequence data with RTG from results/rtgomp_lambda_cost_E4j_speech_penaltyomp_data_stride128_clips12_20260124_011128/data/lag_trajectories.pt...
+INFO:__main__:Loaded 39790 variable-length sequences. Feature dim: 101
+INFO:__main__:Warm-start: loading init checkpoint: results/rtgomp_lambda_cost_E4c_stopstatefix_ratio3_20260121_030820/model/dt_freq_aware_best.pth
+INFO:__main__:Warm-start: init checkpoint loaded successfully.
+INFO:__main__:Freeze backbone: trainable_params=6/21 (rtg_embed + head).
+INFO:__main__:Using class weights: stop_id=101 stop_weight=0.0220
+INFO:__main__:Epoch 1: Train Loss=6.0728, Val Loss=4.3211, Acc=0.1137
+INFO:__main__:Epoch 2: Train Loss=4.2429, Val Loss=4.1796, Acc=0.1192
+INFO:__main__:Epoch 3: Train Loss=4.1638, Val Loss=4.1255, Acc=0.1233
+INFO:__main__:Epoch 4: Train Loss=4.1162, Val Loss=4.0835, Acc=0.1275
+INFO:__main__:Epoch 5: Train Loss=4.0781, Val Loss=4.0504, Acc=0.1307
+INFO:__main__:Epoch 6: Train Loss=4.0477, Val Loss=4.0228, Acc=0.1325
+INFO:__main__:Epoch 7: Train Loss=4.0215, Val Loss=4.0000, Acc=0.1344
+INFO:__main__:Epoch 8: Train Loss=3.9990, Val Loss=3.9799, Acc=0.1361
+INFO:__main__:Epoch 9: Train Loss=3.9800, Val Loss=3.9635, Acc=0.1381
+INFO:__main__:Epoch 10: Train Loss=3.9634, Val Loss=3.9480, Acc=0.1394
+INFO:__main__:Epoch 11: Train Loss=3.9472, Val Loss=3.9347, Acc=0.1409
+INFO:__main__:Epoch 12: Train Loss=3.9337, Val Loss=3.9214, Acc=0.1425
+INFO:__main__:Epoch 13: Train Loss=3.9197, Val Loss=3.9094, Acc=0.1441
+INFO:__main__:Epoch 14: Train Loss=3.9072, Val Loss=3.8978, Acc=0.1460
+INFO:__main__:Epoch 15: Train Loss=3.8971, Val Loss=3.8873, Acc=0.1462
+
