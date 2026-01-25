@@ -111,6 +111,33 @@ def md5_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def apply_pairing_mode(dataset: DoALagDataset, pairing_mode: str) -> None:
+    """Modify dataset.clips in-place for guardrail diagnostics (still real data)."""
+    if pairing_mode == "paired":
+        return
+    if pairing_mode != "mispair_shift1":
+        raise SystemExit(f"Unsupported pairing_mode: {pairing_mode}")
+    if len(dataset.clips) < 2:
+        raise SystemExit("mispair_shift1 requires dataset length >= 2")
+
+    # Keep MIC order, shift LDV by +1 with cyclic wrap. This should break time/content alignment.
+    clips = list(dataset.clips)
+    shifted = []
+    n = len(clips)
+    for i, (mic_path, _ldv_path) in enumerate(clips):
+        shifted_ldv = clips[(i + 1) % n][1]
+        shifted.append((mic_path, shifted_ldv))
+    dataset.clips = shifted
+
+
+def median_and_mad(values: np.ndarray) -> Tuple[Optional[float], Optional[float]]:
+    if values.size == 0:
+        return None, None
+    med = float(np.median(values))
+    mad = float(np.median(np.abs(values - med)))
+    return med, mad
+
+
 def generate_subset_manifest(
     dataset: DoALagDataset,
     mic_root: str,
@@ -550,7 +577,7 @@ def compute_dt_free_rollout(
     stop_id: int,
     eps_energy: float,
     freq_ids: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     F, _, M_lags = D.shape
     device = D.device
     action_dim = M_lags + 1
@@ -617,7 +644,8 @@ def compute_dt_free_rollout(
     res_energy = manual_complex_norm(res.squeeze(), dim=1) ** 2
     capture = 1.0 - (res_energy / torch.clamp(initial_energy, min=eps_energy))
     k_selected = torch.sum(indices >= 0, dim=1)
-    return k_selected, steps_decision, capture, res_energy
+    first_ids = indices[:, 0].clone()
+    return k_selected, steps_decision, capture, res_energy, first_ids
 
 
 def main() -> None:
@@ -650,6 +678,25 @@ def main() -> None:
     )
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--write_per_sample", type=int, default=0)
+    p.add_argument(
+        "--pairing_mode",
+        type=str,
+        default="paired",
+        choices=["paired", "mispair_shift1"],
+        help="Dataset pairing mode. mispair_shift1 is a guardrail diagnostic (still real WAV).",
+    )
+    p.add_argument(
+        "--require_wav_only",
+        type=int,
+        default=0,
+        help="If 1, fail fast if any selected dataset path is not a .wav (guards against running on .npy).",
+    )
+    p.add_argument(
+        "--write_delay_diagnostics",
+        type=int,
+        default=0,
+        help="If 1, write window-level lag/delay diagnostics to delay_diagnostics.jsonl and a summary JSON.",
+    )
     p.add_argument(
         "--device",
         type=str,
@@ -685,6 +732,8 @@ def main() -> None:
         angle=None,
         hop_length=int(args.hop_length),
     )
+    apply_pairing_mode(dataset, str(args.pairing_mode))
+    logger.info("Pairing mode: %s", args.pairing_mode)
 
     if args.mode == "scale_check_subset":
         expected_pairs = 48
@@ -702,6 +751,15 @@ def main() -> None:
             raise SystemExit("smoke mode requires num_pairs > 0")
         if num_pairs > len(dataset):
             raise SystemExit(f"smoke num_pairs={num_pairs} exceeds dataset length {len(dataset)}")
+
+    if int(args.require_wav_only) == 1:
+        for idx in range(int(num_pairs)):
+            mic_path, ldv_path = dataset.clips[idx]
+            if not str(mic_path).endswith(".wav") or not str(ldv_path).endswith(".wav"):
+                raise SystemExit(
+                    "require_wav_only=1 but found non-wav path in dataset subset: "
+                    f"{mic_path} , {ldv_path}"
+                )
 
     manifest_path = Path(args.subset_manifest) if args.subset_manifest else (out_dir / "subset_manifest.json")
     if manifest_path.exists():
@@ -751,6 +809,8 @@ def main() -> None:
     per_sample_fp = per_sample_path.open("w", encoding="utf-8") if int(args.write_per_sample) == 1 else None
     diagnostics_path = out_dir / "integrity_diagnostics.jsonl"
     diagnostics_fp = diagnostics_path.open("w", encoding="utf-8")
+    delay_path = out_dir / "delay_diagnostics.jsonl"
+    delay_fp = delay_path.open("w", encoding="utf-8") if int(args.write_delay_diagnostics) == 1 else None
 
     stats_by_lambda = {}
     steps_decision_stats = {}
@@ -758,6 +818,9 @@ def main() -> None:
     k_selected_quantiles = {}
     k_selected_hist = {}
     medians_by_lambda = {}
+    delay_counts_by_lambda = {}
+    delay_stats_by_lambda = {}
+    delay_mad_quantiles_by_lambda = {}
     for lambda_c in lambda_c_values:
         stats_by_lambda[lambda_c] = {
             "dt": RunningStats(),
@@ -776,6 +839,28 @@ def main() -> None:
             "dt": P2Quantile(0.5),
             "omp": P2Quantile(0.5),
             "random": P2Quantile(0.5),
+        }
+        delay_counts_by_lambda[lambda_c] = {
+            "num_windows": 0,
+            "num_windows_dt_first_lag_undefined": 0,
+            "num_windows_dt_match_undefined": 0,
+        }
+        delay_stats_by_lambda[lambda_c] = {
+            "dt_stop0_frac": RunningStats(),
+            "dt_first_lag_mad_frames": RunningStats(),
+            "dt_first_lag_median_frames": RunningStats(),
+            "dt_first_lag_abs_le_1_frac": RunningStats(),
+            "dt_first_lag_abs_le_2_frac": RunningStats(),
+            "dt_k_selected_mean": RunningStats(),
+            "dt_steps_decision_mean": RunningStats(),
+            "dt_capture_mean": RunningStats(),
+            "omp_first_lag_mad_frames": RunningStats(),
+            "omp_first_lag_median_frames": RunningStats(),
+            "dt_vs_omp_first_lag_match_frac": RunningStats(),
+        }
+        delay_mad_quantiles_by_lambda[lambda_c] = {
+            "p50": P2Quantile(0.5),
+            "p90": P2Quantile(0.9),
         }
 
     forced_stats = {}
@@ -1011,7 +1096,7 @@ def main() -> None:
                     forced_stats[k]["random"].update(rnd_val)
 
             for lambda_c in lambda_c_values:
-                k_selected, steps_decision, dt_capture, dt_res_energy = compute_dt_free_rollout(
+                k_selected, steps_decision, dt_capture, dt_res_energy, dt_first_ids = compute_dt_free_rollout(
                     model,
                     D_device,
                     D_norm_device,
@@ -1026,6 +1111,90 @@ def main() -> None:
                     eps_energy=float(args.eps_energy),
                     freq_ids=freq_ids,
                 )
+                if delay_fp is not None:
+                    dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
+                    dt_defined_mask = dt_first_ids_cpu >= 0
+                    dt_stop0_frac = float(np.mean(~dt_defined_mask))
+                    dt_first_lags = dt_first_ids_cpu[dt_defined_mask].astype(np.int64) + int(Lag_Min)
+                    dt_med, dt_mad = median_and_mad(dt_first_lags.astype(float))
+                    if dt_first_lags.size == 0:
+                        dt_abs_le_1 = None
+                        dt_abs_le_2 = None
+                    else:
+                        dt_abs_le_1 = float(np.mean(np.abs(dt_first_lags) <= 1))
+                        dt_abs_le_2 = float(np.mean(np.abs(dt_first_lags) <= 2))
+
+                    with torch.no_grad():
+                        corrs0 = torch.bmm(D_norm_device.conj().transpose(1, 2), Y_device).squeeze(2)
+                        omp_first_ids = torch.argmax(torch.abs(corrs0), dim=1)
+                    omp_first_ids_cpu = omp_first_ids.detach().cpu().numpy().astype(np.int64)
+                    omp_first_lags = omp_first_ids_cpu + int(Lag_Min)
+                    omp_med, omp_mad = median_and_mad(omp_first_lags.astype(float))
+
+                    if dt_defined_mask.any():
+                        match_frac = float(
+                            np.mean(dt_first_ids_cpu[dt_defined_mask] == omp_first_ids_cpu[dt_defined_mask])
+                        )
+                    else:
+                        match_frac = None
+
+                    dt_k_mean = float(k_selected.float().mean().item())
+                    dt_steps_mean = float(steps_decision.float().mean().item())
+                    dt_cap_mean = float(dt_capture.float().mean().item())
+
+                    delay_counts_by_lambda[lambda_c]["num_windows"] += 1
+                    delay_stats_by_lambda[lambda_c]["dt_stop0_frac"].update(dt_stop0_frac)
+                    delay_stats_by_lambda[lambda_c]["dt_k_selected_mean"].update(dt_k_mean)
+                    delay_stats_by_lambda[lambda_c]["dt_steps_decision_mean"].update(dt_steps_mean)
+                    delay_stats_by_lambda[lambda_c]["dt_capture_mean"].update(dt_cap_mean)
+                    delay_stats_by_lambda[lambda_c]["omp_first_lag_median_frames"].update(float(omp_med))
+                    delay_stats_by_lambda[lambda_c]["omp_first_lag_mad_frames"].update(float(omp_mad))
+
+                    if dt_med is None or dt_mad is None:
+                        delay_counts_by_lambda[lambda_c]["num_windows_dt_first_lag_undefined"] += 1
+                    else:
+                        delay_stats_by_lambda[lambda_c]["dt_first_lag_median_frames"].update(float(dt_med))
+                        delay_stats_by_lambda[lambda_c]["dt_first_lag_mad_frames"].update(float(dt_mad))
+                        delay_mad_quantiles_by_lambda[lambda_c]["p50"].update(float(dt_mad))
+                        delay_mad_quantiles_by_lambda[lambda_c]["p90"].update(float(dt_mad))
+                    if dt_abs_le_1 is not None:
+                        delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_1_frac"].update(float(dt_abs_le_1))
+                    if dt_abs_le_2 is not None:
+                        delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_2_frac"].update(float(dt_abs_le_2))
+                    if match_frac is None:
+                        delay_counts_by_lambda[lambda_c]["num_windows_dt_match_undefined"] += 1
+                    else:
+                        delay_stats_by_lambda[lambda_c]["dt_vs_omp_first_lag_match_frac"].update(float(match_frac))
+
+                    row = {
+                        "pairing_mode": str(args.pairing_mode),
+                        "clip_idx": int(clip_idx),
+                        "window_idx": int(w_idx),
+                        "start_t": int(start_t),
+                        "lambda_c": float(lambda_c),
+                        "fs": int(args.fs),
+                        "hop_length": int(args.hop_length),
+                        "n_fft": int(args.n_fft),
+                        "freq_min": float(args.freq_min),
+                        "freq_max": float(args.freq_max),
+                        "max_lag": int(args.max_lag),
+                        "tw": int(args.tw),
+                        "max_k": int(args.max_k),
+                        "F_band": int(F_band),
+                        "dt_stop0_frac": dt_stop0_frac,
+                        "dt_first_lag_defined_frac": float(1.0 - dt_stop0_frac),
+                        "dt_first_lag_median_frames": dt_med,
+                        "dt_first_lag_mad_frames": dt_mad,
+                        "dt_first_lag_abs_le_1_frac": dt_abs_le_1,
+                        "dt_first_lag_abs_le_2_frac": dt_abs_le_2,
+                        "dt_k_selected_mean": dt_k_mean,
+                        "dt_steps_decision_mean": dt_steps_mean,
+                        "dt_capture_mean": dt_cap_mean,
+                        "omp_first_lag_median_frames": omp_med,
+                        "omp_first_lag_mad_frames": omp_mad,
+                        "dt_vs_omp_first_lag_match_frac": match_frac,
+                    }
+                    delay_fp.write(json.dumps(row) + "\n")
                 for f in range(F_band):
                     k_sel = int(k_selected[f].item())
                     steps = int(steps_decision[f].item())
@@ -1162,6 +1331,8 @@ def main() -> None:
     if per_sample_fp is not None:
         per_sample_fp.close()
     diagnostics_fp.close()
+    if delay_fp is not None:
+        delay_fp.close()
 
     compute_rows = []
     k_selected_means = []
@@ -1272,6 +1443,8 @@ def main() -> None:
             "ckpt_path": str(args.ckpt_path),
             "subset_manifest": str(manifest_path),
             "mode": args.mode,
+            "pairing_mode": str(args.pairing_mode),
+            "require_wav_only": bool(int(args.require_wav_only)),
             "num_pairs": int(num_pairs),
             "hop_length": int(args.hop_length),
             "fs": int(args.fs),
@@ -1290,6 +1463,7 @@ def main() -> None:
             "forced_k_rtg0_lambda_c": float(lambda_c_values[0]),
             "device": str(device),
             "write_per_sample": bool(int(args.write_per_sample)),
+            "write_delay_diagnostics": bool(int(args.write_delay_diagnostics)),
         },
         "integrity": integrity,
         "rows": compute_rows,
@@ -1338,6 +1512,79 @@ def main() -> None:
     (out_dir / "summary" / "rtg_controllability_summary.json").write_text(
         json.dumps(controllability_summary, indent=2), encoding="utf-8"
     )
+
+    if int(args.write_delay_diagnostics) == 1:
+        delay_rows = []
+        num_windows_total = None
+        for lambda_c in lambda_c_values:
+            num_w = int(delay_counts_by_lambda[lambda_c]["num_windows"])
+            if num_windows_total is None:
+                num_windows_total = num_w
+            elif num_w != num_windows_total:
+                raise RuntimeError(
+                    "delay_diagnostics window count mismatch across lambdas: "
+                    f"expected {num_windows_total}, got {num_w} at lambda_c={lambda_c}"
+                )
+
+            dt_mad_p50 = delay_mad_quantiles_by_lambda[lambda_c]["p50"].result()
+            dt_mad_p90 = delay_mad_quantiles_by_lambda[lambda_c]["p90"].result()
+            delay_rows.append(
+                {
+                    "lambda_c": float(lambda_c),
+                    "num_windows": num_w,
+                    "num_windows_dt_first_lag_undefined": int(
+                        delay_counts_by_lambda[lambda_c]["num_windows_dt_first_lag_undefined"]
+                    ),
+                    "num_windows_dt_match_undefined": int(
+                        delay_counts_by_lambda[lambda_c]["num_windows_dt_match_undefined"]
+                    ),
+                    "dt_stop0_frac_mean": delay_stats_by_lambda[lambda_c]["dt_stop0_frac"].mean(),
+                    "dt_stop0_frac_std": delay_stats_by_lambda[lambda_c]["dt_stop0_frac"].std(),
+                    "dt_first_lag_median_frames_mean": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_median_frames"
+                    ].mean(),
+                    "dt_first_lag_median_frames_std": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_median_frames"
+                    ].std(),
+                    "dt_first_lag_mad_frames_mean": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_mad_frames"
+                    ].mean(),
+                    "dt_first_lag_mad_frames_std": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_mad_frames"
+                    ].std(),
+                    "dt_first_lag_mad_frames_p50": dt_mad_p50,
+                    "dt_first_lag_mad_frames_p90": dt_mad_p90,
+                    "dt_first_lag_abs_le_1_frac_mean": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_abs_le_1_frac"
+                    ].mean(),
+                    "dt_first_lag_abs_le_2_frac_mean": delay_stats_by_lambda[lambda_c][
+                        "dt_first_lag_abs_le_2_frac"
+                    ].mean(),
+                    "dt_k_selected_mean_window_mean": delay_stats_by_lambda[lambda_c]["dt_k_selected_mean"].mean(),
+                    "dt_steps_decision_mean_window_mean": delay_stats_by_lambda[lambda_c]["dt_steps_decision_mean"].mean(),
+                    "dt_capture_mean_window_mean": delay_stats_by_lambda[lambda_c]["dt_capture_mean"].mean(),
+                    "omp_first_lag_median_frames_mean": delay_stats_by_lambda[lambda_c][
+                        "omp_first_lag_median_frames"
+                    ].mean(),
+                    "omp_first_lag_mad_frames_mean": delay_stats_by_lambda[lambda_c]["omp_first_lag_mad_frames"].mean(),
+                    "dt_vs_omp_first_lag_match_frac_mean": delay_stats_by_lambda[lambda_c][
+                        "dt_vs_omp_first_lag_match_frac"
+                    ].mean(),
+                }
+            )
+
+        delay_integrity = {
+            "num_windows_total": int(num_windows_total) if num_windows_total is not None else 0,
+            "num_rows_total": int((num_windows_total or 0) * len(lambda_c_values)),
+        }
+        delay_summary = {
+            "config": compute_summary["config"],
+            "integrity": delay_integrity,
+            "rows": delay_rows,
+        }
+        (out_dir / "summary" / "delay_diagnostics_summary.json").write_text(
+            json.dumps(delay_summary, indent=2), encoding="utf-8"
+        )
 
     logger.info("Wrote summaries to %s", out_dir / "summary")
 
