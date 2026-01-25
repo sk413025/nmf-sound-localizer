@@ -1,0 +1,7 @@
+INFO:__main__:Using device: cpu
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Pairing mode: paired
+INFO:__main__:Wrote subset manifest: results/rtgomp_subsample_delay_E4l_speech_smoke_paired_20260126_021616/subset_manifest.json
+INFO:__main__:Processed clip 1 / 1
+INFO:__main__:Wrote summaries to results/rtgomp_subsample_delay_E4l_speech_smoke_paired_20260126_021616/summary

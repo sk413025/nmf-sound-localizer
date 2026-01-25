@@ -10,6 +10,8 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn as nn
+from scipy import signal
+from scipy.io import wavfile
 
 from scripts.h_exploration.dataset_lag import DoALagDataset
 
@@ -17,6 +19,203 @@ logging.basicConfig(level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 CAPTURE_TOL = 1e-6
+
+
+def next_pow2(n: int) -> int:
+    if n <= 1:
+        return 1
+    return 1 << (int(n - 1).bit_length())
+
+
+def load_wav_float32(path: Path, *, expected_fs: int) -> np.ndarray:
+    fs, wav = wavfile.read(path)
+    if int(fs) != int(expected_fs):
+        raise SystemExit(f"WAV fs mismatch for {path}: expected {expected_fs}, got {fs}")
+    if wav.ndim != 1:
+        raise SystemExit(f"Unsupported WAV shape for {path}: expected mono (N,), got {wav.shape}")
+
+    if wav.dtype == np.int16:
+        x = wav.astype(np.float32) / 32768.0
+    elif wav.dtype == np.int32:
+        x = wav.astype(np.float32) / 2147483648.0
+    elif wav.dtype == np.float32:
+        x = wav
+    elif wav.dtype == np.float64:
+        x = wav.astype(np.float32)
+    else:
+        raise SystemExit(f"Unsupported WAV dtype for {path}: {wav.dtype}")
+
+    max_abs = float(np.max(np.abs(x)))
+    if max_abs > 1e-9:
+        x = x / max_abs
+    return x.astype(np.float32, copy=False)
+
+
+def design_bandpass(fs: int, *, f_lo: float, f_hi: float) -> Tuple[np.ndarray, np.ndarray]:
+    nyq = 0.5 * float(fs)
+    lo = float(f_lo) / nyq
+    hi = float(f_hi) / nyq
+    if not (0.0 < lo < hi < 1.0):
+        raise SystemExit(f"Invalid bandpass normalized frequencies: lo={lo}, hi={hi}")
+    b, a = signal.butter(4, [lo, hi], btype="bandpass")
+    return b, a
+
+
+def gcc_phat_delay(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    fs: int,
+    tau_center_samples: int,
+    search_radius_samples: int,
+    b: np.ndarray,
+    a: np.ndarray,
+    exclusion_radius_samples: int = 16,
+    eps: float = 1e-12,
+) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[bool]]:
+    """Return (tau_hat_samples, tau_hat_ms, psr, boundary_hit)."""
+    if x.size == 0 or y.size == 0:
+        return None, None, None, None
+    if x.size != y.size:
+        raise RuntimeError(f"GCC-PHAT requires equal-length segments; got {x.size} and {y.size}")
+
+    # Match STFT band: remove DC and bandpass (zero-phase).
+    x_f = signal.filtfilt(b, a, (x - np.mean(x)).astype(np.float32, copy=False))
+    y_f = signal.filtfilt(b, a, (y - np.mean(y)).astype(np.float32, copy=False))
+
+    # Choose FFT length large enough to cover the search window around tau_center.
+    base_nfft = next_pow2(2 * int(x_f.size))
+    need_half = int(abs(tau_center_samples)) + int(search_radius_samples) + 1
+    nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_f.size))
+
+    X = np.fft.rfft(x_f, n=nfft)
+    Y = np.fft.rfft(y_f, n=nfft)
+    # Sign convention: tau_hat > 0 means y lags x (y[t] ~= x[t - tau_hat]).
+    # For this convention we need the cross-power spectrum conj(X) * Y.
+    R = np.conj(X) * Y
+    R /= (np.abs(R) + eps)
+    cc = np.fft.irfft(R, n=nfft)
+    cc = np.concatenate([cc[-(nfft // 2) :], cc[: nfft // 2]])
+    lags = np.arange(-(nfft // 2), nfft // 2, dtype=np.int64)
+
+    lo = int(tau_center_samples) - int(search_radius_samples)
+    hi = int(tau_center_samples) + int(search_radius_samples)
+    sel = (lags >= lo) & (lags <= hi)
+    if not np.any(sel):
+        return None, None, None, None
+
+    cc_sel = cc[sel]
+    lags_sel = lags[sel]
+    abs_cc = np.abs(cc_sel)
+    peak_i = int(np.argmax(abs_cc))
+    peak_lag = int(lags_sel[peak_i])
+    peak_abs = float(abs_cc[peak_i])
+    boundary_hit = bool(peak_lag == lo or peak_lag == hi)
+
+    # Parabolic sub-sample refinement on |cc| (if interior).
+    tau_hat = float(peak_lag)
+    if 0 < peak_i < abs_cc.size - 1:
+        y1, y2, y3 = float(abs_cc[peak_i - 1]), float(abs_cc[peak_i]), float(abs_cc[peak_i + 1])
+        denom = (y1 - 2.0 * y2 + y3)
+        if abs(denom) > 1e-12:
+            offset = 0.5 * (y1 - y3) / denom
+            if -1.0 <= offset <= 1.0:
+                tau_hat = tau_hat + float(offset)
+
+    # PSR: peak / median sidelobe within the search window (excluding a small neighborhood).
+    exc = int(max(1, exclusion_radius_samples))
+    mask = np.ones(abs_cc.size, dtype=bool)
+    mask[max(0, peak_i - exc) : min(abs_cc.size, peak_i + exc + 1)] = False
+    sidelobe = abs_cc[mask]
+    if sidelobe.size == 0:
+        psr = None
+    else:
+        psr = float(peak_abs / (float(np.median(sidelobe)) + eps))
+
+    tau_ms = float(tau_hat) * 1000.0 / float(fs)
+    return float(tau_hat), float(tau_ms), psr, boundary_hit
+
+
+def gcc_phat_abs_cc(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    b: np.ndarray,
+    a: np.ndarray,
+    nfft: int,
+    eps: float = 1e-12,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return (lags[int], abs(cc)[float]) for GCC-PHAT correlation."""
+    if x.size == 0 or y.size == 0:
+        raise RuntimeError("GCC-PHAT requires non-empty segments.")
+    if x.size != y.size:
+        raise RuntimeError(f"GCC-PHAT requires equal-length segments; got {x.size} and {y.size}")
+    if nfft <= 0:
+        raise RuntimeError(f"Invalid nfft={nfft}")
+
+    x_f = signal.filtfilt(b, a, (x - np.mean(x)).astype(np.float32, copy=False))
+    y_f = signal.filtfilt(b, a, (y - np.mean(y)).astype(np.float32, copy=False))
+
+    X = np.fft.rfft(x_f, n=nfft)
+    Y = np.fft.rfft(y_f, n=nfft)
+    # Sign convention: tau_hat > 0 means y lags x (y[t] ~= x[t - tau_hat]).
+    R = np.conj(X) * Y
+    R /= (np.abs(R) + eps)
+    cc = np.fft.irfft(R, n=nfft)
+    cc = np.concatenate([cc[-(nfft // 2) :], cc[: nfft // 2]])
+    lags = np.arange(-(nfft // 2), nfft // 2, dtype=np.int64)
+    return lags, np.abs(cc)
+
+
+def gcc_phat_pick_peak(
+    lags: np.ndarray,
+    abs_cc: np.ndarray,
+    *,
+    fs: int,
+    tau_center_samples: int,
+    search_radius_samples: int,
+    exclusion_radius_samples: int = 16,
+    eps: float = 1e-12,
+) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[bool]]:
+    """Pick the GCC-PHAT peak within [tau_center - r, tau_center + r]."""
+    if lags.size == 0 or abs_cc.size == 0:
+        return None, None, None, None
+    if lags.size != abs_cc.size:
+        raise RuntimeError(f"lags/abs_cc size mismatch: {lags.size} vs {abs_cc.size}")
+
+    lo = int(tau_center_samples) - int(search_radius_samples)
+    hi = int(tau_center_samples) + int(search_radius_samples)
+    sel = (lags >= lo) & (lags <= hi)
+    if not np.any(sel):
+        return None, None, None, None
+
+    abs_cc_sel = abs_cc[sel]
+    lags_sel = lags[sel]
+    peak_i = int(np.argmax(abs_cc_sel))
+    peak_lag = int(lags_sel[peak_i])
+    peak_abs = float(abs_cc_sel[peak_i])
+    boundary_hit = bool(peak_lag == lo or peak_lag == hi)
+
+    tau_hat = float(peak_lag)
+    if 0 < peak_i < abs_cc_sel.size - 1:
+        y1, y2, y3 = float(abs_cc_sel[peak_i - 1]), float(abs_cc_sel[peak_i]), float(abs_cc_sel[peak_i + 1])
+        denom = (y1 - 2.0 * y2 + y3)
+        if abs(denom) > 1e-12:
+            offset = 0.5 * (y1 - y3) / denom
+            if -1.0 <= offset <= 1.0:
+                tau_hat = tau_hat + float(offset)
+
+    exc = int(max(1, exclusion_radius_samples))
+    mask = np.ones(abs_cc_sel.size, dtype=bool)
+    mask[max(0, peak_i - exc) : min(abs_cc_sel.size, peak_i + exc + 1)] = False
+    sidelobe = abs_cc_sel[mask]
+    if sidelobe.size == 0:
+        psr = None
+    else:
+        psr = float(peak_abs / (float(np.median(sidelobe)) + eps))
+
+    tau_ms = float(tau_hat) * 1000.0 / float(fs)
+    return float(tau_hat), float(tau_ms), psr, boundary_hit
 
 
 @dataclass
@@ -698,6 +897,24 @@ def main() -> None:
         help="If 1, write window-level lag/delay diagnostics to delay_diagnostics.jsonl and a summary JSON.",
     )
     p.add_argument(
+        "--write_subsample_delay_diagnostics",
+        type=int,
+        default=0,
+        help="If 1, write GCC-PHAT sub-sample delay diagnostics to subsample_delay_diagnostics.jsonl + summary JSON.",
+    )
+    p.add_argument(
+        "--subsample_method",
+        type=str,
+        default="gcc_phat",
+        help="Comma-separated list: gcc_phat[,phase_slope]. Only gcc_phat is implemented in this evaluator.",
+    )
+    p.add_argument(
+        "--search_radius_frames",
+        type=int,
+        default=2,
+        help="Search radius in STFT frames for sub-sample delay refinement (default: 2 frames => +/-20ms).",
+    )
+    p.add_argument(
         "--device",
         type=str,
         default="cpu",
@@ -787,6 +1004,16 @@ def main() -> None:
     logc_vals = [np.log10(c) for c in lambda_c_values]
     logc_min, logc_max = min(logc_vals), max(logc_vals)
 
+    subsample_methods = [m.strip() for m in str(args.subsample_method).split(",") if m.strip() != ""]
+    if int(args.write_subsample_delay_diagnostics) == 1:
+        if subsample_methods != ["gcc_phat"]:
+            raise SystemExit(
+                "Only subsample_method=gcc_phat is implemented. "
+                f"Got subsample_method={args.subsample_method!r} (parsed={subsample_methods})."
+            )
+        if int(args.search_radius_frames) <= 0:
+            raise SystemExit("--search_radius_frames must be > 0 for sub-sample diagnostics.")
+
     M_lags = int(args.max_lag) * 2 + 1
     action_dim = M_lags + 1
     state = torch.load(args.ckpt_path, map_location="cpu")
@@ -811,6 +1038,17 @@ def main() -> None:
     diagnostics_fp = diagnostics_path.open("w", encoding="utf-8")
     delay_path = out_dir / "delay_diagnostics.jsonl"
     delay_fp = delay_path.open("w", encoding="utf-8") if int(args.write_delay_diagnostics) == 1 else None
+    subsample_path = out_dir / "subsample_delay_diagnostics.jsonl"
+    subsample_fp = (
+        subsample_path.open("w", encoding="utf-8") if int(args.write_subsample_delay_diagnostics) == 1 else None
+    )
+    bp_b = bp_a = None
+    if subsample_fp is not None:
+        bp_b, bp_a = design_bandpass(
+            int(args.fs),
+            f_lo=float(args.freq_min),
+            f_hi=float(args.freq_max),
+        )
 
     stats_by_lambda = {}
     steps_decision_stats = {}
@@ -821,6 +1059,11 @@ def main() -> None:
     delay_counts_by_lambda = {}
     delay_stats_by_lambda = {}
     delay_mad_quantiles_by_lambda = {}
+    subsample_counts_by_lambda = {}
+    subsample_tau_quantiles_by_lambda = {}
+    subsample_psr_quantiles_by_lambda = {}
+    subsample_boundary_rate_by_lambda = {}
+    subsample_clip_taus_ms_by_lambda = {}
     for lambda_c in lambda_c_values:
         stats_by_lambda[lambda_c] = {
             "dt": RunningStats(),
@@ -862,6 +1105,24 @@ def main() -> None:
             "p50": P2Quantile(0.5),
             "p90": P2Quantile(0.9),
         }
+        if subsample_fp is not None:
+            subsample_counts_by_lambda[lambda_c] = {
+                "dt": {"num_windows": 0, "num_defined": 0, "num_segment_oob": 0, "num_coarse_undefined": 0},
+                "omp": {"num_windows": 0, "num_defined": 0, "num_segment_oob": 0, "num_coarse_undefined": 0},
+            }
+            subsample_tau_quantiles_by_lambda[lambda_c] = {
+                "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+            }
+            subsample_psr_quantiles_by_lambda[lambda_c] = {
+                "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+            }
+            subsample_boundary_rate_by_lambda[lambda_c] = {"dt": RunningStats(), "omp": RunningStats()}
+            subsample_clip_taus_ms_by_lambda[lambda_c] = {
+                "dt": [[] for _ in range(int(num_pairs))],
+                "omp": [[] for _ in range(int(num_pairs))],
+            }
 
     forced_stats = {}
     for k in forced_k_values:
@@ -899,6 +1160,7 @@ def main() -> None:
     log_every = 1
 
     for clip_idx in range(num_pairs):
+        mic_path, ldv_path = dataset.clips[clip_idx]
         item = dataset[clip_idx]
         mic_stft = item["mic_stft"]
         ldv_stft = item["ldv_stft"]
@@ -932,6 +1194,22 @@ def main() -> None:
         valid_starts = list(range(start_limit, end_limit, int(args.tw)))
         if len(valid_starts) == 0:
             continue
+
+        mic_wav_pad = ldv_wav_pad = None
+        segment_len_samples = None
+        if subsample_fp is not None:
+            mic_wav = load_wav_float32(Path(mic_path), expected_fs=int(args.fs))
+            ldv_wav = load_wav_float32(Path(ldv_path), expected_fs=int(args.fs))
+
+            # Match scipy.signal.stft boundary='zeros' by pre-padding n_fft//2.
+            pad_left = int(args.n_fft) // 2
+            segment_len_samples = (int(args.tw) - 1) * int(args.hop_length) + int(args.n_fft)
+            max_seg_end = int(max(valid_starts)) * int(args.hop_length) + int(segment_len_samples)
+
+            mic_pad_right = max(pad_left, int(max_seg_end) - (pad_left + int(mic_wav.size)))
+            ldv_pad_right = max(pad_left, int(max_seg_end) - (pad_left + int(ldv_wav.size)))
+            mic_wav_pad = np.pad(mic_wav, (pad_left, mic_pad_right), mode="constant")
+            ldv_wav_pad = np.pad(ldv_wav, (pad_left, ldv_pad_right), mode="constant")
 
         for w_idx, start_t in enumerate(valid_starts):
             end_t = start_t + int(args.tw)
@@ -1095,6 +1373,19 @@ def main() -> None:
                     forced_stats[k]["omp"].update(omp_val)
                     forced_stats[k]["random"].update(rnd_val)
 
+            need_coarse = (delay_fp is not None) or (subsample_fp is not None)
+            omp_first_ids_cpu = None
+            omp_med = None
+            omp_mad = None
+            if need_coarse:
+                with torch.no_grad():
+                    corrs0 = torch.bmm(D_norm_device.conj().transpose(1, 2), Y_device).squeeze(2)
+                    omp_first_ids = torch.argmax(torch.abs(corrs0), dim=1)
+                omp_first_ids_cpu = omp_first_ids.detach().cpu().numpy().astype(np.int64)
+                omp_first_lags = omp_first_ids_cpu + int(Lag_Min)
+                omp_med, omp_mad = median_and_mad(omp_first_lags.astype(float))
+
+            dt_med_by_lambda: Optional[Dict[float, Optional[float]]] = {} if subsample_fp is not None else None
             for lambda_c in lambda_c_values:
                 k_selected, steps_decision, dt_capture, dt_res_energy, dt_first_ids = compute_dt_free_rollout(
                     model,
@@ -1111,7 +1402,7 @@ def main() -> None:
                     eps_energy=float(args.eps_energy),
                     freq_ids=freq_ids,
                 )
-                if delay_fp is not None:
+                if need_coarse:
                     dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
                     dt_defined_mask = dt_first_ids_cpu >= 0
                     dt_stop0_frac = float(np.mean(~dt_defined_mask))
@@ -1124,13 +1415,6 @@ def main() -> None:
                         dt_abs_le_1 = float(np.mean(np.abs(dt_first_lags) <= 1))
                         dt_abs_le_2 = float(np.mean(np.abs(dt_first_lags) <= 2))
 
-                    with torch.no_grad():
-                        corrs0 = torch.bmm(D_norm_device.conj().transpose(1, 2), Y_device).squeeze(2)
-                        omp_first_ids = torch.argmax(torch.abs(corrs0), dim=1)
-                    omp_first_ids_cpu = omp_first_ids.detach().cpu().numpy().astype(np.int64)
-                    omp_first_lags = omp_first_ids_cpu + int(Lag_Min)
-                    omp_med, omp_mad = median_and_mad(omp_first_lags.astype(float))
-
                     if dt_defined_mask.any():
                         match_frac = float(
                             np.mean(dt_first_ids_cpu[dt_defined_mask] == omp_first_ids_cpu[dt_defined_mask])
@@ -1141,60 +1425,63 @@ def main() -> None:
                     dt_k_mean = float(k_selected.float().mean().item())
                     dt_steps_mean = float(steps_decision.float().mean().item())
                     dt_cap_mean = float(dt_capture.float().mean().item())
+                    if delay_fp is not None:
+                        delay_counts_by_lambda[lambda_c]["num_windows"] += 1
+                        delay_stats_by_lambda[lambda_c]["dt_stop0_frac"].update(dt_stop0_frac)
+                        delay_stats_by_lambda[lambda_c]["dt_k_selected_mean"].update(dt_k_mean)
+                        delay_stats_by_lambda[lambda_c]["dt_steps_decision_mean"].update(dt_steps_mean)
+                        delay_stats_by_lambda[lambda_c]["dt_capture_mean"].update(dt_cap_mean)
+                        delay_stats_by_lambda[lambda_c]["omp_first_lag_median_frames"].update(float(omp_med))
+                        delay_stats_by_lambda[lambda_c]["omp_first_lag_mad_frames"].update(float(omp_mad))
 
-                    delay_counts_by_lambda[lambda_c]["num_windows"] += 1
-                    delay_stats_by_lambda[lambda_c]["dt_stop0_frac"].update(dt_stop0_frac)
-                    delay_stats_by_lambda[lambda_c]["dt_k_selected_mean"].update(dt_k_mean)
-                    delay_stats_by_lambda[lambda_c]["dt_steps_decision_mean"].update(dt_steps_mean)
-                    delay_stats_by_lambda[lambda_c]["dt_capture_mean"].update(dt_cap_mean)
-                    delay_stats_by_lambda[lambda_c]["omp_first_lag_median_frames"].update(float(omp_med))
-                    delay_stats_by_lambda[lambda_c]["omp_first_lag_mad_frames"].update(float(omp_mad))
+                        if dt_med is None or dt_mad is None:
+                            delay_counts_by_lambda[lambda_c]["num_windows_dt_first_lag_undefined"] += 1
+                        else:
+                            delay_stats_by_lambda[lambda_c]["dt_first_lag_median_frames"].update(float(dt_med))
+                            delay_stats_by_lambda[lambda_c]["dt_first_lag_mad_frames"].update(float(dt_mad))
+                            delay_mad_quantiles_by_lambda[lambda_c]["p50"].update(float(dt_mad))
+                            delay_mad_quantiles_by_lambda[lambda_c]["p90"].update(float(dt_mad))
+                        if dt_abs_le_1 is not None:
+                            delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_1_frac"].update(float(dt_abs_le_1))
+                        if dt_abs_le_2 is not None:
+                            delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_2_frac"].update(float(dt_abs_le_2))
+                        if match_frac is None:
+                            delay_counts_by_lambda[lambda_c]["num_windows_dt_match_undefined"] += 1
+                        else:
+                            delay_stats_by_lambda[lambda_c]["dt_vs_omp_first_lag_match_frac"].update(float(match_frac))
 
-                    if dt_med is None or dt_mad is None:
-                        delay_counts_by_lambda[lambda_c]["num_windows_dt_first_lag_undefined"] += 1
-                    else:
-                        delay_stats_by_lambda[lambda_c]["dt_first_lag_median_frames"].update(float(dt_med))
-                        delay_stats_by_lambda[lambda_c]["dt_first_lag_mad_frames"].update(float(dt_mad))
-                        delay_mad_quantiles_by_lambda[lambda_c]["p50"].update(float(dt_mad))
-                        delay_mad_quantiles_by_lambda[lambda_c]["p90"].update(float(dt_mad))
-                    if dt_abs_le_1 is not None:
-                        delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_1_frac"].update(float(dt_abs_le_1))
-                    if dt_abs_le_2 is not None:
-                        delay_stats_by_lambda[lambda_c]["dt_first_lag_abs_le_2_frac"].update(float(dt_abs_le_2))
-                    if match_frac is None:
-                        delay_counts_by_lambda[lambda_c]["num_windows_dt_match_undefined"] += 1
-                    else:
-                        delay_stats_by_lambda[lambda_c]["dt_vs_omp_first_lag_match_frac"].update(float(match_frac))
+                        row = {
+                            "pairing_mode": str(args.pairing_mode),
+                            "clip_idx": int(clip_idx),
+                            "window_idx": int(w_idx),
+                            "start_t": int(start_t),
+                            "lambda_c": float(lambda_c),
+                            "fs": int(args.fs),
+                            "hop_length": int(args.hop_length),
+                            "n_fft": int(args.n_fft),
+                            "freq_min": float(args.freq_min),
+                            "freq_max": float(args.freq_max),
+                            "max_lag": int(args.max_lag),
+                            "tw": int(args.tw),
+                            "max_k": int(args.max_k),
+                            "F_band": int(F_band),
+                            "dt_stop0_frac": dt_stop0_frac,
+                            "dt_first_lag_defined_frac": float(1.0 - dt_stop0_frac),
+                            "dt_first_lag_median_frames": dt_med,
+                            "dt_first_lag_mad_frames": dt_mad,
+                            "dt_first_lag_abs_le_1_frac": dt_abs_le_1,
+                            "dt_first_lag_abs_le_2_frac": dt_abs_le_2,
+                            "dt_k_selected_mean": dt_k_mean,
+                            "dt_steps_decision_mean": dt_steps_mean,
+                            "dt_capture_mean": dt_cap_mean,
+                            "omp_first_lag_median_frames": omp_med,
+                            "omp_first_lag_mad_frames": omp_mad,
+                            "dt_vs_omp_first_lag_match_frac": match_frac,
+                        }
+                        delay_fp.write(json.dumps(row) + "\n")
 
-                    row = {
-                        "pairing_mode": str(args.pairing_mode),
-                        "clip_idx": int(clip_idx),
-                        "window_idx": int(w_idx),
-                        "start_t": int(start_t),
-                        "lambda_c": float(lambda_c),
-                        "fs": int(args.fs),
-                        "hop_length": int(args.hop_length),
-                        "n_fft": int(args.n_fft),
-                        "freq_min": float(args.freq_min),
-                        "freq_max": float(args.freq_max),
-                        "max_lag": int(args.max_lag),
-                        "tw": int(args.tw),
-                        "max_k": int(args.max_k),
-                        "F_band": int(F_band),
-                        "dt_stop0_frac": dt_stop0_frac,
-                        "dt_first_lag_defined_frac": float(1.0 - dt_stop0_frac),
-                        "dt_first_lag_median_frames": dt_med,
-                        "dt_first_lag_mad_frames": dt_mad,
-                        "dt_first_lag_abs_le_1_frac": dt_abs_le_1,
-                        "dt_first_lag_abs_le_2_frac": dt_abs_le_2,
-                        "dt_k_selected_mean": dt_k_mean,
-                        "dt_steps_decision_mean": dt_steps_mean,
-                        "dt_capture_mean": dt_cap_mean,
-                        "omp_first_lag_median_frames": omp_med,
-                        "omp_first_lag_mad_frames": omp_mad,
-                        "dt_vs_omp_first_lag_match_frac": match_frac,
-                    }
-                    delay_fp.write(json.dumps(row) + "\n")
+                    if dt_med_by_lambda is not None:
+                        dt_med_by_lambda[lambda_c] = dt_med
                 for f in range(F_band):
                     k_sel = int(k_selected[f].item())
                     steps = int(steps_decision[f].item())
@@ -1323,6 +1610,156 @@ def main() -> None:
                         }
                         per_sample_fp.write(json.dumps(row) + "\n")
 
+            if subsample_fp is not None:
+                if mic_wav_pad is None or ldv_wav_pad is None or segment_len_samples is None:
+                    raise RuntimeError("subsample enabled but waveform padding is not initialized.")
+                if bp_b is None or bp_a is None:
+                    raise RuntimeError("subsample enabled but bandpass filter is not initialized.")
+                if dt_med_by_lambda is None:
+                    raise RuntimeError("subsample enabled but dt_med_by_lambda is missing.")
+
+                seg_start = int(start_t) * int(args.hop_length)
+                seg_end = int(seg_start) + int(segment_len_samples)
+                segment_oob = (
+                    seg_start < 0
+                    or seg_end > int(mic_wav_pad.size)
+                    or seg_end > int(ldv_wav_pad.size)
+                    or seg_end <= seg_start
+                )
+                search_radius_samples = int(args.search_radius_frames) * int(args.hop_length)
+
+                if segment_oob:
+                    for lambda_c in lambda_c_values:
+                        for coarse_source, coarse_lag_frames in (("dt", dt_med_by_lambda[lambda_c]), ("omp", omp_med)):
+                            subsample_counts_by_lambda[lambda_c][coarse_source]["num_windows"] += 1
+                            subsample_counts_by_lambda[lambda_c][coarse_source]["num_segment_oob"] += 1
+                            row = {
+                                "pairing_mode": str(args.pairing_mode),
+                                "clip_idx": int(clip_idx),
+                                "window_idx": int(w_idx),
+                                "start_t": int(start_t),
+                                "lambda_c": float(lambda_c),
+                                "method": "gcc_phat",
+                                "coarse_source": str(coarse_source),
+                                "coarse_lag_frames": coarse_lag_frames,
+                                "coarse_delay_samples": None
+                                if coarse_lag_frames is None
+                                else int(round(float(coarse_lag_frames) * float(args.hop_length))),
+                                "search_radius_samples": int(search_radius_samples),
+                                "gcc_phat_tau_hat_samples": None,
+                                "gcc_phat_tau_hat_ms": None,
+                                "gcc_phat_psr": None,
+                                "gcc_phat_boundary_hit": None,
+                                "undefined_reason": "segment_oob",
+                            }
+                            subsample_fp.write(json.dumps(row) + "\n")
+                else:
+                    x_seg = mic_wav_pad[seg_start:seg_end]
+                    y_seg = ldv_wav_pad[seg_start:seg_end]
+                    if x_seg.size != y_seg.size:
+                        raise RuntimeError(
+                            f"Segment length mismatch at clip={clip_idx} window={w_idx}: {x_seg.size} vs {y_seg.size}"
+                        )
+
+                    tau_centers = []
+                    for lambda_c in lambda_c_values:
+                        dt_frames = dt_med_by_lambda[lambda_c]
+                        if dt_frames is not None:
+                            tau_centers.append(int(round(float(dt_frames) * float(args.hop_length))))
+                    if omp_med is not None:
+                        tau_centers.append(int(round(float(omp_med) * float(args.hop_length))))
+                    max_abs_tau = max((abs(int(t)) for t in tau_centers), default=0)
+                    need_half = int(max_abs_tau) + int(search_radius_samples) + 1
+                    base_nfft = next_pow2(2 * int(x_seg.size))
+                    nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
+
+                    lags, abs_cc = gcc_phat_abs_cc(x_seg, y_seg, b=bp_b, a=bp_a, nfft=int(nfft))
+
+                    for lambda_c in lambda_c_values:
+                        for coarse_source, coarse_lag_frames in (("dt", dt_med_by_lambda[lambda_c]), ("omp", omp_med)):
+                            subsample_counts_by_lambda[lambda_c][coarse_source]["num_windows"] += 1
+                            if coarse_lag_frames is None:
+                                subsample_counts_by_lambda[lambda_c][coarse_source]["num_coarse_undefined"] += 1
+                                row = {
+                                    "pairing_mode": str(args.pairing_mode),
+                                    "clip_idx": int(clip_idx),
+                                    "window_idx": int(w_idx),
+                                    "start_t": int(start_t),
+                                    "lambda_c": float(lambda_c),
+                                    "method": "gcc_phat",
+                                    "coarse_source": str(coarse_source),
+                                    "coarse_lag_frames": None,
+                                    "coarse_delay_samples": None,
+                                    "search_radius_samples": int(search_radius_samples),
+                                    "gcc_phat_tau_hat_samples": None,
+                                    "gcc_phat_tau_hat_ms": None,
+                                    "gcc_phat_psr": None,
+                                    "gcc_phat_boundary_hit": None,
+                                    "undefined_reason": "coarse_undefined",
+                                }
+                                subsample_fp.write(json.dumps(row) + "\n")
+                                continue
+
+                            coarse_delay_samples = int(round(float(coarse_lag_frames) * float(args.hop_length)))
+                            tau_hat_s, tau_hat_ms, psr, bhit = gcc_phat_pick_peak(
+                                lags,
+                                abs_cc,
+                                fs=int(args.fs),
+                                tau_center_samples=int(coarse_delay_samples),
+                                search_radius_samples=int(search_radius_samples),
+                            )
+
+                            if tau_hat_s is None or tau_hat_ms is None:
+                                row = {
+                                    "pairing_mode": str(args.pairing_mode),
+                                    "clip_idx": int(clip_idx),
+                                    "window_idx": int(w_idx),
+                                    "start_t": int(start_t),
+                                    "lambda_c": float(lambda_c),
+                                    "method": "gcc_phat",
+                                    "coarse_source": str(coarse_source),
+                                    "coarse_lag_frames": float(coarse_lag_frames),
+                                    "coarse_delay_samples": int(coarse_delay_samples),
+                                    "search_radius_samples": int(search_radius_samples),
+                                    "gcc_phat_tau_hat_samples": None,
+                                    "gcc_phat_tau_hat_ms": None,
+                                    "gcc_phat_psr": None,
+                                    "gcc_phat_boundary_hit": None,
+                                    "undefined_reason": "gcc_phat_undefined",
+                                }
+                                subsample_fp.write(json.dumps(row) + "\n")
+                                continue
+
+                            subsample_counts_by_lambda[lambda_c][coarse_source]["num_defined"] += 1
+                            subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(float(tau_hat_ms))
+                            subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(float(tau_hat_ms))
+                            if psr is not None:
+                                subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(float(psr))
+                                subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(float(psr))
+                            if bhit is not None:
+                                subsample_boundary_rate_by_lambda[lambda_c][coarse_source].update(
+                                    1.0 if bool(bhit) else 0.0
+                                )
+                            subsample_clip_taus_ms_by_lambda[lambda_c][coarse_source][clip_idx].append(float(tau_hat_ms))
+
+                            row = {
+                                "pairing_mode": str(args.pairing_mode),
+                                "clip_idx": int(clip_idx),
+                                "window_idx": int(w_idx),
+                                "start_t": int(start_t),
+                                "lambda_c": float(lambda_c),
+                                "method": "gcc_phat",
+                                "coarse_source": str(coarse_source),
+                                "coarse_lag_frames": float(coarse_lag_frames),
+                                "coarse_delay_samples": int(coarse_delay_samples),
+                                "search_radius_samples": int(search_radius_samples),
+                                "gcc_phat_tau_hat_samples": float(tau_hat_s),
+                                "gcc_phat_tau_hat_ms": float(tau_hat_ms),
+                                "gcc_phat_psr": None if psr is None else float(psr),
+                                "gcc_phat_boundary_hit": None if bhit is None else bool(bhit),
+                            }
+                            subsample_fp.write(json.dumps(row) + "\n")
+
             num_samples_total += int(F_band)
 
         if (clip_idx + 1) % log_every == 0:
@@ -1333,6 +1770,8 @@ def main() -> None:
     diagnostics_fp.close()
     if delay_fp is not None:
         delay_fp.close()
+    if subsample_fp is not None:
+        subsample_fp.close()
 
     compute_rows = []
     k_selected_means = []
@@ -1464,6 +1903,9 @@ def main() -> None:
             "device": str(device),
             "write_per_sample": bool(int(args.write_per_sample)),
             "write_delay_diagnostics": bool(int(args.write_delay_diagnostics)),
+            "write_subsample_delay_diagnostics": bool(int(args.write_subsample_delay_diagnostics)),
+            "subsample_method": str(args.subsample_method),
+            "search_radius_frames": int(args.search_radius_frames),
         },
         "integrity": integrity,
         "rows": compute_rows,
@@ -1584,6 +2026,84 @@ def main() -> None:
         }
         (out_dir / "summary" / "delay_diagnostics_summary.json").write_text(
             json.dumps(delay_summary, indent=2), encoding="utf-8"
+        )
+
+    if int(args.write_subsample_delay_diagnostics) == 1:
+        subsample_rows = []
+        num_windows_total = None
+        for lambda_c in lambda_c_values:
+            num_w_dt = int(subsample_counts_by_lambda[lambda_c]["dt"]["num_windows"])
+            num_w_omp = int(subsample_counts_by_lambda[lambda_c]["omp"]["num_windows"])
+            if num_w_dt != num_w_omp:
+                raise RuntimeError(
+                    "subsample_delay window count mismatch across coarse sources: "
+                    f"dt={num_w_dt}, omp={num_w_omp} at lambda_c={lambda_c}"
+                )
+            if num_windows_total is None:
+                num_windows_total = num_w_dt
+            elif num_w_dt != num_windows_total:
+                raise RuntimeError(
+                    "subsample_delay window count mismatch across lambdas: "
+                    f"expected {num_windows_total}, got {num_w_dt} at lambda_c={lambda_c}"
+                )
+
+            def _source_row(source: str) -> Dict[str, object]:
+                counts = subsample_counts_by_lambda[lambda_c][source]
+                num_windows = int(counts["num_windows"])
+                num_defined = int(counts["num_defined"])
+                frac_defined = float(num_defined / num_windows) if num_windows > 0 else None
+                boundary_hit_rate = subsample_boundary_rate_by_lambda[lambda_c][source].mean()
+
+                tau_p50 = subsample_tau_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                tau_p90 = subsample_tau_quantiles_by_lambda[lambda_c][source]["p90"].result()
+                psr_p50 = subsample_psr_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                psr_p90 = subsample_psr_quantiles_by_lambda[lambda_c][source]["p90"].result()
+
+                clip_mads = []
+                for clip_i in range(int(num_pairs)):
+                    taus = subsample_clip_taus_ms_by_lambda[lambda_c][source][clip_i]
+                    if len(taus) == 0:
+                        continue
+                    med = float(np.median(taus))
+                    mad = float(np.median(np.abs(np.asarray(taus, dtype=np.float64) - med)))
+                    clip_mads.append(mad)
+                within_p50 = float(np.percentile(clip_mads, 50)) if clip_mads else None
+                within_p90 = float(np.percentile(clip_mads, 90)) if clip_mads else None
+
+                return {
+                    "num_windows": num_windows,
+                    "num_defined": num_defined,
+                    "num_segment_oob": int(counts["num_segment_oob"]),
+                    "num_coarse_undefined": int(counts["num_coarse_undefined"]),
+                    "fraction_defined": frac_defined,
+                    "boundary_hit_rate": boundary_hit_rate,
+                    "tau_hat_ms_p50": tau_p50,
+                    "tau_hat_ms_p90": tau_p90,
+                    "psr_p50": psr_p50,
+                    "psr_p90": psr_p90,
+                    "within_clip_tau_mad_ms_p50": within_p50,
+                    "within_clip_tau_mad_ms_p90": within_p90,
+                }
+
+            subsample_rows.append(
+                {
+                    "lambda_c": float(lambda_c),
+                    "dt": _source_row("dt"),
+                    "omp": _source_row("omp"),
+                }
+            )
+
+        subsample_integrity = {
+            "num_windows_total": int(num_windows_total) if num_windows_total is not None else 0,
+            "num_rows_total": int((num_windows_total or 0) * len(lambda_c_values) * 2),
+        }
+        subsample_summary = {
+            "config": compute_summary["config"],
+            "integrity": subsample_integrity,
+            "rows": subsample_rows,
+        }
+        (out_dir / "summary" / "subsample_delay_diagnostics_summary.json").write_text(
+            json.dumps(subsample_summary, indent=2), encoding="utf-8"
         )
 
     logger.info("Wrote summaries to %s", out_dir / "summary")
