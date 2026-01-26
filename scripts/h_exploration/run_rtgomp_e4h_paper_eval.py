@@ -149,6 +149,7 @@ def gcc_phat_core(
     b: np.ndarray,
     a: np.ndarray,
     nfft: int,
+    phase_eq_rfft: Optional[np.ndarray] = None,
     eps: float = 1e-12,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -172,6 +173,10 @@ def gcc_phat_core(
 
     X = np.fft.rfft(x_f, n=nfft)
     Y = np.fft.rfft(y_f, n=nfft)
+    if phase_eq_rfft is not None:
+        if int(phase_eq_rfft.size) != int(Y.size):
+            raise RuntimeError(f"phase_eq_rfft size mismatch: {phase_eq_rfft.size} vs Y.size={Y.size}")
+        Y = Y * phase_eq_rfft
     # Sign convention: tau_hat > 0 means y lags x (y[t] ~= x[t - tau_hat]).
     cross_power = np.conj(X) * Y
     R = cross_power / (np.abs(cross_power) + eps)
@@ -1054,6 +1059,24 @@ def main() -> None:
         help="Search radius in STFT frames for sub-sample delay refinement (default: 2 frames => +/-20ms).",
     )
     p.add_argument(
+        "--apply_phase_eq",
+        type=int,
+        default=0,
+        help="If 1, load phase_eq from --phase_eq_path and apply it to LDV in both STFT and subsample FFT paths.",
+    )
+    p.add_argument(
+        "--phase_eq_path",
+        type=str,
+        default=None,
+        help="Path to phase_eq.npz produced by E4n fitter (required if --apply_phase_eq 1).",
+    )
+    p.add_argument(
+        "--phase_eq_unit_mag_tol",
+        type=float,
+        default=1e-3,
+        help="Max allowed | |phase_eq|-1 | for validation (fail fast if exceeded).",
+    )
+    p.add_argument(
         "--device",
         type=str,
         default="cpu",
@@ -1064,6 +1087,49 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "summary").mkdir(parents=True, exist_ok=True)
+
+    apply_phase_eq = int(args.apply_phase_eq) == 1
+    phase_eq_path_str: Optional[str] = None
+    phase_eq_stft_np: Optional[np.ndarray] = None
+    phase_eq_rfft_np: Optional[np.ndarray] = None
+    phase_eq_nfft_fit: Optional[int] = None
+    if apply_phase_eq:
+        if args.phase_eq_path is None:
+            raise SystemExit("--apply_phase_eq=1 requires --phase_eq_path")
+        phase_eq_path = Path(args.phase_eq_path)
+        phase_eq_path_str = str(phase_eq_path)
+        if not phase_eq_path.exists():
+            raise SystemExit(f"Missing phase_eq_path: {phase_eq_path}")
+        npz = np.load(phase_eq_path)
+        if "phase_eq_stft" not in npz or "phase_eq_rfft" not in npz or "nfft_fit" not in npz:
+            raise SystemExit(f"phase_eq.npz missing required keys: {phase_eq_path}")
+        phase_eq_stft_np = np.asarray(npz["phase_eq_stft"])
+        phase_eq_rfft_np = np.asarray(npz["phase_eq_rfft"])
+        phase_eq_nfft_fit = int(np.asarray(npz["nfft_fit"]).item())
+        expected_stft_bins = int(args.n_fft) // 2 + 1
+        if phase_eq_stft_np.shape != (expected_stft_bins,):
+            raise SystemExit(
+                f"phase_eq_stft shape mismatch: expected {(expected_stft_bins,)}, got {phase_eq_stft_np.shape}"
+            )
+        if int(phase_eq_nfft_fit) <= 0:
+            raise SystemExit(f"Invalid phase_eq nfft_fit={phase_eq_nfft_fit}")
+        if int(phase_eq_nfft_fit) % int(args.n_fft) != 0:
+            raise SystemExit(
+                f"phase_eq nfft_fit must be a multiple of n_fft. nfft_fit={phase_eq_nfft_fit}, n_fft={args.n_fft}"
+            )
+        expected_rfft_bins = int(phase_eq_nfft_fit) // 2 + 1
+        if phase_eq_rfft_np.shape != (expected_rfft_bins,):
+            raise SystemExit(
+                f"phase_eq_rfft shape mismatch: expected {(expected_rfft_bins,)}, got {phase_eq_rfft_np.shape}"
+            )
+        if not np.isfinite(np.abs(phase_eq_stft_np)).all() or not np.isfinite(np.abs(phase_eq_rfft_np)).all():
+            raise SystemExit("phase_eq contains NaN/Inf (fail-fast)")
+        max_err = float(np.max(np.abs(np.abs(phase_eq_rfft_np.astype(np.complex128)) - 1.0)))
+        if max_err > float(args.phase_eq_unit_mag_tol):
+            raise SystemExit(
+                f"phase_eq not unit magnitude within tol={args.phase_eq_unit_mag_tol}: max_err={max_err}"
+            )
+        logger.info("Loaded phase_eq: %s (nfft_fit=%d)", phase_eq_path, int(phase_eq_nfft_fit))
 
     mic_root = Path(args.mic_root)
     ldv_root = Path(args.ldv_root)
@@ -1362,6 +1428,14 @@ def main() -> None:
         if float(args.gain) != 1.0:
             mic_stft = mic_stft * float(args.gain)
             ldv_stft = ldv_stft * float(args.gain)
+
+        if apply_phase_eq:
+            if phase_eq_stft_np is None:
+                raise RuntimeError("apply_phase_eq=1 but phase_eq_stft_np is None")
+            phase_eq_t = torch.from_numpy(phase_eq_stft_np.astype(np.complex64, copy=False))
+            if phase_eq_t.dtype != ldv_stft.dtype:
+                phase_eq_t = phase_eq_t.to(dtype=ldv_stft.dtype)
+            ldv_stft = ldv_stft * phase_eq_t
 
         T_total, F = ldv_stft.shape
         if freq_ids is None:
@@ -1874,7 +1948,17 @@ def main() -> None:
                     max_abs_tau = max((abs(int(t)) for t in tau_centers), default=0)
                     need_half = int(max_abs_tau) + int(search_radius_samples) + 1
                     base_nfft = next_pow2(2 * int(x_seg.size))
-                    nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
+                    if apply_phase_eq:
+                        if phase_eq_nfft_fit is None or phase_eq_rfft_np is None:
+                            raise RuntimeError("apply_phase_eq=1 but phase_eq_nfft_fit/phase_eq_rfft_np is None")
+                        nfft = int(phase_eq_nfft_fit)
+                        if need_half > int(nfft) // 2:
+                            raise RuntimeError(
+                                "phase_eq nfft_fit too small for required lag coverage: "
+                                f"need_half={need_half}, nfft_fit={nfft}"
+                            )
+                    else:
+                        nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
 
                     lags, abs_cc, freqs_hz, cross_power = gcc_phat_core(
                         x_seg,
@@ -1883,6 +1967,7 @@ def main() -> None:
                         b=bp_b,
                         a=bp_a,
                         nfft=int(nfft),
+                        phase_eq_rfft=phase_eq_rfft_np if apply_phase_eq else None,
                     )
 
                     for lambda_c in lambda_c_values:
@@ -2219,6 +2304,10 @@ def main() -> None:
             "search_radius_frames": int(args.search_radius_frames),
             "phase_slope_min_bins": None if phase_slope_min_bins is None else int(phase_slope_min_bins),
             "phase_slope_subbands_hz": None if phase_slope_subbands_hz is None else list(phase_slope_subbands_hz),
+            "apply_phase_eq": bool(apply_phase_eq),
+            "phase_eq_path": None if phase_eq_path_str is None else str(phase_eq_path_str),
+            "phase_eq_nfft_fit": None if phase_eq_nfft_fit is None else int(phase_eq_nfft_fit),
+            "phase_eq_unit_mag_tol": float(args.phase_eq_unit_mag_tol),
         },
         "integrity": integrity,
         "rows": compute_rows,

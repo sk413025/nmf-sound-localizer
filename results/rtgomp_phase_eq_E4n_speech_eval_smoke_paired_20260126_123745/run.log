@@ -1,0 +1,8 @@
+INFO:__main__:Loaded phase_eq: results/rtgomp_phase_eq_E4n_speech_fit_full_dataset_paired_20260126_123713/phase_eq/phase_eq.npz (nfft_fit=32768)
+INFO:__main__:Using device: cpu
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Pairing mode: paired
+INFO:__main__:Wrote subset manifest: results/rtgomp_phase_eq_E4n_speech_eval_smoke_paired_20260126_123745/subset_manifest.json
+INFO:__main__:Processed clip 1 / 1
+INFO:__main__:Wrote summaries to results/rtgomp_phase_eq_E4n_speech_eval_smoke_paired_20260126_123745/summary

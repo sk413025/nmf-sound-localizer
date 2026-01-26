@@ -1,0 +1,55 @@
+INFO:__main__:Loaded phase_eq: results/rtgomp_phase_eq_E4n_speech_fit_full_dataset_paired_20260126_123713/phase_eq/phase_eq.npz (nfft_fit=32768)
+INFO:__main__:Using device: cpu
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Pairing mode: paired
+INFO:__main__:Wrote subset manifest: results/rtgomp_phase_eq_E4n_speech_eval_scale_check_subset_paired_20260126_123812/subset_manifest.json
+INFO:__main__:Processed clip 1 / 48
+INFO:__main__:Processed clip 2 / 48
+INFO:__main__:Processed clip 3 / 48
+INFO:__main__:Processed clip 4 / 48
+INFO:__main__:Processed clip 5 / 48
+INFO:__main__:Processed clip 6 / 48
+INFO:__main__:Processed clip 7 / 48
+INFO:__main__:Processed clip 8 / 48
+INFO:__main__:Processed clip 9 / 48
+INFO:__main__:Processed clip 10 / 48
+INFO:__main__:Processed clip 11 / 48
+INFO:__main__:Processed clip 12 / 48
+INFO:__main__:Processed clip 13 / 48
+INFO:__main__:Processed clip 14 / 48
+INFO:__main__:Processed clip 15 / 48
+INFO:__main__:Processed clip 16 / 48
+INFO:__main__:Processed clip 17 / 48
+INFO:__main__:Processed clip 18 / 48
+INFO:__main__:Processed clip 19 / 48
+INFO:__main__:Processed clip 20 / 48
+INFO:__main__:Processed clip 21 / 48
+INFO:__main__:Processed clip 22 / 48
+INFO:__main__:Processed clip 23 / 48
+INFO:__main__:Processed clip 24 / 48
+INFO:__main__:Processed clip 25 / 48
+INFO:__main__:Processed clip 26 / 48
+INFO:__main__:Processed clip 27 / 48
+INFO:__main__:Processed clip 28 / 48
+INFO:__main__:Processed clip 29 / 48
+INFO:__main__:Processed clip 30 / 48
+INFO:__main__:Processed clip 31 / 48
+INFO:__main__:Processed clip 32 / 48
+INFO:__main__:Processed clip 33 / 48
+INFO:__main__:Processed clip 34 / 48
+INFO:__main__:Processed clip 35 / 48
+INFO:__main__:Processed clip 36 / 48
+INFO:__main__:Processed clip 37 / 48
+INFO:__main__:Processed clip 38 / 48
+INFO:__main__:Processed clip 39 / 48
+INFO:__main__:Processed clip 40 / 48
+INFO:__main__:Processed clip 41 / 48
+INFO:__main__:Processed clip 42 / 48
+INFO:__main__:Processed clip 43 / 48
+INFO:__main__:Processed clip 44 / 48
+INFO:__main__:Processed clip 45 / 48
+INFO:__main__:Processed clip 46 / 48
+INFO:__main__:Processed clip 47 / 48
+INFO:__main__:Processed clip 48 / 48
+INFO:__main__:Wrote summaries to results/rtgomp_phase_eq_E4n_speech_eval_scale_check_subset_paired_20260126_123812/summary

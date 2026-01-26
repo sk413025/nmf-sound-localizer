@@ -1,0 +1,59 @@
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Wrote subset manifest: results/rtgomp_phase_eq_E4n_speech_fit_full_dataset_paired_20260126_123713/subset_manifest.json
+INFO:__main__:Processed clip 10 / 416
+INFO:__main__:Processed clip 20 / 416
+INFO:__main__:Processed clip 30 / 416
+INFO:__main__:Processed clip 40 / 416
+INFO:__main__:Processed clip 50 / 416
+INFO:__main__:Processed clip 60 / 416
+INFO:__main__:Processed clip 70 / 416
+INFO:__main__:Processed clip 80 / 416
+INFO:__main__:Processed clip 90 / 416
+INFO:__main__:Processed clip 100 / 416
+INFO:__main__:Processed clip 110 / 416
+INFO:__main__:Processed clip 120 / 416
+INFO:__main__:Processed clip 130 / 416
+INFO:__main__:Processed clip 140 / 416
+INFO:__main__:Processed clip 150 / 416
+INFO:__main__:Processed clip 160 / 416
+INFO:__main__:Processed clip 170 / 416
+INFO:__main__:Processed clip 180 / 416
+INFO:__main__:Processed clip 190 / 416
+INFO:__main__:Processed clip 200 / 416
+INFO:__main__:Processed clip 210 / 416
+INFO:__main__:Processed clip 220 / 416
+INFO:__main__:Processed clip 230 / 416
+INFO:__main__:Processed clip 240 / 416
+INFO:__main__:Processed clip 250 / 416
+INFO:__main__:Processed clip 260 / 416
+INFO:__main__:Processed clip 270 / 416
+INFO:__main__:Processed clip 280 / 416
+INFO:__main__:Processed clip 290 / 416
+INFO:__main__:Processed clip 300 / 416
+INFO:__main__:Processed clip 310 / 416
+INFO:__main__:Processed clip 320 / 416
+INFO:__main__:Processed clip 330 / 416
+INFO:__main__:Processed clip 340 / 416
+INFO:__main__:Processed clip 350 / 416
+INFO:__main__:Processed clip 360 / 416
+INFO:__main__:Processed clip 370 / 416
+INFO:__main__:Processed clip 380 / 416
+INFO:__main__:Processed clip 390 / 416
+INFO:__main__:Processed clip 400 / 416
+INFO:__main__:Processed clip 410 / 416
+INFO:__main__:Processed clip 416 / 416
+INFO:__main__:Wrote phase_eq: results/rtgomp_phase_eq_E4n_speech_fit_full_dataset_paired_20260126_123713/phase_eq/phase_eq.npz
+INFO:__main__:Done. phase_eq=results/rtgomp_phase_eq_E4n_speech_fit_full_dataset_paired_20260126_123713/phase_eq/phase_eq.npz
+INFO:__main__:Fit stats: {
+  "num_windows_total": 1974,
+  "num_windows_used": 1974,
+  "num_segment_oob": 0,
+  "fraction_defined_tau": 1.0,
+  "boundary_hit_rate": 0.0,
+  "gcc_psr_p50": 53.87461544710058,
+  "gcc_psr_p90": 84.24581641483906,
+  "inband_defined_fraction_stft": 1.0,
+  "phase_eq_unit_mag_max_err": 4.127824393407309e-08,
+  "any_nan_or_inf": false
+}

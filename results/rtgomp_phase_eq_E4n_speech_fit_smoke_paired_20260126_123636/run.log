@@ -1,0 +1,18 @@
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Wrote subset manifest: results/rtgomp_phase_eq_E4n_speech_fit_smoke_paired_20260126_123636/subset_manifest.json
+INFO:__main__:Processed clip 1 / 1
+INFO:__main__:Wrote phase_eq: results/rtgomp_phase_eq_E4n_speech_fit_smoke_paired_20260126_123636/phase_eq/phase_eq.npz
+INFO:__main__:Done. phase_eq=results/rtgomp_phase_eq_E4n_speech_fit_smoke_paired_20260126_123636/phase_eq/phase_eq.npz
+INFO:__main__:Fit stats: {
+  "num_windows_total": 5,
+  "num_windows_used": 5,
+  "num_segment_oob": 0,
+  "fraction_defined_tau": 1.0,
+  "boundary_hit_rate": 0.0,
+  "gcc_psr_p50": 60.19186585185958,
+  "gcc_psr_p90": 60.19186585185958,
+  "inband_defined_fraction_stft": 1.0,
+  "phase_eq_unit_mag_max_err": 4.031402323079192e-08,
+  "any_nan_or_inf": false
+}
