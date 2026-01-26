@@ -136,16 +136,30 @@ def gcc_phat_delay(
     return float(tau_hat), float(tau_ms), psr, boundary_hit
 
 
-def gcc_phat_abs_cc(
+def bandpass_filtfilt(x: np.ndarray, *, b: np.ndarray, a: np.ndarray) -> np.ndarray:
+    """Mean-remove and bandpass filter with zero-phase filtfilt."""
+    return signal.filtfilt(b, a, (x - np.mean(x)).astype(np.float32, copy=False))
+
+
+def gcc_phat_core(
     x: np.ndarray,
     y: np.ndarray,
     *,
+    fs: int,
     b: np.ndarray,
     a: np.ndarray,
     nfft: int,
     eps: float = 1e-12,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Return (lags[int], abs(cc)[float]) for GCC-PHAT correlation."""
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Compute GCC-PHAT correlation magnitude plus cross-power spectrum.
+
+    Returns:
+      - lags: (nfft//2,) int64, centered lags in samples
+      - abs_cc: (nfft//2,) float64, abs(cc) aligned with lags
+      - freqs_hz: (nfft//2+1,) float64, rFFT bin center frequencies in Hz
+      - cross_power: (nfft//2+1,) complex128, conj(X)*Y on filtered segments
+    """
     if x.size == 0 or y.size == 0:
         raise RuntimeError("GCC-PHAT requires non-empty segments.")
     if x.size != y.size:
@@ -153,18 +167,34 @@ def gcc_phat_abs_cc(
     if nfft <= 0:
         raise RuntimeError(f"Invalid nfft={nfft}")
 
-    x_f = signal.filtfilt(b, a, (x - np.mean(x)).astype(np.float32, copy=False))
-    y_f = signal.filtfilt(b, a, (y - np.mean(y)).astype(np.float32, copy=False))
+    x_f = bandpass_filtfilt(x, b=b, a=a)
+    y_f = bandpass_filtfilt(y, b=b, a=a)
 
     X = np.fft.rfft(x_f, n=nfft)
     Y = np.fft.rfft(y_f, n=nfft)
     # Sign convention: tau_hat > 0 means y lags x (y[t] ~= x[t - tau_hat]).
-    R = np.conj(X) * Y
-    R /= (np.abs(R) + eps)
+    cross_power = np.conj(X) * Y
+    R = cross_power / (np.abs(cross_power) + eps)
     cc = np.fft.irfft(R, n=nfft)
     cc = np.concatenate([cc[-(nfft // 2) :], cc[: nfft // 2]])
     lags = np.arange(-(nfft // 2), nfft // 2, dtype=np.int64)
-    return lags, np.abs(cc)
+    freqs_hz = np.fft.rfftfreq(nfft, d=1.0 / float(fs))
+    return lags, np.abs(cc), freqs_hz, cross_power
+
+
+def gcc_phat_abs_cc(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    fs: int,
+    b: np.ndarray,
+    a: np.ndarray,
+    nfft: int,
+    eps: float = 1e-12,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return (lags[int], abs(cc)[float]) for GCC-PHAT correlation."""
+    lags, abs_cc, _freqs_hz, _cross_power = gcc_phat_core(x, y, fs=fs, b=b, a=a, nfft=nfft, eps=eps)
+    return lags, abs_cc
 
 
 def gcc_phat_pick_peak(
@@ -216,6 +246,115 @@ def gcc_phat_pick_peak(
 
     tau_ms = float(tau_hat) * 1000.0 / float(fs)
     return float(tau_hat), float(tau_ms), psr, boundary_hit
+
+
+def phase_slope_fit(
+    freqs_hz: np.ndarray,
+    cross_power: np.ndarray,
+    *,
+    fs: int,
+    f_lo: float,
+    f_hi: float,
+    min_bins: int,
+) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float], Optional[int], Optional[str]]:
+    """
+    Unconstrained phase-slope fit on the selected band.
+
+    Returns:
+      (tau_samples, tau_ms, fit_rmse_rad, r2, num_bins_used, undefined_reason)
+    """
+    if freqs_hz.size == 0 or cross_power.size == 0:
+        return None, None, None, None, None, "phase_slope_empty"
+    if freqs_hz.size != cross_power.size:
+        raise RuntimeError(f"freqs/cross_power size mismatch: {freqs_hz.size} vs {cross_power.size}")
+
+    sel = (freqs_hz >= float(f_lo)) & (freqs_hz <= float(f_hi))
+    if not np.any(sel):
+        return None, None, None, None, None, "phase_slope_empty_band"
+
+    f = freqs_hz[sel].astype(np.float64, copy=False)
+    C = cross_power[sel]
+    phi = np.unwrap(np.angle(C).astype(np.float64, copy=False))
+    w = np.abs(C).astype(np.float64, copy=False)
+
+    mask = np.isfinite(f) & np.isfinite(phi) & np.isfinite(w) & (w > 0.0)
+    n_valid = int(np.sum(mask))
+    if n_valid < int(min_bins):
+        return None, None, None, None, n_valid, "phase_slope_too_few_bins"
+
+    f = f[mask]
+    phi = phi[mask]
+    w = w[mask]
+
+    w_sum = float(np.sum(w))
+    if not np.isfinite(w_sum) or w_sum <= 0.0:
+        return None, None, None, None, int(f.size), "phase_slope_bad_weights"
+
+    f_bar = float(np.sum(w * f) / w_sum)
+    phi_bar = float(np.sum(w * phi) / w_sum)
+    df = f - f_bar
+    dphi = phi - phi_bar
+    sxx = float(np.sum(w * df * df))
+    if not np.isfinite(sxx) or sxx <= 0.0:
+        return None, None, None, None, int(f.size), "phase_slope_sxx_zero"
+
+    sxy = float(np.sum(w * df * dphi))
+    slope = sxy / sxx
+    intercept = phi_bar - slope * f_bar
+    pred = slope * f + intercept
+    res = phi - pred
+    sse = float(np.sum(w * res * res))
+    rmse = float(np.sqrt(sse / w_sum)) if w_sum > 0.0 else None
+
+    sst = float(np.sum(w * (phi - phi_bar) * (phi - phi_bar)))
+    if not np.isfinite(sst) or sst <= 0.0:
+        r2 = None
+    else:
+        r2 = float(1.0 - (sse / sst))
+
+    tau_sec = -float(slope) / (2.0 * float(np.pi))
+    tau_samples = float(tau_sec) * float(fs)
+    tau_ms = float(tau_sec) * 1000.0
+    if not np.isfinite(tau_samples) or not np.isfinite(tau_ms):
+        return None, None, rmse, r2, int(f.size), "phase_slope_nonfinite_tau"
+
+    return tau_samples, tau_ms, rmse, r2, int(f.size), None
+
+
+def phase_slope_group_delay_ms(
+    freqs_hz: np.ndarray,
+    cross_power: np.ndarray,
+    *,
+    fs: int,
+    f_lo: float,
+    f_hi: float,
+    min_bins: int,
+    tau_center_samples: int,
+    search_radius_samples: int,
+) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[int], Optional[str]]:
+    """
+    Constrained phase-slope group delay estimate (ms) within the coarse search window.
+
+    Returns:
+      (tau_ms, fit_rmse_rad, r2, num_bins_used, undefined_reason)
+    """
+    tau_s, tau_ms, rmse, r2, n_bins, reason = phase_slope_fit(
+        freqs_hz,
+        cross_power,
+        fs=fs,
+        f_lo=f_lo,
+        f_hi=f_hi,
+        min_bins=min_bins,
+    )
+    if reason is not None or tau_s is None or tau_ms is None:
+        return None, rmse, r2, n_bins, reason
+
+    lo = float(tau_center_samples) - float(search_radius_samples)
+    hi = float(tau_center_samples) + float(search_radius_samples)
+    if not (lo <= float(tau_s) <= hi):
+        return None, rmse, r2, n_bins, "phase_slope_outside_search_window"
+
+    return float(tau_ms), rmse, r2, n_bins, None
 
 
 @dataclass
@@ -906,7 +1045,7 @@ def main() -> None:
         "--subsample_method",
         type=str,
         default="gcc_phat",
-        help="Comma-separated list: gcc_phat[,phase_slope]. Only gcc_phat is implemented in this evaluator.",
+        help="Comma-separated list: gcc_phat[,phase_slope]. phase_slope adds group-delay fit + dispersion diagnostics.",
     )
     p.add_argument(
         "--search_radius_frames",
@@ -1005,14 +1144,17 @@ def main() -> None:
     logc_min, logc_max = min(logc_vals), max(logc_vals)
 
     subsample_methods = [m.strip() for m in str(args.subsample_method).split(",") if m.strip() != ""]
-    if int(args.write_subsample_delay_diagnostics) == 1:
-        if subsample_methods != ["gcc_phat"]:
-            raise SystemExit(
-                "Only subsample_method=gcc_phat is implemented. "
-                f"Got subsample_method={args.subsample_method!r} (parsed={subsample_methods})."
-            )
+    do_subsample = int(args.write_subsample_delay_diagnostics) == 1
+    if do_subsample:
+        allowed = {"gcc_phat", "phase_slope"}
+        unknown = [m for m in subsample_methods if m not in allowed]
+        if unknown:
+            raise SystemExit(f"Unknown subsample_method entries: {unknown} (allowed: {sorted(allowed)})")
+        if "gcc_phat" not in subsample_methods:
+            raise SystemExit("--subsample_method must include gcc_phat for sub-sample diagnostics.")
         if int(args.search_radius_frames) <= 0:
             raise SystemExit("--search_radius_frames must be > 0 for sub-sample diagnostics.")
+    do_phase_slope = do_subsample and ("phase_slope" in subsample_methods)
 
     M_lags = int(args.max_lag) * 2 + 1
     action_dim = M_lags + 1
@@ -1043,12 +1185,17 @@ def main() -> None:
         subsample_path.open("w", encoding="utf-8") if int(args.write_subsample_delay_diagnostics) == 1 else None
     )
     bp_b = bp_a = None
+    phase_slope_min_bins = None
+    phase_slope_subbands_hz = None
     if subsample_fp is not None:
         bp_b, bp_a = design_bandpass(
             int(args.fs),
             f_lo=float(args.freq_min),
             f_hi=float(args.freq_max),
         )
+        if do_phase_slope:
+            phase_slope_min_bins = 64
+            phase_slope_subbands_hz = [(300.0, 900.0), (900.0, 1800.0), (1800.0, 3000.0)]
 
     stats_by_lambda = {}
     steps_decision_stats = {}
@@ -1064,6 +1211,12 @@ def main() -> None:
     subsample_psr_quantiles_by_lambda = {}
     subsample_boundary_rate_by_lambda = {}
     subsample_clip_taus_ms_by_lambda = {}
+    subsample_phase_tau_quantiles_by_lambda = {}
+    subsample_phase_r2_quantiles_by_lambda = {}
+    subsample_phase_rmse_quantiles_by_lambda = {}
+    subsample_abs_tau_agreement_quantiles_by_lambda = {}
+    subsample_tau_band_spread_quantiles_by_lambda = {}
+    subsample_clip_tau_band_spreads_ms_by_lambda = {}
     for lambda_c in lambda_c_values:
         stats_by_lambda[lambda_c] = {
             "dt": RunningStats(),
@@ -1107,8 +1260,24 @@ def main() -> None:
         }
         if subsample_fp is not None:
             subsample_counts_by_lambda[lambda_c] = {
-                "dt": {"num_windows": 0, "num_defined": 0, "num_segment_oob": 0, "num_coarse_undefined": 0},
-                "omp": {"num_windows": 0, "num_defined": 0, "num_segment_oob": 0, "num_coarse_undefined": 0},
+                "dt": {
+                    "num_windows": 0,
+                    "num_defined": 0,
+                    "num_segment_oob": 0,
+                    "num_coarse_undefined": 0,
+                    "num_phase_defined": 0,
+                    "num_tau_agreement_defined": 0,
+                    "num_tau_band_spread_defined": 0,
+                },
+                "omp": {
+                    "num_windows": 0,
+                    "num_defined": 0,
+                    "num_segment_oob": 0,
+                    "num_coarse_undefined": 0,
+                    "num_phase_defined": 0,
+                    "num_tau_agreement_defined": 0,
+                    "num_tau_band_spread_defined": 0,
+                },
             }
             subsample_tau_quantiles_by_lambda[lambda_c] = {
                 "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
@@ -1123,6 +1292,31 @@ def main() -> None:
                 "dt": [[] for _ in range(int(num_pairs))],
                 "omp": [[] for _ in range(int(num_pairs))],
             }
+            if do_phase_slope:
+                subsample_phase_tau_quantiles_by_lambda[lambda_c] = {
+                    "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                    "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                }
+                subsample_phase_r2_quantiles_by_lambda[lambda_c] = {
+                    "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                    "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                }
+                subsample_phase_rmse_quantiles_by_lambda[lambda_c] = {
+                    "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                    "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                }
+                subsample_abs_tau_agreement_quantiles_by_lambda[lambda_c] = {
+                    "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                    "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                }
+                subsample_tau_band_spread_quantiles_by_lambda[lambda_c] = {
+                    "dt": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                    "omp": {"p50": P2Quantile(0.5), "p90": P2Quantile(0.9)},
+                }
+                subsample_clip_tau_band_spreads_ms_by_lambda[lambda_c] = {
+                    "dt": [[] for _ in range(int(num_pairs))],
+                    "omp": [[] for _ in range(int(num_pairs))],
+                }
 
     forced_stats = {}
     for k in forced_k_values:
@@ -1650,6 +1844,15 @@ def main() -> None:
                                 "gcc_phat_tau_hat_ms": None,
                                 "gcc_phat_psr": None,
                                 "gcc_phat_boundary_hit": None,
+                                "phase_slope_tau_hat_ms": None,
+                                "phase_slope_fit_rmse_rad": None,
+                                "phase_slope_r2": None,
+                                "phase_slope_num_bins_used": None,
+                                "phase_slope_tau_hat_ms_by_band": [None, None, None],
+                                "phase_slope_r2_by_band": [None, None, None],
+                                "phase_slope_fit_rmse_rad_by_band": [None, None, None],
+                                "tau_band_spread_ms": None,
+                                "tau_agreement_ms": None,
                                 "undefined_reason": "segment_oob",
                             }
                             subsample_fp.write(json.dumps(row) + "\n")
@@ -1673,7 +1876,14 @@ def main() -> None:
                     base_nfft = next_pow2(2 * int(x_seg.size))
                     nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
 
-                    lags, abs_cc = gcc_phat_abs_cc(x_seg, y_seg, b=bp_b, a=bp_a, nfft=int(nfft))
+                    lags, abs_cc, freqs_hz, cross_power = gcc_phat_core(
+                        x_seg,
+                        y_seg,
+                        fs=int(args.fs),
+                        b=bp_b,
+                        a=bp_a,
+                        nfft=int(nfft),
+                    )
 
                     for lambda_c in lambda_c_values:
                         for coarse_source, coarse_lag_frames in (("dt", dt_med_by_lambda[lambda_c]), ("omp", omp_med)):
@@ -1695,6 +1905,15 @@ def main() -> None:
                                     "gcc_phat_tau_hat_ms": None,
                                     "gcc_phat_psr": None,
                                     "gcc_phat_boundary_hit": None,
+                                    "phase_slope_tau_hat_ms": None,
+                                    "phase_slope_fit_rmse_rad": None,
+                                    "phase_slope_r2": None,
+                                    "phase_slope_num_bins_used": None,
+                                    "phase_slope_tau_hat_ms_by_band": [None, None, None],
+                                    "phase_slope_r2_by_band": [None, None, None],
+                                    "phase_slope_fit_rmse_rad_by_band": [None, None, None],
+                                    "tau_band_spread_ms": None,
+                                    "tau_agreement_ms": None,
                                     "undefined_reason": "coarse_undefined",
                                 }
                                 subsample_fp.write(json.dumps(row) + "\n")
@@ -1709,38 +1928,119 @@ def main() -> None:
                                 search_radius_samples=int(search_radius_samples),
                             )
 
-                            if tau_hat_s is None or tau_hat_ms is None:
-                                row = {
-                                    "pairing_mode": str(args.pairing_mode),
-                                    "clip_idx": int(clip_idx),
-                                    "window_idx": int(w_idx),
-                                    "start_t": int(start_t),
-                                    "lambda_c": float(lambda_c),
-                                    "method": "gcc_phat",
-                                    "coarse_source": str(coarse_source),
-                                    "coarse_lag_frames": float(coarse_lag_frames),
-                                    "coarse_delay_samples": int(coarse_delay_samples),
-                                    "search_radius_samples": int(search_radius_samples),
-                                    "gcc_phat_tau_hat_samples": None,
-                                    "gcc_phat_tau_hat_ms": None,
-                                    "gcc_phat_psr": None,
-                                    "gcc_phat_boundary_hit": None,
-                                    "undefined_reason": "gcc_phat_undefined",
-                                }
-                                subsample_fp.write(json.dumps(row) + "\n")
-                                continue
+                            phase_tau_ms = None
+                            phase_rmse = None
+                            phase_r2 = None
+                            phase_bins = None
+                            phase_reason = None
+                            tau_by_band = [None, None, None]
+                            r2_by_band = [None, None, None]
+                            rmse_by_band = [None, None, None]
+                            tau_band_spread_ms = None
+                            tau_agreement_ms = None
 
-                            subsample_counts_by_lambda[lambda_c][coarse_source]["num_defined"] += 1
-                            subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(float(tau_hat_ms))
-                            subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(float(tau_hat_ms))
-                            if psr is not None:
-                                subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(float(psr))
-                                subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(float(psr))
-                            if bhit is not None:
-                                subsample_boundary_rate_by_lambda[lambda_c][coarse_source].update(
-                                    1.0 if bool(bhit) else 0.0
+                            if do_phase_slope:
+                                if phase_slope_min_bins is None or phase_slope_subbands_hz is None:
+                                    raise RuntimeError("phase_slope enabled but phase_slope_min_bins/subbands are None")
+
+                                phase_tau_ms, phase_rmse, phase_r2, phase_bins, phase_reason = phase_slope_group_delay_ms(
+                                    freqs_hz,
+                                    cross_power,
+                                    fs=int(args.fs),
+                                    f_lo=float(args.freq_min),
+                                    f_hi=float(args.freq_max),
+                                    min_bins=int(phase_slope_min_bins),
+                                    tau_center_samples=int(coarse_delay_samples),
+                                    search_radius_samples=int(search_radius_samples),
                                 )
-                            subsample_clip_taus_ms_by_lambda[lambda_c][coarse_source][clip_idx].append(float(tau_hat_ms))
+
+                                band_taus = []
+                                for band_i, (f_lo, f_hi) in enumerate(list(phase_slope_subbands_hz)):
+                                    b_tau_ms, b_rmse, b_r2, _b_bins, _b_reason = phase_slope_group_delay_ms(
+                                        freqs_hz,
+                                        cross_power,
+                                        fs=int(args.fs),
+                                        f_lo=float(f_lo),
+                                        f_hi=float(f_hi),
+                                        min_bins=int(phase_slope_min_bins),
+                                        tau_center_samples=int(coarse_delay_samples),
+                                        search_radius_samples=int(search_radius_samples),
+                                    )
+                                    tau_by_band[band_i] = None if b_tau_ms is None else float(b_tau_ms)
+                                    r2_by_band[band_i] = None if b_r2 is None else float(b_r2)
+                                    rmse_by_band[band_i] = None if b_rmse is None else float(b_rmse)
+                                    if b_tau_ms is not None:
+                                        band_taus.append(float(b_tau_ms))
+                                if len(band_taus) >= 2:
+                                    tau_band_spread_ms = float(max(band_taus) - min(band_taus))
+
+                                if phase_tau_ms is not None and tau_hat_ms is not None:
+                                    tau_agreement_ms = float(phase_tau_ms) - float(tau_hat_ms)
+
+                            undefined_reason = None
+                            if tau_hat_s is None or tau_hat_ms is None:
+                                undefined_reason = "gcc_phat_undefined"
+                            else:
+                                subsample_counts_by_lambda[lambda_c][coarse_source]["num_defined"] += 1
+                                subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                    float(tau_hat_ms)
+                                )
+                                subsample_tau_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                    float(tau_hat_ms)
+                                )
+                                if psr is not None:
+                                    subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(float(psr))
+                                    subsample_psr_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(float(psr))
+                                if bhit is not None:
+                                    subsample_boundary_rate_by_lambda[lambda_c][coarse_source].update(
+                                        1.0 if bool(bhit) else 0.0
+                                    )
+                                subsample_clip_taus_ms_by_lambda[lambda_c][coarse_source][clip_idx].append(float(tau_hat_ms))
+
+                            if do_phase_slope and phase_tau_ms is not None:
+                                subsample_counts_by_lambda[lambda_c][coarse_source]["num_phase_defined"] += 1
+                                subsample_phase_tau_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                    float(phase_tau_ms)
+                                )
+                                subsample_phase_tau_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                    float(phase_tau_ms)
+                                )
+                                if phase_r2 is not None:
+                                    subsample_phase_r2_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                        float(phase_r2)
+                                    )
+                                    subsample_phase_r2_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                        float(phase_r2)
+                                    )
+                                if phase_rmse is not None:
+                                    subsample_phase_rmse_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                        float(phase_rmse)
+                                    )
+                                    subsample_phase_rmse_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                        float(phase_rmse)
+                                    )
+                            if do_phase_slope and tau_agreement_ms is not None:
+                                subsample_counts_by_lambda[lambda_c][coarse_source]["num_tau_agreement_defined"] += 1
+                                subsample_abs_tau_agreement_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                    float(abs(tau_agreement_ms))
+                                )
+                                subsample_abs_tau_agreement_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                    float(abs(tau_agreement_ms))
+                                )
+                            if do_phase_slope and tau_band_spread_ms is not None:
+                                subsample_counts_by_lambda[lambda_c][coarse_source]["num_tau_band_spread_defined"] += 1
+                                subsample_tau_band_spread_quantiles_by_lambda[lambda_c][coarse_source]["p50"].update(
+                                    float(tau_band_spread_ms)
+                                )
+                                subsample_tau_band_spread_quantiles_by_lambda[lambda_c][coarse_source]["p90"].update(
+                                    float(tau_band_spread_ms)
+                                )
+                                subsample_clip_tau_band_spreads_ms_by_lambda[lambda_c][coarse_source][clip_idx].append(
+                                    float(tau_band_spread_ms)
+                                )
+
+                            if do_phase_slope and phase_tau_ms is None and phase_reason is not None and undefined_reason is None:
+                                undefined_reason = str(phase_reason)
 
                             row = {
                                 "pairing_mode": str(args.pairing_mode),
@@ -1753,11 +2053,22 @@ def main() -> None:
                                 "coarse_lag_frames": float(coarse_lag_frames),
                                 "coarse_delay_samples": int(coarse_delay_samples),
                                 "search_radius_samples": int(search_radius_samples),
-                                "gcc_phat_tau_hat_samples": float(tau_hat_s),
-                                "gcc_phat_tau_hat_ms": float(tau_hat_ms),
+                                "gcc_phat_tau_hat_samples": None if tau_hat_s is None else float(tau_hat_s),
+                                "gcc_phat_tau_hat_ms": None if tau_hat_ms is None else float(tau_hat_ms),
                                 "gcc_phat_psr": None if psr is None else float(psr),
                                 "gcc_phat_boundary_hit": None if bhit is None else bool(bhit),
+                                "phase_slope_tau_hat_ms": None if phase_tau_ms is None else float(phase_tau_ms),
+                                "phase_slope_fit_rmse_rad": None if phase_rmse is None else float(phase_rmse),
+                                "phase_slope_r2": None if phase_r2 is None else float(phase_r2),
+                                "phase_slope_num_bins_used": None if phase_bins is None else int(phase_bins),
+                                "phase_slope_tau_hat_ms_by_band": tau_by_band,
+                                "phase_slope_r2_by_band": r2_by_band,
+                                "phase_slope_fit_rmse_rad_by_band": rmse_by_band,
+                                "tau_band_spread_ms": None if tau_band_spread_ms is None else float(tau_band_spread_ms),
+                                "tau_agreement_ms": None if tau_agreement_ms is None else float(tau_agreement_ms),
                             }
+                            if undefined_reason is not None:
+                                row["undefined_reason"] = str(undefined_reason)
                             subsample_fp.write(json.dumps(row) + "\n")
 
             num_samples_total += int(F_band)
@@ -1906,6 +2217,8 @@ def main() -> None:
             "write_subsample_delay_diagnostics": bool(int(args.write_subsample_delay_diagnostics)),
             "subsample_method": str(args.subsample_method),
             "search_radius_frames": int(args.search_radius_frames),
+            "phase_slope_min_bins": None if phase_slope_min_bins is None else int(phase_slope_min_bins),
+            "phase_slope_subbands_hz": None if phase_slope_subbands_hz is None else list(phase_slope_subbands_hz),
         },
         "integrity": integrity,
         "rows": compute_rows,
@@ -2070,7 +2383,7 @@ def main() -> None:
                 within_p50 = float(np.percentile(clip_mads, 50)) if clip_mads else None
                 within_p90 = float(np.percentile(clip_mads, 90)) if clip_mads else None
 
-                return {
+                row = {
                     "num_windows": num_windows,
                     "num_defined": num_defined,
                     "num_segment_oob": int(counts["num_segment_oob"]),
@@ -2084,6 +2397,51 @@ def main() -> None:
                     "within_clip_tau_mad_ms_p50": within_p50,
                     "within_clip_tau_mad_ms_p90": within_p90,
                 }
+                if do_phase_slope:
+                    num_phase_defined = int(counts["num_phase_defined"])
+                    phase_frac_defined = float(num_phase_defined / num_windows) if num_windows > 0 else None
+                    phase_tau_p50 = subsample_phase_tau_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                    phase_tau_p90 = subsample_phase_tau_quantiles_by_lambda[lambda_c][source]["p90"].result()
+                    phase_r2_p50 = subsample_phase_r2_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                    phase_r2_p90 = subsample_phase_r2_quantiles_by_lambda[lambda_c][source]["p90"].result()
+                    phase_rmse_p50 = subsample_phase_rmse_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                    phase_rmse_p90 = subsample_phase_rmse_quantiles_by_lambda[lambda_c][source]["p90"].result()
+
+                    abs_agree_p50 = subsample_abs_tau_agreement_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                    abs_agree_p90 = subsample_abs_tau_agreement_quantiles_by_lambda[lambda_c][source]["p90"].result()
+
+                    spread_p50 = subsample_tau_band_spread_quantiles_by_lambda[lambda_c][source]["p50"].result()
+                    spread_p90 = subsample_tau_band_spread_quantiles_by_lambda[lambda_c][source]["p90"].result()
+
+                    clip_spread_mads = []
+                    for clip_i in range(int(num_pairs)):
+                        spreads = subsample_clip_tau_band_spreads_ms_by_lambda[lambda_c][source][clip_i]
+                        if len(spreads) == 0:
+                            continue
+                        med = float(np.median(spreads))
+                        mad = float(np.median(np.abs(np.asarray(spreads, dtype=np.float64) - med)))
+                        clip_spread_mads.append(mad)
+                    within_spread_p50 = float(np.percentile(clip_spread_mads, 50)) if clip_spread_mads else None
+                    within_spread_p90 = float(np.percentile(clip_spread_mads, 90)) if clip_spread_mads else None
+
+                    row.update(
+                        {
+                            "phase_slope_fraction_defined": phase_frac_defined,
+                            "phase_slope_tau_hat_ms_p50": phase_tau_p50,
+                            "phase_slope_tau_hat_ms_p90": phase_tau_p90,
+                            "phase_slope_r2_p50": phase_r2_p50,
+                            "phase_slope_r2_p90": phase_r2_p90,
+                            "phase_slope_fit_rmse_rad_p50": phase_rmse_p50,
+                            "phase_slope_fit_rmse_rad_p90": phase_rmse_p90,
+                            "abs_tau_agreement_ms_p50": abs_agree_p50,
+                            "abs_tau_agreement_ms_p90": abs_agree_p90,
+                            "tau_band_spread_ms_p50": spread_p50,
+                            "tau_band_spread_ms_p90": spread_p90,
+                            "within_clip_tau_band_spread_ms_p50": within_spread_p50,
+                            "within_clip_tau_band_spread_ms_p90": within_spread_p90,
+                        }
+                    )
+                return row
 
             subsample_rows.append(
                 {
