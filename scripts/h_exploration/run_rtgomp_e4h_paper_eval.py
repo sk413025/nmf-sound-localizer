@@ -1,4 +1,5 @@
 import argparse
+import atexit
 import hashlib
 import json
 import logging
@@ -444,6 +445,52 @@ def normalize_logc(c: float, logc_min: float, logc_max: float) -> float:
     if logc_max == logc_min:
         return 0.0
     return float(np.clip((np.log10(c) - logc_min) / (logc_max - logc_min), 0.0, 1.0))
+
+
+def derive_phase_eq_from_perfreq_lags(
+    dt_first_ids: np.ndarray,
+    freqs_hz: np.ndarray,
+    hop_length: int,
+    fs: int,
+    lag_min: int,
+) -> np.ndarray:
+    """
+    Derive phase equalization from DTmin per-frequency lags.
+
+    Args:
+        dt_first_ids: (F,) int array of first selected lag indices (relative to lag_min).
+                      -1 means undefined (DT chose stop immediately).
+        freqs_hz: (F,) float array of frequency bin centers in Hz.
+        hop_length: STFT hop length in samples.
+        fs: Sample rate in Hz.
+        lag_min: Minimum lag index (typically negative).
+
+    Returns:
+        phase_eq: (F,) complex64 array. phase_eq[f] = exp(+j 2π f τ(f)) for defined bins,
+                  1.0 for undefined bins.
+    """
+    if dt_first_ids.shape != freqs_hz.shape:
+        raise ValueError(
+            f"dt_first_ids and freqs_hz shape mismatch: {dt_first_ids.shape} vs {freqs_hz.shape}"
+        )
+    F = len(dt_first_ids)
+    phase_eq = np.ones(F, dtype=np.complex64)
+
+    defined_mask = dt_first_ids >= 0
+    if not np.any(defined_mask):
+        return phase_eq
+
+    # Convert lag indices to delays in seconds
+    lags = dt_first_ids[defined_mask].astype(np.float64) + float(lag_min)
+    tau_sec = lags * float(hop_length) / float(fs)
+
+    # Phase correction: G(f) = exp(+j 2π f τ(f))
+    # This compensates for delay τ(f) at each frequency
+    phase_eq[defined_mask] = np.exp(
+        1j * 2.0 * np.pi * freqs_hz[defined_mask].astype(np.float64) * tau_sec
+    ).astype(np.complex64)
+
+    return phase_eq
 
 
 def md5_file(path: Path) -> str:
@@ -1071,10 +1118,45 @@ def main() -> None:
         help="Path to phase_eq.npz produced by E4n fitter (required if --apply_phase_eq 1).",
     )
     p.add_argument(
+        "--phase_eq_source",
+        type=str,
+        default="none",
+        choices=["none", "fit_e4n", "dtmin_perfreq_perwin", "dtmin_perfreq_agg"],
+        help=(
+            "Phase equalization source for E4o dispersion validation. "
+            "none=no phase_eq; fit_e4n=load from --phase_eq_path (E4n fitter output); "
+            "dtmin_perfreq_perwin=derive from DTmin per-freq lags each window (instant); "
+            "dtmin_perfreq_agg=derive from aggregated (median) per-freq lags (two-pass)."
+        ),
+    )
+    p.add_argument(
         "--phase_eq_unit_mag_tol",
         type=float,
         default=1e-3,
         help="Max allowed | |phase_eq|-1 | for validation (fail fast if exceeded).",
+    )
+    p.add_argument(
+        "--freq_cond_mode",
+        type=str,
+        default="normal",
+        choices=["normal", "shuffle", "constant", "zero_embed"],
+        help=(
+            "Frequency-conditioning ablation applied to the freq_ids passed into DT inference. "
+            "normal=use true freq_ids; shuffle=permute freq_ids across bins; constant=use constant idx; "
+            "zero_embed=zero the frequency embedding weights during inference."
+        ),
+    )
+    p.add_argument(
+        "--freq_cond_seed",
+        type=int,
+        default=0,
+        help="Seed used when --freq_cond_mode=shuffle.",
+    )
+    p.add_argument(
+        "--freq_cond_constant_idx",
+        type=int,
+        default=0,
+        help="Constant frequency index used when --freq_cond_mode=constant.",
     )
     p.add_argument(
         "--device",
@@ -1088,14 +1170,28 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "summary").mkdir(parents=True, exist_ok=True)
 
-    apply_phase_eq = int(args.apply_phase_eq) == 1
+    # Phase equalization source handling (E4o)
+    phase_eq_source = str(args.phase_eq_source)
+    # Legacy --apply_phase_eq=1 maps to "fit_e4n" if phase_eq_source is "none"
+    if int(args.apply_phase_eq) == 1 and phase_eq_source == "none":
+        phase_eq_source = "fit_e4n"
+    elif int(args.apply_phase_eq) == 1 and phase_eq_source != "fit_e4n":
+        raise SystemExit(
+            "--apply_phase_eq=1 is only compatible with --phase_eq_source=none or fit_e4n"
+        )
+
+    apply_phase_eq = phase_eq_source in ("fit_e4n",)
+    apply_phase_eq_dtmin_perwin = phase_eq_source == "dtmin_perfreq_perwin"
+    apply_phase_eq_dtmin_agg = phase_eq_source == "dtmin_perfreq_agg"
+
     phase_eq_path_str: Optional[str] = None
     phase_eq_stft_np: Optional[np.ndarray] = None
     phase_eq_rfft_np: Optional[np.ndarray] = None
     phase_eq_nfft_fit: Optional[int] = None
+
     if apply_phase_eq:
         if args.phase_eq_path is None:
-            raise SystemExit("--apply_phase_eq=1 requires --phase_eq_path")
+            raise SystemExit("--phase_eq_source=fit_e4n requires --phase_eq_path")
         phase_eq_path = Path(args.phase_eq_path)
         phase_eq_path_str = str(phase_eq_path)
         if not phase_eq_path.exists():
@@ -1130,6 +1226,8 @@ def main() -> None:
                 f"phase_eq not unit magnitude within tol={args.phase_eq_unit_mag_tol}: max_err={max_err}"
             )
         logger.info("Loaded phase_eq: %s (nfft_fit=%d)", phase_eq_path, int(phase_eq_nfft_fit))
+
+    logger.info("phase_eq_source: %s", phase_eq_source)
 
     mic_root = Path(args.mic_root)
     ldv_root = Path(args.ldv_root)
@@ -1235,6 +1333,34 @@ def main() -> None:
     model = SeqDT_FreqAware(M_lags=M_lags, rtg_dim=int(args.rtg_dim), action_dim=action_dim).to(device)
     model.load_state_dict(state)
     model.eval()
+
+    freq_cond_mode = str(args.freq_cond_mode)
+    if not hasattr(model, "freq_embed"):
+        raise SystemExit("Model is missing freq_embed; cannot run frequency conditioning audit.")
+    max_freq = int(model.freq_embed.num_embeddings)
+    freq_const_idx = int(args.freq_cond_constant_idx)
+    if freq_const_idx < 0 or freq_const_idx >= max_freq:
+        raise SystemExit(
+            f"--freq_cond_constant_idx out of range: {freq_const_idx} (expected 0..{max_freq - 1})"
+        )
+    logger.info(
+        "freq_cond_mode=%s freq_cond_seed=%d freq_cond_constant_idx=%d max_freq=%d",
+        freq_cond_mode,
+        int(args.freq_cond_seed),
+        freq_const_idx,
+        max_freq,
+    )
+
+    if freq_cond_mode == "zero_embed":
+        with torch.no_grad():
+            freq_embed_backup = model.freq_embed.weight.detach().clone()
+            model.freq_embed.weight.zero_()
+
+        def _restore_freq_embed() -> None:
+            with torch.no_grad():
+                model.freq_embed.weight.copy_(freq_embed_backup)
+
+        atexit.register(_restore_freq_embed)
 
     tol = 1e-7
     forced_k_values = [1, 2, 4, 8, 16]
@@ -1417,7 +1543,190 @@ def main() -> None:
     rng = np.random.default_rng(int(args.seed))
     freq_ids = None
     freq_idx_cpu = None
+    freq_ids_dt = None
+    freq_band_start_bin = None
+    freq_band_end_bin = None
+    freq_band_size = None
+    freq_cond_shuffle_perm = None
     log_every = 1
+
+    # E4o: Per-frequency band frequencies for dtmin_perfreq modes
+    freqs_band_hz: Optional[np.ndarray] = None
+
+    # E4o: Aggregated phase_eq for dtmin_perfreq_agg mode (computed in Pass 1)
+    agg_phase_eq_stft_np: Optional[np.ndarray] = None
+    agg_phase_eq_rfft_np: Optional[np.ndarray] = None
+    agg_nfft_fit: Optional[int] = None
+
+    # E4o aggregation pass: collect per-freq lags for dtmin_perfreq_agg mode
+    if apply_phase_eq_dtmin_agg:
+        logger.info("[E4o] Pass 1: Collecting per-freq lags for dtmin_perfreq_agg aggregation...")
+        all_first_ids_by_lambda: Dict[float, List[np.ndarray]] = {lc: [] for lc in lambda_c_values}
+
+        for clip_idx in range(num_pairs):
+            item = dataset[clip_idx]
+            mic_stft = item["mic_stft"]
+            ldv_stft = item["ldv_stft"]
+            if float(args.gain) != 1.0:
+                mic_stft = mic_stft * float(args.gain)
+                ldv_stft = ldv_stft * float(args.gain)
+
+            T_total, F = ldv_stft.shape
+            if freq_ids is None:
+                expected_bins = int(args.n_fft) // 2 + 1
+                if F != expected_bins:
+                    raise SystemExit(f"STFT F mismatch: expected {expected_bins}, got {F}")
+                freqs = np.linspace(0.0, float(args.fs) / 2.0, expected_bins)
+                idx = np.where((freqs >= float(args.freq_min)) & (freqs <= float(args.freq_max)))[0]
+                if len(idx) == 0:
+                    raise SystemExit("Frequency band selection is empty; check freq_min/freq_max.")
+                freq_idx_cpu = torch.from_numpy(idx.astype(np.int64))
+                freq_ids_full = torch.arange(F, device=device)
+                freq_ids = freq_ids_full[freq_idx_cpu.to(device)]
+                freq_band_start_bin = int(idx[0])
+                freq_band_end_bin = int(idx[-1])
+                freq_band_size = int(idx.size)
+                freqs_band_hz = freqs[idx]
+
+                if freq_cond_mode in ("normal", "zero_embed"):
+                    freq_ids_dt = freq_ids
+                elif freq_cond_mode == "constant":
+                    freq_ids_dt = torch.full_like(freq_ids, int(freq_const_idx))
+                elif freq_cond_mode == "shuffle":
+                    shuffle_rng = np.random.default_rng(int(args.freq_cond_seed))
+                    perm_np = shuffle_rng.permutation(int(freq_ids.numel())).astype(np.int64, copy=False)
+                    freq_cond_shuffle_perm = perm_np.tolist()
+                    perm_t = torch.from_numpy(perm_np).to(device=device)
+                    freq_ids_dt = freq_ids[perm_t]
+                else:
+                    raise SystemExit(f"Unknown --freq_cond_mode: {freq_cond_mode}")
+
+            Lag_Min = -int(args.max_lag)
+            Lag_Max = int(args.max_lag)
+            Lags = torch.arange(Lag_Min, Lag_Max + 1)
+            M_lags = int(args.max_lag) * 2 + 1
+
+            start_limit = Lag_Max
+            end_limit = T_total - int(args.tw) + Lag_Min
+            if end_limit <= start_limit:
+                continue
+            valid_starts = list(range(start_limit, end_limit, int(args.tw)))
+            if len(valid_starts) == 0:
+                continue
+
+            for w_idx, start_t in enumerate(valid_starts):
+                end_t = start_t + int(args.tw)
+                y_block = ldv_stft[start_t:end_t, :].T
+                D = torch.zeros(F, int(args.tw), M_lags, dtype=mic_stft.dtype)
+                for m, k_lag in enumerate(Lags):
+                    s = int(start_t - k_lag)
+                    e = int(s + int(args.tw))
+                    D[:, :, m] = mic_stft[s:e, :].T
+
+                if freq_idx_cpu is not None:
+                    D = D[freq_idx_cpu]
+                    y_block = y_block[freq_idx_cpu]
+                norms = manual_complex_norm(D, dim=1).unsqueeze(1) + 1e-8
+                D_norm = D / norms
+                Y = y_block.unsqueeze(2)
+                initial_energy = manual_complex_norm(Y.squeeze(), dim=1) ** 2
+
+                D_device = D.to(device)
+                D_norm_device = D_norm.to(device)
+                Y_device = Y.to(device)
+                initial_energy_device = initial_energy.to(device)
+
+                for lambda_c in lambda_c_values:
+                    _k_selected, _steps_decision, _dt_capture, _dt_res_energy, dt_first_ids = compute_dt_free_rollout(
+                        model,
+                        D_device,
+                        D_norm_device,
+                        Y_device,
+                        initial_energy_device,
+                        lambda_c=lambda_c,
+                        logc_min=logc_min,
+                        logc_max=logc_max,
+                        max_k=int(args.max_k),
+                        rtg_dim=int(args.rtg_dim),
+                        stop_id=M_lags,
+                        eps_energy=float(args.eps_energy),
+                        freq_ids=freq_ids_dt,
+                    )
+                    dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
+                    all_first_ids_by_lambda[lambda_c].append(dt_first_ids_cpu.copy())
+
+            if (clip_idx + 1) % 10 == 0:
+                logger.info("[E4o] Pass 1: Processed clip %d / %d", clip_idx + 1, num_pairs)
+
+        # Compute median per-freq lag for each lambda_c
+        logger.info("[E4o] Pass 1: Computing aggregated (median) per-freq lags...")
+        agg_first_ids_by_lambda: Dict[float, np.ndarray] = {}
+        for lambda_c in lambda_c_values:
+            all_ids = np.stack(all_first_ids_by_lambda[lambda_c], axis=0)  # (N_windows, F_band)
+            # Replace -1 with NaN for median computation (ignore undefined)
+            all_ids_float = all_ids.astype(np.float64)
+            all_ids_float[all_ids < 0] = np.nan
+            with np.errstate(all='ignore'):
+                median_ids = np.nanmedian(all_ids_float, axis=0)
+            # Convert back to int; NaN becomes -1
+            median_ids_int = np.where(np.isfinite(median_ids), np.round(median_ids).astype(np.int64), -1)
+            agg_first_ids_by_lambda[lambda_c] = median_ids_int
+            defined_frac = float(np.mean(median_ids_int >= 0))
+            logger.info(
+                "[E4o] lambda_c=%.2e: agg median lags defined_frac=%.4f",
+                lambda_c, defined_frac,
+            )
+
+        # For now, use lambda_c_values[0] as the representative lambda for aggregated phase_eq
+        # (The plan mentions aggregating across all windows, which we do per-lambda)
+        # We'll use the first lambda_c for the STFT phase_eq; can be extended later
+        rep_lambda_c = lambda_c_values[0]
+        agg_first_ids = agg_first_ids_by_lambda[rep_lambda_c]
+
+        # Derive aggregated phase_eq
+        if freqs_band_hz is None:
+            raise RuntimeError("freqs_band_hz is None after Pass 1")
+        agg_phase_eq_band = derive_phase_eq_from_perfreq_lags(
+            dt_first_ids=agg_first_ids,
+            freqs_hz=freqs_band_hz,
+            hop_length=int(args.hop_length),
+            fs=int(args.fs),
+            lag_min=-int(args.max_lag),
+        )
+        # Expand to full STFT bins (set non-band bins to 1.0)
+        expected_stft_bins = int(args.n_fft) // 2 + 1
+        agg_phase_eq_stft_np = np.ones(expected_stft_bins, dtype=np.complex64)
+        agg_phase_eq_stft_np[freq_band_start_bin:freq_band_end_bin + 1] = agg_phase_eq_band
+
+        # For GCC-PHAT/subsample FFT, we need a larger nfft_fit
+        # Use 4 * n_fft as a reasonable default for coverage
+        agg_nfft_fit = 4 * int(args.n_fft)
+        agg_rfft_bins = agg_nfft_fit // 2 + 1
+        agg_freqs_rfft = np.fft.rfftfreq(agg_nfft_fit, d=1.0 / float(args.fs))
+        # Interpolate phase_eq to rfft bins
+        # Use same approach: derive from aggregated lags for all rfft frequencies
+        full_freqs_stft = np.linspace(0.0, float(args.fs) / 2.0, expected_stft_bins)
+        agg_phase_eq_rfft_np = np.ones(agg_rfft_bins, dtype=np.complex64)
+        # Map band frequencies to rfft indices and apply the same phase correction
+        for f_idx, f_hz in enumerate(freqs_band_hz):
+            lag_idx = agg_first_ids[f_idx]
+            if lag_idx < 0:
+                continue
+            lag = float(lag_idx) + float(-int(args.max_lag))
+            tau_sec = lag * float(args.hop_length) / float(args.fs)
+            # Find corresponding rfft bins (might be multiple due to resolution)
+            rfft_idx = int(round(f_hz / (float(args.fs) / float(agg_nfft_fit))))
+            if 0 <= rfft_idx < agg_rfft_bins:
+                agg_phase_eq_rfft_np[rfft_idx] = np.exp(1j * 2.0 * np.pi * f_hz * tau_sec).astype(np.complex64)
+
+        logger.info(
+            "[E4o] Pass 1 complete. Aggregated phase_eq derived (nfft_fit=%d).",
+            agg_nfft_fit,
+        )
+
+        # Reset freq_ids for Pass 2
+        freq_ids = None
+        freq_idx_cpu = None
 
     for clip_idx in range(num_pairs):
         mic_path, ldv_path = dataset.clips[clip_idx]
@@ -1429,6 +1738,7 @@ def main() -> None:
             mic_stft = mic_stft * float(args.gain)
             ldv_stft = ldv_stft * float(args.gain)
 
+        # Apply phase_eq for fit_e4n mode (at clip level, before windows)
         if apply_phase_eq:
             if phase_eq_stft_np is None:
                 raise RuntimeError("apply_phase_eq=1 but phase_eq_stft_np is None")
@@ -1436,6 +1746,18 @@ def main() -> None:
             if phase_eq_t.dtype != ldv_stft.dtype:
                 phase_eq_t = phase_eq_t.to(dtype=ldv_stft.dtype)
             ldv_stft = ldv_stft * phase_eq_t
+
+        # Apply aggregated phase_eq for dtmin_perfreq_agg mode (at clip level)
+        if apply_phase_eq_dtmin_agg:
+            if agg_phase_eq_stft_np is None:
+                raise RuntimeError("dtmin_perfreq_agg mode but agg_phase_eq_stft_np is None")
+            phase_eq_t = torch.from_numpy(agg_phase_eq_stft_np.astype(np.complex64, copy=False))
+            if phase_eq_t.dtype != ldv_stft.dtype:
+                phase_eq_t = phase_eq_t.to(dtype=ldv_stft.dtype)
+            ldv_stft = ldv_stft * phase_eq_t
+
+        # Store original ldv_stft for dtmin_perfreq_perwin mode (we'll apply phase_eq per-window)
+        ldv_stft_orig = ldv_stft if apply_phase_eq_dtmin_perwin else None
 
         T_total, F = ldv_stft.shape
         if freq_ids is None:
@@ -1448,7 +1770,26 @@ def main() -> None:
                 raise SystemExit("Frequency band selection is empty; check freq_min/freq_max.")
             freq_idx_cpu = torch.from_numpy(idx.astype(np.int64))
             freq_ids_full = torch.arange(F, device=device)
+            # E4o: Store band frequencies for per-freq phase_eq derivation
+            if freqs_band_hz is None:
+                freqs_band_hz = freqs[idx]
             freq_ids = freq_ids_full[freq_idx_cpu.to(device)]
+            freq_band_start_bin = int(idx[0])
+            freq_band_end_bin = int(idx[-1])
+            freq_band_size = int(idx.size)
+
+            if freq_cond_mode in ("normal", "zero_embed"):
+                freq_ids_dt = freq_ids
+            elif freq_cond_mode == "constant":
+                freq_ids_dt = torch.full_like(freq_ids, int(freq_const_idx))
+            elif freq_cond_mode == "shuffle":
+                shuffle_rng = np.random.default_rng(int(args.freq_cond_seed))
+                perm_np = shuffle_rng.permutation(int(freq_ids.numel())).astype(np.int64, copy=False)
+                freq_cond_shuffle_perm = perm_np.tolist()
+                perm_t = torch.from_numpy(perm_np).to(device=device)
+                freq_ids_dt = freq_ids[perm_t]
+            else:
+                raise SystemExit(f"Unknown --freq_cond_mode: {freq_cond_mode}")
 
         Lag_Min = -int(args.max_lag)
         Lag_Max = int(args.max_lag)
@@ -1538,7 +1879,7 @@ def main() -> None:
                 rtg_dim=int(args.rtg_dim),
                 stop_id=M_lags,
                 eps_energy=float(args.eps_energy),
-                freq_ids=freq_ids,
+                freq_ids=freq_ids_dt,
             )
             num_dt_duplicate_actions_forced_k += int(dupes)
 
@@ -1668,7 +2009,7 @@ def main() -> None:
                     rtg_dim=int(args.rtg_dim),
                     stop_id=M_lags,
                     eps_energy=float(args.eps_energy),
-                    freq_ids=freq_ids,
+                    freq_ids=freq_ids_dt,
                 )
                 if need_coarse:
                     dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
@@ -1948,17 +2289,84 @@ def main() -> None:
                     max_abs_tau = max((abs(int(t)) for t in tau_centers), default=0)
                     need_half = int(max_abs_tau) + int(search_radius_samples) + 1
                     base_nfft = next_pow2(2 * int(x_seg.size))
+
+                    # Determine phase_eq for subsample diagnostics
+                    subsample_phase_eq_rfft: Optional[np.ndarray] = None
+                    subsample_nfft: int
+
                     if apply_phase_eq:
+                        # fit_e4n mode: use pre-loaded phase_eq
                         if phase_eq_nfft_fit is None or phase_eq_rfft_np is None:
                             raise RuntimeError("apply_phase_eq=1 but phase_eq_nfft_fit/phase_eq_rfft_np is None")
-                        nfft = int(phase_eq_nfft_fit)
-                        if need_half > int(nfft) // 2:
+                        subsample_nfft = int(phase_eq_nfft_fit)
+                        if need_half > int(subsample_nfft) // 2:
                             raise RuntimeError(
                                 "phase_eq nfft_fit too small for required lag coverage: "
-                                f"need_half={need_half}, nfft_fit={nfft}"
+                                f"need_half={need_half}, nfft_fit={subsample_nfft}"
                             )
+                        subsample_phase_eq_rfft = phase_eq_rfft_np
+                    elif apply_phase_eq_dtmin_agg:
+                        # dtmin_perfreq_agg mode: use aggregated phase_eq
+                        if agg_nfft_fit is None or agg_phase_eq_rfft_np is None:
+                            raise RuntimeError("dtmin_perfreq_agg but agg_phase_eq is None")
+                        subsample_nfft = int(agg_nfft_fit)
+                        if need_half > int(subsample_nfft) // 2:
+                            raise RuntimeError(
+                                "agg phase_eq nfft too small: need_half={need_half}, nfft={subsample_nfft}"
+                            )
+                        subsample_phase_eq_rfft = agg_phase_eq_rfft_np
+                    elif apply_phase_eq_dtmin_perwin:
+                        # dtmin_perfreq_perwin mode: derive phase_eq from current window's dt_first_ids
+                        # Use the first lambda_c's dt_first_ids for simplicity
+                        # (We run the DT for all lambdas, but for phase_eq we use first one)
+                        # We need to re-fetch dt_first_ids for this window - already computed above
+                        # Recompute for first lambda_c:
+                        rep_lambda_c = lambda_c_values[0]
+                        if freqs_band_hz is None:
+                            raise RuntimeError("freqs_band_hz is None in perwin mode")
+                        # Get dt_first_ids for representative lambda
+                        # We need to store them from the loop above
+                        # For simplicity, we'll recompute for the representative lambda
+                        _k_sel_tmp, _steps_tmp, _cap_tmp, _res_tmp, dt_first_ids_perwin = compute_dt_free_rollout(
+                            model,
+                            D_device,
+                            D_norm_device,
+                            Y_device,
+                            initial_energy_device,
+                            lambda_c=rep_lambda_c,
+                            logc_min=logc_min,
+                            logc_max=logc_max,
+                            max_k=int(args.max_k),
+                            rtg_dim=int(args.rtg_dim),
+                            stop_id=M_lags,
+                            eps_energy=float(args.eps_energy),
+                            freq_ids=freq_ids_dt,
+                        )
+                        dt_first_ids_perwin_np = dt_first_ids_perwin.detach().cpu().numpy()
+                        # Derive per-window phase_eq
+                        perwin_phase_eq_band = derive_phase_eq_from_perfreq_lags(
+                            dt_first_ids=dt_first_ids_perwin_np,
+                            freqs_hz=freqs_band_hz,
+                            hop_length=int(args.hop_length),
+                            fs=int(args.fs),
+                            lag_min=-int(args.max_lag),
+                        )
+                        # Build rfft phase_eq
+                        subsample_nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
+                        perwin_rfft_bins = subsample_nfft // 2 + 1
+                        perwin_phase_eq_rfft = np.ones(perwin_rfft_bins, dtype=np.complex64)
+                        # Map band phase_eq to rfft bins
+                        for f_idx, f_hz in enumerate(freqs_band_hz):
+                            if dt_first_ids_perwin_np[f_idx] < 0:
+                                continue
+                            rfft_idx = int(round(f_hz / (float(args.fs) / float(subsample_nfft))))
+                            if 0 <= rfft_idx < perwin_rfft_bins:
+                                perwin_phase_eq_rfft[rfft_idx] = perwin_phase_eq_band[f_idx]
+                        subsample_phase_eq_rfft = perwin_phase_eq_rfft
                     else:
-                        nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
+                        # No phase_eq
+                        subsample_nfft = base_nfft if need_half <= base_nfft // 2 else next_pow2(4 * int(x_seg.size))
+                        subsample_phase_eq_rfft = None
 
                     lags, abs_cc, freqs_hz, cross_power = gcc_phat_core(
                         x_seg,
@@ -1966,8 +2374,8 @@ def main() -> None:
                         fs=int(args.fs),
                         b=bp_b,
                         a=bp_a,
-                        nfft=int(nfft),
-                        phase_eq_rfft=phase_eq_rfft_np if apply_phase_eq else None,
+                        nfft=int(subsample_nfft),
+                        phase_eq_rfft=subsample_phase_eq_rfft,
                     )
 
                     for lambda_c in lambda_c_values:
@@ -2305,9 +2713,14 @@ def main() -> None:
             "phase_slope_min_bins": None if phase_slope_min_bins is None else int(phase_slope_min_bins),
             "phase_slope_subbands_hz": None if phase_slope_subbands_hz is None else list(phase_slope_subbands_hz),
             "apply_phase_eq": bool(apply_phase_eq),
+            "phase_eq_source": str(phase_eq_source),
             "phase_eq_path": None if phase_eq_path_str is None else str(phase_eq_path_str),
             "phase_eq_nfft_fit": None if phase_eq_nfft_fit is None else int(phase_eq_nfft_fit),
+            "phase_eq_agg_nfft_fit": None if agg_nfft_fit is None else int(agg_nfft_fit),
             "phase_eq_unit_mag_tol": float(args.phase_eq_unit_mag_tol),
+            "freq_cond_mode": str(args.freq_cond_mode),
+            "freq_cond_seed": int(args.freq_cond_seed),
+            "freq_cond_constant_idx": int(args.freq_cond_constant_idx),
         },
         "integrity": integrity,
         "rows": compute_rows,
@@ -2347,6 +2760,38 @@ def main() -> None:
         "spearman_lambda_steps_decision": spearman_steps,
     }
 
+    freq_cond_audit_summary = {
+        "config": {
+            "freq_cond_mode": str(args.freq_cond_mode),
+            "freq_cond_seed": int(args.freq_cond_seed),
+            "freq_cond_constant_idx": int(args.freq_cond_constant_idx),
+            "shuffle_perm": freq_cond_shuffle_perm,
+            "fs": int(args.fs),
+            "n_fft": int(args.n_fft),
+            "freq_min": float(args.freq_min),
+            "freq_max": float(args.freq_max),
+            "start_bin": freq_band_start_bin,
+            "end_bin": freq_band_end_bin,
+            "F_band": freq_band_size,
+            "device": str(device),
+        },
+        "lambda_c_values": lambda_c_values,
+        "rows": [
+            {
+                "lambda_c": float(row["lambda_c"]),
+                "k_selected_mean": row["k_selected_mean"],
+                "steps_decision_mean": row["steps_decision_mean"],
+                "dt_capture_mean": row["dt_capture_mean"],
+                "omp_capture_mean": row["omp_capture_mean"],
+                "random_capture_mean": row["random_capture_mean"],
+                "dt_minus_random_mean": row["dt_minus_random_mean"],
+            }
+            for row in compute_rows
+        ],
+        "spearman_lambda_k_selected": spearman_k,
+        "spearman_lambda_steps_decision": spearman_steps,
+    }
+
     (out_dir / "summary" / "compute_matched_summary.json").write_text(
         json.dumps(compute_summary, indent=2), encoding="utf-8"
     )
@@ -2355,6 +2800,9 @@ def main() -> None:
     )
     (out_dir / "summary" / "rtg_controllability_summary.json").write_text(
         json.dumps(controllability_summary, indent=2), encoding="utf-8"
+    )
+    (out_dir / "summary" / "freq_cond_audit_summary.json").write_text(
+        json.dumps(freq_cond_audit_summary, indent=2), encoding="utf-8"
     )
 
     if int(args.write_delay_diagnostics) == 1:
