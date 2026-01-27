@@ -1,0 +1,94 @@
+# E4o-Speech audit run
+# Date: 2026-01-27T17:31:43+08:00
+# CWD: /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/exp-interspeech-GRU2
+# Conda: conda 25.1.1
+Python 3.11.13
+
+# Command:
+conda run -n trl-training PYTHONPATH=. python -u scripts/h_exploration/audit_e4o_speech_results.py --lambda_c 3e-4 --run_dirs results/e4o_speech_scale_none results/e4o_speech_scale_perwin results/e4o_speech_scale_agg
+
+== Subset Manifest (Shared) ==
+- fingerprint_md5: 739a181c331f347614090fffe6f4b491
+- num_pairs: 48
+- num_files: 96
+- selection: first 48 clip pairs in dataset order (all angles)
+
+== e4o_speech_scale_none :: subsample summary check (dt, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 56.8179971994765
+- recomputed.psr_p50: 56.8179971994765
+- stored.spread_p50: 10.429239889353449
+- recomputed.spread_p50: 10.429239889353449
+- stored.r2_p50: 0.4830608959711228
+- recomputed.r2_p50: 0.4830608959711228
+- stored.phase_frac: 0.9700854700854701
+- recomputed.phase_frac: 0.9700854700854701
+
+== e4o_speech_scale_none :: subsample summary check (omp, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 57.404246064800375
+- recomputed.psr_p50: 57.404246064800375
+- stored.spread_p50: 10.499343883794978
+- recomputed.spread_p50: 10.499343883794978
+- stored.r2_p50: 0.4903614400272651
+- recomputed.r2_p50: 0.4903614400272651
+- stored.phase_frac: 0.9786324786324786
+- recomputed.phase_frac: 0.9786324786324786
+
+== e4o_speech_scale_perwin :: subsample summary check (dt, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 60.483915723336764
+- recomputed.psr_p50: 60.483915723336764
+- stored.spread_p50: 9.601291196587395
+- recomputed.spread_p50: 9.601291196587395
+- stored.r2_p50: 0.4728541849600251
+- recomputed.r2_p50: 0.4728541849600251
+- stored.phase_frac: 0.9829059829059829
+- recomputed.phase_frac: 0.9829059829059829
+
+== e4o_speech_scale_perwin :: subsample summary check (omp, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 60.20119420985049
+- recomputed.psr_p50: 60.20119420985049
+- stored.spread_p50: 9.970472024619498
+- recomputed.spread_p50: 9.970472024619498
+- stored.r2_p50: 0.47227380500609323
+- recomputed.r2_p50: 0.47227380500609323
+- stored.phase_frac: 0.9871794871794872
+- recomputed.phase_frac: 0.9871794871794872
+
+== e4o_speech_scale_agg :: subsample summary check (dt, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 58.706699290573624
+- recomputed.psr_p50: 58.706699290573624
+- stored.spread_p50: 7.15123783018607
+- recomputed.spread_p50: 7.15123783018607
+- stored.r2_p50: 0.4828345729857588
+- recomputed.r2_p50: 0.4828345729857588
+- stored.phase_frac: 0.9957264957264957
+- recomputed.phase_frac: 0.9957264957264957
+
+== e4o_speech_scale_agg :: subsample summary check (omp, lambda_c=0.0003) [PASS] ==
+- stored.num_windows: 234
+- recomputed.num_windows: 234
+- stored.psr_p50: 59.45610915701456
+- recomputed.psr_p50: 59.45610915701456
+- stored.spread_p50: 7.416372831365646
+- recomputed.spread_p50: 7.416372831365646
+- stored.r2_p50: 0.4777587842860813
+- recomputed.r2_p50: 0.4777587842860813
+- stored.phase_frac: 1.0
+- recomputed.phase_frac: 1.0
+
+== Compute-Matched Capture Invariance (lambda_c=0.0003, atol=1e-08) [PASS] ==
+- dt_capture_mean: 0.9945064205403008
+- omp_capture_mean: 0.9987567254756198
+- k_selected_mean: 11.947618694728522
+
+All checks PASSED.
+
