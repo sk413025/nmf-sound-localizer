@@ -1,0 +1,11 @@
+INFO:__main__:phase_eq_source: none
+INFO:__main__:Using device: cpu
+INFO:scripts.h_exploration.dataset_lag:Found 416 total WAV/NPY pairs across all angles
+INFO:scripts.h_exploration.dataset_lag:Total clips avail: 416
+INFO:__main__:Pairing mode: paired
+INFO:__main__:Wrote subset manifest: results/rtgomp_dtmin_disp_prior_E4p_speech_smoke_normal_20260127_150723/subset_manifest.json
+INFO:__main__:freq_cond_mode=normal freq_cond_seed=0 freq_cond_constant_idx=0 max_freq=1025
+INFO:__main__:disp_prior_mode=phase_slope_subbands disp_prior_cond_mode=normal disp_prior_seed=0 beta=2 sigma_frames=2 num_subbands=3 min_bins=64
+INFO:__main__:Processed clip 1 / 1
+INFO:__main__:Wrote summaries to results/rtgomp_dtmin_disp_prior_E4p_speech_smoke_normal_20260127_150723/summary
+

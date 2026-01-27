@@ -28,6 +28,32 @@ def next_pow2(n: int) -> int:
     return 1 << (int(n - 1).bit_length())
 
 
+def estimate_cross_power_from_stft(mic_stft: torch.Tensor, ldv_stft: torch.Tensor) -> np.ndarray:
+    """
+    Estimate cross-power per STFT bin from complex STFT sequences.
+
+    Args:
+        mic_stft: (T, F) complex torch
+        ldv_stft: (T, F) complex torch
+
+    Returns:
+        cross_power: (F,) complex128 numpy array, sum_t conj(X[t,f]) * Y[t,f]
+    """
+    if mic_stft.shape != ldv_stft.shape:
+        raise RuntimeError(f"mic_stft/ldv_stft shape mismatch: {mic_stft.shape} vs {ldv_stft.shape}")
+    if mic_stft.numel() == 0:
+        raise RuntimeError("Empty STFT inputs for cross-power estimation.")
+    cross = torch.sum(torch.conj(mic_stft) * ldv_stft, dim=0)
+    return cross.detach().cpu().numpy().astype(np.complex128, copy=False)
+
+
+def generate_equal_subbands(freq_min: float, freq_max: float, num_subbands: int) -> List[Tuple[float, float]]:
+    if int(num_subbands) <= 0:
+        raise ValueError("num_subbands must be > 0")
+    edges = np.linspace(float(freq_min), float(freq_max), int(num_subbands) + 1)
+    return [(float(edges[i]), float(edges[i + 1])) for i in range(int(num_subbands))]
+
+
 def load_wav_float32(path: Path, *, expected_fs: int) -> np.ndarray:
     fs, wav = wavfile.read(path)
     if int(fs) != int(expected_fs):
@@ -361,6 +387,111 @@ def phase_slope_group_delay_ms(
         return None, rmse, r2, n_bins, "phase_slope_outside_search_window"
 
     return float(tau_ms), rmse, r2, n_bins, None
+
+
+def build_dispersion_prior_from_phase_slope(
+    freqs_hz_band: np.ndarray,
+    cross_power_band: np.ndarray,
+    *,
+    fs: int,
+    hop_length: int,
+    lag_min: int,
+    lag_max: int,
+    freq_min: float,
+    freq_max: float,
+    num_subbands: int,
+    min_bins: int,
+    sigma_frames: float,
+    beta: float,
+    cond_mode: str,
+    cond_seed: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[Dict[str, object]]]:
+    """
+    Build a physically-motivated lag prior from phase-slope (group delay) fits in subbands.
+
+    Returns:
+      - prior_logit: (F_band, M_lags) float64
+      - tau_frames_by_freq_used: (F_band,) float64
+      - tau_frames_by_freq_physical: (F_band,) float64 (before ablation)
+      - fit_rows: list of per-subband fit diagnostics (tau_ms/rmse/r2/bins/reason)
+    """
+    if freqs_hz_band.size == 0 or cross_power_band.size == 0:
+        raise RuntimeError("Empty band inputs for dispersion prior.")
+    if freqs_hz_band.shape != cross_power_band.shape:
+        raise RuntimeError(
+            f"freqs_hz_band/cross_power_band shape mismatch: {freqs_hz_band.shape} vs {cross_power_band.shape}"
+        )
+    if float(sigma_frames) <= 0.0 or not np.isfinite(float(sigma_frames)):
+        raise ValueError("--disp_prior_sigma_frames must be finite and > 0.")
+    if float(beta) <= 0.0 or not np.isfinite(float(beta)):
+        raise ValueError("--disp_prior_beta must be finite and > 0.")
+    if cond_mode not in ("normal", "shuffle", "constant"):
+        raise ValueError(f"Unsupported disp_prior_cond_mode: {cond_mode}")
+
+    subbands_hz = generate_equal_subbands(float(freq_min), float(freq_max), int(num_subbands))
+    tau_samples_by_band: List[float] = []
+    fit_rows: List[Dict[str, object]] = []
+    for (lo, hi) in subbands_hz:
+        tau_samples, tau_ms, rmse, r2, n_bins, reason = phase_slope_fit(
+            freqs_hz_band,
+            cross_power_band,
+            fs=int(fs),
+            f_lo=float(lo),
+            f_hi=float(hi),
+            min_bins=int(min_bins),
+        )
+        row = {
+            "f_lo_hz": float(lo),
+            "f_hi_hz": float(hi),
+            "tau_samples": None if tau_samples is None else float(tau_samples),
+            "tau_ms": None if tau_ms is None else float(tau_ms),
+            "fit_rmse_rad": None if rmse is None else float(rmse),
+            "r2": None if r2 is None else float(r2),
+            "num_bins_used": None if n_bins is None else int(n_bins),
+            "undefined_reason": reason,
+        }
+        fit_rows.append(row)
+        if tau_samples is None or reason is not None:
+            raise SystemExit(f"dispersion prior undefined for subband [{lo},{hi}] Hz: {reason}")
+        tau_samples_by_band.append(float(tau_samples))
+
+    tau_frames_by_band = np.array(tau_samples_by_band, dtype=np.float64) / float(hop_length)
+    if not np.isfinite(tau_frames_by_band).all():
+        raise SystemExit("dispersion prior produced non-finite tau_frames_by_band.")
+
+    max_abs_frames = max(abs(int(lag_min)), abs(int(lag_max)))
+    if float(np.max(np.abs(tau_frames_by_band))) > float(max_abs_frames) + 2.0:
+        raise SystemExit(
+            "dispersion prior tau_frames_by_band outside allowed lag range: "
+            f"tau_frames_by_band={tau_frames_by_band.tolist()}, lag_min={lag_min}, lag_max={lag_max}"
+        )
+
+    tau_frames_by_freq = np.zeros(freqs_hz_band.size, dtype=np.float64)
+    subbands_hz = [(float(lo), float(hi)) for (lo, hi) in subbands_hz]
+    for i, f_hz in enumerate(freqs_hz_band.astype(np.float64, copy=False)):
+        assigned = False
+        for b, (lo, hi) in enumerate(subbands_hz):
+            if (lo <= float(f_hz) <= hi) or (b == len(subbands_hz) - 1 and float(f_hz) >= lo):
+                tau_frames_by_freq[i] = float(tau_frames_by_band[b])
+                assigned = True
+                break
+        if not assigned:
+            raise RuntimeError(f"Frequency bin {f_hz} Hz not assigned to any subband.")
+
+    tau_frames_by_freq_physical = tau_frames_by_freq.copy()
+
+    if cond_mode == "shuffle":
+        rng = np.random.default_rng(int(cond_seed))
+        perm = rng.permutation(int(tau_frames_by_freq.size))
+        tau_frames_by_freq = tau_frames_by_freq[perm]
+    elif cond_mode == "constant":
+        tau_frames_by_freq[:] = float(np.median(tau_frames_by_freq))
+
+    lags_frames = np.arange(int(lag_min), int(lag_max) + 1, dtype=np.float64)
+    diff = lags_frames[None, :] - tau_frames_by_freq[:, None]
+    prior = -0.5 * (diff / float(sigma_frames)) ** 2
+    prior_logit = float(beta) * prior
+    return prior_logit, tau_frames_by_freq, tau_frames_by_freq_physical, fit_rows
 
 
 @dataclass
@@ -901,6 +1032,7 @@ def compute_dt_forced_k_capture(
     stop_id: int,
     eps_energy: float,
     freq_ids: torch.Tensor,
+    lag_prior_logit: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, int]:
     F, _, M_lags = D.shape
     device = D.device
@@ -928,6 +1060,12 @@ def compute_dt_forced_k_capture(
             rtg_in = torch.full((F,), rtg0, device=device)
 
         logits = model(abs_corrs.unsqueeze(1), rtg_in.unsqueeze(1), freq_ids).squeeze(1)
+        if lag_prior_logit is not None:
+            if tuple(lag_prior_logit.shape) != (int(F), int(M_lags)):
+                raise RuntimeError(
+                    f"lag_prior_logit shape mismatch: {tuple(lag_prior_logit.shape)} vs {(int(F), int(M_lags))}"
+                )
+            logits[:, :M_lags] = logits[:, :M_lags] + lag_prior_logit
         logits[:, stop_id] = -float("inf")
         logits[:, :M_lags][mask] = -float("inf")
         act = torch.argmax(logits, dim=1)
@@ -967,6 +1105,7 @@ def compute_dt_free_rollout(
     stop_id: int,
     eps_energy: float,
     freq_ids: torch.Tensor,
+    lag_prior_logit: Optional[torch.Tensor] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     F, _, M_lags = D.shape
     device = D.device
@@ -997,6 +1136,12 @@ def compute_dt_free_rollout(
             rtg_in = torch.full((F,), rtg0, device=device)
 
         logits = model(abs_corrs.unsqueeze(1), rtg_in.unsqueeze(1), freq_ids).squeeze(1)
+        if lag_prior_logit is not None:
+            if tuple(lag_prior_logit.shape) != (int(F), int(M_lags)):
+                raise RuntimeError(
+                    f"lag_prior_logit shape mismatch: {tuple(lag_prior_logit.shape)} vs {(int(F), int(M_lags))}"
+                )
+            logits[:, :M_lags] = logits[:, :M_lags] + lag_prior_logit
         logits[mask] = -float("inf")
         act = torch.argmax(logits, dim=1)
 
@@ -1159,6 +1304,43 @@ def main() -> None:
         help="Constant frequency index used when --freq_cond_mode=constant.",
     )
     p.add_argument(
+        "--disp_prior_mode",
+        type=str,
+        default="none",
+        choices=["none", "phase_slope_subbands"],
+        help=(
+            "Physically-motivated frequency conditioning via a lag prior derived from phase slope (group delay). "
+            "none=disabled; phase_slope_subbands=fit group delay per subband and bias DT lag logits."
+        ),
+    )
+    p.add_argument(
+        "--disp_prior_cond_mode",
+        type=str,
+        default="normal",
+        choices=["normal", "shuffle", "constant"],
+        help="Ablation for dispersion prior assignment across frequency bins.",
+    )
+    p.add_argument("--disp_prior_seed", type=int, default=0, help="Seed used when --disp_prior_cond_mode=shuffle.")
+    p.add_argument("--disp_prior_beta", type=float, default=2.0, help="Strength of the dispersion lag prior.")
+    p.add_argument(
+        "--disp_prior_sigma_frames",
+        type=float,
+        default=2.0,
+        help="Std-dev (in STFT frames) of the Gaussian lag prior around tau(f).",
+    )
+    p.add_argument(
+        "--disp_prior_num_subbands",
+        type=int,
+        default=3,
+        help="Number of equal-width subbands used for phase-slope fits (default: 3).",
+    )
+    p.add_argument(
+        "--disp_prior_min_bins",
+        type=int,
+        default=64,
+        help="Minimum number of frequency bins per subband for phase-slope fit (fail fast if fewer).",
+    )
+    p.add_argument(
         "--device",
         type=str,
         default="cpu",
@@ -1183,6 +1365,10 @@ def main() -> None:
     apply_phase_eq = phase_eq_source in ("fit_e4n",)
     apply_phase_eq_dtmin_perwin = phase_eq_source == "dtmin_perfreq_perwin"
     apply_phase_eq_dtmin_agg = phase_eq_source == "dtmin_perfreq_agg"
+
+    disp_prior_mode = str(args.disp_prior_mode)
+    disp_prior_cond_mode = str(args.disp_prior_cond_mode)
+    disp_prior_by_clip: List[Dict[str, object]] = []
 
     phase_eq_path_str: Optional[str] = None
     phase_eq_stft_np: Optional[np.ndarray] = None
@@ -1350,6 +1536,16 @@ def main() -> None:
         freq_const_idx,
         max_freq,
     )
+    logger.info(
+        "disp_prior_mode=%s disp_prior_cond_mode=%s disp_prior_seed=%d beta=%.6g sigma_frames=%.6g num_subbands=%d min_bins=%d",
+        disp_prior_mode,
+        disp_prior_cond_mode,
+        int(args.disp_prior_seed),
+        float(args.disp_prior_beta),
+        float(args.disp_prior_sigma_frames),
+        int(args.disp_prior_num_subbands),
+        int(args.disp_prior_min_bins),
+    )
 
     if freq_cond_mode == "zero_embed":
         with torch.no_grad():
@@ -1409,6 +1605,8 @@ def main() -> None:
     subsample_abs_tau_agreement_quantiles_by_lambda = {}
     subsample_tau_band_spread_quantiles_by_lambda = {}
     subsample_clip_tau_band_spreads_ms_by_lambda = {}
+    disp_prior_abs_err_stats_by_lambda = {}
+    disp_prior_abs_err_undefined_by_lambda = {}
     for lambda_c in lambda_c_values:
         stats_by_lambda[lambda_c] = {
             "dt": RunningStats(),
@@ -1433,6 +1631,9 @@ def main() -> None:
             "num_windows_dt_first_lag_undefined": 0,
             "num_windows_dt_match_undefined": 0,
         }
+        if disp_prior_mode != "none":
+            disp_prior_abs_err_stats_by_lambda[lambda_c] = RunningStats()
+            disp_prior_abs_err_undefined_by_lambda[lambda_c] = 0
         delay_stats_by_lambda[lambda_c] = {
             "dt_stop0_frac": RunningStats(),
             "dt_first_lag_mad_frames": RunningStats(),
@@ -1601,6 +1802,34 @@ def main() -> None:
                 else:
                     raise SystemExit(f"Unknown --freq_cond_mode: {freq_cond_mode}")
 
+            lag_prior_logit: Optional[torch.Tensor] = None
+            if disp_prior_mode != "none":
+                if disp_prior_mode != "phase_slope_subbands":
+                    raise SystemExit(f"Unknown --disp_prior_mode: {disp_prior_mode}")
+                if freqs_band_hz is None or freq_band_start_bin is None or freq_band_end_bin is None:
+                    raise RuntimeError("Frequency band bins are not initialized for dispersion prior.")
+                cross_power_full = estimate_cross_power_from_stft(mic_stft, ldv_stft)
+                cross_power_band = cross_power_full[int(freq_band_start_bin) : int(freq_band_end_bin) + 1]
+                prior_logit_np, _tau_frames_by_freq_used, _tau_frames_by_freq_physical, _fit_rows = (
+                    build_dispersion_prior_from_phase_slope(
+                        freqs_band_hz,
+                        cross_power_band,
+                        fs=int(args.fs),
+                        hop_length=int(args.hop_length),
+                        lag_min=-int(args.max_lag),
+                        lag_max=int(args.max_lag),
+                        freq_min=float(args.freq_min),
+                        freq_max=float(args.freq_max),
+                        num_subbands=int(args.disp_prior_num_subbands),
+                        min_bins=int(args.disp_prior_min_bins),
+                        sigma_frames=float(args.disp_prior_sigma_frames),
+                        beta=float(args.disp_prior_beta),
+                        cond_mode=disp_prior_cond_mode,
+                        cond_seed=int(args.disp_prior_seed),
+                    )
+                )
+                lag_prior_logit = torch.from_numpy(prior_logit_np.astype(np.float32, copy=False)).to(device=device)
+
             Lag_Min = -int(args.max_lag)
             Lag_Max = int(args.max_lag)
             Lags = torch.arange(Lag_Min, Lag_Max + 1)
@@ -1651,6 +1880,7 @@ def main() -> None:
                         stop_id=M_lags,
                         eps_energy=float(args.eps_energy),
                         freq_ids=freq_ids_dt,
+                        lag_prior_logit=lag_prior_logit,
                     )
                     dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
                     all_first_ids_by_lambda[lambda_c].append(dt_first_ids_cpu.copy())
@@ -1791,6 +2021,51 @@ def main() -> None:
             else:
                 raise SystemExit(f"Unknown --freq_cond_mode: {freq_cond_mode}")
 
+        lag_prior_logit: Optional[torch.Tensor] = None
+        tau_frames_by_freq_physical: Optional[np.ndarray] = None
+        if disp_prior_mode != "none":
+            if disp_prior_mode != "phase_slope_subbands":
+                raise SystemExit(f"Unknown --disp_prior_mode: {disp_prior_mode}")
+            if freqs_band_hz is None or freq_band_start_bin is None or freq_band_end_bin is None:
+                raise RuntimeError("Frequency band bins are not initialized for dispersion prior.")
+            cross_power_full = estimate_cross_power_from_stft(mic_stft, ldv_stft)
+            cross_power_band = cross_power_full[int(freq_band_start_bin) : int(freq_band_end_bin) + 1]
+            prior_logit_np, tau_frames_by_freq_used, tau_frames_by_freq_physical, fit_rows = (
+                build_dispersion_prior_from_phase_slope(
+                    freqs_band_hz,
+                    cross_power_band,
+                    fs=int(args.fs),
+                    hop_length=int(args.hop_length),
+                    lag_min=-int(args.max_lag),
+                    lag_max=int(args.max_lag),
+                    freq_min=float(args.freq_min),
+                    freq_max=float(args.freq_max),
+                    num_subbands=int(args.disp_prior_num_subbands),
+                    min_bins=int(args.disp_prior_min_bins),
+                    sigma_frames=float(args.disp_prior_sigma_frames),
+                    beta=float(args.disp_prior_beta),
+                    cond_mode=disp_prior_cond_mode,
+                    cond_seed=int(args.disp_prior_seed),
+                )
+            )
+            disp_prior_by_clip.append(
+                {
+                    "clip_idx": int(clip_idx),
+                    "tau_frames_min_mean_max": [
+                        float(np.min(tau_frames_by_freq_used)),
+                        float(np.mean(tau_frames_by_freq_used)),
+                        float(np.max(tau_frames_by_freq_used)),
+                    ],
+                    "tau_frames_physical_min_mean_max": [
+                        float(np.min(tau_frames_by_freq_physical)),
+                        float(np.mean(tau_frames_by_freq_physical)),
+                        float(np.max(tau_frames_by_freq_physical)),
+                    ],
+                    "phase_slope_fits": fit_rows,
+                }
+            )
+            lag_prior_logit = torch.from_numpy(prior_logit_np.astype(np.float32, copy=False)).to(device=device)
+
         Lag_Min = -int(args.max_lag)
         Lag_Max = int(args.max_lag)
         Lags = torch.arange(Lag_Min, Lag_Max + 1)
@@ -1880,6 +2155,7 @@ def main() -> None:
                 stop_id=M_lags,
                 eps_energy=float(args.eps_energy),
                 freq_ids=freq_ids_dt,
+                lag_prior_logit=lag_prior_logit,
             )
             num_dt_duplicate_actions_forced_k += int(dupes)
 
@@ -2010,9 +2286,28 @@ def main() -> None:
                     stop_id=M_lags,
                     eps_energy=float(args.eps_energy),
                     freq_ids=freq_ids_dt,
+                    lag_prior_logit=lag_prior_logit,
                 )
-                if need_coarse:
+
+                dt_first_ids_cpu = None
+                if need_coarse or disp_prior_mode != "none":
                     dt_first_ids_cpu = dt_first_ids.detach().cpu().numpy()
+
+                if disp_prior_mode != "none" and tau_frames_by_freq_physical is not None:
+                    if dt_first_ids_cpu is None:
+                        raise RuntimeError("disp_prior enabled but dt_first_ids_cpu is None")
+                    dt_defined_mask = dt_first_ids_cpu >= 0
+                    if dt_defined_mask.any():
+                        dt_first_lags = dt_first_ids_cpu[dt_defined_mask].astype(np.float64) + float(Lag_Min)
+                        abs_err_mean = float(
+                            np.mean(np.abs(dt_first_lags - tau_frames_by_freq_physical[dt_defined_mask]))
+                        )
+                        disp_prior_abs_err_stats_by_lambda[lambda_c].update(abs_err_mean)
+                    else:
+                        disp_prior_abs_err_undefined_by_lambda[lambda_c] += 1
+                if need_coarse:
+                    if dt_first_ids_cpu is None:
+                        raise RuntimeError("need_coarse but dt_first_ids_cpu is None")
                     dt_defined_mask = dt_first_ids_cpu >= 0
                     dt_stop0_frac = float(np.mean(~dt_defined_mask))
                     dt_first_lags = dt_first_ids_cpu[dt_defined_mask].astype(np.int64) + int(Lag_Min)
@@ -2341,6 +2636,7 @@ def main() -> None:
                             stop_id=M_lags,
                             eps_energy=float(args.eps_energy),
                             freq_ids=freq_ids_dt,
+                            lag_prior_logit=lag_prior_logit,
                         )
                         dt_first_ids_perwin_np = dt_first_ids_perwin.detach().cpu().numpy()
                         # Derive per-window phase_eq
@@ -2804,6 +3100,45 @@ def main() -> None:
     (out_dir / "summary" / "freq_cond_audit_summary.json").write_text(
         json.dumps(freq_cond_audit_summary, indent=2), encoding="utf-8"
     )
+
+    if disp_prior_mode != "none":
+        tau_stats = [row["tau_frames_min_mean_max"] for row in disp_prior_by_clip]
+        tau_np = np.array(tau_stats, dtype=np.float64) if tau_stats else None
+        disp_prior_summary = {
+            "config": {
+                "disp_prior_mode": disp_prior_mode,
+                "disp_prior_cond_mode": disp_prior_cond_mode,
+                "disp_prior_seed": int(args.disp_prior_seed),
+                "disp_prior_beta": float(args.disp_prior_beta),
+                "disp_prior_sigma_frames": float(args.disp_prior_sigma_frames),
+                "disp_prior_num_subbands": int(args.disp_prior_num_subbands),
+                "disp_prior_min_bins": int(args.disp_prior_min_bins),
+                "fs": int(args.fs),
+                "n_fft": int(args.n_fft),
+                "hop_length": int(args.hop_length),
+                "freq_min": float(args.freq_min),
+                "freq_max": float(args.freq_max),
+                "start_bin": freq_band_start_bin,
+                "end_bin": freq_band_end_bin,
+                "F_band": freq_band_size,
+            },
+            "per_clip": disp_prior_by_clip,
+            "tau_frames_global": {
+                "min": None if tau_np is None else float(np.min(tau_np[:, 0])),
+                "mean": None if tau_np is None else float(np.mean(tau_np[:, 1])),
+                "max": None if tau_np is None else float(np.max(tau_np[:, 2])),
+            },
+            "dt_first_lag_abs_err_vs_tau_physical": {
+                "lambda_c_values": lambda_c_values,
+                "mean": [disp_prior_abs_err_stats_by_lambda[l].mean() for l in lambda_c_values],
+                "std": [disp_prior_abs_err_stats_by_lambda[l].std() for l in lambda_c_values],
+                "count_defined": [int(disp_prior_abs_err_stats_by_lambda[l].count) for l in lambda_c_values],
+                "count_undefined": [int(disp_prior_abs_err_undefined_by_lambda[l]) for l in lambda_c_values],
+            },
+        }
+        (out_dir / "summary" / "dispersion_prior_summary.json").write_text(
+            json.dumps(disp_prior_summary, indent=2), encoding="utf-8"
+        )
 
     if int(args.write_delay_diagnostics) == 1:
         delay_rows = []
