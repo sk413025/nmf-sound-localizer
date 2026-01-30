@@ -72,3 +72,17 @@ This document records the absolute paths and associated git commits for key expe
     *   Seed 2: `/Users/jnrle/Documents/LDVReorientation/worktrees/exp-omp-ablation-20251209/results/ablate_g_fixed_F_seed2_20251215_121914`
     *   Seed 3: `/Users/jnrle/Documents/LDVReorientation/worktrees/exp-omp-ablation-20251209/results/ablate_g_fixed_F_seed3_20251215_170749`
     *   Seed 4: `/Users/jnrle/Documents/LDVReorientation/worktrees/exp-omp-ablation-20251209/results/ablate_g_fixed_F_seed4_20251216_070534`
+
+## 4. SNR Robustness (5-Fold CV & Noise Levels)
+**Description**: Evaluation of model performance across varying Signal-to-Noise Ratios (0dB, 5dB, 10dB, 15dB, 20dB, 30dB, Inf) using 5-fold cross-validation.
+**Absolute Path**: `/Users/jnrle/Documents/LDVReorientation/worktrees/exp-snr-5fold-repro/results`
+**Git Commit**: `f687aa085318309296205304dfcc39eff346093f` (in `exp-snr-5fold-repro` worktree)
+
+**Experiment Run Paths**:
+*   **0dB**: results/qk_snr0dB_30epochs_fold*_20251214
+*   **5dB**: results/qk_snr5dB_30epochs_fold*_20251214
+*   **10dB**: results/qk_snr10dB_30epochs_fold*_20251214
+*   **15dB**: results/qk_snr15dB_30epochs_fold*_20251214
+*   **20dB**: results/qk_snr20dB_30epochs_fold*_20251214
+*   **30dB**: results/qk_snr30dB_30epochs_fold*_20251214
+*   **Inf dB (Clean)**: results/qk_snrInf_30epochs_fold*_20251214
