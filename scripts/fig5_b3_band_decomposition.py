@@ -604,6 +604,11 @@ def plot_qk_vs_physics_line(
         }
     )
 
+    # Peak angles should reflect the underlying (unsmoothed) quantities.
+    # Smoothing is visualization-only and can shift peaks if used to compute argmax.
+    phys_peak = int(np.argmax(physics))
+    qk_peak = int(np.argmax(qk))
+
     physics_s = smooth_last_axis(physics, window=smooth_window, pad_mode=smooth_pad)
     qk_s = smooth_last_axis(qk, window=smooth_window, pad_mode=smooth_pad)
     physics_p, qk_p = normalize_pair(physics_s, qk_s, mode=compare_norm)
@@ -618,9 +623,6 @@ def plot_qk_vs_physics_line(
     ax.plot(angles_deg, physics_p, "o-", color="coral", linewidth=0.9, markersize=2, alpha=0.7, label="PHYSICS")
     ax.plot(angles_deg, qk_p, "-", color="darkgreen", linewidth=1.3, alpha=0.9, label="QK")
 
-    # Peak markers (after smoothing/normalization, matching what is shown).
-    phys_peak = int(np.argmax(physics_p))
-    qk_peak = int(np.argmax(qk_p))
     ax.scatter([angles_deg[phys_peak]], [physics_p[phys_peak]], color="coral", s=18, zorder=3)
     ax.scatter([angles_deg[qk_peak]], [qk_p[qk_peak]], color="darkgreen", s=18, zorder=3)
 
@@ -839,7 +841,7 @@ def main() -> None:
 
         viz_note = f"norm={compare_norm}"
         if smooth_window > 1:
-            viz_note += f", smooth_w={smooth_window}"
+            viz_note += f", smooth_w={smooth_window} (peak markers = raw)"
 
         # Five comparison line plots: full + 4 bands.
         plot_qk_vs_physics_line(

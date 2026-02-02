@@ -301,6 +301,7 @@ The implementation must write:
 Optional (visualization only):
 - It is allowed to apply light smoothing across the **angle axis** when rendering plots.
 - Smoothing MUST NOT change any stored arrays or equivalence checks; apply it only to the plotted curves.
+- If peak/argmax markers are shown, they MUST be computed from the underlying raw (unsmoothed) curves, because smoothing can shift peaks.
 
 ### 6.3 Output policy (hard constraint)
 Never write artifacts to repo root. All outputs must live under `results/<run_name>/`.

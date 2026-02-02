@@ -1,0 +1,115 @@
+Results: Fig5 B3 — 5 band-wise line plots (no smoothing) + fix peak-marker semantics (QK vs PHYSICS; True DoA)
+
+Background
+- Fig5 panel B3 (v1/v3) compares two *angle-level* vectors for a representative validation sample:
+  - PHYSICS baseline: `g_energy_expert` (OMP-style |D^T y| aggregated by expert)
+  - Model-native routing: `scores_expert` (Transformer QK routing pooled by expert)
+- In v9/v10, “banded” visuals changed the green curve into a projection-based proxy (derived from `D^T y` and `scores_atoms`), which breaks equivalence to original B3 semantics (documented in `figure5_b3_v3_vs_v10_report.md`).
+
+Motivation
+- A user-observed issue: “QK argmax is not at the True DoA (145°)” when looking at the plotted curves.
+- Hypothesis: this is a *visualization artifact* caused by smoothing shifting the apparent peak, not a change in the underlying model-native `scores_expert`.
+
+Purpose
+1) Remove smoothing and rerun the 5 line plots to validate that full-band QK argmax matches the True DoA (145°) for the representative sample.
+2) Make peak markers semantically correct: if smoothing is enabled for readability, peak/argmax markers must be computed from **raw (unsmoothed)** values to avoid misleading “argmax” claims.
+
+Expected
+- Full band (300–3000 Hz): QK argmax at 145° (correct), PHYSICS argmax at 60° (wrong) for the representative sample chosen by the figure scripts.
+- With smoothing disabled: the plotted peak should visually align with the raw argmax (no peak shift).
+
+What changed (code)
+- `scripts/fig5_b3_band_decomposition.py`
+  - Compute peak markers from raw curves (not smoothed/normalized ones) BECAUSE moving-average smoothing can shift the maximum location.
+  - Keep smoothing optional and visualization-only.
+- `docs/fig5_b3_band_decomposition_spec.md`
+  - Document the guardrail: peak/argmax markers must be derived from raw (unsmoothed) curves.
+
+Setup
+- Conda env: `trl-training`
+- Device: `cpu`
+- Band view: equivalence-preserving decomposition
+  - PHYSICS band curves are sign-aligned contributions (Σ bands reconstructs `g_energy_expert`)
+  - QK band curves are IG attributions (Δ; base + Σ bands reconstructs `scores_expert`)
+- Normalization (viz-only): `--compare_norm per_curve_minmax`
+- Smoothing: OFF (`--smooth_window 1`)
+
+Data lineage
+- Run dir (inputs + checkpoint):
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/`
+- Dataset fingerprint (from run_dir code_state): `f563984848ae49b4443378c4ef720a51`
+- Input SHA256 (also in `results/fig5_b3_line5_nosmooth_20260202_233434/code_state.json`):
+  - `dictionary.npz`: 4dcbae86179b43656f6632b9dea1fa21517f0e5ef35ab32a93dacc8bb78bddd4
+  - `modal_routing_val.npz`: 3f04909270934cf4e1391bf36ebe3df27e6f8f397968613deeca05ba4e6c44d3
+  - `model_best.pth`: f7593a3c66dbcf99a363004d0cc55ee84c482824de50fe79c82facf7f95640b4
+  - `code_state.json`: abe0a226959e65edf4464941840a3268a2e71397258940cd316ba66fbc5f6478
+
+Exact commands (repro)
+```bash
+source ~/.zshrc
+conda activate trl-training
+export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace:$PYTHONPATH
+
+RUN="results/fig5_b3_line5_nosmooth_$(date +%Y%m%d_%H%M%S)"
+python -u scripts/fig5_b3_band_decomposition.py \
+  --run_dir results/omp_transformer_speech260_trainval_split_full_20251115_082341 \
+  --device cpu \
+  --ig_baseline mean_val \
+  --ig_method trapezoid \
+  --n_steps 2048 \
+  --smooth_window 1 \
+  --compare_norm per_curve_minmax \
+  --out_dir "$RUN"
+```
+
+Smoke Test (executed)
+- Process starts, loads run assets, computes decompositions, writes outputs without error.
+- Evidence:
+  - Log: `results/fig5_b3_line5_nosmooth_20260202_233434/run.log`
+  - Outputs: 5 PDFs + `checks.json` + `decomposition.npz` + `code_state.json` under the same directory.
+
+Functional Test (executed)
+- Purpose: validate the equivalence-preserving requirements (normal operation) on real data.
+- Evidence (PASS): `results/fig5_b3_line5_nosmooth_20260202_233434/checks.json`
+  - Physics reconstruction (float64): `physics_recon_max_abs_error = 1.998e-15` (< 1e-6)
+  - QK IG completeness (mean_val baseline, trapezoid, n_steps=2048): `qk_ig_recon_max_abs_error = 5.731e-04` (< 1e-3)
+  - Model-native agreement: `qk_vs_stored_max_abs_error = 0.0` (forward-pass `scores_expert` matches stored exactly)
+
+Actual results (this run)
+- Representative sample selection (same logic as Fig5 scripts):
+  - `sample_idx=1509`, label=145° (expert 29), physics argmax=60° (expert 12)
+- Full-band argmax:
+  - QK (model-native `scores_expert_full`): 145° (correct)
+  - PHYSICS (`g_energy_full`): 60° (wrong)
+- Artifacts:
+  - `results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_3000.pdf`
+  - `results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_500.pdf`
+  - `results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_500_1000.pdf`
+  - `results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_1000_2000.pdf`
+  - `results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_2000_3000.pdf`
+
+Log interpretation (why the “argmax shifted” report happened)
+- Moving-average smoothing is a convolution over the discrete angle grid, which can move the index of the maximum when the peak is narrow or asymmetric.
+- Therefore, if smoothing is used for readability, the only safe “argmax/peak” marker is the one computed from raw values.
+- This run disables smoothing, confirming the underlying model-native QK argmax is correct at 145°; the earlier discrepancy was a visualization artifact.
+
+Cross-experiment analysis (commit hashes; causal pattern)
+- Original B3 semantics are stable across v3/v4/v6 (commits 0590b12, b8e1148, c0cb7eb) BECAUSE they plot `scores_expert` directly and do not smooth peaks.
+- Proxy frequency panels were introduced in v9 (commit 58118bf); QK can appear “wrong” there DUE TO the definition changing from model-native QK to projection-weighted proxy.
+- Our equivalence-preserving band decomposition baseline (commit d4e9016) and 5-line-plot variant (commit afac0a1) restored the correct semantics; this run refines the visualization guardrail so “argmax correctness” is not undermined by smoothing.
+
+Physical / mathematical analysis (first principles)
+- Physics baseline:
+  - Because full-band is `Σ_m |(D^T y)[e,m]|`, naive “per-band abs then sum” is not equivalent (`|a+b|≠|a|+|b|`), so we use sign-aligned band contributions to reconstruct the full-band value.
+- Model-native QK:
+  - Because `scores_expert` is a non-linear Transformer output, it is not frequency-separable; IG provides an additive attribution with completeness (up to numerical integration error).
+- Visualization:
+  - Smoothing is a linear filter that changes the function being plotted; the argmax of a smoothed curve is not guaranteed to match the argmax of the raw curve.
+
+Extracted principles
+- Never claim “argmax/peak moved” if the curve was smoothed; compute argmax on raw values.
+- For frequency-band interpretability of non-linear model outputs, use attribution (IG) and label it explicitly; do not relabel proxies as model-native.
+- Keep decomposition equivalence auditable: ship `checks.json` + `code_state.json` with SHA256 and dataset fingerprint.
+
+Next steps
+- If we later re-enable smoothing for presentation figures, keep peak markers raw and consider adding an explicit note in figure captions to avoid reviewer confusion.
