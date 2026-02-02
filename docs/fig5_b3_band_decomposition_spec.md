@@ -286,10 +286,21 @@ The implementation must write:
    - binds artifacts to the exact executed code + inputs (git head/dirty + SHA256 for key files)
 
 6) Plots (PDF preferred; PNG optional):
-   - `results/<run_name>/Fig5_B3_BAND_DECOMP_PHYSICS.pdf`
-   - `results/<run_name>/Fig5_B3_BAND_DECOMP_QK_IG.pdf`
-   - `results/<run_name>/Fig5_B3_POLAR_FULL_AND_BANDS.pdf`
-   - Each plot must clearly label that QK band decomposition is **IG attribution** (model-native), not projection proxy.
+   - Five comparison line plots (each includes QK + PHYSICS + True DoA marker):
+     - `results/<run_name>/Fig5_B3_LINE_300_3000.pdf` (full band)
+     - `results/<run_name>/Fig5_B3_LINE_300_500.pdf`
+     - `results/<run_name>/Fig5_B3_LINE_500_1000.pdf`
+     - `results/<run_name>/Fig5_B3_LINE_1000_2000.pdf`
+     - `results/<run_name>/Fig5_B3_LINE_2000_3000.pdf`
+   - Labeling requirements:
+     - Physics band curves are **sign-aligned contributions** (equivalent to `g_energy_expert` when summed).
+     - QK band curves are **IG attributions** (equivalent to `scores_expert` when added to the baseline and summed).
+   - Normalization (recommended):
+     - Use per-curve min-max normalization in each plot so QK and PHYSICS are comparable on a shared y-axis without changing their argmax (peak angle).
+
+Optional (visualization only):
+- It is allowed to apply light smoothing across the **angle axis** when rendering plots.
+- Smoothing MUST NOT change any stored arrays or equivalence checks; apply it only to the plotted curves.
 
 ### 6.3 Output policy (hard constraint)
 Never write artifacts to repo root. All outputs must live under `results/<run_name>/`.

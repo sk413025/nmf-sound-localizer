@@ -113,6 +113,30 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional fixed sample index into modal_routing_val.npz:Y_val. If omitted, auto-select representative sample.",
     )
+    parser.add_argument(
+        "--smooth_window",
+        type=int,
+        default=1,
+        help="Optional moving-average smoothing window over angles for visualization only (odd int; default: 1 = off).",
+    )
+    parser.add_argument(
+        "--smooth_pad",
+        type=str,
+        default="reflect",
+        choices=["reflect", "edge"],
+        help="Padding mode for smoothing (default: reflect).",
+    )
+    parser.add_argument(
+        "--compare_norm",
+        type=str,
+        default="per_curve_minmax",
+        choices=["per_curve_minmax", "shared_minmax", "none"],
+        help=(
+            "Normalization for QK vs Physics comparison plots. "
+            "per_curve_minmax matches the original B3 intent (compare shapes/peaks); "
+            "shared_minmax preserves relative magnitude; none keeps raw units."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -265,6 +289,34 @@ def build_band_masks(freqs_hz: np.ndarray) -> list[np.ndarray]:
             f"Found {bad.size} bins with coverage != 1."
         )
     return masks
+
+
+def smooth_1d(y: np.ndarray, *, window: int, pad_mode: str) -> np.ndarray:
+    """
+    Angle-axis smoothing for visualization only.
+
+    Uses a simple moving-average kernel with symmetric padding.
+    """
+    y = np.asarray(y, dtype=np.float64)
+    if window <= 1:
+        return y
+    if (window % 2) == 0:
+        raise ValueError(f"smooth_window must be odd (got {window}).")
+    pad = window // 2
+    y_pad = np.pad(y, pad_width=pad, mode=pad_mode)
+    kernel = np.ones(window, dtype=np.float64) / float(window)
+    return np.convolve(y_pad, kernel, mode="valid")
+
+
+def smooth_last_axis(arr: np.ndarray, *, window: int, pad_mode: str) -> np.ndarray:
+    arr = np.asarray(arr, dtype=np.float64)
+    if window <= 1:
+        return arr
+    if arr.ndim == 1:
+        return smooth_1d(arr, window=window, pad_mode=pad_mode)
+    if arr.ndim == 2:
+        return np.stack([smooth_1d(row, window=window, pad_mode=pad_mode) for row in arr], axis=0)
+    raise ValueError(f"Expected 1D or 2D array for smoothing, got shape {arr.shape}.")
 
 
 def find_representative_case(routing: dict[str, Any], angles_deg: np.ndarray) -> tuple[int, int, int]:
@@ -491,18 +543,53 @@ def ig_band_decomposition(
     return scores_full, scores_base, scores_band, scores_recon
 
 
-def plot_band_lines(
+def minmax_norm(x: np.ndarray, *, eps: float = 1e-12) -> np.ndarray:
+    x = np.asarray(x, dtype=np.float64)
+    x_min = float(np.min(x))
+    x_max = float(np.max(x))
+    denom = x_max - x_min
+    if denom <= eps:
+        return np.zeros_like(x, dtype=np.float64)
+    return (x - x_min) / (denom + eps)
+
+
+def normalize_pair(physics: np.ndarray, qk: np.ndarray, *, mode: str) -> tuple[np.ndarray, np.ndarray]:
+    if mode == "none":
+        return physics.astype(np.float64, copy=False), qk.astype(np.float64, copy=False)
+    if mode == "per_curve_minmax":
+        return minmax_norm(physics), minmax_norm(qk)
+    if mode == "shared_minmax":
+        stacked = np.concatenate([physics.ravel(), qk.ravel()]).astype(np.float64, copy=False)
+        lo = float(np.min(stacked))
+        hi = float(np.max(stacked))
+        denom = hi - lo
+        if denom <= 1e-12:
+            z = np.zeros_like(physics, dtype=np.float64)
+            return z, z.copy()
+        return (physics - lo) / (denom + 1e-12), (qk - lo) / (denom + 1e-12)
+    raise ValueError(f"Invalid compare_norm: {mode}")
+
+
+def plot_qk_vs_physics_line(
     out_path: Path,
+    *,
     title: str,
-    angles_deg: np.ndarray,
-    full: np.ndarray,
-    base: np.ndarray | None,
-    band: np.ndarray,
-    recon: np.ndarray,
-    ylabel: str,
-    band_labels: list[str],
     subtitle: str,
+    angles_deg: np.ndarray,
+    label_deg: float,
+    physics: np.ndarray,
+    qk: np.ndarray,
+    compare_norm: str,
+    smooth_window: int,
+    smooth_pad: str,
 ) -> None:
+    """
+    Single panel line plot comparing PHYSICS vs QK across angles for one band.
+
+    Notes:
+    - For band plots, `physics` is a sign-aligned contribution and `qk` is an IG attribution (Δ from baseline).
+    - Normalization and smoothing are visualization-only.
+    """
     na_style.set_nature_rcparams(base_fontsize=7)
     plt.rcParams.update(
         {
@@ -517,33 +604,49 @@ def plot_band_lines(
         }
     )
 
+    physics_s = smooth_last_axis(physics, window=smooth_window, pad_mode=smooth_pad)
+    qk_s = smooth_last_axis(qk, window=smooth_window, pad_mode=smooth_pad)
+    physics_p, qk_p = normalize_pair(physics_s, qk_s, mode=compare_norm)
+
     fig = plt.figure(figsize=(na_style.mm_to_in(90), na_style.mm_to_in(60)))
     ax = fig.add_subplot(1, 1, 1)
-    fig.subplots_adjust(left=0.12, right=0.98, bottom=0.16, top=0.88)
+    fig.subplots_adjust(left=0.12, right=0.98, bottom=0.16, top=0.86)
 
     ax.grid(True, alpha=0.2, linestyle="--", color="gray")
     ax.set_axisbelow(True)
 
-    ax.plot(angles_deg, full, color="black", linewidth=1.2, alpha=0.9, label="Full (target)")
-    ax.plot(angles_deg, recon, color="black", linewidth=1.0, alpha=0.7, linestyle="--", label="Reconstruction")
-    if base is not None:
-        ax.plot(angles_deg, base, color="slategray", linewidth=0.9, alpha=0.8, linestyle=":", label="Baseline (y0)")
+    ax.plot(angles_deg, physics_p, "o-", color="coral", linewidth=0.9, markersize=2, alpha=0.7, label="PHYSICS")
+    ax.plot(angles_deg, qk_p, "-", color="darkgreen", linewidth=1.3, alpha=0.9, label="QK")
 
-    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
-    for k in range(band.shape[0]):
-        ax.plot(
-            angles_deg,
-            band[k],
-            color=colors[k % len(colors)],
-            linewidth=1.0,
-            alpha=0.85,
-            label=f"Band {band_labels[k]}",
-        )
+    # Peak markers (after smoothing/normalization, matching what is shown).
+    phys_peak = int(np.argmax(physics_p))
+    qk_peak = int(np.argmax(qk_p))
+    ax.scatter([angles_deg[phys_peak]], [physics_p[phys_peak]], color="coral", s=18, zorder=3)
+    ax.scatter([angles_deg[qk_peak]], [qk_p[qk_peak]], color="darkgreen", s=18, zorder=3)
+
+    # Ground truth
+    ax.axvline(float(label_deg), color="lime", linewidth=1.2, linestyle="--", alpha=0.9, label="True DoA")
+    y_max = float(max(np.max(physics_p), np.max(qk_p)))
+    y_min = float(min(np.min(physics_p), np.min(qk_p)))
+    if compare_norm == "none":
+        y_low = min(y_min, 0.0)
+        y_top = y_max if y_max > 0 else 1.0
+    else:
+        y_low = 0.0
+        y_top = max(y_max, 1.0)
+    ax.scatter([float(label_deg)], [1.05 * y_top], marker="*", color="lime", s=55, edgecolors="black", linewidths=0.5)
 
     ax.set_title(title + "\n" + subtitle)
     ax.set_xlabel("Angle (deg)")
-    ax.set_ylabel(ylabel)
+    if compare_norm == "none":
+        ax.set_ylabel("Score (raw units)")
+    elif compare_norm == "shared_minmax":
+        ax.set_ylabel("Score (shared min-max)")
+    else:
+        ax.set_ylabel("Score (per-curve min-max)")
+
     ax.set_xlim(float(angles_deg[0]), float(angles_deg[-1]))
+    ax.set_ylim(float(y_low), float(1.1 * y_top))
 
     tick_indices = [0, 9, 18, 27, 36]
     tick_indices = [i for i in tick_indices if i < len(angles_deg)]
@@ -551,94 +654,6 @@ def plot_band_lines(
     ax.set_xticklabels([f"{int(angles_deg[i])}°" for i in tick_indices])
 
     ax.legend(frameon=False, loc="upper right", handlelength=1.2, ncol=2)
-    fig.savefig(out_path, bbox_inches="tight")
-    plt.close(fig)
-
-
-def minmax_norm(x: np.ndarray, *, eps: float = 1e-12) -> np.ndarray:
-    x = np.asarray(x, dtype=np.float64)
-    x_min = float(np.min(x))
-    x_max = float(np.max(x))
-    denom = x_max - x_min
-    if denom <= eps:
-        return np.zeros_like(x, dtype=np.float64)
-    return (x - x_min) / (denom + eps)
-
-
-def plot_polar_full_and_bands(
-    out_path: Path,
-    *,
-    angles_deg: np.ndarray,
-    label_deg: float,
-    physics_full: np.ndarray,
-    qk_full: np.ndarray,
-    physics_band: np.ndarray,
-    qk_band: np.ndarray,
-    band_labels: list[str],
-) -> None:
-    """
-    Generate a compact polar (radar-style) comparison between:
-      - full-band targets (physics_full, qk_full)
-      - per-band contributions (physics_band[k], qk_band[k])
-
-    Note:
-    - Band contributions can be signed (physics sign-aligned; QK IG attribution).
-    - For polar visualization we min-max normalize each curve to [0,1].
-    """
-    na_style.set_nature_rcparams(base_fontsize=6)
-    plt.rcParams.update(
-        {
-            "font.family": "serif",
-            "font.serif": ["Times New Roman", "DejaVu Serif", "Bitstream Vera Serif", "Computer Modern Roman"],
-            "mathtext.fontset": "stix",
-            "axes.titlesize": 6,
-            "legend.fontsize": 5,
-        }
-    )
-
-    angles_rad = np.deg2rad(angles_deg)
-    true_angle_rad = float(np.deg2rad(label_deg))
-
-    fig = plt.figure(figsize=(na_style.mm_to_in(170), na_style.mm_to_in(110)))
-    fig.subplots_adjust(left=0.04, right=0.98, bottom=0.06, top=0.92, wspace=0.35, hspace=0.45)
-
-    panels: list[tuple[str, np.ndarray, np.ndarray]] = [("Full band (target)", physics_full, qk_full)]
-    for k, name in enumerate(band_labels):
-        panels.append((f"Band {name}", physics_band[k], qk_band[k]))
-
-    for i, (title, phys, qk) in enumerate(panels, start=1):
-        ax = fig.add_subplot(2, 3, i, projection="polar")
-        ax.set_theta_zero_location("N")
-        ax.set_theta_direction(-1)
-        ax.set_ylim(0, 1.1)
-
-        phys_n = minmax_norm(phys)
-        qk_n = minmax_norm(qk)
-
-        ax.plot(angles_rad, phys_n, "o-", color="coral", linewidth=0.8, markersize=1.6, alpha=0.7, label="OMP")
-        ax.fill_between(angles_rad, 0.0, phys_n, color="coral", alpha=0.18)
-
-        ax.plot(angles_rad, qk_n, "s-", color="darkgreen", linewidth=0.9, markersize=1.6, alpha=0.9, label="QK")
-        ax.fill_between(angles_rad, 0.0, qk_n, color="darkgreen", alpha=0.22)
-
-        ax.plot([true_angle_rad, true_angle_rad], [0.0, 1.0], color="lime", linewidth=1.0, linestyle="--", alpha=0.9)
-
-        ax.set_title(title)
-        ax.set_yticklabels([])
-        ax.set_xticklabels([])
-
-        if i == 1:
-            ax.legend(frameon=False, loc="upper right", bbox_to_anchor=(1.15, 1.15), handlelength=1.0)
-
-    # Hide the unused 6th subplot.
-    ax_unused = fig.add_subplot(2, 3, 6)
-    ax_unused.axis("off")
-
-    fig.suptitle(
-        "Fig5 B3 polar comparison (min-max normalized per curve)\n"
-        "Bands show: Physics sign-aligned contribution; QK IG attribution (Δ from baseline)",
-        fontsize=7,
-    )
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
 
@@ -661,6 +676,9 @@ def main() -> None:
         logger.log(f"n_steps (IG): {args.n_steps}")
         logger.log(f"ig_baseline: {args.ig_baseline}")
         logger.log(f"ig_method: {args.ig_method}")
+        logger.log(f"smooth_window (viz): {int(args.smooth_window)}")
+        logger.log(f"smooth_pad (viz): {args.smooth_pad}")
+        logger.log(f"compare_norm (viz): {args.compare_norm}")
         logger.log(f"cwd: {Path.cwd()}")
         logger.log(f"PYTHONPATH: {os.environ.get('PYTHONPATH', '')}")
 
@@ -815,44 +833,42 @@ def main() -> None:
             scores_expert_recon=scores_recon,
         )
 
-        band_labels = [b.name for b in BANDS]
+        smooth_window = int(args.smooth_window)
+        smooth_pad = str(args.smooth_pad)
+        compare_norm = str(args.compare_norm)
 
-        plot_band_lines(
-            out_path=out_dir / "Fig5_B3_BAND_DECOMP_PHYSICS.pdf",
-            title="Fig5 B3 Physics band decomposition",
-            angles_deg=angles_deg,
-            full=g_energy_full,
-            base=None,
-            band=g_energy_band,
-            recon=g_energy_recon,
-            ylabel="g_energy_expert (equivalent)",
-            band_labels=band_labels,
-            subtitle="Sign-aligned decomposition (Σ bands = full)",
-        )
+        viz_note = f"norm={compare_norm}"
+        if smooth_window > 1:
+            viz_note += f", smooth_w={smooth_window}"
 
-        plot_band_lines(
-            out_path=out_dir / "Fig5_B3_BAND_DECOMP_QK_IG.pdf",
-            title="Fig5 B3 QK band decomposition",
-            angles_deg=angles_deg,
-            full=scores_full,
-            base=scores_base,
-            band=scores_band,
-            recon=scores_recon,
-            ylabel="scores_expert (model-native, equivalent)",
-            band_labels=band_labels,
-            subtitle="Integrated Gradients attribution (base + Σ bands = full)",
-        )
-
-        plot_polar_full_and_bands(
-            out_path=out_dir / "Fig5_B3_POLAR_FULL_AND_BANDS.pdf",
+        # Five comparison line plots: full + 4 bands.
+        plot_qk_vs_physics_line(
+            out_path=out_dir / "Fig5_B3_LINE_300_3000.pdf",
+            title="Fig5 B3 (Full band 300-3000 Hz)",
+            subtitle=f"Targets: PHYSICS=g_energy_expert, QK=scores_expert; {viz_note}",
             angles_deg=angles_deg,
             label_deg=label_deg,
-            physics_full=g_energy_full,
-            qk_full=scores_full,
-            physics_band=g_energy_band,
-            qk_band=scores_band,
-            band_labels=band_labels,
+            physics=g_energy_full,
+            qk=scores_full,
+            compare_norm=compare_norm,
+            smooth_window=smooth_window,
+            smooth_pad=smooth_pad,
         )
+
+        for k, band in enumerate(BANDS):
+            out_name = f"Fig5_B3_LINE_{band.name.replace('-', '_')}.pdf"
+            plot_qk_vs_physics_line(
+                out_path=out_dir / out_name,
+                title=f"Fig5 B3 (Band {band.min_hz:.0f}-{band.max_hz:.0f} Hz)",
+                subtitle=f"Contrib: PHYSICS sign-aligned, QK IG attribution (Δ); {viz_note}",
+                angles_deg=angles_deg,
+                label_deg=label_deg,
+                physics=g_energy_band[k],
+                qk=scores_band[k],
+                compare_norm=compare_norm,
+                smooth_window=smooth_window,
+                smooth_pad=smooth_pad,
+            )
 
         logger.log(f"Wrote outputs to: {out_dir}")
     finally:

@@ -1,0 +1,112 @@
+Results: Fig5 B3 — 5 band-wise comparison line plots (QK vs PHYSICS; True DoA) with equivalence-preserving decomposition
+
+Background
+- Fig5 panel B3 (v1/v3) is a single-sample comparison between:
+  - PHYSICS baseline: `g_energy_expert` (OMP-style |D^T y| aggregated by expert)
+  - Model-native routing: `scores_expert` (Transformer QK routing pooled by expert)
+- In v9/v10, “banded” visualizations changed the green curve into a projection-based proxy (derived from `D^T y` and `scores_atoms`), which breaks equivalence to the original B3 semantics and explains the v3↔v10 QK mismatch documented in `figure5_b3_v3_vs_v10_report.md`.
+
+Motivation
+- We want to compare QK vs PHYSICS across frequency bands, but without redefining the underlying quantities.
+- We also want a clean visual comparison per band (one plot per band) instead of a polar plot.
+
+Purpose
+- Produce an equivalence-preserving band decomposition (physics sign-aligned; QK via Integrated Gradients) and render 5 comparison line plots:
+  - Full band (300–3000 Hz)
+  - 300–500, 500–1000, 1000–2000, 2000–3000 Hz
+- Each plot overlays QK, PHYSICS, and the True DoA marker so we can visually judge band-wise “which method peaks at the truth”.
+
+Important note (y-axis scale mismatch)
+- Raw PHYSICS and QK scores have different numeric ranges and can be signed (QK + IG contributions; physics sign-aligned contributions).
+- For visual comparability we use **per-curve min-max normalization** in each plot (`--compare_norm per_curve_minmax`).
+  - This preserves each curve’s argmax (peak angle) BECAUSE it is a monotone transform.
+  - This is visualization-only; all numeric equivalence checks are performed on raw values.
+
+Smoke Test (executed)
+- Purpose: Confirm the end-to-end script runs, loads assets, computes decompositions, and writes outputs without error.
+- Command: See “Exact commands (repro)” below.
+- Evidence:
+  - Log: `results/fig5_b3_line5_20260202_224349/run.log`
+  - Outputs exist: 5 PDFs + `checks.json` + `decomposition.npz` + `code_state.json` under the same directory.
+
+Functional Test (executed)
+- Purpose: Validate the “equivalence-preserving” requirements are actually met.
+- Criteria and evidence:
+  - Physics reconstruction (float64): `physics_recon_max_abs_error < 1e-6`
+    - Observed: `1.998e-15` (PASS), see `results/fig5_b3_line5_20260202_224349/checks.json`
+  - QK IG completeness (mean_val baseline, trapezoid, n_steps>=2048): `qk_ig_recon_max_abs_error < 1e-3`
+    - Observed: `5.731e-04` (PASS), see `results/fig5_b3_line5_20260202_224349/checks.json`
+  - Model-native agreement:
+    - `qk_vs_stored_max_abs_error = 0.0` (PASS), meaning the forward-pass `scores_expert` matches stored values exactly.
+
+Environment / setup
+- Date executed: 2026-02-02
+- Conda env: `trl-training`
+- Device: `cpu`
+- Visualization smoothing (angle-axis, visualization-only): `--smooth_window 5 --smooth_pad reflect`
+
+Data lineage (inputs)
+- Run dir: `results/omp_transformer_speech260_trainval_split_full_20251115_082341/`
+- Dataset fingerprint (from run_dir code_state): `f563984848ae49b4443378c4ef720a51`
+- Input SHA256: recorded in `results/fig5_b3_line5_20260202_224349/code_state.json`
+
+Exact commands (repro)
+```bash
+source ~/.zshrc
+conda activate trl-training
+export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace:$PYTHONPATH
+
+RUN="results/fig5_b3_line5_$(date +%Y%m%d_%H%M%S)"
+python -u scripts/fig5_b3_band_decomposition.py \
+  --run_dir results/omp_transformer_speech260_trainval_split_full_20251115_082341 \
+  --device cpu \
+  --ig_baseline mean_val \
+  --ig_method trapezoid \
+  --n_steps 2048 \
+  --smooth_window 5 \
+  --smooth_pad reflect \
+  --compare_norm per_curve_minmax \
+  --out_dir "$RUN"
+```
+
+Artifacts (this run)
+- Core logs / checks:
+  - `results/fig5_b3_line5_20260202_224349/run.log`
+  - `results/fig5_b3_line5_20260202_224349/checks.json`
+  - `results/fig5_b3_line5_20260202_224349/code_state.json`
+  - `results/fig5_b3_line5_20260202_224349/band_defs.json`
+  - `results/fig5_b3_line5_20260202_224349/decomposition.npz` (raw arrays)
+- Five comparison plots:
+  - `results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_3000.pdf`
+  - `results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_500.pdf`
+  - `results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_500_1000.pdf`
+  - `results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_1000_2000.pdf`
+  - `results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_2000_3000.pdf`
+
+Actual results (key numbers; acceptance)
+- Representative sample (same selection logic as Fig5 scripts):
+  - `sample_idx=1509`, label=145° (expert 29), physics argmax=60° (expert 12)
+- Physics equivalence (float64):
+  - `physics_recon_max_abs_error = 1.998e-15` (< 1e-6 tolerance)
+  - vs stored `modal_routing_val.npz:g_energy_expert`: `9.819e-07`
+- QK model-native equivalence (IG attribution; trapezoid; n_steps=2048):
+  - `qk_ig_recon_max_abs_error = 5.731e-04` (< 1e-3 tolerance)
+  - vs stored `modal_routing_val.npz:scores_expert`: `0.0`
+
+Log interpretation
+- Physics recon ~ 1e-15 implies *exact* reconstruction up to float64 rounding BECAUSE we decompose the linear projection first (g = Σ g_k) and only apply |·| via a sign-aligned rule at the end.
+- QK IG recon ~ 5.7e-4 implies band attributions are effectively complete THEREFORE the band plots are interpretable as decompositions of the same model-native quantity (not a proxy).
+- Smoothing and per-curve normalization affect only the plotted curves; the equivalence checks remain unchanged BECAUSE they are computed from raw values.
+
+Cross-experiment analysis (≥3 commits; causal patterns)
+- v3/v4/v6 B3 (commits 0590b12, b8e1148, c0cb7eb) preserve the original semantics by plotting `scores_expert` directly, so “QK vs OMP” is a model-native vs physics comparison.
+- v9 introduced per-frequency proxy scoring (commit 58118bf) which is useful for mechanism exploration, BUT it changes the green curve’s meaning BECAUSE it replaces model-native QK with a projection-weighted surrogate.
+- This run preserves the original semantics while enabling band-wise comparison via equivalence-preserving decomposition.
+
+Extracted principles
+- If the target uses a nonlinearity like `abs()`, do not apply it per-band and sum; use a decomposition that is consistent with the full-band nonlinearity (here: sign-aligned contributions).
+- If the target is a non-linear model output (Transformer), band-wise views must be attribution (IG/grad-based) or they become proxies; label them explicitly.
+- For band-wise visual comparison of two curves with different numeric ranges, per-curve monotone normalization is acceptable for “peak angle / shape” comparison, but it does not support amplitude comparison.
+
+Next steps
+- If absolute magnitude comparison is needed, rerun with `--compare_norm shared_minmax` (expect one curve may appear compressed if ranges differ).

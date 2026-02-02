@@ -35,6 +35,9 @@ It must:
 - accept `--ig_baseline` (`mean_val|zero`, default: `mean_val`)
 - accept `--ig_method` (`trapezoid|simpson`, default: `trapezoid`)
 - accept `--sample_idx` (optional; if omitted, auto-select using the same representative-case logic as `generate_figure5_atomic.py`)
+- accept `--smooth_window` (odd int; default: `1` meaning off; visualization only)
+- accept `--smooth_pad` (`reflect|edge`, default: `reflect`; visualization only)
+- accept `--compare_norm` (`per_curve_minmax|shared_minmax|none`, default: `per_curve_minmax`; visualization only)
 
 Hard constraints:
 - Never write artifacts to repo root; everything goes under `--out_dir`.
@@ -88,13 +91,16 @@ Under `--out_dir`, write:
 - `checks.json` with reconstruction errors
 - `code_state.json` binding artifacts to executed code + inputs (git head/dirty + SHA256)
 - plots:
-  - `Fig5_B3_BAND_DECOMP_PHYSICS.pdf`
-  - `Fig5_B3_BAND_DECOMP_QK_IG.pdf`
-  - `Fig5_B3_POLAR_FULL_AND_BANDS.pdf`
+  - Five comparison line plots (each includes QK + PHYSICS + True DoA marker):
+    - `Fig5_B3_LINE_300_3000.pdf`
+    - `Fig5_B3_LINE_300_500.pdf`
+    - `Fig5_B3_LINE_500_1000.pdf`
+    - `Fig5_B3_LINE_1000_2000.pdf`
+    - `Fig5_B3_LINE_2000_3000.pdf`
 
 Plot labeling must be explicit:
-- Physics: “sign-aligned decomposition (reconstructs g_energy_expert)”
-- QK: “Integrated Gradients attribution (reconstructs scores_expert)”
+- Physics band curves: “sign-aligned contribution (Σ bands reconstructs g_energy_expert)”
+- QK band curves: “Integrated Gradients attribution (Δ; base + Σ bands reconstructs scores_expert)”
 
 ## Execution instructions (must be included in logs)
 Use the project environment conventions:
