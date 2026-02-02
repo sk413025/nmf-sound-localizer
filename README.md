@@ -1,3 +1,48 @@
+# Nature Figure Workspace (as of 2026-01-30)
+
+This branch focuses on Nature figure generation. The NMF Sound Localizer overview is below.
+
+This worktree is used to generate Nature-style figures and supporting reports. The entries below record where the figure standards live, what was most recently added, and the historical evolution of figure outputs.
+
+### Nature figure guidelines
+- `NATURE_FIGURE_GUIDELINES.md`: Core Nature sizing, typography, line weight, and file format rules.
+- `NA_matplotlib_guild.py`: Matplotlib helper that enforces Nature rcParams, panel labels, and mm-accurate sizing.
+- `pdf_specs.md`: Legacy layout block dimensions in mm (reference measurements for panel sizing).
+
+### Latest tracked status
+- `figure5_b3_v3_vs_v10_report.md` and `figure5_b3_v3_vs_v10_report.pdf`: B3 comparison report (v3 vs v10) with reproduction notes and numeric comparisons.
+- `polar_plot_architecture_analysis.md`: Architecture rationale for the polar/banded plotting logic.
+- `generate_figure5_atomic_v10.py`: Latest Figure 5 generator (banded line plots for B3).
+- `gather_figure4_data.py`, `figure4_data.json`, `plot_figure4.py`, `Figure4.pdf`, `Figure4.png`: Figure 4 data pipeline and rendered outputs.
+- `explore_metrics.py`: Helper script for inspecting metrics used in Figure 4 aggregation.
+
+### Figure history (Nature focused)
+- **Figure 1**:
+  - `Fig1a_single_column.pdf` / `Fig1a_single_column.tiff`: Single-column layout example produced from `NA_matplotlib_guild.py`.
+  - `generate_nature_figures.py`: Produces `Fig1_singular_values.pdf` in the selected `results/figure2/results_nature*` output directory.
+- **Figure 2 (modal decomposition)**:
+  - `generate_nature_figures.py` outputs in `results/figure2/` (`results_nature*`, `results_nature_bootstrap`, `results_nature_repro*`).
+  - Includes singular value plots, modal frequency/angle panels, and dictionary heatmaps.
+- **Figure 4 (ablation + SNR)**:
+  - `gather_figure4_data.py` aggregates accuracy metrics from ablation and SNR runs into `figure4_data.json`.
+  - `plot_figure4.py` renders `Figure4.pdf` and `Figure4.png` (two-panel layout: ablation + SNR).
+- **Figure 5 (atomic panels)**:
+  - v1: `generate_figure5_atomic.py` → `results_figure5_v1/` (baseline Nature-style atomic panels).
+  - v2: `generate_figure5_atomic_v2.py` → `results/results_figure5_v2/` (consistent color scales + directory structure).
+  - v3: `generate_figure5_atomic_v3.py` → `results/results_figure5_v3/` (serif fonts + refined polar aesthetics).
+  - v4: `generate_figure5_atomic_v4.py` → `results/results_figure5_v4/` (polar plot right-half only).
+  - v5: `generate_figure5_atomic_v5.py` → `results/results_figure5_v5/` (layout optimization, square panels, horizontal colorbars).
+  - v6: `generate_figure5_atomic_v6.py` → `results/results_figure5_v6/` (fixed dimensions + alignment).
+  - v7: `generate_figure5_atomic_v7.py` → `results/results_figure5_v7/` (B-series square panels, y-axis 0-2000 Hz).
+  - v8: `generate_figure5_atomic_v8.py` → `results/results_figure5_v8/` (colorbar tick fix, B-series width adjustment).
+  - v9: `generate_figure5_atomic_v9.py` → `results/results_figure5_v9/` (B3 becomes frequency-resolved atom-index panels).
+  - v10: `generate_figure5_atomic_v10.py` → `results/results_figure5_v10/` (B3 becomes banded line plots: 0-500/500-1000/1000-2000 Hz).
+  - Supporting analyses:
+    - `generate_figure5_b3_freq_averages.py` → `results/results_figure5_v9/freq_angle_avg/`
+    - `figure5_b3_v3_vs_v10_report.md` with assets in `results/figure5_v3_v10_report_assets/`
+- **Figure 8 (heatmaps + distributions)**:
+  - `generate_figure8.py` → `results_figure8/` (`Fig8a_heatmaps.pdf`, `Fig8b_angle55.pdf`, `Fig8c_angle100.pdf`).
+
 # NMF Sound Localizer
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
