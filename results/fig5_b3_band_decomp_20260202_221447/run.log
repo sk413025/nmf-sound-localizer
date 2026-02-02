@@ -1,0 +1,18 @@
+=== Fig5 B3 Band Decomposition (Equivalence-Preserving) ===
+run_dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+out_dir: results/fig5_b3_band_decomp_20260202_221447
+device: cpu
+n_steps (IG): 2048
+ig_baseline: mean_val
+ig_method: trapezoid
+cwd: /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace
+PYTHONPATH: /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace:
+sample_idx: 1509
+label_idx: 29 (label_deg=145.0)
+true_expert (selected): 29 (145.0 deg)
+wrong_expert (physics argmax): 12 (60.0 deg)
+[physics] recon max_abs_error: 1.998e-15
+[physics] vs stored modal_routing_val.npz:g_energy_expert max_abs_error: 9.819e-07
+[qk_ig] recon max_abs_error: 5.731e-04
+[qk_ig] vs stored modal_routing_val.npz:scores_expert max_abs_error: 0.000e+00
+Wrote outputs to: results/fig5_b3_band_decomp_20260202_221447

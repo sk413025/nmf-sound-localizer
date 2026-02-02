@@ -1,0 +1,125 @@
+Results: Fig5 B3 — equivalence-preserving band decomposition + polar comparison (Physics sign-aligned, QK IG)
+
+Background
+- Fig5 panel B3 (v1/v3) was designed to compare two *angle-level* score vectors for a single representative sample:
+  - Physics baseline: `g_energy_expert` (OMP-style |D^T y| aggregated by expert)
+  - Model-native routing: `scores_expert` (Transformer QK routing pooled by expert)
+- Starting in the v9/v10 “frequency/band” variants, the green curve’s meaning drifted:
+  - v9/v10 computed projection-based proxies (using `D^T y` and `scores_atoms`) and plotted them as if they were model-native QK.
+  - This breaks semantic equivalence to the original B3 and explains the v3↔v10 QK mismatch documented in `figure5_b3_v3_vs_v10_report.md`.
+
+Motivation
+- We want frequency-band visibility for B3 without redefining the plotted quantity.
+- Constraints:
+  - No silent fallbacks; fail fast on mismatched shapes/angles/band masks.
+  - Outputs must not land in repo root; all artifacts under `results/<run_name>/`.
+  - Preserve the original B3 semantics (model-native `scores_expert`, not a proxy).
+
+Purpose (what this experiment answers)
+- Can we decompose B3 into frequency bands in a way that is *reconstructible* to the original full-band quantities?
+  - Physics baseline: exact reconstruction of `g_energy_expert` from band contributions.
+  - Model-native QK: reconstruction of `scores_expert` via attribution (Integrated Gradients), since QK is not frequency-separable.
+- Provide a “full vs per-band” polar visualization to compare directly with the original full-band polar plot.
+
+What changed (code)
+- `scripts/fig5_b3_band_decomposition.py`: new end-to-end script that produces:
+  - Physics sign-aligned band contributions that sum back to `g_energy_expert`.
+  - QK Integrated Gradients (IG) band attributions that reconstruct `scores_expert` (up to numerical integration error).
+  - A new polar comparison PDF: full-band vs per-band curves (`Fig5_B3_POLAR_FULL_AND_BANDS.pdf`).
+  - `checks.json` + `code_state.json` to make equivalence auditable and reproducible.
+- `docs/fig5_b3_band_decomposition_spec.md`: decision-complete spec + acceptance criteria.
+- `docs/fig5_b3_band_decomposition_agent_prompt.md`: cold-start agent instructions (what to do, what *not* to do).
+- `NA_matplotlib_guild.py`: make import side-effect free; demo guarded by `if __name__ == "__main__":` and writes under `results/`.
+- `doa_rl/data.py`: restore the missing import path required by `scripts/omp-transformer-ldv.py` so model reconstruction is executable.
+
+Environment / setup
+- Date executed: 2026-02-02
+- Conda env: `trl-training`
+- Device: `cpu` (IG is deterministic; MPS availability is validated and will fail fast if requested and unavailable)
+- OS: macOS 26.2 arm64
+
+Data lineage (inputs)
+- Run dir (source of truth for B3 tensors + model checkpoint):
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/`
+- Dataset fingerprint (from run_dir code_state): `f563984848ae49b4443378c4ef720a51`
+- SHA256 (inputs; also captured in `results/fig5_b3_band_decomp_20260202_221447/code_state.json`):
+  - `dictionary.npz`: 4dcbae86179b43656f6632b9dea1fa21517f0e5ef35ab32a93dacc8bb78bddd4
+  - `modal_routing_val.npz`: 3f04909270934cf4e1391bf36ebe3df27e6f8f397968613deeca05ba4e6c44d3
+  - `model_best.pth`: f7593a3c66dbcf99a363004d0cc55ee84c482824de50fe79c82facf7f95640b4
+  - `code_state.json`: abe0a226959e65edf4464941840a3268a2e71397258940cd316ba66fbc5f6478
+
+Exact commands (repro)
+```bash
+source ~/.zshrc
+conda activate trl-training
+export PYTHONPATH=/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/development-workspace:$PYTHONPATH
+
+RUN="results/fig5_b3_band_decomp_$(date +%Y%m%d_%H%M%S)"
+python -u scripts/fig5_b3_band_decomposition.py \
+  --run_dir results/omp_transformer_speech260_trainval_split_full_20251115_082341 \
+  --device cpu \
+  --ig_baseline mean_val \
+  --ig_method trapezoid \
+  --n_steps 2048 \
+  --out_dir "$RUN"
+```
+
+Artifacts (this run)
+- `results/fig5_b3_band_decomp_20260202_221447/run.log`
+- `results/fig5_b3_band_decomp_20260202_221447/checks.json`
+- `results/fig5_b3_band_decomp_20260202_221447/code_state.json`
+- `results/fig5_b3_band_decomp_20260202_221447/band_defs.json`
+- `results/fig5_b3_band_decomp_20260202_221447/decomposition.npz`
+- `results/fig5_b3_band_decomp_20260202_221447/Fig5_B3_BAND_DECOMP_PHYSICS.pdf`
+- `results/fig5_b3_band_decomp_20260202_221447/Fig5_B3_BAND_DECOMP_QK_IG.pdf`
+- `results/fig5_b3_band_decomp_20260202_221447/Fig5_B3_POLAR_FULL_AND_BANDS.pdf`
+
+Actual results (key numbers; representative sample)
+- Representative sample selection (same logic as Fig5 scripts):
+  - `sample_idx=1509`, label=145° (expert 29), physics argmax=60° (expert 12)
+- Physics equivalence (sign-aligned decomposition; float64):
+  - reconstruction error: `physics_recon_max_abs_error = 1.998e-15` (< 1e-6 tolerance)
+  - agreement with stored `modal_routing_val.npz:g_energy_expert`: `9.819e-07`
+- QK model-native equivalence (IG attribution; trapezoid; n_steps=2048):
+  - reconstruction error: `qk_ig_recon_max_abs_error = 5.731e-04` (< 1e-3 tolerance)
+  - agreement with stored `modal_routing_val.npz:scores_expert`: `0.0` (exact match)
+
+Log interpretation (what these numbers imply)
+- Physics recon ~ 1e-15 implies *exact* reconstruction up to float64 rounding BECAUSE we decompose the linear projection first (g = Σ g_k) and only apply |·| via a sign-aligned rule at the end.
+- QK IG recon ~ 5.7e-4 implies the band attributions are effectively complete THEREFORE we can compare per-band “why” without changing the meaning of the full-band QK curve.
+- The need for large `n_steps` (2048) is expected BECAUSE IG completeness is a numerical integral over α∈[0,1]; coarse integration leaves residual error.
+
+Physical / mathematical analysis (first principles; correctness argument)
+- Physics baseline:
+  - Full-band uses `|D^T y|` aggregated by expert; `abs()` breaks naive additivity, i.e., `|a+b| ≠ |a|+|b|`.
+  - We partition frequency bins into disjoint masks Bk, compute `g_k = D[Bk,:]^T y[Bk]`, then align contributions with `sign(g_full)`:
+    - `c_k = sign(g_full) ⊙ g_k` so Σ_k c_k = |g_full|
+  - THEREFORE Σ_k G_k[e] = g_energy_expert[e] exactly, where G_k sums c_k over the 8 atoms of expert e.
+- Model-native QK:
+  - `scores_expert` is produced by a non-linear Transformer; it is not frequency-separable by construction.
+  - Integrated Gradients provides an additive attribution over input bins with completeness:
+    - f(y) − f(y0) ≈ Σ_f IG[f]
+  - We aggregate bin-level IG into bands, so f(y) ≈ f(y0) + Σ_k IG_band[k].
+  - Using `y0 = unit_norm(mean(Y_val))` stabilizes gradients BECAUSE the model uses score normalization/centering and zero baselines can yield near-degenerate intermediate distributions (slow IG convergence).
+
+Cross-experiment analysis (≥3 commits; causal patterns)
+- v3/v4/v6 B3 (commits 0590b12, b8e1148, c0cb7eb) preserve the original semantics by plotting `scores_expert` directly, so “QK vs OMP” is a model vs physics comparison.
+- v9 introduced per-frequency proxy scoring (commit 58118bf) which is useful for mechanism exploration, BUT it changes the green curve’s meaning BECAUSE it replaces model-native QK with a projection-weighted surrogate.
+- The v3↔v10 mismatch (see `figure5_b3_v3_vs_v10_report.md`) is therefore semantic, not a bug: QK diverges while OMP matches BECAUSE OMP is computed from D^T y in both paths, but QK is not.
+- This experiment resolves that trap by making band views reconstructible to the original full-band quantities, THEREFORE band plots are now interpretable as “decomposition of the same thing”, not “a new score”.
+
+Extracted principles (rules for future work)
+- If the full-band quantity contains `abs()` (or any nonlinearity), you cannot get an equivalent band sum by applying that nonlinearity per-band; you must attribute relative to the full-band nonlinearity (e.g., sign-aligned decomposition for |·|).
+- If the quantity is model-native and non-linear (Transformer), frequency banding must be treated as attribution (IG/grad-based) or it becomes a proxy; label it explicitly.
+- Bands must be a true partition (no gaps/overlaps) of the intended frequency grid, otherwise “sum of bands” cannot match “full band”.
+
+Meta-reflection (workflow)
+- The v9/v10 drift happened BECAUSE the banded analysis reused convenient projection code and implicitly relabeled it as model-native QK.
+- To prevent this, we now require:
+  - a written spec + acceptance thresholds,
+  - `checks.json` proving equivalence,
+  - `code_state.json` binding artifacts to code + inputs.
+
+Next steps
+- (Optional) Add a “proxy vs model-native” overlay figure for educational clarity (clearly labeled).
+- (Optional) If MPS is stable in your environment, rerun with `--device mps` for speed; keep the same acceptance checks.

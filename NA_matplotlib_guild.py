@@ -1,3 +1,10 @@
+"""
+Matplotlib helpers for Nature-style figures.
+
+This module is intentionally side-effect free on import.
+Example usage is guarded by `if __name__ == "__main__":`.
+"""
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -6,11 +13,11 @@ def mm_to_in(mm):
 
 def set_nature_rcparams(base_fontsize=8):
     mpl.rcParams.update({
-        # 字體（sans-serif；優先 Arial/Helvetica）
+        # Fonts (sans-serif; prefer Arial/Helvetica).
         "font.family": "sans-serif",
         "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
 
-        # 字級：以 8 pt 為基準（縮放後仍可讀）
+        # Font sizes (pt).
         "font.size": base_fontsize,
         "axes.titlesize": base_fontsize,
         "axes.labelsize": base_fontsize,
@@ -18,7 +25,7 @@ def set_nature_rcparams(base_fontsize=8):
         "ytick.labelsize": base_fontsize,
         "legend.fontsize": base_fontsize,
 
-        # 線寬：0.5–1 pt
+        # Line widths (pt).
         "axes.linewidth": 0.8,
         "lines.linewidth": 0.8,
         "grid.linewidth": 0.5,
@@ -29,12 +36,12 @@ def set_nature_rcparams(base_fontsize=8):
         "xtick.major.size": 3.0,
         "ytick.major.size": 3.0,
 
-        # 白底、乾淨
+        # Clean white background.
         "figure.facecolor": "white",
         "axes.facecolor": "white",
         "savefig.facecolor": "white",
 
-        # PDF/PS 字體嵌入（避免審稿端字體被替換）
+        # Embed fonts in PDF/PS to avoid substitution.
         "pdf.fonttype": 42,  # TrueType
         "ps.fonttype": 42,
     })
@@ -44,32 +51,37 @@ def make_figure(width_mm=88, height_mm=60):
     return fig
 
 def add_panel_label(ax, label, x=0.0, y=1.02):
-    # Nature 常見：小寫粗體 a, b, c...
+    # Nature-style panel labels: bold lowercase a, b, c...
     ax.text(x, y, label, transform=ax.transAxes,
             fontsize=8, fontweight="bold", va="bottom", ha="left")
 
 def save_outputs(fig, out_prefix, dpi_tiff=300):
-    # 1) 向量：PDF（線圖/統計圖優先）
+    # 1) Vector: PDF (preferred for line plots / statistical figures).
     fig.savefig(f"{out_prefix}.pdf", bbox_inches="tight")
 
-    # 2) 點陣：TIFF（影像/投稿系統可能需要）
+    # 2) Raster: TIFF (sometimes required by submission systems).
     fig.savefig(f"{out_prefix}.tiff", dpi=dpi_tiff, bbox_inches="tight")
 
-# ======== 使用示例 ========
-set_nature_rcparams(base_fontsize=8)
+if __name__ == "__main__":
+    # Demo (writes outputs under results/ to keep repo root clean).
+    from pathlib import Path
 
-# 單欄圖：88 mm 寬（Nature Communications 欄寬） [oai_citation:13‡Nature](https://www.nature.com/ncomms/submit/how-to-submit?utm_source=chatgpt.com)
-fig = make_figure(width_mm=88, height_mm=60)
-ax = fig.add_subplot(1,1,1)
+    import numpy as np
 
-# 畫圖（示例）
-import numpy as np
-x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), label="sin(x)")
-ax.set_xlabel("Time (s)")
-ax.set_ylabel("Amplitude (a.u.)")
-ax.legend(frameon=False)
-add_panel_label(ax, "a")
+    set_nature_rcparams(base_fontsize=8)
 
-save_outputs(fig, "Fig1a_single_column", dpi_tiff=300)
-plt.close(fig)
+    out_dir = Path("results") / "nature_style_demo"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    fig = make_figure(width_mm=88, height_mm=60)
+    ax = fig.add_subplot(1, 1, 1)
+
+    x = np.linspace(0, 10, 200)
+    ax.plot(x, np.sin(x), label="sin(x)")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude (a.u.)")
+    ax.legend(frameon=False)
+    add_panel_label(ax, "a")
+
+    save_outputs(fig, str(out_dir / "Fig1a_single_column"), dpi_tiff=300)
+    plt.close(fig)
