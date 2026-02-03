@@ -1,0 +1,9 @@
+from: markdown
+to: docx
+standalone: true
+citeproc: true
+fail-if-warnings: true
+
+metadata-file: paper/manuscript/metadata.yaml
+bibliography: paper/references/references.bib
+

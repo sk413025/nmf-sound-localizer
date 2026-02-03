@@ -162,3 +162,19 @@ temp/
 # Logs
 logs/
 *.log
+
+# Paper build outputs
+paper/out/
+
+# Paper internal notes (do not commit)
+paper/references/CLAIM_CITATION_MATRIX.md
+paper/references/REFERENCE_INVENTORY.md
+paper/references/derived/
+paper/references/exp/
+
+# Paper figure assets (tracked via Git LFS)
+!paper/figures/*.jpg
+!paper/figures/*.jpeg
+!paper/figures/*.pdf
+!paper/figures/*.tif
+!paper/figures/*.tiff
