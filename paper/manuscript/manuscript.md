@@ -15,7 +15,7 @@ We operationalize these predictions by translating structural dynamics into a li
 ### Physical encoding by a complex structure (Fig. 1)
 We probe the physical-encoder hypothesis using the experimental configuration shown in Fig. 1a, where an incident acoustic field excites a target structure and a laser Doppler vibrometer (LDV) measures single-point vibration. Although the resulting time-domain waveform can appear irregular due to multimodal dynamics and multiple scattering, the key observation (Fig. 1b) is that different incidence directions produce reproducible, direction-dependent **spectral fingerprints**. Starting from this observation, we hypothesize that the fingerprints arise from a dispersive, modal superposition mechanism that concentrates DOA information into a small set of dominant physical channels. We test this hypothesis by (i) deriving a minimal physical model and exposing dominant channels via SVD (Fig. 2), (ii) using sparse pursuit (OMP) and a physics-guided unrolled solver as inference probes (Fig. 3), (iii) stress-testing robustness and isolating causal components by ablation (Fig. 4), (iv) verifying mechanistic alignment by analyzing learned routing statistics (Fig. 5), and (v) falsifying target-specific explanations via cross-material evaluation (Fig. 6).
 
-![](paper/figures/Figure-1.jpg)
+![](paper/figures/fig01_paradigm-shift.jpg)
 
 **Fig. 1 | From chaotic acoustic scattering to sparse physical order in complex-media sensing.**
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)); inset shows a representative single-point vibration waveform exhibiting complex, seemingly chaotic fluctuations.
@@ -103,7 +103,7 @@ This projected formulation preserves the angle-indexed structure while focusing 
 
 Figure 2 summarizes the mechanism: dominant channels (Fig. 2a), a spectral–directional interpretation (Fig. 2b), and a structured physical dictionary over angles (Fig. 2c). In the simplest instantiation of the derivation above, the dictionary is the angle response matrix \(H\) (one atom per candidate angle; denoted \(D\) in Fig. 2c); richer structured dictionaries can be built by expanding the atom index (e.g., mode–angle), while keeping the same sparse-inference backbone.
 
-![](paper/figures/Figure-2.jpg)
+![](paper/figures/fig02_svd-physical-dictionary.jpg)
 
 **Fig. 2 | Physical encoding via spectral–spatial modes and construction of a structured dictionary.**
 a, Singular-value spectrum showing rapid decay, indicating that the measured structural response is dominated by a small set of modes (sparsity/low-rank structure).
@@ -166,7 +166,7 @@ where \(\eta_t\) is a step size (learned or fixed) and \(\odot\) denotes element
 
 **Interpretation (attention as learned physical routing).** This construction makes the OMP→attention link explicit: when \(w_t\) concentrates to a one-hot vector at the maximally correlated atom, the update reduces to greedy selection; unrolling yields a differentiable, data-driven analogue of sparse pursuit. Crucially, because atoms are indexed by candidate angles, the routing weights \(w_t\) become a mechanistic observable: they can be analyzed to test whether the learned solver aligns with the physical manifold (Fig. 5), and whether that alignment persists under target changes (Fig. 6).
 
-![](paper/figures/Figure-3.jpg)
+![](paper/figures/fig03_unrolled-attention-omp.jpg)
 
 **Fig. 3 | Physics-guided deep unrolled network with attention-based gating for sparse DOA inference.**
 At stage \(t\), the residual \(r_t\) is correlated with the (projected) physics dictionary \(A\) to form a physical match \(g=A^\top r_t\); a transformer encoder outputs attention weights that gate sparse updates \(\Delta x\), followed by residual update \(r_{t+1}=r_t-A\Delta x\). Unrolling across stages accumulates a sparse vector \(x_T\), which is mapped to the final DOA estimate \(\hat{\theta}\).
@@ -176,7 +176,7 @@ We next treat robustness as a hypothesis test. If DOA information is concentrate
 
 Full dataset, split protocol, and statistical reporting are described in Methods (Experimental setup; Evaluation and statistics).
 
-![](paper/figures/Figure-4.jpg)
+![](paper/figures/fig04_noise-robustness-ablation.jpg)
 
 **Fig. 4 | Performance under additive noise and architectural ablations.**
 a, Validation accuracy under additive white noise (SNR = 10, 5 and 0 dB) comparing the full physics-aware model, a no-transformer variant, and a fixed heuristic baseline; points denote independent trials and horizontal bars indicate means (two-sided t-test, ***P < 0.001).
@@ -187,7 +187,7 @@ Nature Communications-style claims require mechanistic support beyond accuracy. 
 
 The physical manifold index and off-diagonal mass metrics are defined in Methods (Evaluation and statistics).
 
-![](paper/figures/Figure-5.png)
+![](paper/figures/fig05_routing-mechanism-analysis.png)
 
 **Fig. 5 | Deciphering model behaviour across scales: attention structure, micro-mechanism and macro-robustness.**
 a, Global self-attention map exhibiting a physics-consistent near-diagonal correlation structure across the physical manifold.
@@ -199,7 +199,7 @@ We now test the central scientific claim: **is the single-point DOA encoding tar
 
 Per-material sample sizes and the RMSE computation protocol are reported in Methods (Evaluation and statistics).
 
-![](paper/figures/Figure-6.jpg)
+![](paper/figures/fig06_cross-material-universality.jpg)
 
 **Fig. 6 | Universal physical encoding across diverse materials and robust cross-material performance.**
 a, Targets spanning a broad spectrum of material and geometric complexity (acrylic plate, paper cup, wooden board, cardboard box and a laptop shell).
