@@ -153,6 +153,14 @@ Agent guidance:
 - Default: use K‑step by directions for static sources; consider time‑step rollouts only if angles change over physical time and provide non‑trivial per‑window reward variance.
 - Guidance, not a hard rule: deviations are allowed when justified and tested.
 
+## Manuscript Style (Nature Communications)
+
+- Emphasize **scientific discovery**: observation → hypothesis → mechanism → validation → implication.
+- Treat **equations and models as tools** for exploration and verification, not as the primary story; always interpret key equations in physical terms.
+- Maintain **symbol continuity and explicit definitions**: no symbols “appear out of nowhere”; ensure clear transitions across the physics model → SVD → OMP → unrolling/attention.
+- Keep prose **concise and journal-style**; integrate figures into standard sections (Introduction/Results/Discussion/Methods) rather than “Fig. X as chapters”.
+- When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
+
 ## Language Policy
 **All project content must be written in English**, including:
 - Code comments and documentation
