@@ -7,3 +7,10 @@ fail-if-warnings: true
 metadata-file: paper/manuscript/metadata.yaml
 bibliography: paper/references/references.bib
 
+# Allow relative image paths in Markdown (e.g., `../figures/...`) to resolve
+# when building from the repo root.
+resource-path:
+  - paper/manuscript
+  - paper/figures
+  - paper
+  - .
