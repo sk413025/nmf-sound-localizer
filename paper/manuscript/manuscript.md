@@ -47,7 +47,25 @@ $$
 
 **Interpretation.** These equations formalize the core physical idea behind Fig. 1b: DOA enters through the forcing pattern \(P(\cdot;\theta)\) and couples into dispersive structural dynamics via a linear response kernel \(G\). Even when the time-domain waveform appears irregular, the frequency-domain response can carry stable direction-dependent structure because it is governed by the same underlying linear operator during the measurement window.
 
-We define the complex single-point response \(Y(\omega;\theta)=W(x_L,y_L,\omega)\). On a discrete frequency grid \(\{\omega_f\}_{f=1}^F\), we form a real feature vector
+We define the complex single-point response \(Y(\omega;\theta)=W(x_L,y_L,\omega)\).
+
+**Modal expansion → spectral–angular factorization.** A standard way to interpret the Green’s function response is through a modal expansion of the underlying linear operator: the single-point response is a superposition of a limited number of dispersive structural components whose weights depend on how the incident field couples into the structure. At a single point, this motivates an approximate separable form
+
+$$
+Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta),
+$$
+
+where \(s_m(\omega)\) captures a mode/channel’s frequency-dependent dispersion (a *spectral signature*) and \(\alpha_m(\theta)\) captures angle-dependent coupling into that channel (a *directional pattern*). This is the physical content behind Fig. 1b and Fig. 2b: direction enters through coupling, while frequency structure is shaped by dispersion and damping.
+
+When we discretize angles \(\{\theta_e\}_{e=1}^E\) and frequencies \(\{\omega_f\}_{f=1}^F\), each angle-conditioned atom \(h(\theta_e)\) can be viewed as a mixture of a small number of spectral signatures with angle-dependent weights. Stacking columns over angles therefore yields an approximately low-rank, spectral–angular factorization of the empirical response matrix,
+
+$$
+H \;\approx\; \sum_{m=1}^{M} u_m v_m^\top,
+$$
+
+where \(u_m\in\mathbb{R}^F\) is a frequency signature and \(v_m\in\mathbb{R}^E\) is an angle signature. In real targets, separability is imperfect; the SVD below provides the best rank-\(r\) factorization of the measured \(H\), which we interpret as an empirical estimate of these spectral and angular components (Fig. 2b).
+
+On a discrete frequency grid \(\{\omega_f\}_{f=1}^F\), we form a real feature vector
 
 $$
 y[f] \;=\; \phi\!\left(\left|Y(\omega_f;\theta)\right|\right),
@@ -83,7 +101,17 @@ $$
 
 where \(\Sigma=\mathrm{diag}(\sigma_1,\dots,\sigma_{\min(F,E)})\) with \(\sigma_1\ge\dots\ge 0\). A rapidly decaying singular spectrum indicates that only a limited number of dominant channels contribute strongly to the sensor response, closely related to eigenchannel analyses of transmission matrices in complex media [@davy2015eigenchannels].
 
+Equivalently, the SVD can be written as an outer-product expansion,
+
+$$
+H = \sum_{m=1}^{\min(F,E)} \sigma_m\, u_m v_m^\top,
+$$
+
+where \(u_m\) and \(v_m\) are columns of \(U\) and \(V\), respectively. In our setting, this directly links the linear algebra to the physics interpretation above: \(u_m\) acts as a frequency-selective spectral signature, \(v_m\) acts as an angle-selective coupling/directivity pattern, and \(\sigma_m\) quantifies the strength of the corresponding effective channel (Fig. 2b).
+
 **Interpretation (what SVD reveals and predicts).** In this work, the SVD is not merely a mathematical convenience: it provides a direct diagnostic of the physical encoder’s effective degrees of freedom. If the singular spectrum decays rapidly (as in Fig. 2a), then (i) DOA-relevant variability should live largely in a low-dimensional subspace, and (ii) inference should be feasible and relatively stable when restricted to that dominant subspace. This motivates the projected formulation below and sets up robustness tests (Fig. 4) and generalization tests (Fig. 6).
+
+**Physical meaning of projection.** The left singular vectors \(U_r\) define a data-driven basis for the dominant spectral signatures of the physical encoder. Projecting with \(U_r^\top\) converts a raw spectrum \(y\in\mathbb{R}^F\) into *channel coordinates* \(z\in\mathbb{R}^r\) that emphasize the physically dominant dispersive components while suppressing weak/noisy directions. The projected dictionary \(A=U_r^\top H\) therefore represents each candidate angle atom in this dominant spectral-channel basis.
 
 To make the SVD link operational for inference, we project the inverse model into the rank-\(r\) left-singular subspace. Let \(U_r\in\mathbb{R}^{F\times r}\) contain the first \(r\) columns of \(U\) (chosen by an energy criterion described in Methods (Dictionary construction)). Define
 
@@ -122,6 +150,8 @@ $$
 
 where \(A\in\mathbb{R}^{r\times E}\) is the SVD-projected dictionary, \(z\in\mathbb{R}^r\) is the projected observation, and \(x\in\mathbb{R}^E\) is a sparse coefficient vector over candidate angles. In the single-source case (\(K=1\)), a natural estimate is \(\hat{\theta}=\theta_{\arg\max_e x[e]}\).
 
+**Physical interpretation (frequency ↔ angle coupling).** The coefficient vector \(x\) lives over candidate angles (a spatial hypothesis space), while the measurement \(z\) lives in dominant *spectral-channel coordinates* defined by \(U_r\). Each atom \(a_e\) (column \(e\) of \(A=U_r^\top H\)) is therefore the angle-conditioned response expressed in the dominant dispersive channel basis. Solving \(z\approx Ax\) is a structured “explain the spectrum by a small set of angles” problem: the residual measures unexplained spectral-channel content, and atom selection corresponds to selecting the angle(s) whose coupling patterns best account for that content.
+
 #### OMP baseline in the SVD-projected space
 Orthogonal matching pursuit (OMP) is a canonical greedy solver for the \(\ell_0\)-constrained least-squares problem [@tropp2007omp]. Written in the projected space, OMP iterates:
 
@@ -139,6 +169,8 @@ This formulation eliminates symbol discontinuities: the same projected dictionar
 
 #### Neural (unrolled) OMP with attention-based routing
 OMP’s argmax selection is a fixed heuristic and can be brittle under noise and model mismatch in complex media. We therefore derive a neural solver by **unrolling** \(K\) pursuit stages into a network and replacing the discrete selection rule with learnable, attention-based routing, while retaining physics-consistent residual updates [@monga2021unrolling].
+
+**Link back to the physics factorization.** In OMP, the score \(g_t=A^\top r_t\) compares the current residual’s spectral-channel content to each candidate angle atom, and the argmax selects the best-matching coupling pattern. The unrolled network keeps the same physics-structured atoms (angles) and residual-consistent updates, but replaces the fixed correlation/argmax heuristic with a learnable similarity and soft routing rule. In this sense, attention is not “generic token attention”: it is a learned routing mechanism over the same angle-indexed dictionary derived from the Green’s-function-driven encoder and its SVD channelization.
 
 At stage \(t\), we start from residual \(r_t\in\mathbb{R}^r\) and correlations \(g_t=A^\top r_t\in\mathbb{R}^E\). We parameterize a routing distribution over atoms via dot-product attention [@vaswani2017attention]. Let a query be computed from the current state,
 
@@ -164,7 +196,7 @@ $$
 
 where \(\eta_t\) is a step size (learned or fixed) and \(\odot\) denotes element-wise product. After \(K\) stages, we accumulate \(x=\sum_{t=0}^{K-1}\Delta x_t\) and map the resulting coefficient mass to a DOA estimate.
 
-**Interpretation (attention as learned physical routing).** This construction makes the OMP→attention link explicit: when \(w_t\) concentrates to a one-hot vector at the maximally correlated atom, the update reduces to greedy selection; unrolling yields a differentiable, data-driven analogue of sparse pursuit. Crucially, because atoms are indexed by candidate angles, the routing weights \(w_t\) become a mechanistic observable: they can be analyzed to test whether the learned solver aligns with the physical manifold (Fig. 5), and whether that alignment persists under target changes (Fig. 6).
+**Interpretation (attention as learned physical routing).** This construction makes the OMP→attention link explicit: when \(w_t\) concentrates to a one-hot vector at the maximally correlated atom, the update reduces to greedy selection; unrolling yields a differentiable, data-driven analogue of sparse pursuit. Because \(A=U_r^\top H\), the routing operates in the dominant spectral basis that approximates the encoder’s spectral–angular components \((u_m,v_m)\). Crucially, because atoms are indexed by candidate angles, the routing weights \(w_t\) become a mechanistic observable: they can be analyzed to test whether the learned solver aligns with the physical manifold (Fig. 5), and whether that alignment persists under target changes (Fig. 6).
 
 ![](../figures/fig03_unrolled-attention-omp.jpg)
 
