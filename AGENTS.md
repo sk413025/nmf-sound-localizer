@@ -155,11 +155,27 @@ Agent guidance:
 
 ## Manuscript Style (Nature Communications)
 
-- Emphasize **scientific discovery**: observation → hypothesis → mechanism → validation → implication.
-- Treat **equations and models as tools** for exploration and verification, not as the primary story; always interpret key equations in physical terms.
-- Maintain **symbol continuity and explicit definitions**: no symbols “appear out of nowhere”; ensure clear transitions across the physics model → SVD → OMP → unrolling/attention.
-- Keep prose **concise and journal-style**; integrate figures into standard sections (Introduction/Results/Discussion/Methods) rather than “Fig. X as chapters”.
-- When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
+- **Introduction Structure (Inverted Pyramid):**
+  - **Start Broad:** Begin with the grand scientific challenge (e.g., "Extracting information from complex wave fields"), NOT engineering specifics (e.g., "DOA estimation is solved by...").
+  - **Paradigm Shift:** Introduce the "Complexity as a Resource" concept (or equivalent discovery) as the pivot point.
+  - **Specific Solution:** Only then introduce the specific method (LDV, Everyday Objects) as the necessary tool to verify the hypothesis.
+  - **Avoid:** Do not start with "Direction-of-arrival (DOA) estimation is classically solved by..." or similar textbook definitions.
+
+- **Results Structure (Assertion-First):**
+  - **Headers:** Use declarative assertions of discovery (e.g., "Everyday objects act as naturally randomized physical encoders"), NOT procedural labels (e.g., "Experimental Setup" or "SVD Analysis").
+  - **Narrative:** First paragraph of each section must state the *phenomenon* observed, followed by the evidence.
+  - **Figures:** Reference figures as evidence for the assertion (e.g., "As seen in Fig. 1..."), not as containers of data.
+
+- **Methods Structure (Reproducibility):**
+  - **Rigorous Definitions:** Include specific subsections for "Signal Processing Pipeline" and "Neural Network Training" with mathematical definitions (STFT parameters, normalization formulas, loss functions).
+  - **No Ambiguity:** Avoid placeholders or vague terms; specific hyperparameters and protocols must be defined.
+
+- **General Guidelines:**
+  - Emphasize **scientific discovery**: observation → hypothesis → mechanism → validation → implication.
+  - Treat **equations and models as tools** for exploration and verification, not as the primary story; always interpret key equations in physical terms.
+  - Maintain **symbol continuity and explicit definitions**: no symbols “appear out of nowhere”; ensure clear transitions across the physics model → SVD → OMP → unrolling/attention.
+  - Keep prose **concise and journal-style**; integrate figures into standard sections (Introduction/Results/Discussion/Methods) rather than “Fig. X as chapters”.
+  - When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
 
 ## Language Policy
 **All project content must be written in English**, including:
