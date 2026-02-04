@@ -32,14 +32,64 @@ b, Conceptual schematic illustrating that different incidence directions excite 
 ### Spectral fingerprints arise from a low-dimensional physical manifold (Fig. 2)
 This section formalizes the "spectral fingerprint" concept. We treat the model and its linear algebra as **tools for discovery**: they allow us to ask *where* DOA information resides and *how many* dominant physical channels are effectively accessible.
 
+#### Physics model → single-point response
+Under small-amplitude dynamics, a thin plate can be described by a linear operator equation (Kirchhoff–Love theory) [@timoshenko1959plates]. In the frequency domain, one representative form is
+
+$$ 
+ \left(D_p\nabla^4 - \rho t\,\omega^2 + i\omega c_d\right) W(x,y,\omega)
+ \;=\;
+ P(x,y,\theta,\omega),
+$$ 
+
+where \(W(x,y,\omega)\) is the complex out-of-plane displacement field, \(P(x,y,\theta,\omega)\) is the effective forcing induced by an incident field from direction \(\theta\), \(D_p\) is bending stiffness, \(\rho t\) is areal mass density, and \(c_d\) is an effective damping term. A single-point LDV measurement at \((x_L,y_L)\) admits a Green’s function representation [@kress2014linear_integral_equations]
+
+$$
+W(x_L,y_L,\omega)
+\;=\;
+\iint_{\Omega}
+G\!\left((x_L,y_L),(x',y'),\omega\right)\,
+P(x',y',\theta,\omega)\,\mathrm{d}A'.
+$$
+
+We define the complex single-point response \(Y(\omega;\theta)=W(x_L,y_L,\omega)\). This linear mapping from direction to spectrum motivates an approximate separable form (modal superposition)
+
+$$ 
+ Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta),
+$$ 
+
+where \(s_m(\omega)\) captures a dispersive spectral signature and \(\alpha_m(\theta)\) captures angle-dependent coupling [@ewins2000modal; @meirovitch2001fundamentals].
+
+#### Discretization → angle response matrix
+On a discrete frequency grid \(\{\omega_f\}_{f=1}^F\), we form a real feature vector
+
+$$
+y[f] \;=\; \phi\!\left(\left|Y(\omega_f;\theta)\right|\right),
+\qquad f=1,\dots,F,
+$$
+
+where \(\phi(\cdot)\) is a fixed transform (e.g., magnitude, power, or log-power) defined in Methods (Signal Processing). For each candidate direction \(\theta_e\), we form an angle-conditioned atom \(h_e\in\mathbb{R}^F\) and stack these atoms into the angle response matrix
+
+$$
+H \;=\; [h_1,\dots,h_E] \in \mathbb{R}^{F\times E}.
+$$
+
+Given an observation \(y\), we model it as a sparse combination of candidate angles:
+
+$$
+y \approx Hx + n,
+\qquad \lVert x\rVert_0 \le K,
+$$
+
+where \(x\in\mathbb{R}^E\) is sparse over angles and \(n\) captures noise and mismatch.
+
 #### Dominant physical subspace via SVD
-Under linear dynamics, the complex single-point response \(Y(\omega;\theta)\) is governed by a Green's function, which defines a compact integral operator over the excitation field and boundary conditions [@kress2014linear_integral_equations]. Consequently, the response does not fill the entire Hilbert space but concentrates energy into a limited number of modes. We model this as a superposition of dispersive components:
+We use the Singular Value Decomposition (SVD) of \(H = U\Sigma V^\top\) to expose effective degrees of freedom [@golub2013matrix_computations]. By the Eckart–Young theorem, truncating to the leading \(r\) components gives the best rank-\(r\) approximation (in Frobenius norm), providing a principled notion of a dominant physical subspace [@eckart1936approximation]. Equivalently,
 
-$$ 
- Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta).
-$$ 
+$$
+H = \sum_{m=1}^{\min(F,E)} \sigma_m\, u_m v_m^\top.
+$$
 
-This separable spectrum–directivity form is a discrete analogue of modal superposition in linear structural dynamics [@ewins2000modal; @meirovitch2001fundamentals]. Discretizing yields the empirical response matrix \(H \approx \sum_{m=1}^{M} u_m v_m^\top\). We use the Singular Value Decomposition (SVD) of \(H = U\Sigma V^\top\) to expose these effective degrees of freedom [@golub2013matrix_computations]. By the Eckart–Young theorem, truncating to the leading \(r\) components gives the best rank-\(r\) approximation (in Frobenius norm), providing a principled notion of “dominant physical subspace” [@eckart1936approximation]. A rapidly decaying singular spectrum (Fig. 2a) indicates that only a limited number of dominant channels contribute strongly, analogous to eigenchannels in complex media [@davy2015eigenchannels].
+A rapidly decaying singular spectrum (Fig. 2a) indicates that only a limited number of dominant channels contribute strongly, analogous to eigenchannels in complex media [@davy2015eigenchannels].
 
 The leading `r=[X]` components capture `[Y]%` of the singular-value energy. We project the inverse model into this rank-\(r\) subspace: \(z = U_r^\top y\) and \(A = U_r^\top H\), reducing the problem to \(z \approx Ax\). This projection preserves the angle-indexed structure while focusing inference on the physically significant spectral channels.
 
@@ -60,15 +110,46 @@ $$
 
 This sparse-reconstruction viewpoint parallels classical sparse DOA methods that discretize a propagation manifold and solve for a sparse angular spectrum [@malioutov2005sparse_doa; @baraniuk2007compressive_sensing].
 
-We compare two solvers:
-1.  **OMP Baseline:** A greedy heuristic that iteratively selects atoms maximizing correlation with the residual [@mallat1993matching_pursuits; @pati1993omp; @tropp2007omp; @tropp2004greed]. However, OMP makes "hard" binary decisions at each step; if noise causes an incorrect atom selection early on, the error propagates irreversibly.
-2.  **Physics-Guided Unrolled Network:** We unroll \(K\) pursuit stages into a deep network [@gregor2010lista; @hershey2014deep_unfolding; @monga2021unrolling]. Critically, we replace brittle hard selection with a learnable **attention-based routing** mechanism (Fig. 3) while strictly enforcing residual consistency [@vaswani2017attention; @bahdanau2015attention; @luong2015attention].
+#### OMP baseline in the SVD-projected space
+Orthogonal matching pursuit (OMP) is a canonical greedy solver for the \(\ell_0\)-constrained least-squares problem [@tropp2007omp; @tropp2004greed]. In the projected space, OMP iterates:
+1. Initialize residual \(r_0=z\), support \(S_0=\varnothing\), and \(x_0=0\).
+2. For \(t=0,\dots,K-1\):
+   - Correlate residual with atoms: \(g_t = A^\top r_t \in \mathbb{R}^E\).
+   - Select an index \(i_t = \arg\max_e |g_t[e]|\) and update \(S_{t+1}=S_t\cup\{i_t\}\).
+   - Refit coefficients by least squares on the selected support:
+     $$
+     x_{S_{t+1}} = \arg\min_{u}\; \lVert z - A_{S_{t+1}}u\rVert_2^2.
+     $$
+   - Update the residual \(r_{t+1} = z - A x_{t+1}\).
+
+#### Neural (unrolled) OMP with attention-based routing
+OMP’s argmax selection is a fixed heuristic and can be brittle under noise and model mismatch in complex media. We therefore derive a neural solver by **unrolling** \(K\) pursuit stages into a network and replacing the discrete selection rule with learnable attention-based routing, while retaining physics-consistent residual updates [@gregor2010lista; @hershey2014deep_unfolding; @monga2021unrolling].
+
+At stage \(t\), we start from residual \(r_t\in\mathbb{R}^r\) and correlations \(g_t=A^\top r_t\in\mathbb{R}^E\). We parameterize a routing distribution over atoms via dot-product attention [@vaswani2017attention; @bahdanau2015attention; @luong2015attention]. Let a query be computed from the current state,
+
+$$
+q_t = W_q r_t \in \mathbb{R}^d,
+$$
+
+and let each atom \(a_e\in\mathbb{R}^r\) (column \(e\) of \(A\)) be embedded as a key \(k_e = W_k a_e \in \mathbb{R}^d\). The routing scores and weights are
 
 $$ 
- s_t[e] = \frac{\langle q_t, k_e\rangle}{\sqrt{d}}, \quad w_t = \mathrm{softmax}(s_t), \quad r_{t+1} = r_t - A\,\Delta x_t.
+ s_t[e] = \frac{\langle q_t, k_e\rangle}{\sqrt{d}},
+ \qquad
+ w_t = \mathrm{softmax}(s_t)\in\mathbb{R}^E.
 $$ 
 
-**Physical Interpretation.** The routing weights \(w_t\) represent a soft belief over candidate directions; residual consistency across stages resolves dispersive ambiguities without committing prematurely to a single atom.
+These weights gate a sparse update in coefficient space:
+
+$$
+\Delta x_t = \eta_t\,(w_t \odot g_t),
+\qquad
+r_{t+1} = r_t - A\,\Delta x_t,
+$$
+
+where \(\eta_t\) is a step size (learned or fixed) and \(\odot\) denotes element-wise product. After \(K\) stages, we accumulate \(x=\sum_{t=0}^{K-1}\Delta x_t\) and map coefficient mass to a DOA estimate.
+
+**Physical Interpretation.** Attention makes the OMP→unrolling link explicit: when \(w_t\) concentrates to a one-hot vector at the maximally correlated atom, the update reduces to greedy selection; residual consistency keeps the solver anchored to the SVD-compressed physical dictionary.
 
 ![](../figures/fig03_unrolled-attention-omp.jpg)
 
