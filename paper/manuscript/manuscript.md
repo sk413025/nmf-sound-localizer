@@ -1,10 +1,12 @@
 # Working title (replace)
 
 ## Abstract
-Direction-of-arrival (DOA) estimation is typically framed as an array-processing problem, requiring spatially separated sensors to measure phase and time-difference cues. Yet, in many practical settings, sensor arrays are constrained by size, placement, or harsh environments. Here we present a physics-first formulation of **single-point DOA sensing** in which a target structure acts as a *physical encoder*: incident sound couples into structure-borne vibrations through a direction-dependent superposition of dispersive modes, producing a characteristic single-point spectral signature. We translate this physical process into a mathematical physics model and show how discretization yields a transfer matrix whose singular-value structure reveals a limited effective number of dominant channels. This motivates a structured sparse inverse problem over a physical dictionary, naturally admitting greedy sparse pursuit (orthogonal matching pursuit, OMP) as a principled baseline. Building on this foundation, we derive a **physics-guided deep unrolling** network that replaces heuristic atom selection with learnable attention-based routing while retaining residual-consistency constraints. Across additive noise and architectural ablations, the resulting physics-aware model improves robustness, exhibits physically consistent selection behaviour, and generalizes across targets spanning a broad spectrum of material complexity. Critically, the empirical results support a discovery-first conclusion: **direction is physically encoded at a single point by a mechanism that persists across diverse targets**, suggesting a universal structural dispersion signature that can be interrogated and validated using sparse inference and unrolled neural solvers.
+Direction-of-arrival (DOA) estimation is typically framed as an array-processing problem, requiring spatially separated sensors to measure phase and time-difference cues. Yet, in many practical settings, sensor arrays are constrained by size, placement, or harsh environments. Here we present a physics-first formulation of **single-point DOA sensing** in which a target structure acts as a *physical encoder*: incident sound couples into structure-borne vibrations through a direction-dependent superposition of dispersive modes, producing a characteristic single-point spectral signature measurable by a single non-contact laser Doppler vibrometer (LDV) spot. We translate this physical process into a mathematical physics model and show how discretization yields a transfer matrix whose singular-value structure reveals a limited effective number of dominant channels. This motivates a structured sparse inverse problem over a physical dictionary, naturally admitting greedy sparse pursuit (orthogonal matching pursuit, OMP) as a principled baseline. Building on this foundation, we derive a **physics-guided deep unrolling** network that replaces heuristic atom selection with learnable attention-based routing while retaining residual-consistency constraints. In speech conditions, the proposed model achieves top-1 accuracy of `[X]% / [Y]% / [Z]%` at SNR = `10 / 5 / 0 dB` (mean ± s.d. over `n=[X]` trials) and maintains cross-material RMSE below `[X]°` across five everyday targets spanning a broad spectrum of physical complexity. Critically, the results support a discovery-first conclusion: **everyday objects physically encode DOA at a single point through a dispersive mechanism that persists across diverse targets**, suggesting a path toward compact DOA sensing without array microphones.
 
 ## Introduction
 Direction-of-arrival (DOA) estimation is classically solved by array processing, where spatially separated sensors capture phase and time-difference cues that can be inverted via beamforming or subspace methods [@krim1996array]. However, arrays are often impractical when the sensing footprint is constrained or when sensors must be embedded on surfaces exposed to harsh environments. Recent studies suggest that a single structural vibration measurement can nonetheless carry directional information because incident sound excites structure-borne waves whose response depends on incidence direction [@dipassio2023doa_single_sensor; @rutowski2024reverb_single_sensor].
+
+In this work, we focus on a discovery question relevant to real-world sensing: **do everyday objects intrinsically encode acoustic direction in their material-dependent dynamics, such that a single non-contact vibration measurement can decode DOA?** We use a laser Doppler vibrometer (LDV) because it enables **non-contact** readout of the vibration field and therefore avoids altering the object’s mechanical boundary conditions and mass loading. This distinction is not cosmetic: contact sensors such as piezoelectric patches or accelerometers can perturb local stiffness and damping and can smear or shift dispersive signatures, potentially distorting the very physical encoding we seek to characterize.
 
 A central open question is whether this apparent single-point “fingerprint” reflects a reproducible physical mechanism or merely target-specific idiosyncrasies. Here we treat the target structure as a *physical encoder* that transforms incident direction into a direction-dependent superposition of dispersive modes. This view suggests two falsifiable predictions: (i) the angle-to-spectrum mapping should be governed by a small number of dominant physical channels, and (ii) inference should remain stable under moderate noise and should transfer across structurally distinct targets if the underlying mechanism is universal.
 
@@ -13,7 +15,7 @@ We operationalize these predictions by translating structural dynamics into a li
 ## Results
 
 ### Physical encoding by a complex structure (Fig. 1)
-We probe the physical-encoder hypothesis using the experimental configuration shown in Fig. 1a, where an incident acoustic field excites a target structure and a laser Doppler vibrometer (LDV) measures single-point vibration. Although the resulting time-domain waveform can appear irregular due to multimodal dynamics and multiple scattering, the key observation (Fig. 1b) is that different incidence directions produce reproducible, direction-dependent **spectral fingerprints**. Starting from this observation, we hypothesize that the fingerprints arise from a dispersive, modal superposition mechanism that concentrates DOA information into a small set of dominant physical channels. We test this hypothesis by (i) deriving a minimal physical model and exposing dominant channels via SVD (Fig. 2), (ii) using sparse pursuit (OMP) and a physics-guided unrolled solver as inference probes (Fig. 3), (iii) stress-testing robustness and isolating causal components by ablation (Fig. 4), (iv) verifying mechanistic alignment by analyzing learned routing statistics (Fig. 5), and (v) falsifying target-specific explanations via cross-material evaluation (Fig. 6).
+We probe the physical-encoder hypothesis using the experimental configuration shown in Fig. 1a, where an incident acoustic field excites a target structure and a laser Doppler vibrometer (LDV) measures single-point vibration. Although the resulting time-domain waveform can appear irregular due to multimodal dynamics and multiple scattering, the key observation (Fig. 1b) is that different incidence directions produce reproducible, direction-dependent **spectral fingerprints**. Quantitatively, fingerprint stability is reflected by high within-angle similarity `[X]±[Y]` and substantially lower between-angle similarity `[X]±[Y]` on the same feature representation (Methods; Evaluation and statistics). Starting from this observation, we hypothesize that the fingerprints arise from a dispersive, modal superposition mechanism that concentrates DOA information into a small set of dominant physical channels. We test this hypothesis by (i) deriving a minimal physical model and exposing dominant channels via SVD (Fig. 2), (ii) using sparse pursuit (OMP) and a physics-guided unrolled solver as inference probes (Fig. 3), (iii) stress-testing robustness and isolating causal components by ablation (Fig. 4), (iv) verifying mechanistic alignment by analyzing learned routing statistics (Fig. 5), and (v) falsifying target-specific explanations via cross-material evaluation (Fig. 6).
 
 ![](../figures/fig01_paradigm-shift.jpg)
 
@@ -109,6 +111,8 @@ where \(u_m\) and \(v_m\) are columns of \(U\) and \(V\), respectively. In our s
 
 **Interpretation (what SVD reveals and predicts).** In this work, the SVD is not merely a mathematical convenience: it provides a direct diagnostic of the physical encoder’s effective degrees of freedom. If the singular spectrum decays rapidly (as in Fig. 2a), then (i) DOA-relevant variability should live largely in a low-dimensional subspace, and (ii) inference should be feasible and relatively stable when restricted to that dominant subspace. This motivates the projected formulation below and sets up robustness tests (Fig. 4) and generalization tests (Fig. 6).
 
+In our measurements, the leading `r=[X]` components capture `[Y]%` of the singular-value energy and define the dominant spectral channels used throughout the subsequent sparse inference and unrolled models.
+
 To make the SVD link operational for inference, we project the inverse model into the rank-\(r\) left-singular subspace. Let \(U_r\in\mathbb{R}^{F\times r}\) contain the first \(r\) columns of \(U\) (chosen by an energy criterion described in Methods (Dictionary construction)). Define
 
 $$
@@ -146,7 +150,7 @@ $$
 
 where \(A\in\mathbb{R}^{r\times E}\) is the SVD-projected dictionary, \(z\in\mathbb{R}^r\) is the projected observation, and \(x\in\mathbb{R}^E\) is a sparse coefficient vector over candidate angles. In the single-source case (\(K=1\)), a natural estimate is \(\hat{\theta}=\theta_{\arg\max_e x[e]}\).
 
-In this basis, \(x\) selects a small set of angle-indexed atoms whose coupling patterns explain the observed dominant spectral-channel content.
+In this basis, \(x\) selects a small set of angle-indexed atoms whose coupling patterns explain the observed dominant spectral-channel content. Unless otherwise stated, we use a pursuit budget of \(K=[X]\) stages/atoms for both analytical OMP and the unrolled network.
 
 #### OMP baseline in the SVD-projected space
 Orthogonal matching pursuit (OMP) is a canonical greedy solver for the \(\ell_0\)-constrained least-squares problem [@tropp2007omp]. Written in the projected space, OMP iterates:
@@ -200,7 +204,9 @@ where \(\eta_t\) is a step size (learned or fixed) and \(\odot\) denotes element
 At stage \(t\), the residual \(r_t\) is correlated with the (projected) physics dictionary \(A\) to form a physical match \(g=A^\top r_t\); a transformer encoder outputs attention weights that gate sparse updates \(\Delta x\), followed by residual update \(r_{t+1}=r_t-A\Delta x\). Unrolling across stages accumulates a sparse vector \(x_T\), which is mapped to the final DOA estimate \(\hat{\theta}\).
 
 ### Robustness under additive noise and architectural ablations (Fig. 4)
-We next treat robustness as a hypothesis test. If DOA information is concentrated in dominant physical channels and inference respects residual-consistent structure, then performance should degrade gracefully under additive noise; if not, performance should collapse and ablations should show no consistent mechanism. We therefore evaluate under additive white noise and isolate the impact of architectural components. Figure 4a reports top-1 validation accuracy at SNR levels of 10 dB, 5 dB, and 0 dB, comparing the full physics-aware model against a no-transformer variant and a fixed heuristic baseline; points denote independent trials and horizontal bars denote means across \(n=5\) trials (two-sided t-test, ***\(P<0.001\)). Figure 4b further ablates components, contrasting physics-aware sparse routing with dense routing and fixed heuristics.
+We next treat robustness as a hypothesis test. If DOA information is concentrated in dominant physical channels and inference respects residual-consistent structure, then performance should degrade gracefully under additive noise; if not, performance should collapse and ablations should show no consistent mechanism. We therefore evaluate under additive white noise and isolate the impact of architectural components. Figure 4a reports top-1 validation accuracy at SNR levels of 10 dB, 5 dB, and 0 dB, comparing the full physics-aware model against a no-transformer variant and a fixed heuristic baseline; points denote independent trials and horizontal bars denote means across \(n=[X]\) trials (two-sided t-test, ***\(P<0.001\)). Figure 4b further ablates components, contrasting physics-aware sparse routing with dense routing and fixed heuristics.
+
+Across SNR = `10 / 5 / 0 dB`, the full model achieves `[X] / [Y] / [Z]%` accuracy, compared to the no-transformer variant (`[X] / [Y] / [Z]%`) and a fixed heuristic baseline (`[X] / [Y] / [Z]%`). Replacing sparse, physics-aware routing with dense routing reduces accuracy by `[X]` points at `0 dB`, indicating that both channelization (Fig. 2) and structured sparse selection (Fig. 3) contribute to noise robustness.
 
 Full dataset, split protocol, and statistical reporting are described in Methods (Experimental setup; Evaluation and statistics).
 
@@ -215,6 +221,8 @@ Nature Communications-style claims require mechanistic support beyond accuracy. 
 
 The physical manifold index and off-diagonal mass metrics are defined in Methods (Evaluation and statistics).
 
+Quantitatively, the learned routing reduces off-diagonal selection mass from `[X]` (analytical OMP) to `[Y]` (physics-aware AI) and increases diagonal concentration/sharpness by a factor of `[X]` across all angles, consistent with the interpretation that the network learns a physically aligned selection policy rather than exploiting spurious correlations.
+
 ![](../figures/fig05_routing-mechanism-analysis.png)
 
 **Fig. 5 | Deciphering model behaviour across scales: attention structure, micro-mechanism and macro-robustness.**
@@ -226,6 +234,8 @@ c, Selection-probability statistics across all angles showing off-diagonal error
 We now test the central scientific claim: **is the single-point DOA encoding target-specific, or does it reflect a universal physical mechanism?** A physics-first hypothesis predicts that dispersion-driven signatures should persist across targets, while purely target-specific explanations would not transfer. Figure 6 evaluates this hypothesis across targets spanning a broad spectrum of material and geometric complexity: an acrylic plate, a paper cup, a wooden board, a cardboard box, and a laptop shell (Fig. 6a). Despite differing damping and internal structure, representative heatmaps exhibit shared dispersion-signature structure (Fig. 6b). Quantitatively, physics-aware inference maintains low DOA estimation error across materials, while analytical OMP degrades substantially as complexity increases (Fig. 6c). Together, these results support the interpretation that the encoding arises from a common dispersive mechanism rather than idiosyncratic features of a single target.
 
 Per-material sample sizes and the RMSE computation protocol are reported in Methods (Evaluation and statistics).
+
+Across acrylic / paper / wood / cardboard / laptop targets, the physics-aware model achieves RMSE of `[X]/[Y]/[Z]/[X]/[Y]°` (n=`[X]` per material), whereas analytical OMP increases to `[X]/[Y]/[Z]/[X]/[Y]°`, consistent with failure under increasing physical complexity and stable performance when routing remains physics-aligned.
 
 ![](../figures/fig06_cross-material-universality.jpg)
 
@@ -248,10 +258,21 @@ The framework assumes a discrete set of candidate angles and a time window over 
 
 ## Methods
 ### Experimental setup
-TBD: Describe the acoustic source, target geometry, LDV measurement point(s), mounting/boundary conditions, sampling rate, and calibration procedure.
+Experiments were conducted in `[X]` (e.g., a quiet room / anechoic chamber) with a single loudspeaker source positioned at a fixed radius of `[X] m` from the target. The source direction was discretized to an angle grid \(\{\theta_e\}_{e=1}^E\) with step size of `[X]°` (total \(E=[X]\) directions), referenced to a fixed object coordinate frame (Methods; Evaluation and statistics).
+
+We measured out-of-plane structural vibration using a non-contact laser Doppler vibrometer (LDV; `[manufacturer/model]`), targeting a single fixed point \((x_L,y_L)\) on each object. Non-contact LDV readout avoids sensor loading that can perturb the encoder itself: attaching a contact sensor can change local mass and damping and modify boundary conditions, potentially shifting or smearing the dispersive signatures used for encoding. To mitigate speckle and surface reflectivity issues, we used `[reflective tape / surface preparation]` and verified stable LDV signal quality before each run.
+
+For each angle, we played `[stimulus type: white noise / speech / chirp]` for `[X] s` at a calibrated level of `[X] dB SPL` (measured at `[X]`), and recorded the LDV velocity signal at sampling rate \(f_s=\)[X] Hz with `[X]`-bit resolution. Each condition was repeated for `[X]` trials per angle (randomizing playback seeds where applicable). Targets spanned five everyday objects/material configurations (acrylic plate, paper cup, wooden board, cardboard box, laptop shell), mounted with `[mounting condition: free / clamped / foam support]` to ensure repeatable boundary conditions across trials.
 
 ### Signal representation
-TBD: Define the time–frequency representation used for the single-point response \(Y(\omega;\theta)\) and the real-valued feature vector \(y\) (e.g., STFT parameters, window/hop, frequency band selection, and whether \(y\) uses magnitude, power, or log-power with normalization).
+Let \(v(t)\) denote the LDV-measured velocity at \((x_L,y_L)\). We compute a short-time Fourier transform (STFT) with a `[Hann]` window of length `[X]` samples (`[X] ms`), hop `[X]` samples, and FFT size `[X]`. For each trial and angle, we extract a single-point spectrum \(Y(\omega_f;\theta)\) by aggregating STFT magnitudes over time frames (e.g., mean power across frames). The real-valued feature vector \(y\in\mathbb{R}^{F}\) is then defined as
+
+$$
+y[f] = \phi\!\left(\left|Y(\omega_f;\theta)\right|\right),
+\qquad f=1,\dots,F,
+$$
+
+with \(\phi(\cdot)\) chosen as `[magnitude / power / log-power]` and normalized by `[per-frequency z-score / global scaling / none]`. Unless otherwise stated, we restrict the feature band to `[X]–[Y] Hz` and set \(F=[X]\) frequency bins after masking.
 
 ### Notation and dimensions
 We define a fixed set of candidate angles \(\{\theta_e\}_{e=1}^E\) and a fixed frequency grid \(\{\omega_f\}_{f=1}^F\). The underlying response \(Y(\omega;\theta)\) is complex-valued, but we build real-valued magnitude/power features for inference.
@@ -272,36 +293,62 @@ We define a fixed set of candidate angles \(\{\theta_e\}_{e=1}^E\) and a fixed f
 ### Dictionary construction
 We construct an angle-indexed response matrix \(H=[h_1,\dots,h_E]\in\mathbb{R}^{F\times E}\), where each column \(h_e\) is the feature vector extracted from the single-point response at candidate angle \(\theta_e\). This matrix serves as the core physics dictionary over angles (denoted \(D\) in Fig. 2c). For inference, we optionally project to the dominant SVD subspace: compute \(H=U\Sigma V^\top\), choose rank \(r\), and form \(A=U_r^\top H\) and \(z=U_r^\top y\).
 
-Rank \(r\) is selected by retaining the smallest \(r\) that captures a fixed fraction of the singular-value energy (e.g., cumulative \(\sum_{i=1}^r\sigma_i^2\) over \(\sum_i\sigma_i^2\)); **TBD:** specify the retained-energy threshold and any validation protocol used to set it.
+For each \(\theta_e\), we compute \(h_e\) as the `[mean/median]` feature across `[X]` trials/clips at that angle, with the same preprocessing used at inference time. Rank \(r\) is selected by retaining the smallest \(r\) that captures a fixed fraction of the singular-value energy, set to `[X]%` unless otherwise stated:
 
-TBD: Provide the exact construction recipe for \(H\) used in the experiments (angle grid, normalization, and any extensions beyond one atom per angle).
+$$
+\frac{\sum_{i=1}^r\sigma_i^2}{\sum_{i}\sigma_i^2} \ge [X]\%.
+$$
+
+We use one atom per angle (one column per \(\theta_e\)). Extensions that expand the atom index (e.g., mode–angle dictionaries) are left for future work.
 
 ### Sparse inference baseline (OMP)
 OMP greedily approximates the sparse inverse problem by iteratively selecting atoms with large correlation to the residual and refitting coefficients over the selected support [@tropp2007omp]. In our formulation, OMP is applied to the projected model \(z\approx Ax\) (or directly to \(y\approx Hx\) if no projection is used), with correlations \(g_t = A^\top r_t\) (or \(H^\top r_t\)).
 
-TBD: Specify whether OMP runs on \((A,z)\) or \((H,y)\), the selection score (e.g., absolute correlation), the least-squares refit method, and any stopping criteria beyond fixed \(K\).
+Unless otherwise stated, we run OMP on the projected pair \((A,z)\). At each stage, we select the atom index maximizing absolute correlation, \(i_t=\arg\max_e |g_t[e]|\), refit coefficients by least squares on the selected support using `[QR / pseudoinverse]`, and stop after \(K=[X]\) selections. The final DOA estimate is \(\hat{\theta}=\theta_{\arg\max_e x[e]}\) for the single-source setting.
 
 ### Physics-guided unrolled network
 We unroll \(K\) pursuit stages into a feed-forward network, keeping the residual-consistency update and the fixed dictionary (\(A\) in the projected space), while learning a data-driven routing rule over atoms [@monga2021unrolling]. A transformer module parameterizes attention-like routing conditioned on the current residual state, producing gating weights \(w_t\) over atoms that modulate updates \(\Delta x_t\) (e.g., \(\Delta x_t=\eta_t (w_t\odot g_t)\)) [@vaswani2017attention].
 
-TBD: Specify the number of stages, the routing parameterization (query/key definitions and any hard top-\(K\) mechanism), the loss terms, and the training protocol (optimizer, learning rate, epochs, seeds).
+We use \(K=[X]\) unrolled stages, embedding dimension \(d=[X]\), `[X]` transformer layers, and `[X]` attention heads. Training minimizes `[cross-entropy over angles / MSE over DOA / hybrid loss]` with optimizer `[Adam/AdamW]`, learning rate `[X]`, batch size `[X]`, and `[X]` epochs. All runs report random seeds (`[X]`) and use early stopping on validation accuracy with patience `[X]`.
 
 ### Evaluation and statistics
 We report top-1 accuracy for classification-style DOA estimation and angular RMSE (degrees) where appropriate. Unless stated otherwise, results aggregate \(n\) independent trials with different random seeds; point estimates and summary statistics are reported as in Figs. 4–6.
 
-TBD (reporting checklist): (i) angle grid and split protocol (train/validation/test) with clips per angle and per-material sample sizes, (ii) additive-noise protocol and SNR definition, (iii) physical manifold index used for routing analyses and the definition of off-diagonal mass, (iv) RMSE computation including wrap-around handling, and (v) statistical testing (including multiple-comparison handling if applicable).
+**Splits and trials.** We use a `[train/validation/test]` split of `[X]/[Y]/[Z]%` at the clip level, stratified by angle. For cross-material evaluation, we train on `[X]` materials and test on `[X]` held-out materials (or train/test within each material as specified per experiment). Each reported point aggregates `n=[X]` independent trials (`[seed / re-sampling / repeated recordings]`).
+
+**Additive noise.** For robustness experiments, we add zero-mean white noise in the time domain to achieve target SNR in dB, defined as
+
+$$
+\mathrm{SNR} = 10\log_{10}\frac{\mathbb{E}[v(t)^2]}{\mathbb{E}[\epsilon(t)^2]}.
+$$
+
+We report results at SNR = `10 / 5 / 0 dB`.
+
+**Metrics.** Top-1 accuracy is computed on the discrete angle grid. Angular RMSE is computed in degrees with wrap-around handling:
+
+$$
+\Delta(\theta,\hat\theta)=\mathrm{wrap}_{[-180^\circ,180^\circ)}(\hat\theta-\theta),
+\qquad
+\mathrm{RMSE} = \sqrt{\mathbb{E}[\Delta(\theta,\hat\theta)^2]}.
+$$
+
+**Fingerprint similarity (Fig. 1).** Within-angle and between-angle similarity are computed as `[cosine similarity / Pearson correlation]` between normalized feature vectors \(y\) (or projected vectors \(z\)), aggregated across trials.
+
+**Routing interpretability (Fig. 5).** We define a physical manifold index by ordering atoms by angle (and, if applicable, by mode–angle index). Off-diagonal mass is computed as the fraction of routing probability outside a `[±X]`-index band around the ground-truth diagonal in the selection-probability map. Diagonal sharpness is summarized by `[peak-to-mean ratio / entropy]` of \(w_t\) aggregated across stages and samples.
+
+**Statistics.** Statistical significance is assessed using two-sided t-tests across independent trials; multiple-comparison corrections are applied where appropriate (`[method]`).
 
 ## Data availability
-TBD: Provide access conditions/links for datasets, or a statement describing restrictions if applicable.
+All data required to reproduce the figures will be made available at `[repository / DOI / link]` upon publication. Access to raw recordings is `[open / restricted]` due to `[X]`.
 
 ## Code availability
-TBD: Provide access conditions/links for code and trained models, or a statement describing restrictions if applicable.
+Code to reproduce the experiments and figure generation will be made available at `[GitHub link]` upon publication, including trained model checkpoints and scripts to rebuild the physical dictionaries.
 
 ## Acknowledgements
-TBD.
+This work was supported by `[X]`.
 
 ## Author contributions
-TBD.
+`[X]` conceived the study. `[X]` performed experiments. `[X]` developed models and analysis. All authors wrote and revised the manuscript.
 
 ## Competing interests
 The authors declare no competing interests.
