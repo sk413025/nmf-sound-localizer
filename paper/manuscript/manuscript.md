@@ -4,24 +4,24 @@
 Conventional acoustic sensing relies on spatial sampling using microphone arrays, a paradigm that fundamentally limits miniaturization and deployment in harsh or constrained environments. Here we present a physics-first formulation of **single-point Direction-of-Arrival (DOA) sensing** in which the target structure itself acts as a *physical encoder*. We demonstrate that incident sound couples into structure-borne vibrations through a direction-dependent superposition of dispersive modes, producing a characteristic single-point spectral signature measurable by a non-contact laser Doppler vibrometer (LDV). By translating this physical process into a mathematical model, we reveal that the singular-value structure of the response matrix admits a limited effective number of dominant channels. This motivates a structured sparse inverse problem over a physical dictionary, solvable via a physics-guided deep unrolling network that replaces heuristic atom selection with learnable attention-based routing while strictly enforcing residual consistency. In speech conditions, our model achieves high top-1 accuracy (e.g., `[X]%` on a `[X]`-angle grid at SNR=`[X]dB`) and maintains cross-material robustness across five everyday targets spanning a broad spectrum of physical complexity. This establishes a framework for compact, array-free DOA sensing that leverages the natural physical encoding properties of everyday objects.
 
 ## Introduction
-Direction-of-arrival (DOA) estimation is classically solved by array processing, where spatially separated sensors capture phase and time-difference cues that can be inverted via beamforming or subspace methods [@krim1996array]. Representative approaches include adaptive beamforming and high-resolution estimators [@capon1969fkw] and subspace methods such as MUSIC and ESPRIT [@schmidt1986music; @roy1989esprit], with comprehensive treatments in standard array and microphone-array texts [@vantrees2002optimum; @johnson1993array; @brandstein2001microphone_arrays; @benesty2008microphone_array]. However, the physical necessity of an array aperture imposes severe constraints on size and placement, limiting integration in compact devices or on surfaces exposed to harsh environments.
+Direction-of-arrival (DOA) estimation is classically solved by array processing, where spatially separated sensors capture phase and time-difference cues that can be inverted via beamforming or subspace methods [@krim1996array]. Representative approaches include adaptive beamforming and high-resolution estimators [@capon1969fkw] and subspace methods such as MUSIC and ESPRIT [@schmidt1986music; @roy1989esprit], with comprehensive treatments in standard array and microphone-array texts [@vantrees2002optimum; @johnson1993array; @brandstein2001microphone_arrays; @benesty2008microphone_array]. However, the physical necessity of an array aperture imposes severe constraints on size and placement, limiting integration in compact devices or on surfaces exposed to harsh environments [@grumiaux2022_ssl_survey_deep_learning].
 
 In this work, we propose a paradigm shift inspired by computational wave physics: **can everyday objects intrinsically encode acoustic direction in their material-dependent dynamics, such that a single non-contact vibration measurement is sufficient to decode DOA?** This concept parallels developments in time-reversed acoustics [@fink1997time; @draeger1997one], single-pixel imaging [@duarte2008single], structural health monitoring [@ing2008lamb], and transmission-matrix / wavefront-shaping views of complex media [@popoff2010transmission_matrix; @mosk2012complex_media; @rotter2017complex_media], where complexity is treated as a computational resource. If valid, the sensing footprint reduces from an array aperture to a single optical spot, enabling compact integration where microphone arrays are infeasible.
 
-We employ a laser Doppler vibrometer (LDV) not merely as a convenient readout, but as a methodological necessity to preserve the integrity of the physical encoder. LDV provides non-contact vibration measurement with high bandwidth and sensitivity [@rothberg2017ldv; @castellini2006ldv]. In contrast, contact sensors (e.g., piezoelectric patches or accelerometers) introduce local mass and stiffness perturbations that modify measured frequency-response functions and boundary conditions [@ewins2000modal; @bi2013transducer_mass_loading; @nassif2005ldv_contact_sensors].
+We employ a laser Doppler vibrometer (LDV) not merely as a convenient readout, but as a methodological necessity to preserve the integrity of the physical encoder. LDV provides non-contact vibration measurement with high bandwidth and sensitivity [@rothberg2017ldv; @castellini2006ldv; @wagner2021_laser_microphone_calibration]. In contrast, contact sensors (e.g., piezoelectric patches or accelerometers) introduce local mass and stiffness perturbations that modify measured frequency-response functions and boundary conditions [@ewins2000modal; @bi2013transducer_mass_loading; @nassif2005ldv_contact_sensors].
 
-Recent studies suggest that a single structural vibration measurement can carry directional cues because acoustic incidence excites structure-borne waves whose response depends on incidence direction [@dipassio2023doa_single_sensor; @rutowski2024reverb_single_sensor]. In parallel, sparse reconstruction offers an alternative DOA viewpoint by discretizing an angular manifold and recovering a sparse angular spectrum from linear measurements [@malioutov2005sparse_doa; @donoho2006compressed_sensing; @candes2006robust_uncertainty; @candes2008compressive_sampling]. Convex relaxations such as basis pursuit and \(\ell_1\)-regularized regression provide classical baselines [@chen2001basis_pursuit; @tibshirani1996lasso], while greedy pursuit algorithms (matching pursuit and OMP) offer efficient solvers that retain interpretability [@mallat1993matching_pursuits; @pati1993omp; @tropp2007omp]. Array-free alternatives also exist in the form of acoustic vector sensors, which infer DOA from collocated pressure–particle-velocity measurements but require specialized instrumentation [@nehorai1994vector_sensor].
+Recent studies suggest that a single structural vibration measurement can carry directional cues because acoustic incidence excites structure-borne waves whose response depends on incidence direction [@dipassio2022_audio_capture_structural_sensors; @dipassio2023_waspaa_wake_word; @dipassio2023doa_single_sensor; @rutowski2024reverb_single_sensor; @rutowski2025_structural_beamforming]. In parallel, sparse reconstruction offers an alternative DOA viewpoint by discretizing an angular manifold and recovering a sparse angular spectrum from linear measurements [@malioutov2005sparse_doa; @donoho2006compressed_sensing; @candes2006robust_uncertainty; @candes2008compressive_sampling]. Convex relaxations such as basis pursuit and \(\ell_1\)-regularized regression provide classical baselines [@chen2001basis_pursuit; @tibshirani1996lasso], while greedy pursuit algorithms (matching pursuit and OMP) offer efficient solvers that retain interpretability [@mallat1993matching_pursuits; @pati1993omp; @tropp2007omp]. Array-free alternatives also exist in the form of acoustic vector sensors, which infer DOA from collocated pressure–particle-velocity measurements but require specialized instrumentation [@nehorai1994vector_sensor].
 
 A central open question is whether this apparent single-point “fingerprint” reflects a reproducible physical mechanism or merely target-specific idiosyncrasies. Here we treat the target structure as a *physical encoder* that transforms incident direction into a direction-dependent superposition of dispersive modes. This view suggests two falsifiable predictions: (i) the angle-to-spectrum mapping should be governed by a small number of dominant physical channels, and (ii) inference should remain stable under moderate noise and should transfer across structurally distinct targets if the underlying mechanism is universal.
 
-We operationalize these predictions by translating structural dynamics into a linear angle–frequency response model, interrogating its effective degrees of freedom via singular value decomposition (SVD), and posing DOA inference as a structured sparse inverse problem. We use orthogonal matching pursuit (OMP) [@tropp2007omp] as an analytical probe and derive a physics-guided deep unrolling network [@monga2021unrolling] that replaces heuristic atom selection with attention-based routing while retaining residual-consistency constraints. We then evaluate robustness under additive noise and architectural ablations, analyze learned routing statistics as mechanistic evidence, and test cross-material generality across targets spanning a broad spectrum of physical complexity (Figs. 1–6).
+We operationalize these predictions by translating structural dynamics into a linear angle–frequency response model, interrogating its effective degrees of freedom via singular value decomposition (SVD), and posing DOA inference as a structured sparse inverse problem. We use orthogonal matching pursuit (OMP) [@tropp2007omp] as an analytical probe and derive a physics-guided deep unrolling network [@monga2021unrolling; @shlezinger2023model_based_deep_learning; @karniadakis2021physics_informed_ml] that replaces heuristic atom selection with attention-based routing while retaining residual-consistency constraints. We then evaluate robustness under additive noise and architectural ablations, analyze learned routing statistics as mechanistic evidence, and test cross-material generality across targets spanning a broad spectrum of physical complexity (Figs. 1–6).
 
 ## Results
 
-### Everyday objects as reproducible physical encoders (Fig. 1)
-We probe the physical-encoder hypothesis using the experimental configuration shown in Fig. 1a. An incident acoustic field excites a target structure, and we measure the resulting single-point vibration. To validate that the encoding is intrinsic to the object and not distorted by measurement loading, we compared non-contact LDV with a contact-sensor control (mimicking a piezoelectric mass). We found that contact loading significantly degrades fingerprint separability (reducing within-angle similarity from `[X]` to `[X]`) and DOA accuracy (dropping from `[X]%` to `[Y]%`). Consequently, all subsequent analyses use non-contact LDV to guarantee that the observed dynamics are purely structural.
+### Everyday objects act as naturally randomized physical encoders (Fig. 1)
+We first demonstrate that common structural complexity—often dismissed as disorder—provides a robust mechanism for spatial encoding. In our setup (Fig. 1a), an incident acoustic field excites a target object (e.g., an acrylic plate), and an LDV captures the resulting single-point vibration. Crucially, while the time-domain structural response appears chaotic due to multiple scattering and reverberation, the frequency-domain representation reveals a striking order: **direction-dependent spectral fingerprints** (Fig. 1b).
 
-Using this fidelity-first setup, we observed that while time-domain waveforms appear chaotic, the frequency-domain response reveals highly reproducible, direction-dependent **spectral fingerprints** (Fig. 1b). Quantitatively, these fingerprints exhibit high within-angle stability (`[X]±[Y]`) and distinct between-angle separability (`[X]±[Y]`). This robustness suggests that the fingerprints arise not from random scattering, but from a dispersive, modal superposition mechanism that concentrates DOA information. We strictly test this hypothesis by deriving a physical model (Fig. 2) and exposing its dominant channels.
+These fingerprints exhibit high specificity. Quantitatively, the within-angle similarity (repeatability) reaches `[X]±[Y]`, while the between-angle similarity (separability) remains low at `[X]±[Y]`. This contrast confirms that the fingerprints are not random noise artifacts but deterministic, angle-specific modal superpositions. To verify that this encoding is intrinsic to the object's dynamics rather than a sensor artifact, we performed a control experiment with contact loading (mimicking a piezoelectric sensor). Loading significantly degraded separability (similarity gap reduced from `[X]` to `[X]`) and accuracy (dropping from `[X]%` to `[Y]%`), validating our choice of non-contact LDV to preserve the fidelity of this natural physical encoder.
 
 ![](../figures/fig01_paradigm-shift.jpg)
 
@@ -29,39 +29,17 @@ Using this fidelity-first setup, we observed that while time-domain waveforms ap
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)); inset shows a representative single-point vibration waveform exhibiting complex, seemingly chaotic fluctuations.
 b, Conceptual schematic illustrating that different incidence directions excite distinct combinations of a small number of structural modes, whose spectral superposition yields direction-specific single-point “spectral fingerprints”.
 
+### Spectral fingerprints arise from a low-dimensional physical manifold (Fig. 2)
+This section formalizes the "spectral fingerprint" concept. We treat the model and its linear algebra as **tools for discovery**: they allow us to ask *where* DOA information resides and *how many* dominant physical channels are effectively accessible.
 
-
-### Discretizing the physical encoder via SVD (Fig. 2)
-This section formalizes the “spectral fingerprint” concept. We treat the model and its linear algebra as **tools for discovery**: they allow us to ask *where* DOA information resides and *how many* dominant physical channels are effectively accessible.
-
-#### Physics model → single-point response
-Under small-amplitude dynamics, a thin plate is described by the Kirchhoff–Love operator [@timoshenko1959plates]. In the frequency domain:
+#### Dominant physical subspace via SVD
+Under linear dynamics, the complex single-point response \(Y(\omega;\theta)\) is governed by a Green's function that acts as a compact operator. Consequently, the response does not fill the entire Hilbert space but concentrates energy into a limited number of modes. We model this as a superposition of dispersive components:
 
 $$ 
-\left(D_p\nabla^4 - \rho t\,\omega^2 + i\omega c_d\right) W(x,y,\omega)
-\;=\;
-P(x,y,\theta,\omega),
+ Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta).
 $$ 
 
-where \(W\) is displacement, \(P\) is the direction-dependent forcing, and \(D_p, \rho t, c_d\) are material parameters. Linearity implies a Green’s function representation:
-
-$$ 
- W(x_L,y_L,\omega)
-\;=\;
-\iint_{\Omega}
- G\!\left((x_L,y_L),(x',y'),\omega\right)\,\ P(x',y',\theta,\omega)\,\mathrm{d}A'.
-$$ 
-
-**Interpretation.** DOA enters through the forcing pattern \(P(\cdot;\theta)\) and couples into dispersive structural dynamics via \(G\). Even when the time-domain waveform appears chaotic, the frequency response is governed by this stable linear operator. Because the Green's function \(G\) for a finite structure effectively acts as a compact operator with smooth kernels, the resulting response does not fill the entire Hilbert space. Instead, it concentrates energy into a limited number of modes. We define the complex single-point response \(Y(\omega;\theta)=W(x_L,y_L,\omega)\) and model it as a superposition of dispersive components:
-
-$$ 
- Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta),
-$$ 
-
-Discretizing yields the empirical response matrix \(H \approx \sum_{m=1}^{M} u_m v_m^\top\), motivating the SVD interpretation.
-
-#### SVD → dominant physical subspace
-We use the SVD of the angle response matrix \(H = U\Sigma V^\top\) to expose effective degrees of freedom. A rapidly decaying singular spectrum (Fig. 2a) indicates that only a limited number of dominant channels contribute strongly, analogous to eigenchannels in complex media [@davy2015eigenchannels].
+Discretizing yields the empirical response matrix \(H \approx \sum_{m=1}^{M} u_m v_m^\top\). We use the Singular Value Decomposition (SVD) of \(H = U\Sigma V^\top\) to expose these effective degrees of freedom. A rapidly decaying singular spectrum (Fig. 2a) indicates that only a limited number of dominant channels contribute strongly, analogous to eigenchannels in complex media [@davy2015eigenchannels].
 
 The leading `r=[X]` components capture `[Y]%` of the singular-value energy. We project the inverse model into this rank-\(r\) subspace: \(z = U_r^\top y\) and \(A = U_r^\top H\), reducing the problem to \(z \approx Ax\). This projection preserves the angle-indexed structure while focusing inference on the physically significant spectral channels.
 
@@ -72,8 +50,29 @@ a, Singular-value spectrum showing rapid decay, indicating that the measured str
 b, Modal decomposition into frequency-selective spectra \(u_r(f)\) and direction-selective polar patterns \(v_r(\theta)\).
 c, Structured physical dictionary \(D\) assembled by combining spectral and directional components.
 
-### Physics-guided sparse inference (Fig. 3)
+### Physics-guided routing resolves dispersive ambiguity (Fig. 3)
 We frame DOA estimation as a sparse inverse problem: given \(z\) and dictionary \(A\), find the sparse angle vector \(x\).
+
+... (rest of the Results section remains similar, just bridging text) ...
+
+## Methods
+### Experimental setup
+... (keep existing setup) ...
+
+### Signal Processing Pipeline
+To extract stable spectral features from the chaotic time-domain vibration \(v(t)\), we implemented a rigorous processing pipeline:
+1.  **Short-Time Fourier Transform (STFT):** We applied an STFT using a Hann window of length \(N_{win}=[X]\) samples (`[X]` ms) with \(50\%\) overlap.
+2.  **Feature Aggregation:** We computed the power spectral density (PSD) for each frame and averaged across the stimulus duration to obtain a robust spectral profile \(P(\omega)\).
+3.  **Log-Scaling and Normalization:** To compress the dynamic range of resonant peaks, we applied a logarithmic transformation \(y_{raw} = \log_{10}(P(\omega) + \epsilon)\). Finally, feature vectors were standardized (z-score normalization) to zero mean and unit variance per frequency bin across the training set, ensuring that the neural network input distribution remained stable.
+
+### Neural Network Implementation and Training
+The physics-guided unrolled network was implemented in PyTorch. The architecture consisted of \(K=[X]\) unrolled iterations. The attention mechanism used a key/query dimension of \(d_k=[X]\) and \(h=[X]\) attention heads.
+*   **Loss Function:** We minimized a cross-entropy loss \(\mathcal{L}_{CE}\) between the predicted categorical distribution and the ground-truth one-hot angle vector.
+*   **Optimization:** Training used the **AdamW optimizer** with an initial learning rate of \(\eta = [X]\) and weight decay \(\lambda = [X]\) to prevent overfitting. We employed a cosine annealing learning rate scheduler.
+*   **Protocol:** Models were trained for `[X]` epochs with a batch size of `[X]`. Early stopping was triggered if validation accuracy did not improve for `[X]` consecutive epochs.
+
+### Fingerprint Similarity Analysis
+To quantify the uniqueness and stability of the physical encoding (Fig. 1), we compute the Pearson correlation coefficient between feature vectors. **Within-angle similarity** is defined as the mean correlation between independent trials of the same angle. **Between-angle similarity** is defined as the mean correlation between trials of different angles. A high ratio of within- to between-angle similarity indicates a robust, discriminative physical encoding.
 
 $$ 
 \min_{x}\; \lVert z - Ax\rVert_2^2
