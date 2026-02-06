@@ -175,8 +175,16 @@ Agent guidance:
 - **Working-memory budget:** Acronym/symbol throttling prevents working-memory overload before the claim lands; the take-home sentence enforces the “So what?” interpretation and reduces unanchored detail dumps.
 - **Citation freshness (positioning):** For “positioning relative to prior work/paradigms”, include at least one recent (≤5 years) citation per paradigm (prefer surveys or representative recent papers). Use classic/older references only when they define a concept or theorem that cannot be attributed to a modern source.
 - **No citation padding:** Do not add references that are not directly used to support a sentence-level claim. If a citation does not change the reader’s belief or provide essential context, omit it.
+- **No notation tables / symbol glossaries in main text:** Do not add “Notation” tables to list symbols. Instead, define each symbol inline at first use with a brief physical meaning clause (bridge sentence), and keep symbol fan-out within the paragraph budget.
 - **No parameter tables in main text:** Avoid large tables that enumerate acquisition / signal-processing / training hyperparameters. Prefer short “Key parameters” prose paragraphs per pipeline stage, and defer exhaustive lists to Supplementary Information or released configs in the code repository.
 - **Avoid configuration bullet lists:** Do not use bullet lists to enumerate loss/optimizer/protocol or other hyperparameters in the main manuscript. Use one compact sentence/paragraph and point to released configs for full detail.
+- **Avoid metric sentence-trains:** Do not write 5–10 consecutive “The X is …” sentences to report metrics. Use **interpretation first**, then bundle metrics in one parenthetical, then end with a take-home anchor **(Fig. …; Methods)**.
+
+**Rewrite templates (copy/paste)**
+- **Claim → Mechanism → Evidence:** “We observed that … . We interpret this as … because … . This implies … (Fig. …; Methods: …).”
+- **Math → Meaning → Why now:** “$$ … $$ Physically, … . We introduce this to explain … under the assumption … (Fig. …).”
+- **Numbers (low load):** “Interpretation sentence. (n = …; metric1 = …; metric2 = …; see Methods.) Take-home claim (Fig. …).”
+- **Symbol bridge (required):** “Here, \(X\) denotes … . We introduce \(X\) because … . This step assumes … .”
 
 **1. Introduction: The "Paradigm Shift" Funnel**
 - **The Hook (Broad Context):** 

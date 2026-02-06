@@ -172,7 +172,7 @@ These results establish a complementary sensing paradigm in which passive everyd
 
 **Mechanism (routing on an angle manifold).** Greedy pursuit can fail when content-induced spectral overlap causes spurious off-axis correlations (Fig. 5b). The physics-guided unrolled solver addresses this by learning a soft routing distribution \(w_t\) that regularizes selection using context across the entire angle manifold, while preserving residual-consistent updates anchored to the physical dictionary (Fig. 3). The emergent near-diagonal attention structure (Fig. 5a,c) provides mechanistic evidence that the solver exploits manifold smoothness—nearby angles share similar dispersive structure—thereby stabilizing inference under noise and nonstationary speech (Fig. 4).
 
-**Scientific frontiers and outlook.** Our current pipeline requires per-object calibration to construct an object-specific dictionary \(H\) and retraining to learn the inverse mapping (Fig. 6), highlighting a frontier question: which invariances of the angle–frequency manifold are shared across objects, and which are inherently object-specific? A second frontier is to quantify information-theoretic limits of single-point decoding as damping and modal overlap increase (Fig. 2a), and to determine how mounting conditions and LDV spot placement trade off robustness versus sensitivity. Extending the framework to multi-source and moving-source regimes will require modeling how fingerprints superpose and evolve across time windows, and identifying when the residual-correction depth \(K\) captures meaningful additional structure versus overfitting.
+**Scientific frontiers and outlook.** Our current pipeline requires per-object calibration to construct an object-specific dictionary \(H\) and retraining to learn the inverse mapping (Fig. 6), highlighting a frontier question: which invariances of the angle–frequency manifold are shared across objects, and which are inherently object-specific? A second frontier is to quantify information-theoretic limits of single-point decoding as angle fingerprints become less separable (Fig. 2a), and to determine how mounting conditions and LDV spot placement trade off robustness versus sensitivity. Extending the framework to multi-source and moving-source regimes will require modeling how fingerprints superpose and evolve across time windows, and identifying when the residual-correction depth \(K\) captures meaningful additional structure versus overfitting.
 
 ## Methods
 ### Software and hardware
@@ -198,26 +198,28 @@ For cross-material experiments (Fig. 6), we repeat the full pipeline per target:
 ### Signal processing pipeline
 **Definition ladder (waveform → dictionary).** For a clip at direction \(\theta\), the LDV provides an out-of-plane velocity waveform \(v[n]\) (m/s). We compute an STFT \(V[k,t]\), form a time-averaged power spectrum estimate \(\widehat S(\omega_k;\theta)=\frac{1}{T}\sum_t |V[k,t]|^2\), and restrict it to a frequency band to obtain a band-limited fingerprint. Features are defined as \(y=\phi(\widehat S)\), standardized to \(\tilde y\), and averaged across calibration trials to form per-angle prototypes \(h_e\) and the dictionary \(H=[h_1,\dots,h_E]\).
 
-To extract stable spectral features from the measured velocity time series \(v[n]\) (sampled at rate \(f_s\); see Parameters), we use a fixed short-time Fourier transform (STFT) pipeline [@allen1977stft]. With a Hann window \(w[m]\) of length \(N_\mathrm{win}\) samples and hop size \(N_\mathrm{hop}\) samples (overlap; see Parameters), we compute
+To extract stable spectral features from the measured velocity time series \(v[n]\) (sampled at rate \(f_s\) = {TBD_FS_HZ} Hz), we use a fixed short-time Fourier transform (STFT) pipeline [@allen1977stft]. With a Hann window \(w[m]\) of length \(N_\mathrm{win}\) = {TBD_STFT_WIN_SAMPLES} samples and hop size \(N_\mathrm{hop}\) = {TBD_STFT_HOP_SAMPLES} samples, we compute
 $$
 V[k,t] = \sum_{m=0}^{N_\mathrm{win}-1} v[tN_\mathrm{hop}+m]\, w[m]\, e^{-i2\pi km/N_\mathrm{FFT}},
 $$
-where \(N_\mathrm{FFT}\) is the FFT size and \(k\) indexes frequency bins. We form a time-averaged power spectrum
+where \(N_\mathrm{FFT}\) is the FFT size (set to {TBD_NFFT}) and \(k\) indexes frequency bins. We form a time-averaged power spectrum
 $$
 P[k] = \frac{1}{T}\sum_{t=1}^{T} \left|V[k,t]\right|^2,
 $$
-apply a band mask \(f_k\in[f_\min,f_\max]\) Hz (Parameters) to obtain \(P_\mathrm{band}\in\mathbb{R}^{F}\). We interpret \(P_\mathrm{band}[k]\) as a finite-sample estimator of the band-limited power fingerprint \(S(\omega_k;\theta)\) used in Results. The feature vector is
+apply a band mask \(f_k\in[f_\min,f_\max]\) with \(f_\min\) = {TBD_FREQ_MIN_HZ} Hz and \(f_\max\) = {TBD_FREQ_MAX_HZ} Hz to obtain \(P_\mathrm{band}\in\mathbb{R}^{F}\) (F = {TBD_F_BINS}). We interpret \(P_\mathrm{band}[k]\) as a finite-sample estimator of the band-limited power fingerprint \(S(\omega_k;\theta)\) used in Results. The feature vector is
 $$
 \widehat S(\omega_k;\theta) := P_\mathrm{band}[k],
 \qquad
 y[k] = \phi\!\left(\widehat S(\omega_k;\theta)\right) = \log_{10}\!\left(\widehat S(\omega_k;\theta) + \epsilon\right).
 $$
+with log clamp \(\epsilon\) = {TBD_EPS}.
 This definition makes explicit the link between the physical complex response \(Y(\omega;\theta)\) and the observable fingerprint: we use a time-averaged magnitude statistic \(\widehat S\) (no phase) to obtain stable, repeatable fingerprints. In Results, we write \(S\) for the underlying power-spectrum fingerprint, with \(\widehat S\) denoting its finite-sample estimator.
 
 We estimate per-frequency standardization statistics \((\mu_k,\sigma_k)\) from the white-noise calibration subset and define the standardized feature
 $$
 \tilde y[k] = \frac{y[k]-\mu_k}{\sigma_k+\epsilon_z}.
 $$
+with z-score clamp \(\epsilon_z\) = {TBD_ZSCORE_EPS}.
 The same \((\mu_k,\sigma_k)\) is applied to the white-noise evaluation subset and all speech clips so that observations and dictionary atoms live in the same feature space.
 
 **Angle dictionary construction.** For each candidate direction \(\theta_e\), we compute the per-trial feature vectors \(\tilde y_{e,j}\in\mathbb{R}^F\) and form the angle-conditioned atom
@@ -288,9 +290,7 @@ which can be interpreted as a masked gradient step on the least-squares objectiv
 ### Neural Network Implementation and Training
 The physics-guided unrolled network was implemented in PyTorch [@paszke2019pytorch]. The architecture consists of \(K\) unrolled pursuit stages with a transformer router (embedding dimension \(d_\mathrm{model}\), \(h\) attention heads, and {TBD_N_LAYERS} encoder layers; Results, Fig. 3). We use \(K\) = {TBD_K_STAGES}, \(d_\mathrm{model}\) = {TBD_D_MODEL}, and \(h\) = {TBD_N_HEADS}. At stage \(t\), the current residual \(r_t\) is correlated with the dictionary to form a physical match \(g_t=A^\top r_t\). The router uses scaled dot-product attention to produce routing weights \(w_t\), and the stage update uses residual-consistent subtraction \(r_{t+1}=r_t-A\Delta x_t\). Expert-level logits are obtained by {TBD_LOGIT_CONSTRUCTION}, and the predicted direction is \(\hat\theta=\arg\max_e p[e]\).
 
-*   **Loss:** {TBD_TRAIN_LOSS_DESCRIPTION}.
-*   **Optimization:** {TBD_OPTIMIZER} with learning rate \(\eta\) = {TBD_LR} and weight decay \(\lambda\) = {TBD_WEIGHT_DECAY}.
-*   **Protocol:** {TBD_EPOCHS} epochs, batch size {TBD_BATCH_SIZE}, random seed {TBD_RANDOM_SEED}. We use a deterministic split stratified by angle ({TBD_SPEECH_SPLIT_RULE}), with counts {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST}.
+**Training.** We trained the unrolled network using {TBD_TRAIN_LOSS_DESCRIPTION}, optimized with {TBD_OPTIMIZER} (learning rate \(\eta\) = {TBD_LR}, weight decay \(\lambda\) = {TBD_WEIGHT_DECAY}) for {TBD_EPOCHS} epochs with batch size {TBD_BATCH_SIZE} and random seed {TBD_RANDOM_SEED}. Speech clips were split deterministically stratified by angle ({TBD_SPEECH_SPLIT_RULE}; {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST} clips).
 
 **Ablations (Fig. 4b).** We report three ablations with all other components held fixed. **No-transformer** replaces the transformer router with {TBD_ABL_NO_TRANSFORMER_DEF}. **Fixed heuristic** replaces learned routing with {TBD_ABL_FIXED_HEURISTIC_DEF}. **Dense routing** uses {TBD_ABL_DENSE_ROUTING_DEF}. Each ablation uses the same dictionary construction and evaluation protocol as the full model.
 
@@ -319,67 +319,7 @@ $$
 We report mean ± s.d. over the per-angle (within) and per-angle-pair (between) aggregates to avoid overweighting angles with more trials.
 
 ### Statistics
-We report mean ± s.d. over \(n\) = {TBD_N_REPEATS} independent replicates as defined per experiment: {TBD_REPLICATE_DEFINITION}. Significance was assessed via two-sided t-tests with threshold {TBD_PVALUE_THRESHOLD} and multiple-comparison handling {TBD_MULTIPLE_COMPARISON_POLICY}.
-
-### Parameters
-| Component | Parameter | Symbol | Value |
-|---|---|---:|---|
-| Acquisition | Sampling rate | \(f_s\) | {TBD_FS_HZ} |
-| Acquisition | Loudspeaker radius | \(R\) | {TBD_RADIUS_M} |
-| Acquisition | Angle grid size | \(E\) | {TBD_N_ANGLES} |
-| Acquisition | Angle step | \(\Delta\theta\) | {TBD_ANGLE_STEP_DEG}° |
-| Acquisition | Angle range |  | {TBD_ANGLE_RANGE_DEG} |
-| Acquisition | Angle zero reference |  | {TBD_ANGLE_ZERO_REFERENCE} |
-| Acquisition | Angle sign convention |  | {TBD_ANGLE_SIGN_CONVENTION} |
-| Acquisition | LDV model |  | {TBD_LDV_MODEL} |
-| Acquisition | LDV spot location |  | {TBD_LDV_SPOT_LOCATION} |
-| Acquisition | Object mounting condition |  | {TBD_OBJECT_MOUNTING_CONDITION} |
-| Acquisition | Trials per angle |  | {TBD_WN_CALIB_CLIPS_PER_ANGLE} (WN calib) / {TBD_WN_EVAL_CLIPS_PER_ANGLE} (WN eval) / {TBD_SPEECH_CLIPS_PER_ANGLE} (speech) |
-| Acquisition | Trial duration |  | {TBD_TRIAL_DURATION_S} |
-| Acquisition | Excitation signal types |  | white noise; speech |
-| STFT | FFT size | \(N_\mathrm{FFT}\) | {TBD_NFFT} |
-| STFT | Window length | \(N_\mathrm{win}\) | {TBD_STFT_WIN_SAMPLES} |
-| STFT | Hop length | \(N_\mathrm{hop}\) | {TBD_STFT_HOP_SAMPLES} |
-| STFT | Overlap |  | {TBD_STFT_OVERLAP_PCT} |
-| STFT | Band limits | \([f_\min,f_\max]\) | {TBD_FREQ_MIN_HZ}–{TBD_FREQ_MAX_HZ} Hz |
-| STFT | Frequency bins | \(F\) | {TBD_F_BINS} |
-| Features | Log clamp | \(\epsilon\) | {TBD_EPS} |
-| Features | z-score clamp | \(\epsilon_z\) | {TBD_ZSCORE_EPS} |
-| SVD | Truncation rank | \(r\) | {TBD_SVD_R} |
-| SVD | Energy captured | \(\mathrm{Energy}(r)\) | {TBD_SVD_ENERGY_PCT}% |
-| SVD | Inference policy |  | {TBD_SVD_INFERENCE_POLICY} |
-| Model | Unrolled stages | \(K\) | {TBD_K_STAGES} |
-| Model | Embedding dim. | \(d_\mathrm{model}\) | {TBD_D_MODEL} |
-| Model | Attention heads | \(h\) | {TBD_N_HEADS} |
-| Model | Encoder layers |  | {TBD_N_LAYERS} |
-| Model | Logit construction |  | {TBD_LOGIT_CONSTRUCTION} |
-| Training | Optimizer |  | {TBD_OPTIMIZER} |
-| Training | Learning rate | \(\eta\) | {TBD_LR} |
-| Training | Weight decay | \(\lambda\) | {TBD_WEIGHT_DECAY} |
-| Training | Batch size |  | {TBD_BATCH_SIZE} |
-| Training | Epochs |  | {TBD_EPOCHS} |
-| Training | Seed |  | {TBD_RANDOM_SEED} |
-| Noise | SNR levels (Fig. 4a) |  | {TBD_SNR_LEVELS_DB} |
-
-<!-- Remaining placeholders (to be filled before submission):
-- Abstract: {TBD_SNR_MIN_DB}.
-- Results (Fig. 1): {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_SIM_WITHIN_MEAN}, {TBD_SIM_WITHIN_SD}, {TBD_SIM_BETWEEN_MEAN}, {TBD_SIM_BETWEEN_SD}.
-- Results (Fig. 2): {TBD_SVD_R}, {TBD_SVD_ENERGY_PCT}, {TBD_SVD_INFERENCE_POLICY}.
-- Results (Fig. 4): {TBD_SPEECH_N_CLIPS_TOTAL}, {TBD_SPEECH_CLIPS_PER_ANGLE}, {TBD_SPEECH_TOP1_ACC_PCT}, {TBD_SPEECH_MAE_DEG}, {TBD_SPEECH_P95_DEG},
-  {TBD_N_INDEP_RUNS}, {TBD_ACC_SNR10_PCT}, {TBD_ACC_SNR5_PCT}, {TBD_ACC_SNR0_PCT}, {TBD_ACC_ABL_NO_TRANSFORMER_PCT},
-  {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}, {TBD_ACC_ABL_DENSE_ROUTING_PCT}.
-- Results (Fig. 5): {TBD_DIAGONAL_CONC_FACTOR}.
-- Results (Fig. 6): {TBD_RMSE_RANGE_DEG}, {TBD_RMSE_OMP_COMPLEX_DEG}.
-- Experimental setup: {TBD_RADIUS_M}, {TBD_N_ANGLES}, {TBD_ANGLE_RANGE_DEG}, {TBD_ANGLE_STEP_DEG}, {TBD_ANGLE_ZERO_REFERENCE}, {TBD_ANGLE_SIGN_CONVENTION},
-  {TBD_LDV_MODEL}, {TBD_LDV_SPOT_LOCATION}, {TBD_OBJECT_MOUNTING_CONDITION}, {TBD_TRIAL_DURATION_S}.
-- Controls: {TBD_CONTACT_SENSOR_TYPE}, {TBD_CONTACT_SENSOR_MASS_G}, {TBD_CONTACT_SENSOR_LOCATION}, {TBD_CONTACT_SENSOR_ATTACHMENT}, {TBD_CONTACT_LOADING_RESULT_SUMMARY}, {TBD_CONTACT_LOADING_PANEL_REF}.
-- Calibration/splits: {TBD_WN_CALIB_CLIPS_PER_ANGLE}, {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_WN_SPLIT_RULE}, {TBD_SPEECH_SPLIT_RULE}, {TBD_SPLIT_TRAIN}, {TBD_SPLIT_VAL}, {TBD_SPLIT_TEST}.
-- STFT/features: {TBD_FS_HZ}, {TBD_NFFT}, {TBD_STFT_WIN_SAMPLES}, {TBD_STFT_HOP_SAMPLES}, {TBD_STFT_OVERLAP_PCT}, {TBD_FREQ_MIN_HZ}, {TBD_FREQ_MAX_HZ}, {TBD_F_BINS}, {TBD_EPS}, {TBD_ZSCORE_EPS}.
-- Model/training: {TBD_K_STAGES}, {TBD_D_MODEL}, {TBD_N_HEADS}, {TBD_N_LAYERS}, {TBD_LOGIT_CONSTRUCTION}, {TBD_TRAIN_LOSS_DESCRIPTION}, {TBD_OPTIMIZER}, {TBD_LR}, {TBD_WEIGHT_DECAY}, {TBD_BATCH_SIZE}, {TBD_EPOCHS}, {TBD_RANDOM_SEED}.
-- Ablations: {TBD_ABL_NO_TRANSFORMER_DEF}, {TBD_ABL_FIXED_HEURISTIC_DEF}, {TBD_ABL_DENSE_ROUTING_DEF}.
-- Statistics: {TBD_N_REPEATS}, {TBD_REPLICATE_DEFINITION}, {TBD_PVALUE_THRESHOLD}, {TBD_MULTIPLE_COMPARISON_POLICY}.
-- Availability/admin: {TBD_DATA_AVAILABILITY_URL}, {TBD_CODE_AVAILABILITY_URL}, {TBD_GRANT_INFO}.
--->
+We report mean ± s.d. over \(n\) = {TBD_N_REPEATS} independent replicates (definition per experiment: {TBD_REPLICATE_DEFINITION}). When statistical hypothesis tests are used, the test, sidedness, and multiple-comparison correction are stated alongside the corresponding figure/panel.
 
 ## Data availability
 Data and processed features used in this study are available at {TBD_DATA_AVAILABILITY_URL}.

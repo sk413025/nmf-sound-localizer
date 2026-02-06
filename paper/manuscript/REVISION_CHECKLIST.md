@@ -50,7 +50,19 @@ How to use:
 ### R0-6 Contact-loading claim: align claim with evidence placeholders
 - [x] In Results, soften any hard conclusion about contact-loading unless a concrete panel/metric is cited.
 - [x] Add/extend placeholders in Methods so Results can point to a named result location (e.g., `{TBD_CONTACT_LOADING_PANEL_REF}`) without fabricating evidence.
-  - Evidence: `paper/manuscript/manuscript.md:28,189,375`
+  - Evidence: `paper/manuscript/manuscript.md:28,189`
+
+### M0-1 Methods: Remove parameter/config tables (space discipline)
+- [x] Delete the standalone `### Parameters` section/table and inline only key numeric settings at first use (Experimental setup, Signal processing pipeline, Training).
+  - Evidence: `paper/manuscript/manuscript.md:182,198,293`
+
+### M0-2 Methods: Replace hyperparameter bullet dumps with prose
+- [x] Replace `Loss/Optimization/Protocol` bullets with a single compact paragraph and keep full detail in released configs.
+  - Evidence: `paper/manuscript/manuscript.md:293`
+
+### M0-3 Housekeeping: Move placeholder tracker out of the manuscript
+- [x] Remove internal placeholder TODO blocks/comments from `manuscript.md`; keep a tracker in this checklist instead so the exported DOCX contains only submission content.
+  - Evidence: `paper/manuscript/manuscript.md:321`
 
 ---
 
@@ -97,3 +109,21 @@ How to use:
 - [x] Results contain only Tier-A interpretive equations; procedural details live in Methods.
 - [x] Discussion follows the synthesis inverted funnel with figure-anchored mechanisms.
 - [x] Methods reads as a technical manual with a clean definition ladder and journal-style algorithm descriptions.
+
+---
+
+## Internal-only — Placeholder tracker (do not include in submission exports)
+- Abstract: {TBD_SNR_MIN_DB}.
+- Results (Fig. 1): {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_SIM_WITHIN_MEAN}, {TBD_SIM_WITHIN_SD}, {TBD_SIM_BETWEEN_MEAN}, {TBD_SIM_BETWEEN_SD}.
+- Results (Fig. 2): {TBD_SVD_R}, {TBD_SVD_ENERGY_PCT}, {TBD_SVD_INFERENCE_POLICY}.
+- Results (Fig. 4): {TBD_SPEECH_N_CLIPS_TOTAL}, {TBD_SPEECH_CLIPS_PER_ANGLE}, {TBD_SPEECH_TOP1_ACC_PCT}, {TBD_SPEECH_MAE_DEG}, {TBD_SPEECH_P95_DEG}, {TBD_N_INDEP_RUNS}, {TBD_ACC_SNR10_PCT}, {TBD_ACC_SNR5_PCT}, {TBD_ACC_SNR0_PCT}, {TBD_ACC_ABL_NO_TRANSFORMER_PCT}, {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}, {TBD_ACC_ABL_DENSE_ROUTING_PCT}.
+- Results (Fig. 5): {TBD_DIAGONAL_CONC_FACTOR}.
+- Results (Fig. 6): {TBD_RMSE_RANGE_DEG}, {TBD_RMSE_OMP_COMPLEX_DEG}.
+- Experimental setup: {TBD_RADIUS_M}, {TBD_N_ANGLES}, {TBD_ANGLE_RANGE_DEG}, {TBD_ANGLE_STEP_DEG}, {TBD_ANGLE_ZERO_REFERENCE}, {TBD_ANGLE_SIGN_CONVENTION}, {TBD_LDV_MODEL}, {TBD_LDV_SPOT_LOCATION}, {TBD_OBJECT_MOUNTING_CONDITION}, {TBD_TRIAL_DURATION_S}.
+- Controls: {TBD_CONTACT_SENSOR_TYPE}, {TBD_CONTACT_SENSOR_MASS_G}, {TBD_CONTACT_SENSOR_LOCATION}, {TBD_CONTACT_SENSOR_ATTACHMENT}, {TBD_CONTACT_LOADING_RESULT_SUMMARY}, {TBD_CONTACT_LOADING_PANEL_REF}.
+- Calibration/splits: {TBD_WN_CALIB_CLIPS_PER_ANGLE}, {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_WN_SPLIT_RULE}, {TBD_SPEECH_SPLIT_RULE}, {TBD_SPLIT_TRAIN}, {TBD_SPLIT_VAL}, {TBD_SPLIT_TEST}.
+- STFT/features: {TBD_FS_HZ}, {TBD_NFFT}, {TBD_STFT_WIN_SAMPLES}, {TBD_STFT_HOP_SAMPLES}, {TBD_FREQ_MIN_HZ}, {TBD_FREQ_MAX_HZ}, {TBD_F_BINS}, {TBD_EPS}, {TBD_ZSCORE_EPS}.
+- Model/training: {TBD_K_STAGES}, {TBD_D_MODEL}, {TBD_N_HEADS}, {TBD_N_LAYERS}, {TBD_LOGIT_CONSTRUCTION}, {TBD_TRAIN_LOSS_DESCRIPTION}, {TBD_OPTIMIZER}, {TBD_LR}, {TBD_WEIGHT_DECAY}, {TBD_BATCH_SIZE}, {TBD_EPOCHS}, {TBD_RANDOM_SEED}.
+- Ablations: {TBD_ABL_NO_TRANSFORMER_DEF}, {TBD_ABL_FIXED_HEURISTIC_DEF}, {TBD_ABL_DENSE_ROUTING_DEF}.
+- Statistics: {TBD_N_REPEATS}, {TBD_REPLICATE_DEFINITION}.
+- Availability/admin: {TBD_DATA_AVAILABILITY_URL}, {TBD_CODE_AVAILABILITY_URL}, {TBD_GRANT_INFO}.
