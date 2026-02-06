@@ -6,8 +6,8 @@ This folder is a **Markdown-first** manuscript workspace intended for drafting a
 - `paper/manuscript/`: Manuscript source (`manuscript.md`) + Pandoc metadata (`metadata.yaml`).
 - `paper/references/`: Bibliography (`references.bib`).
 - `paper/figures/`: Final, submission-ready figure assets (PDF/TIFF/PNG as needed).
-- `paper/templates/`: Optional Pandoc `reference.docx` template for journal styling.
-- `paper/csl/`: Optional CSL file (`style.csl`) controlling citation style.
+- `paper/templates/`: Pandoc `reference.docx` controlling DOCX styling.
+- `paper/csl/`: CSL file (`style.csl`) controlling citation style.
 - `paper/out/`: Build outputs (ignored by git).
 
 ## Build (DOCX)
