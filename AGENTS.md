@@ -168,6 +168,15 @@ Agent guidance:
 - **Concept sandwich (anchoring):** When introducing an advanced concept in Intro/Results, use: **intuition/analogy → precise definition → minimal math (if needed)**, then add **one sentence** answering "So what does this imply for the phenomenon/figure?"
 - **Signposting template:** Use explicit contrast + roadmap: "Instead of X, we Y." then "This lets us Z (Fig. …; Methods)."
 - **Metaphor discipline:** Reuse a small, consistent metaphor set (e.g., **physical encoder**, **fingerprint**, **prism**) and tie each metaphor to figure evidence; do not introduce new metaphors without anchoring them to a concrete claim.
+- **Abbreviation budget:** In **Abstract/Introduction/Results**, introduce at most **1 new abbreviation per paragraph**. If more are needed, split the paragraph or postpone secondary abbreviations. Prefer repeating the full phrase over acronym overload.
+- **Symbol fan-out cap:** In **Introduction/Results/Discussion**, introduce at most **2 new mathematical symbols per paragraph**. If more are needed, split into multiple paragraphs and apply the bridge-sentence rule at the first use of each symbol.
+- **One-new-concept rule:** Aim for **one** new core concept per paragraph (e.g., SVD *or* OMP *or* routing). If multiple are required, add a 1-sentence roadmap first, then split into separate paragraphs, each with its own take-home sentence.
+- **Paragraph cohesion (mandatory):** Every paragraph must (i) start with an explicit transition linking to the previous paragraph (e.g., Therefore/Accordingly/In contrast) and (ii) end with a **1-sentence take-home claim** anchored to evidence: **(Fig. X panels …)** or **(Methods: …)**. If there is no anchor, the paragraph is not ready.
+- **Working-memory budget:** Acronym/symbol throttling prevents working-memory overload before the claim lands; the take-home sentence enforces the “So what?” interpretation and reduces unanchored detail dumps.
+- **Citation freshness (positioning):** For “positioning relative to prior work/paradigms”, include at least one recent (≤5 years) citation per paradigm (prefer surveys or representative recent papers). Use classic/older references only when they define a concept or theorem that cannot be attributed to a modern source.
+- **No citation padding:** Do not add references that are not directly used to support a sentence-level claim. If a citation does not change the reader’s belief or provide essential context, omit it.
+- **No parameter tables in main text:** Avoid large tables that enumerate acquisition / signal-processing / training hyperparameters. Prefer short “Key parameters” prose paragraphs per pipeline stage, and defer exhaustive lists to Supplementary Information or released configs in the code repository.
+- **Avoid configuration bullet lists:** Do not use bullet lists to enumerate loss/optimizer/protocol or other hyperparameters in the main manuscript. Use one compact sentence/paragraph and point to released configs for full detail.
 
 **1. Introduction: The "Paradigm Shift" Funnel**
 - **The Hook (Broad Context):** 
