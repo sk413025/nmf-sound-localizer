@@ -155,27 +155,61 @@ Agent guidance:
 
 ## Manuscript Style (Nature Communications)
 
-- **Introduction Structure (Inverted Pyramid):**
-  - **Start Broad:** Begin with the grand scientific challenge (e.g., "Extracting information from complex wave fields"), NOT engineering specifics (e.g., "DOA estimation is solved by...").
-  - **Paradigm Shift:** Introduce the "Complexity as a Resource" concept (or equivalent discovery) as the pivot point.
-  - **Specific Solution:** Only then introduce the specific method (LDV, Everyday Objects) as the necessary tool to verify the hypothesis.
-  - **Avoid:** Do not start with "Direction-of-arrival (DOA) estimation is classically solved by..." or similar textbook definitions.
+**Core Philosophy: Scientific Discovery (IRDM) vs. Engineering Report (IMRD)**
+- **Structure:** Strictly use **Introduction → Results → Discussion → Methods**.
+- **The Logic:** To create an **uninterrupted narrative** of discovery. The reader must flow from the "Grand Challenge" to the "Phenomenon" without being bogged down by technical implementation details.
+- **The Shift:** We are reporting a **"Physical Phenomenon"** (Nature-level), not just validating a **"Tool/Algorithm"** (Engineering-level).
 
-- **Results Structure (Assertion-First):**
-  - **Headers:** Use declarative assertions of discovery (e.g., "Everyday objects act as naturally randomized physical encoders"), NOT procedural labels (e.g., "Experimental Setup" or "SVD Analysis").
-  - **Narrative:** First paragraph of each section must state the *phenomenon* observed, followed by the evidence.
-  - **Figures:** Reference figures as evidence for the assertion (e.g., "As seen in Fig. 1..."), not as containers of data.
+**1. Introduction: The "Paradigm Shift" Funnel**
+- **The Hook (Broad Context):** 
+  - Start with **Wave Physics** or **Computational Sensing** (e.g., "Extracting information from complex media..."). 
+  - **DO NOT** start with narrow engineering definitions (e.g., "DOA estimation is...").
+- **The Gap (The Conflict):** 
+  - Contrast the traditional mindset (**"Fighting Complexity"** / suppressing dispersion) with our new perspective (**"Utilizing Complexity"** / as a resource).
+- **The Pivot (The Trinity):** 
+  - **Mandatory:** Start a distinct paragraph with **"Here we show..."** or **"Here we demonstrate..."**.
+  - **Content:** Briefly summarize the discovery in three layers: 1. Physics (Natural Encoder), 2. Math (Structured Sparsity), 3. Algorithm (Physics-Guided AI).
 
-- **Methods Structure (Reproducibility):**
-  - **Rigorous Definitions:** Include specific subsections for "Signal Processing Pipeline" and "Neural Network Training" with mathematical definitions (STFT parameters, normalization formulas, loss functions).
-  - **No Ambiguity:** Avoid placeholders or vague terms; specific hyperparameters and protocols must be defined.
+**2. Results: Assertion-First Narrative**
+- **Headers:** Use **Declarative Sentences** that state a discovery (e.g., "Everyday objects act as naturally randomized physical encoders"), NOT procedural labels (e.g., "Experimental Setup").
+- **Writing Style:**
+  - **Phenomenon over Process:** Start paragraphs with "We observed that..." or "The spectral response reveals...", NOT "We measured..." or "We used...".
+  - **Hide the Method:** Do not describe *how* you calculated something in the Results (e.g., "using a 4-layer transformer..."); simply state the logical output. Technical specs belong in Methods.
+  - **Active Figures:** Reference figures as evidence (e.g., "As evidenced by the diagonal structure in Fig. 2..."), not as containers.
 
-- **General Guidelines:**
-  - Emphasize **scientific discovery**: observation → hypothesis → mechanism → validation → implication.
-  - Treat **equations and models as tools** for exploration and verification, not as the primary story; always interpret key equations in physical terms.
-  - Maintain **symbol continuity and explicit definitions**: no symbols “appear out of nowhere”; ensure clear transitions across the physics model → SVD → OMP → unrolling/attention.
-  - Keep prose **concise and journal-style**; integrate figures into standard sections (Introduction/Results/Discussion/Methods) rather than “Fig. X as chapters”.
-  - When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
+**3. Discussion: The "Synthesis" Inverted Funnel**
+- **The Retake (Implication):** Do not just summarize. Restate the core value: "This framework transforms passive physical structures into active computational elements."
+- **The Mechanism (Deep Dive):** Explain **WHY** it works using physical intuition. Discuss concepts like **"Structural Invariance"** or "Linear Superposition" to explain why different materials share the same logic.
+- **Frontiers (Not Just Limitations):** Frame limitations (e.g., high damping) as **"Scientific Frontiers"** or **"Information-Theoretic Limits"** to be explored, rather than just "engineering bugs".
+
+**4. Methods: The Technical Manual**
+- **Role:** Ensure absolute reproducibility. This is where the engineering rigor lives.
+- **Content:** Detailed signal processing pipelines, neural network hyperparameters, exact experimental protocols, and mathematical derivations.
+
+### Equation and Derivation Policy (Manuscript)
+
+We explicitly encourage mathematical theory when it explains observed phenomena. Do not conflate derivations with implementation details.
+
+**Scope of “Hide the Method” (Results)**
+- Results should avoid procedural implementation details (dataset split rules, STFT hyperparameters, training recipes, algorithm step lists, architecture specs).
+- Results may include *interpretive derivations*: the minimal equations/steps needed to explain the phenomenon and justify figure-level claims.
+
+**Three-tier placement (preferred)**
+- Tier A — Results (Interpretive): keep only the smallest set of equations required to explain the observation; every key equation must be followed by 1–2 sentences of physical interpretation and must reference specific figure panels as evidence.
+- Tier B — Discussion (Synthesis, medium density): primarily physical intuition and mechanism; use equations sparingly to connect Results across figures (e.g., low-rank → robustness; manifold structure → diagonal routing), but avoid step-by-step derivations and any protocol/implementation details.
+- Tier C — Methods (Complete + procedural): full derivations (including attention parameterization, update rules, approximations), algorithmic definitions, controls, and reproducibility-critical specifications.
+
+**Bridge-sentence requirement (symbol continuity)**
+Whenever introducing a symbol or a derivation step, include an explicit bridge sentence stating:
+(1) what the symbol represents physically,
+(2) why it is introduced at this point in the narrative,
+(3) the assumptions under which the step holds.
+
+**General Guidelines**
+- **Tone:** Authoritative, concise, and focused on physical principles.
+- **Equations as Tools:** Use them to interpret the physics. Always explain the physical meaning of key terms.
+- **Guardrail:** When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
+- **Symbol Continuity:** Ensure symbols flow logically across Physics Model → SVD → OMP → Neural Network.
 
 ## Language Policy
 **All project content must be written in English**, including:
