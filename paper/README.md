@@ -21,11 +21,19 @@ Outputs:
 - `paper/out/manuscript.docx`
 - `paper/out/build.log`
 
-## Templates and citation style (optional)
-- If you have a journal Word template (or a house style reference document), place it at:
-  - `paper/templates/reference.docx`
-- If you have a CSL style file, place it at:
-  - `paper/csl/style.csl`
+## Nature Communications formatting (submission)
+Nature Communications is typeset in two columns at publication, but Word submissions should be formatted for review readability (e.g., double-spaced, single-column, no full justification, with Arabic page numbers). The journal does not provide a Word template; formatting is imposed later during production.
+
+This repo approximates the submission style via:
+- `paper/templates/reference.docx`: Pandoc reference DOCX (page size/margins, double spacing, footer page numbers).
+- `paper/csl/style.csl`: Numeric citation style (Nature-like).
+
+If you want line numbers for review, enable them in Word (Layout → Line Numbers → Continuous).
+
+## Templates and citation style (customization)
+This repo includes a reasonable default `reference.docx` and a numeric CSL style. If you have a journal-provided Word template or a house citation style, replace the files below:
+- DOCX reference document: `paper/templates/reference.docx`
+- CSL style: `paper/csl/style.csl`
 
 If either file is missing, the build still succeeds using Pandoc defaults, and prints a note to stderr.
 
