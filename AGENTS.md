@@ -160,6 +160,15 @@ Agent guidance:
 - **The Logic:** To create an **uninterrupted narrative** of discovery. The reader must flow from the "Grand Challenge" to the "Phenomenon" without being bogged down by technical implementation details.
 - **The Shift:** We are reporting a **"Physical Phenomenon"** (Nature-level), not just validating a **"Tool/Algorithm"** (Engineering-level).
 
+**Readability Guardrails (Cognitive Load & Interdisciplinary Translation)**
+- **Rationale:** Nature Communications is read by editors and reviewers across fields. If the novelty is buried under dense terminology and unanchored abstractions, the paper reads like a niche engineering report and is more likely to be desk-rejected. Lower cognitive load so the reader reaches (i) the phenomenon, (ii) why it matters, and (iii) what is new—*before* the technical machinery.
+- **Target reader:** Write for a **smart generalist** (technically fluent, not necessarily expert in both wave physics *and* deep learning).
+- **Noun-stack cap:** Avoid long chains of technical modifiers (e.g., "physics-guided deep unrolling network with attention-based routing..."). If a phrase contains ≥3 specialized modifiers, **split into 2–3 sentences**: *what* → *why* → *how (Methods pointer)*.
+- **Sentence density:** Prefer ≤25–30 words per sentence in **Abstract/Introduction/Results**. If longer, split and ensure the subject/verb appears early.
+- **Concept sandwich (anchoring):** When introducing an advanced concept in Intro/Results, use: **intuition/analogy → precise definition → minimal math (if needed)**, then add **one sentence** answering "So what does this imply for the phenomenon/figure?"
+- **Signposting template:** Use explicit contrast + roadmap: "Instead of X, we Y." then "This lets us Z (Fig. …; Methods)."
+- **Metaphor discipline:** Reuse a small, consistent metaphor set (e.g., **physical encoder**, **fingerprint**, **prism**) and tie each metaphor to figure evidence; do not introduce new metaphors without anchoring them to a concrete claim.
+
 **1. Introduction: The "Paradigm Shift" Funnel**
 - **The Hook (Broad Context):** 
   - Start with **Wave Physics** or **Computational Sensing** (e.g., "Extracting information from complex media..."). 
