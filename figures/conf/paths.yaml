@@ -1,0 +1,24 @@
+# Data paths for figure generators.
+# All paths are relative to the repository root unless marked absolute.
+# Override via environment variable FIGURES_DATA_ROOT if needed.
+
+# Primary training run (Speech260, trainval split, full sweep)
+primary_run: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+
+# H matrix for SVD / modal decomposition (Fig 2)
+h_matrix: h_matrix_normalized_original_to_box.pth
+
+# Ablation sweep data (Fig 4)
+ablation_sweep:
+  results_dir: results
+  sweep_suffix: babble_speech260_full_20260209_011327
+  aggregated_json: results/figure4_data.json
+
+# Confusion matrix metrics (Fig 9)
+confusion_matrix:
+  baseline: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+  no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+
+# Output directories
+output_dir: figures/output
+paper_figures_dir: paper/figures

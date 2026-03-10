@@ -1,0 +1,3 @@
+# Intermediate figure outputs — regenerate with `make -C figures generate`
+*
+!.gitignore
