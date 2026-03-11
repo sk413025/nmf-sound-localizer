@@ -43,7 +43,7 @@ make paper-review-gate
 - `docs/agent-ops/`: supervisor model, roles, task packets, and review loop
 - `docs/evidence/`: evidence, lineage, and provenance notes that still support current work
 - `docs/working-notes/`: exploratory notes, prompts, and analysis that are not canonical
-- `nmf_localizer/`, `doa_rl/`, `scripts/`, `tests/`: active runtime substrate governed by `docs/governance/runtime-substrate-contract.md`
+- `nmf_localizer/`, `doa_rl/`, `scripts/`, `tests/`: minimal runtime substrate for TF, USM, and soft-OMP support, governed by `docs/governance/runtime-substrate-contract.md`
 - `docs/archive/`: historical material that is not current source of truth
 - `legacy/`: quarantined scripts and assets outside the main workflow
 

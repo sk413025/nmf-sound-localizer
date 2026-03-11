@@ -41,5 +41,6 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use the Codex collaboration contract
 - Changing active runtime code, scripts, tests, or package metadata:
   - use the runtime substrate contract
+  - treat only TF + USM + soft-OMP support paths as active by default
 - Running multi-agent task orchestration:
   - use `docs/agent-ops/`

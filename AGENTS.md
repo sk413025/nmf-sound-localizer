@@ -71,6 +71,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - Evidence docs may support provenance and paper evidence, but they are not branch entrypoints.
 - Working notes may inform future work, but they are never canonical source of truth by themselves.
 - Quarantined assets must remain outside the main workflow.
+- Active runtime substrate is limited to TF + USM + soft-OMP support. Legacy pipeline, DT, oracle, and reconstruction paths belong under `legacy/runtime/` or `legacy/tests/`.
 
 ## Historical Material
 

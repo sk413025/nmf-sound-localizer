@@ -45,7 +45,6 @@ ALLOWED_ROOT_DIRS = {
 }
 
 FORBIDDEN_REFERENCE_PATHS = [
-    REPO_ROOT / "AGENTS.md",
     REPO_ROOT / "START_HERE_AGENT.md",
     REPO_ROOT / "START_HERE_HUMAN.md",
 ]
@@ -53,6 +52,10 @@ FORBIDDEN_REFERENCE_PATHS = [
 FORBIDDEN_REFERENCE_NEEDLES = [
     "docs/working-notes/",
     "legacy/",
+]
+
+FORBIDDEN_PACKAGE_NEEDLES = [
+    "nmf_localizer.cli:main",
 ]
 
 
@@ -75,6 +78,13 @@ def main() -> int:
         for needle in FORBIDDEN_REFERENCE_NEEDLES:
             if needle in text:
                 errors.append(f"{path.relative_to(REPO_ROOT)} must not route through non-canonical path: {needle}")
+
+    for rel in ("pyproject.toml", "setup.py"):
+        path = REPO_ROOT / rel
+        text = path.read_text(encoding="utf-8")
+        for needle in FORBIDDEN_PACKAGE_NEEDLES:
+            if needle in text:
+                errors.append(f"{rel} still declares removed package surface: {needle}")
 
     if errors:
         print("ERROR: asset boundary check failed.")

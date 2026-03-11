@@ -31,6 +31,8 @@ Examples:
 - `requirements.txt`
 - `MANIFEST.in`
 
+For this branch, the actively maintained subset is limited to transfer-function estimation, STFT-unified preprocessing, USM training, `DoADataset`, and soft-OMP support. Older runtime paths belong in quarantine.
+
 This class is governed by `runtime-substrate-contract.md`.
 
 ## Evidence docs
@@ -57,6 +59,8 @@ Examples:
 
 - `legacy/assets/`
 - `legacy/scripts/`
+- `legacy/runtime/`
+- `legacy/tests/`
 
 ## Governance rule
 

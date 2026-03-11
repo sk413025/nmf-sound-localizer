@@ -19,6 +19,7 @@ This branch is governed as a manuscript-first research worktree. Contributions s
   - Follow `docs/governance/experiment-contract.md`
 - Runtime substrate or package-facing changes:
   - Follow `docs/governance/runtime-substrate-contract.md`
+  - Default to maintaining only TF + USM + soft-OMP support paths
 - Codex or multi-agent workflow changes:
   - Follow `docs/governance/codex-collaboration-contract.md`
 

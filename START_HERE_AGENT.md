@@ -22,7 +22,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
    - `.codex/skills/paper-asset-review/SKILL.md`
    - `.codex/skills/experiment-results/SKILL.md`
    - `.codex/skills/agent-orchestrator/SKILL.md`
-3. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md`.
+3. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md` and assume only TF + USM + soft-OMP support is active unless proven otherwise.
 4. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
 5. If the task could shift claims, governance, or submission posture, route through the supervisor model first.
 
