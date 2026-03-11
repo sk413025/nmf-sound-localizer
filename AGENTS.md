@@ -245,6 +245,8 @@ This repository is a codex-native project. Manuscript and submission work must b
   [docs/nature-communications/nature-communications-submission-requirements.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/nature-communications-submission-requirements.md)
 - Project-local skill:
   [.codex/skills/nature-communications-submission/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/nature-communications-submission/SKILL.md)
+- Project-local paper asset review skill:
+  [.codex/skills/paper-asset-review/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/paper-asset-review/SKILL.md)
 - Project-local assessment skill:
   [.codex/skills/codex-native-assessment/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/codex-native-assessment/SKILL.md)
 
@@ -252,8 +254,19 @@ Mandatory agent behavior for any task touching `paper/`, `figures/`, figure expo
 
 - Read the canonical requirements file before proposing or making edits.
 - Use the project-local Nature Communications skill when the task concerns manuscript structure, figure/table formatting, artwork export, source-data packaging, or submission readiness.
+- Use the project-local paper asset review skill for any manuscript-facing figure review, visual suitability judgment, or discussion of whether an asset belongs in the main paper versus supplementary material.
 - Treat the canonical requirements file as higher priority than legacy local notes or stale helper defaults.
 - If local code or documentation conflicts with current Nature guidance, call out the conflict explicitly and update the canonical requirements file and implementation together.
+- For paper-facing figure review, prefer the Codex review bundle workflow:
+  - `python scripts/paper/review_paper_assets.py prepare`
+  - inspect `figures/review_artifacts/<figure_id>/preview.png` and `preview_overlay.png`
+  - write role reports and consolidated `review.json`
+  - enforce with `python scripts/paper/review_paper_assets.py gate`
+- Required paper-asset review roles are:
+  - `visual-reviewer`
+  - `manuscript-fit-reviewer`
+  - `supervisor`
+- Do not replace Codex multimodal review with a heavy custom heuristic layout engine unless the user explicitly asks for that tradeoff.
 
 Mandatory agent behavior for any task asking whether this branch is more `codex-native` or `agent-native`, or how to improve Codex collaboration:
 

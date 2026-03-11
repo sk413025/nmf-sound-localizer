@@ -5,8 +5,9 @@ This branch focuses on Nature figure generation. The NMF Sound Localizer overvie
 This worktree is used to generate Nature-style figures and supporting reports. The entries below record where the figure standards live, what was most recently added, and the historical evolution of figure outputs.
 
 ### Nature figure guidelines
-- `NATURE_FIGURE_GUIDELINES.md`: Core Nature sizing, typography, line weight, and file format rules.
-- `NA_matplotlib_guild.py`: Matplotlib helper that enforces Nature rcParams, panel labels, and mm-accurate sizing.
+- `docs/nature-communications/nature-communications-submission-requirements.md`: Canonical Nature Communications manuscript, figure, table, and submission requirements.
+- `.codex/skills/nature-communications-submission/SKILL.md`: Project-local Codex skill for Nature Communications manuscript and artwork tasks.
+- `NATURE_FIGURE_GUIDELINES.md`: Legacy redirect note only; do not treat it as the authoritative rule set.
 - `pdf_specs.md`: Legacy layout block dimensions in mm (reference measurements for panel sizing).
 
 ### Latest tracked status
