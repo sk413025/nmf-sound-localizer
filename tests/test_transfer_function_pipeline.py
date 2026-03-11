@@ -8,7 +8,7 @@ from scipy import signal
 from nmf_localizer.config import NMFConfig
 from nmf_localizer.core.data_processor import DataProcessor
 from nmf_localizer.core.transfer_functions import TransferFunctionProcessor
-from nmf_localizer.core.localizer import NMFSoundLocalizer
+from doa_rl.omp import build_dictionary
 
 
 def _make_synthetic_H(freqs: np.ndarray, angles_deg: torch.Tensor) -> torch.Tensor:
@@ -176,11 +176,8 @@ def test_transfer_processor_frequency_limit_only():
     assert torch.allclose(H_proc, H_bl)
 
 
-def test_mixing_matrix_construction_and_freq_weights():
-    """Unit: A = [diag(H_d)W] and frequency weights applied consistently."""
-    cfg = NMFConfig(device='cpu')
-    localizer = NMFSoundLocalizer(cfg)
-
+def test_build_dictionary_matches_expected_block_structure():
+    """Unit: build_dictionary produces normalized angle-atom products."""
     # Small deterministic W,H
     W = torch.tensor([
         [1.0, 2.0, 3.0],
@@ -194,24 +191,18 @@ def test_mixing_matrix_construction_and_freq_weights():
         [0.5, 2.0],
         [1.0, 1.0],
     ])  # F=4, D=2
-    angles = torch.tensor([0.0, 90.0])
 
-    localizer.load_source_dictionary(W)
-    localizer.load_transfer_functions(H, angles)
+    D, idx2 = build_dictionary(W, H)
+    assert D.shape == (4, 6)
+    assert idx2 == [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
 
-    # Expected A
-    A_blocks = []
+    expected = []
     for d in range(H.shape[1]):
-        H_d = torch.diag(H[:, d])
-        A_blocks.append(H_d @ W)
-    A_expected = torch.cat(A_blocks, dim=1)
-    assert torch.allclose(localizer.A, A_expected, atol=1e-7)
-
-    # Apply frequency weights and recheck
-    w = torch.tensor([1.0, 0.5, 2.0, 0.25])
-    localizer.set_frequency_weights(w)
-    A_w_expected = torch.cat([(w.view(-1, 1) * (torch.diag(H[:, d]) @ W)) for d in range(H.shape[1])], dim=1)
-    assert torch.allclose(localizer.A, A_w_expected, atol=1e-7)
+        for k in range(W.shape[1]):
+            atom = H[:, d] * W[:, k]
+            expected.append(atom / (torch.norm(atom) + 1e-12))
+    expected_D = torch.stack(expected, dim=1)
+    assert torch.allclose(D, expected_D, atol=1e-7)
 
 
 def test_separability_metrics_discriminate_cases():

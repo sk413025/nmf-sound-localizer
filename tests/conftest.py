@@ -6,7 +6,7 @@ import os
 import pytest
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def setup_fixed_test_data():
     """
     Automatically set up fixed test data sources for all tests.
@@ -31,10 +31,8 @@ def setup_fixed_test_data():
     x_root = os.environ["REAL_TF_X_ROOT"]
     y_root = os.environ["REAL_TF_Y_ROOT"]
     
-    if not os.path.exists(x_root):
-        raise FileNotFoundError(f"X data source not found: {x_root}")
-    if not os.path.exists(y_root):
-        raise FileNotFoundError(f"Y data source not found: {y_root}")
+    if not os.path.exists(x_root) or not os.path.exists(y_root):
+        pytest.skip("Real TF test data not available for integration tests.")
     
     # Verify expected structure exists
     required_angles = ["angle_90", "angle_100", "angle_110"]
@@ -43,9 +41,9 @@ def setup_fixed_test_data():
         y_angle_path = os.path.join(y_root, angle)
         
         if not os.path.exists(x_angle_path):
-            raise FileNotFoundError(f"X angle directory not found: {x_angle_path}")
+            pytest.skip(f"Required X angle directory not found: {x_angle_path}")
         if not os.path.exists(y_angle_path):
-            raise FileNotFoundError(f"Y angle directory not found: {y_angle_path}")
+            pytest.skip(f"Required Y angle directory not found: {y_angle_path}")
     
     print(f"✅ Fixed test data configured:")
     print(f"   X_ROOT: {x_root}")
@@ -55,7 +53,7 @@ def setup_fixed_test_data():
 
 
 @pytest.fixture
-def test_data_paths():
+def test_data_paths(setup_fixed_test_data):
     """
     Provide test data paths for individual test functions.
     
