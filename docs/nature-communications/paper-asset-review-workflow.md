@@ -54,6 +54,15 @@ The final accepted artifact is:
 
 - `review.json`
 
+`context.json` is expected to distinguish three asset layers when applicable:
+
+- `evidence source`: results/data files that support the claim
+- `generator output`: clean code-produced figure asset
+- `manuscript asset`: final paper-facing composite that is actually reviewed
+
+For manual figures, only the manuscript asset may exist. For data-backed figures,
+the manuscript asset must remain traceable to the upstream evidence and generator outputs.
+
 ## Acceptance rules
 
 A paper-facing figure is not releasable unless:

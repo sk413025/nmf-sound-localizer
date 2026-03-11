@@ -168,5 +168,6 @@ fig03_manual:
 fig06_manual:
   figure: "Fig 6"
   title: "Cross-Material Universality"
-  type: manual
+  type: provenance_gap
   asset: paper/figures/fig06_cross-material-universality.jpg
+  note: "Final manuscript asset exists, but the upstream data-backed generator/evidence layer is not yet registered in machine-readable form."

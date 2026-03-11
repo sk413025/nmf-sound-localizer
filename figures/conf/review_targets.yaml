@@ -8,6 +8,8 @@ targets:
   - figure_id: fig01
     role: main
     asset: paper/figures/fig01_paradigm-shift.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: manual_illustration
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -17,10 +19,15 @@ targets:
     claim: "Single-point structural response produces direction-specific spectral fingerprints."
     panel_order: ["a", "b"]
     legend_summary: "Experimental setup photograph and spectral fingerprint schematic."
+    evidence_sources: []
+    generator_outputs: []
+    provenance_note: "Manual setup photo plus schematic. No generator-backed upstream asset is expected."
 
   - figure_id: fig02
     role: main
     asset: paper/figures/fig02_svd-physical-dictionary.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: data_backed_composite
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -30,10 +37,18 @@ targets:
     claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
     panel_order: ["a", "b", "c"]
     legend_summary: "Singular spectrum, modal decomposition, and structured physical dictionary."
+    evidence_sources:
+      - h_matrix_normalized_original_to_box.pth
+    generator_outputs:
+      - figures/output/fig02_svd_spectrum.pdf
+      - figures/output/fig02_svd_spectrum.tiff
+    provenance_note: "Review the manuscript composite against the upstream generator output. The final asset should preserve data-backed content without slide-style adornments."
 
   - figure_id: fig03
     role: main
     asset: paper/figures/fig03_unrolled-attention-omp.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: manual_illustration
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -43,10 +58,15 @@ targets:
     claim: "The inference model is a physics-guided unrolled architecture with attention-based routing."
     panel_order: ["a"]
     legend_summary: "Full-page architecture diagram of the unrolled OMP-transformer."
+    evidence_sources: []
+    generator_outputs: []
+    provenance_note: "Manual architecture diagram. No data-backed upstream asset is expected."
 
   - figure_id: fig04
     role: main
     asset: paper/figures/fig04_noise-robustness-ablation.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: data_backed_composite
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -56,10 +76,18 @@ targets:
     claim: "Performance remains robust under additive noise and degrades under architectural ablations."
     panel_order: ["a", "b"]
     legend_summary: "Noise robustness and ablation comparison."
+    evidence_sources:
+      - results/figure4_data.json
+    generator_outputs:
+      - figures/output/fig04_snr_ablation.pdf
+      - figures/output/fig04_snr_ablation.tiff
+    provenance_note: "This manuscript asset should remain traceable to the ablation sweep summary and the clean generator outputs."
 
   - figure_id: fig05
     role: main
     asset: paper/figures/fig05_routing-mechanism-analysis.png
+    asset_layer: manuscript_composite
+    provenance_mode: data_backed_composite
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -69,10 +97,21 @@ targets:
     claim: "Routing exhibits coherent structure across global, micro, and macro scales."
     panel_order: ["a", "b", "c"]
     legend_summary: "Global routing structure, micro-mechanism case study, and macro selection statistics."
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+    generator_outputs:
+      - figures/output/fig05_structure_alignment.pdf
+      - figures/output/fig05_structure_alignment.tiff
+      - figures/output/fig06_routing_mechanism.pdf
+      - figures/output/fig06_routing_mechanism.tiff
+    provenance_note: "This final manuscript figure is a composition of two upstream generator outputs. Review should catch any recomposition that harms readability or obscures the data-backed panels."
 
   - figure_id: fig06
     role: main
     asset: paper/figures/fig06_cross-material-universality.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: provenance_gap
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
@@ -82,10 +121,15 @@ targets:
     claim: "The physical encoding mechanism generalizes across structurally distinct materials."
     panel_order: ["a", "b", "c"]
     legend_summary: "Cross-material examples, heatmaps, and RMSE comparison."
+    evidence_sources: []
+    generator_outputs: []
+    provenance_note: "The manuscript asset exists, but the upstream data-backed generator/evidence layer has not yet been registered in machine-readable form. Treat this as a provenance gap, not as a manual-only figure."
 
   - figure_id: supp_fig09_heatmaps
     role: supp
     asset: paper/figures/fig09_heatmaps.pdf
+    asset_layer: generator_output
+    provenance_mode: data_backed_generator
     width_mode: double
     manuscript_section: Supplementary Information
     manuscript_path: paper/manuscript/manuscript.md
@@ -95,10 +139,19 @@ targets:
     claim: "Baseline and no-transformer confusion heatmaps reveal class-level routing differences."
     panel_order: ["a"]
     legend_summary: "Supplementary confusion matrix heatmaps."
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+    generator_outputs:
+      - figures/output/fig09_heatmaps.pdf
+      - figures/output/fig09_heatmaps.tiff
+    provenance_note: "The review asset is already the deployed generator output."
 
   - figure_id: supp_fig09_angle55
     role: supp
     asset: paper/figures/fig09_angle55.pdf
+    asset_layer: generator_output
+    provenance_mode: data_backed_generator
     width_mode: double
     manuscript_section: Supplementary Information
     manuscript_path: paper/manuscript/manuscript.md
@@ -108,10 +161,19 @@ targets:
     claim: "Per-angle distributions show characteristic differences near 55 degrees."
     panel_order: ["b"]
     legend_summary: "Supplementary per-angle distribution at 55 degrees."
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+    generator_outputs:
+      - figures/output/fig09_angle55.pdf
+      - figures/output/fig09_angle55.tiff
+    provenance_note: "The review asset is already the deployed generator output."
 
   - figure_id: supp_fig09_angle100
     role: supp
     asset: paper/figures/fig09_angle100.pdf
+    asset_layer: generator_output
+    provenance_mode: data_backed_generator
     width_mode: double
     manuscript_section: Supplementary Information
     manuscript_path: paper/manuscript/manuscript.md
@@ -121,3 +183,10 @@ targets:
     claim: "Per-angle distributions show characteristic differences near 100 degrees."
     panel_order: ["c"]
     legend_summary: "Supplementary per-angle distribution at 100 degrees."
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+    generator_outputs:
+      - figures/output/fig09_angle100.pdf
+      - figures/output/fig09_angle100.tiff
+    provenance_note: "The review asset is already the deployed generator output."

@@ -151,14 +151,15 @@
 
 ---
 
-## Fig 6 — Cross-Material Universality (MANUAL)
+## Fig 6 — Cross-Material Universality (MANUSCRIPT COMPOSITE; UPSTREAM PROVENANCE GAP)
 
 | Field | Value |
 |-------|-------|
-| **Type** | Manual asset (cross-material experiment) |
-| **Asset** | `paper/figures/fig06_cross-material-universality.jpg` ✅ |
-| **Data pipeline** | Per-object calibrate-and-retrain (Methods §Cross-material) |
-| **Commit** | N/A (results not in this repo) |
+| **Type** | Manuscript composite with missing machine-readable upstream provenance |
+| **Manuscript asset** | `paper/figures/fig06_cross-material-universality.jpg` ✅ |
+| **Scientific source** | Per-object calibrate-and-retrain (Methods §Cross-material) |
+| **Generator / evidence registration** | Not yet registered in machine-readable form |
+| **Commit** | N/A (results not yet registered in this repo) |
 | **Materials** | Acrylic plate, paper cup, wooden board, cardboard box, laptop shell |
 
 ---
@@ -219,5 +220,5 @@
 | Fig 3 | — | — | — | ✅ (jpg exists) |
 | Fig 4 | fig04_snr_ablation.py | ablation_sweep | fig04_ablation | ✅ |
 | Fig 5 | fig05 + fig06 | primary_run | fig05_routing | ✅ |
-| Fig 6 | — | — | — | ✅ (jpg exists) |
+| Fig 6 | — | — | `fig06_manual` (`type: provenance_gap`) | Manuscript asset exists; upstream evidence contract still missing |
 | Supp Fig 9 | fig09_confusion_matrix.py | confusion_matrix | fig09_confusion | ✅ |

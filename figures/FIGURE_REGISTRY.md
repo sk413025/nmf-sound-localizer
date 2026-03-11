@@ -2,18 +2,26 @@
 
 > Master index mapping manuscript figures to experiment sources, generators,
 > and reproduction commands. Numbering follows the manuscript (Figs. 1–6 + Supp Fig. 9).
+>
+> Asset model used in this branch:
+> 1. **Evidence source**: data/results/checkpoints that support the scientific claim
+> 2. **Generator output**: clean plotted asset produced from code, when applicable
+> 3. **Manuscript asset**: final paper-facing composite stored under `paper/figures/`
+>
+> Codex review bundles judge the **manuscript asset**, but data-backed figures must
+> carry their upstream evidence source and generator output in the bundle context.
 
 ## Overview
 
-| Figure | Description | Status | Asset / Generator |
-|--------|-------------|--------|-------------------|
-| Fig 1 | Setup photo + spectral fingerprint schematic | MANUAL | `fig01_paradigm-shift.jpg` |
-| Fig 2 | SVD spectrum + modal decomposition + dictionary | DONE | `fig02_svd_spectrum.py` |
-| Fig 3 | Unrolled network architecture diagram | MANUAL | `fig03_unrolled-attention-omp.jpg` |
-| Fig 4 | Noise robustness + component ablation | DONE | `fig04_snr_ablation.py` |
-| Fig 5 | Routing mechanism analysis (structure + micro + macro) | DONE | `fig05_structure_alignment.py` + `fig06_routing_mechanism.py` |
-| Fig 6 | Cross-material universality | MANUAL | `fig06_cross-material-universality.jpg` |
-| Supp Fig 9 | Confusion matrix heatmaps | DONE | `fig09_confusion_matrix.py` |
+| Figure | Description | Asset model | Upstream contract |
+|--------|-------------|-------------|-------------------|
+| Fig 1 | Setup photo + spectral fingerprint schematic | Manual manuscript asset | No generator expected |
+| Fig 2 | SVD spectrum + modal decomposition + dictionary | Data-backed manuscript composite | `fig02_svd_spectrum.py` + `h_matrix` |
+| Fig 3 | Unrolled network architecture diagram | Manual manuscript asset | No generator expected |
+| Fig 4 | Noise robustness + component ablation | Data-backed manuscript composite | `fig04_snr_ablation.py` + `figure4_data.json` |
+| Fig 5 | Routing mechanism analysis (structure + micro + macro) | Data-backed manuscript composite | `fig05_structure_alignment.py` + `fig06_routing_mechanism.py` |
+| Fig 6 | Cross-material universality | Manuscript composite with provenance gap | Machine-readable upstream evidence not yet registered |
+| Supp Fig 9 | Confusion matrix heatmaps | Data-backed deployed generator output | `fig09_confusion_matrix.py` + `metrics.npz` |
 
 ---
 
@@ -21,42 +29,48 @@
 
 ### Fig 1 — Experimental Setup + Spectral Fingerprint
 
-- **Status:** MANUAL
+- **Asset model:** Manual manuscript asset
 - **Panels:** (a) Photograph of LDV measurement setup; (b) Spectral fingerprint schematic
-- **Asset:** `paper/figures/fig01_paradigm-shift.jpg`
-- **Source:** Photograph + illustration (no code pipeline)
+- **Evidence source:** Photograph + illustration
+- **Generator output:** None expected
+- **Manuscript asset:** `paper/figures/fig01_paradigm-shift.jpg`
 
 ---
 
 ### Fig 2 — SVD Spectrum + Modal Decomposition + Dictionary
 
-- **Status:** DONE
+- **Asset model:** Data-backed manuscript composite
 - **Panels:** (a) Singular-value spectrum; (b) Modal decomposition (freq + polar); (c–e) Dictionary heatmaps
+- **Evidence source:** `h_matrix_normalized_original_to_box.pth` (via `figures/conf/paths.yaml`)
 - **Generator:** `figures/generators/fig02_svd_spectrum.py`
-- **Data:** `h_matrix_normalized_original_to_box.pth` (via `figures/conf/paths.yaml`)
 - **Experiment branch:** `feature/omp-transformer-modal-viz` @ `15b2981`
-- **Output:** `figures/output/fig02_svd_spectrum.{pdf,tiff}`
+- **Generator output:** `figures/output/fig02_svd_spectrum.{pdf,tiff}`
+- **Manuscript asset:** `paper/figures/fig02_svd-physical-dictionary.jpg`
+- **Review rule:** Codex reviews the manuscript composite, but it must remain visually and scientifically faithful to the upstream generator output.
 
 ---
 
 ### Fig 3 — Unrolled Network Architecture
 
-- **Status:** MANUAL
+- **Asset model:** Manual manuscript asset
 - **Panels:** Full-page architecture diagram of the unrolled OMP-Transformer
-- **Asset:** `paper/figures/fig03_unrolled-attention-omp.jpg`
-- **Source:** Illustration (no code pipeline)
+- **Evidence source:** Architecture illustration
+- **Generator output:** None expected
+- **Manuscript asset:** `paper/figures/fig03_unrolled-attention-omp.jpg`
 
 ---
 
 ### Fig 4 — Noise Robustness + Component Ablation
 
-- **Status:** DONE
+- **Asset model:** Data-backed manuscript composite
 - **Panels:** (a) Ablation strip chart (SNR=Inf slice); (b) Multi-variant SNR degradation curves
+- **Evidence source:** `results/figure4_data.json`
 - **Generator:** `figures/generators/fig04_snr_ablation.py`
 - **Data:** Babble Speech260 full sweep — `exp-omp-ablation-snr-rerun-20260128` @ `14feb94`
   - 245 runs: 7 variants x 7 SNR levels x 5 seeds
   - Aggregated: `results/figure4_data.json`
-- **Output:** `figures/output/fig04_snr_ablation.{pdf,tiff}`
+- **Generator output:** `figures/output/fig04_snr_ablation.{pdf,tiff}`
+- **Manuscript asset:** `paper/figures/fig04_noise-robustness-ablation.jpg`
 
 ---
 
@@ -64,33 +78,35 @@
 
 Manuscript title: "Deciphering model behaviour across scales: attention structure, micro-mechanism and macro-robustness"
 
-- **Status:** DONE
+- **Asset model:** Data-backed manuscript composite
 - **Panels:**
   - (a) Global self-attention map — physics-consistent near-diagonal correlation structure
   - (b) Micro-level case study — OMP vs physics-aware selection heatmaps + band-wise line plots
   - (c) Selection-probability statistics — OMP off-diagonal vs QK sharp diagonal
+- **Evidence source:** `results/omp_transformer_speech260_trainval_split_full_20251115_082341/`
 - **Generators:**
   - `figures/generators/fig05_structure_alignment.py` → panels (a) and (c)
   - `figures/generators/fig06_routing_mechanism.py` → panel (b)
-- **Data:** `results/omp_transformer_speech260_trainval_split_full_20251115_082341/`
 - **Experiment branch:** `feature/master-figure-nature-comm` @ `97942ac`
-- **Output:**
+- **Generator output:**
   - `figures/output/fig05_structure_alignment.{pdf,tiff}`
   - `figures/output/fig06_routing_mechanism.{pdf,tiff}`
-- **Note:** The two generators produce separate PDFs. The final manuscript figure
-  (`fig05_routing-mechanism-analysis.png`) was composed from these panels.
+- **Manuscript asset:** `paper/figures/fig05_routing-mechanism-analysis.png`
+- **Note:** The two generators produce separate PDFs. The final manuscript figure was composed from these panels, so review must check both composition quality and fidelity to the upstream data-backed outputs.
 
 ---
 
 ### Fig 6 — Cross-Material Universality
 
-- **Status:** MANUAL
+- **Asset model:** Manuscript composite with provenance gap
 - **Panels:**
   - (a) Five target objects (acrylic plate, paper cup, wooden board, cardboard box, laptop shell)
   - (b) Dictionary/response heatmaps per material
   - (c) Cross-material RMSE comparison (OMP vs physics-aware AI)
-- **Asset:** `paper/figures/fig06_cross-material-universality.jpg`
-- **Source:** Per-object calibrate-and-retrain experiments (Methods §Cross-material)
+- **Evidence source:** Per-object calibrate-and-retrain experiments (Methods §Cross-material)
+- **Generator output:** Not yet registered in machine-readable form
+- **Manuscript asset:** `paper/figures/fig06_cross-material-universality.jpg`
+- **Release note:** Fig. 6 should not be treated as a purely manual figure. It currently has a manuscript asset but lacks a registered upstream evidence/generator contract, which must be fixed before release.
 - **Note:** This figure was previously numbered Fig 7 in an intermediate code branch
   (`paper/nature-comm-figures`) due to the Fig 5/6 split. The manuscript consolidated
   back to Fig 1–6, making the "Fig 7" entry obsolete.
@@ -99,12 +115,13 @@ Manuscript title: "Deciphering model behaviour across scales: attention structur
 
 ### Supp Fig 9 — Confusion Matrix Heatmaps
 
-- **Status:** DONE
+- **Asset model:** Data-backed deployed generator output
 - **Panels:** (a) Confusion matrices (Baseline vs No-Transformer); (b–c) Per-angle distribution comparisons
+- **Evidence source:** Baseline + No-Transformer `metrics.npz` (via `figures/conf/paths.yaml`)
 - **Generator:** `figures/generators/fig09_confusion_matrix.py`
-- **Data:** Baseline + No-Transformer `metrics.npz` (via `figures/conf/paths.yaml`)
 - **Experiment branch:** `exp/omp-ablation-20251209` @ `88a8940`
-- **Output:** `figures/output/fig09_*.{pdf,tiff}`
+- **Generator output:** `figures/output/fig09_*.{pdf,tiff}`
+- **Manuscript asset:** `paper/figures/fig09_*.pdf` (deployed generator outputs)
 - **Note:** Originally numbered Supp Fig 8; renumbered to 9 after the Fig 5/6 split
   (`23def1b`), then kept at 9 when the manuscript consolidated.
 

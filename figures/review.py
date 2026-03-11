@@ -33,6 +33,8 @@ class ReviewTarget:
     figure_id: str
     role: str
     asset: str
+    asset_layer: str
+    provenance_mode: str
     width_mode: str
     manuscript_section: str
     manuscript_path: str
@@ -42,6 +44,9 @@ class ReviewTarget:
     claim: str
     panel_order: list[str]
     legend_summary: str
+    evidence_sources: list[str]
+    generator_outputs: list[str]
+    provenance_note: str
 
 
 def _repo_root() -> Path:
@@ -64,6 +69,8 @@ def _load_targets(repo_root: Path) -> tuple[Path, Path, list[ReviewTarget]]:
             figure_id=item["figure_id"],
             role=item["role"],
             asset=item["asset"],
+            asset_layer=item.get("asset_layer", "manuscript_composite"),
+            provenance_mode=item.get("provenance_mode", "unspecified"),
             width_mode=item.get("width_mode", "double"),
             manuscript_section=item.get("manuscript_section", "Results"),
             manuscript_path=item.get("manuscript_path", "paper/manuscript/manuscript.md"),
@@ -73,6 +80,9 @@ def _load_targets(repo_root: Path) -> tuple[Path, Path, list[ReviewTarget]]:
             claim=item["claim"],
             panel_order=list(item.get("panel_order", [])),
             legend_summary=item.get("legend_summary", ""),
+            evidence_sources=list(item.get("evidence_sources", [])),
+            generator_outputs=list(item.get("generator_outputs", [])),
+            provenance_note=item.get("provenance_note", ""),
         )
         for item in cfg["targets"]
     ]
@@ -265,6 +275,8 @@ def _write_workflow(bundle_dir: Path, target: ReviewTarget, canonical_rel: str, 
             "figure_id": target.figure_id,
             "role": target.role,
             "asset": target.asset,
+            "asset_layer": target.asset_layer,
+            "provenance_mode": target.provenance_mode,
         },
         "outputs": {
             "role_reports_dir": "reviews",
@@ -303,6 +315,12 @@ Required roles:
    - consolidate both role reports
    - write final `review.json`
 
+Asset model reminder:
+
+- `context.json` distinguishes the manuscript-facing review asset from any upstream generator outputs and evidence sources.
+- For `data_backed_*` provenance modes, judge the final manuscript asset as the release candidate, but use the upstream evidence references to detect provenance gaps or slide-style recomposition mistakes.
+- If the final asset appears to discard or distort the data-backed upstream figure, call that out explicitly in the role reports.
+
 Bundle hash:
 
 - `{bundle_hash}`
@@ -340,6 +358,8 @@ def prepare_all(repo_root: Path | None = None) -> list[Path]:
             "figure_id": target.figure_id,
             "role": target.role,
             "asset": target.asset,
+            "asset_layer": target.asset_layer,
+            "provenance_mode": target.provenance_mode,
             "width_mode": target.width_mode,
             "manuscript_section": target.manuscript_section,
             "manuscript_path": target.manuscript_path,
@@ -349,6 +369,14 @@ def prepare_all(repo_root: Path | None = None) -> list[Path]:
             "claim": target.claim,
             "panel_order": target.panel_order,
             "legend_summary": target.legend_summary,
+            "asset_model": {
+                "manuscript_asset": target.asset,
+                "asset_layer": target.asset_layer,
+                "provenance_mode": target.provenance_mode,
+                "evidence_sources": target.evidence_sources,
+                "generator_outputs": target.generator_outputs,
+                "provenance_note": target.provenance_note,
+            },
             "canonical_requirements": canonical_rel,
             "geometry": geometry,
             "geometry_findings": findings,
