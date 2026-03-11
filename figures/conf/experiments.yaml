@@ -1,0 +1,172 @@
+# Structured experiment metadata for data provenance auditing.
+# Each entry links a manuscript figure to its experiment, branch, commit, and data artifacts.
+
+# ─── Fig 2: SVD Spectrum + Modal Decomposition ──────────────────────────────
+
+fig02_svd:
+  figure: "Fig 2"
+  title: "SVD Spectrum + Modal Decomposition + Dictionary"
+  generator: figures/generators/fig02_svd_spectrum.py
+  branch: feature/omp-transformer-modal-viz
+  branch_tip_commit: "15b2981"       # WARN: not reachable (likely rebased)
+  data_artifacts:
+    - path: h_matrix_normalized_original_to_box.pth
+      type: pth
+      description: "Normalized H matrix (346×17, 17 angles)"
+  pipeline:
+    stage0:
+      description: "WAV → NPY conversion"
+      commit: null                   # external script, not in repo
+      script: "/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py"
+      date: "2025-08-15"
+    stage1:
+      description: "Synchronized VAD processing"
+      commit: "d9b11d1"
+      message: "Results: Synchronized X-Y VAD processing"
+      date: "2025-09-04"
+    stage2:
+      description: "Amplitude normalization + H matrix estimation"
+      commit: "c96860b"
+      message: "Fix: Configuration C data separation"
+      date: "2025-09-09"
+  stft_params:
+    fs: 16000
+    nperseg: 2048
+    noverlap: 1536
+    hop: 512
+    window: hann
+    freq_min_hz: 304.7
+    freq_max_hz: 3000.0
+    f_bins: 346
+
+# ─── Fig 4: Noise Robustness + Component Ablation ───────────────────────────
+
+fig04_ablation:
+  figure: "Fig 4"
+  title: "Noise Robustness + Component Ablation"
+  generator: figures/generators/fig04_snr_ablation.py
+  branch: paper/nature-comm-figures
+  experiment_commit: "14feb94"
+  commit_message: "Results: Babble Speech260 full sweep (245/245, ep20)"
+  worktree: exp-omp-ablation-snr-rerun-20260128
+  data_artifacts:
+    - path: results/figure4_data.json
+      type: json
+      is_symlink: true
+      symlink_target: "worktrees/exp-omp-ablation-snr-rerun-20260128/results/figure4_data.json"
+      description: "Aggregated ablation sweep (7 variants × 7 SNR × 5 seeds = 245 runs)"
+  sweep:
+    noise_type: babble
+    n_runs: 245
+    variants:
+      - Baseline
+      - No Transformer
+      - Fixed Heuristic
+      - No Type Bias
+      - Dense Routing
+      - G-Teacher
+      - G-Fixed
+    snr_levels: ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
+    seeds_per_condition: 5
+    sweep_suffix: babble_speech260_full_20260209_011327
+
+# ─── Fig 5: Routing Mechanism Analysis ───────────────────────────────────────
+
+fig05_routing:
+  figure: "Fig 5"
+  title: "Routing Mechanism Analysis (Structure + Micro + Macro)"
+  generators:
+    - figures/generators/fig05_structure_alignment.py   # panels (a), (c)
+    - figures/generators/fig06_routing_mechanism.py      # panel (b)
+  branch: feature/master-figure-nature-comm
+  branch_tip_commit: "97942ac"
+  commit_message: "Results: Fig5 B3 — 5 band-wise line plots"
+  primary_run:
+    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+    code_state_git_head: "3785b1f"
+    code_state_commit_message: "Results: OMP Transformer Speech260 16 kHz full training (QK + hard Gumbel)"
+    timestamp: "2025-11-15T15:13:23"
+    dataset_fingerprint: f563984848ae49b4443378c4ef720a51
+  data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+      type: npz
+      is_symlink: true
+      symlink_target: "worktrees/development-workspace/results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz"
+      keys: [labels, angles_deg, scores_expert, scores_atoms, g_energy_expert, Y_val, selected_counts, selected_mask]
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+      type: npz
+      is_symlink: true
+      symlink_target: "worktrees/development-workspace/results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz"
+      keys: [D, H, W_reduced, W_full, angles, idx2angle, atom_labels]
+  model_params:
+    d_model: 128
+    nhead: 2
+    nlayers: 1
+    steps: 2
+    n_atoms: 8
+    routing_mode: qk
+    use_hard_gumbel: true
+    no_type_bias: true
+    epochs: 20
+    batch_size: 32
+    lr: 0.001
+    device: mps
+  validation_metrics:
+    top1_accuracy: 0.9459
+    mae_deg: 0.50
+    p95_error_deg: 5.00
+    n_val_clips: 1924
+    clips_per_angle: 52
+    n_angles: 37
+    diagonal_concentration_factor: 55.2
+
+# ─── Supp Fig 9: Confusion Matrix Heatmaps ──────────────────────────────────
+
+fig09_confusion:
+  figure: "Supp Fig 9"
+  title: "Confusion Matrix Heatmaps"
+  generator: figures/generators/fig09_confusion_matrix.py
+  branch: exp/omp-ablation-20251209
+  branch_tip_commit: "88a8940"       # WARN: not reachable (likely rebased)
+  data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      type: npz
+      is_symlink: false
+      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
+      description: "Baseline (full transformer) confusion matrix"
+      best_accuracy: 0.9459
+      code_state_git_head: "b2943040270c4e4bcd835f98e9df6f2b435b77c1"
+      code_state_timestamp: "2025-12-03T07:44:09"
+      code_state_status: "LFS pointer — content extracted via worktree agent"
+    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+      type: npz
+      is_symlink: false
+      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
+      description: "No-transformer ablation confusion matrix"
+      best_accuracy: 0.631
+      code_state_git_head: "34403c7ea732ef23b77fc38b3afea2427086338e"
+  ablation_params:
+    no_transformer:
+      encoder_identity: true
+      d_model: 64
+      seed: 42
+
+# ─── Manual Figures ──────────────────────────────────────────────────────────
+
+fig01_manual:
+  figure: "Fig 1"
+  title: "Experimental Setup + Spectral Fingerprint"
+  type: manual
+  asset: paper/figures/fig01_paradigm-shift.jpg
+
+fig03_manual:
+  figure: "Fig 3"
+  title: "Unrolled Network Architecture"
+  type: manual
+  asset: paper/figures/fig03_unrolled-attention-omp.jpg
+
+fig06_manual:
+  figure: "Fig 6"
+  title: "Cross-Material Universality"
+  type: manual
+  asset: paper/figures/fig06_cross-material-universality.jpg
