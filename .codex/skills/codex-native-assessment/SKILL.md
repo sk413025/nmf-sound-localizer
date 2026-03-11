@@ -20,6 +20,7 @@ Open and follow:
 - `docs/codex-native-assessment/README.md`
 - `docs/codex-native-assessment/CODEX_CAPABILITY_BASELINE.md`
 - `docs/governance/codex-collaboration-contract.md`
+- `docs/agent-ops/README.md`
 
 Treat the capability baseline as the starting point for the term `codex-native`.
 
@@ -36,4 +37,5 @@ Treat the capability baseline as the starting point for the term `codex-native`.
 - Do not define `codex-native` purely from repository preference; ground it in the capability baseline.
 - Do not treat figure generation as the primary goal of this branch.
 - Prefer extending existing repository primitives such as `AGENTS.md`, local skills, and `scripts/paper/` over inventing parallel systems.
+- Treat code as subordinate substrate for manuscript work.
 - If the user asks for the latest Codex product behavior, refresh the local CLI facts and verify with official OpenAI Codex sources before finalizing conclusions.

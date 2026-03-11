@@ -2,12 +2,15 @@
 
 This worktree exists to write, validate, and prepare a Nature Communications manuscript. It is not primarily a package-development branch and not primarily a figure-only branch.
 
+The intended operating model is agent-first: Codex and other agents do the detailed manuscript, evidence, and review work; the human primarily sets direction and approves milestones.
+
 ## Read in this order
 
 1. [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 2. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 3. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 4. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+5. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Use these depending on task
 

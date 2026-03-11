@@ -1,6 +1,6 @@
 # Nature Communications Manuscript Worktree
 
-This branch is a manuscript-first workspace for writing, validating, and packaging a Nature Communications submission on non-contact acoustic sensing with everyday objects as physical encoders.
+This branch is a manuscript-first workspace for writing, validating, and packaging a Nature Communications submission on non-contact acoustic sensing with everyday objects as physical encoders. Code, figures, and results are treated as substrate that Codex and other agents use to serve manuscript work, not as the primary identity of the branch.
 
 ## Start here
 
@@ -9,6 +9,7 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
 - Branch constitution: [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 - Manuscript workspace: [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 - Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Canonical documents
 
@@ -46,6 +47,7 @@ make paper-review-gate
 - `figures/`: generator, validator, review-bundle, and deployment pipeline
 - `scripts/paper/`: manuscript build and paper-facing checks
 - `docs/governance/`: operational contracts for experiments, manuscript work, submission work, and Codex collaboration
+- `docs/agent-ops/`: role catalog, task lifecycle, handoff rules, and task packet templates for Codex orchestration
 - `docs/archive/`: historical or package-era materials that are not source of truth for this branch
 
 ## Historical material

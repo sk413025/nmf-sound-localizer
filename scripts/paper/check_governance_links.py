@@ -17,14 +17,27 @@ REQUIRED_FILES = [
     REPO_ROOT / "docs" / "governance" / "manuscript-contract.md",
     REPO_ROOT / "docs" / "governance" / "submission-contract.md",
     REPO_ROOT / "docs" / "governance" / "codex-collaboration-contract.md",
+    REPO_ROOT / "docs" / "agent-ops" / "README.md",
+    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md",
+    REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md",
+    REPO_ROOT / "docs" / "agent-ops" / "TASK_LIFECYCLE.md",
+    REPO_ROOT / "docs" / "agent-ops" / "HANDOFF_RULES.md",
+    REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md",
+    REPO_ROOT / ".codex" / "skills" / "manuscript-revision" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "claim-evidence-audit" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "results-interpretation" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md",
 ]
 
 STRING_CHECKS = [
     (REPO_ROOT / "README.md", "START_HERE_AGENT.md"),
     (REPO_ROOT / "README.md", "docs/governance/README.md"),
+    (REPO_ROOT / "README.md", "docs/agent-ops/README.md"),
     (REPO_ROOT / "AGENTS.md", "docs/governance/README.md"),
     (REPO_ROOT / "AGENTS.md", "Governance Precedence"),
+    (REPO_ROOT / "AGENTS.md", "docs/agent-ops/README.md"),
     (REPO_ROOT / "CONTRIBUTING.md", "docs/governance/README.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", "docs/agent-ops/README.md"),
 ]
 
 STALE_STRING_CHECKS = [

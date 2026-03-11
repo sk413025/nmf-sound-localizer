@@ -2,6 +2,8 @@
 
 This worktree is a manuscript-first Nature Communications branch. Figure generation, provenance checks, and experiment artifacts exist to support paper writing, paper review, and submission readiness.
 
+Code is subordinate substrate in this branch. Treat code, figures, and results as assets that Codex uses to advance manuscript, evidence, and submission tasks; do not treat package development as the main operating model unless a current canonical file explicitly says so.
+
 ## Governance Precedence
 
 When instructions conflict, follow this order:
@@ -9,8 +11,9 @@ When instructions conflict, follow this order:
 1. This file as the branch constitution
 2. Canonical task documents
 3. Operational contracts under `docs/governance/`
-4. Executable checks and scripts under `scripts/paper/` and top-level `Makefile`
-5. Archived or historical notes under `docs/archive/` and legacy redirect files
+4. Agent operating model and task packets under `docs/agent-ops/`
+5. Executable checks and scripts under `scripts/paper/` and top-level `Makefile`
+6. Archived or historical notes under `docs/archive/` and legacy redirect files
 
 ## Canonical Entry Points
 
@@ -19,12 +22,14 @@ When instructions conflict, follow this order:
 - Branch overview: [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 - Manuscript workspace: [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 - Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Task Routing
 
 - For manuscript, figure, or submission work, start from the Nature Communications canonical requirements file and the manuscript or submission contract.
 - For experiments, results commits, and validation on real data, follow the experiment contract.
 - For Codex-native workflow design, multi-agent assessment, or collaboration governance, follow the Codex collaboration contract.
+- For multi-agent execution, supervisor loops, handoffs, or task decomposition, use the agent operating model and task packets under `docs/agent-ops/`.
 - Archived package-era documents are not source of truth for this branch unless a current canonical file explicitly points to them.
 
 ## Migration Note
@@ -282,6 +287,8 @@ This repository is a codex-native project. Manuscript and submission work must b
   [.codex/skills/codex-native-assessment/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/codex-native-assessment/SKILL.md)
 - Governance contracts:
   [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Agent operations:
+  [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 Mandatory agent behavior for any task touching `paper/`, `figures/`, figure exports, tables, figure legends, submission metadata, or journal-facing documentation:
 
@@ -306,6 +313,13 @@ Mandatory agent behavior for any task asking whether this branch is more `codex-
 - Use the project-local Codex Native Assessment skill.
 - Ground recommendations in both the local Codex capability baseline and the repository's existing manuscript workflow.
 - Treat manuscript-first collaboration as the primary target, with figure generation as supporting infrastructure.
+
+Mandatory agent behavior for any multi-agent execution task:
+
+- Use task packets from `docs/agent-ops/task-packets/` when a matching packet exists.
+- Use the role catalog and handoff rules under `docs/agent-ops/` instead of inventing role boundaries ad hoc.
+- Default to a supervisor-led flow when a task changes manuscript claims, submission posture, or branch governance.
+- Treat humans as milestone approvers by default, not as the primary operator inside every subtask.
 
 Legacy note:
 

@@ -10,6 +10,8 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - Nature requirements and manuscript workspace docs
 - Operational contracts:
   - files in this directory
+- Agent operations:
+  - `docs/agent-ops/`
 - Executable gates:
   - `make paper-check`
   - `scripts/paper/`
@@ -33,3 +35,5 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use the submission contract
 - Designing or auditing Codex and multi-agent workflows:
   - use the Codex collaboration contract
+- Running multi-agent task orchestration:
+  - use `docs/agent-ops/`
