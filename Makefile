@@ -1,7 +1,16 @@
-.PHONY: manuscript figures paper-review-assets paper-review-gate clean
+.PHONY: paper-build paper-check manuscript figures paper-review-assets paper-review-gate clean
 
-manuscript: figures
+paper-build:
 	bash scripts/paper/build_docx.sh
+
+paper-check:
+	python scripts/paper/check_required_sections.py
+	python scripts/paper/check_figure_references.py
+	python scripts/paper/check_governance_links.py
+	python scripts/paper/verify_provenance.py
+	bash scripts/paper/build_docx.sh
+
+manuscript: figures paper-build
 
 figures:
 	$(MAKE) -C figures all

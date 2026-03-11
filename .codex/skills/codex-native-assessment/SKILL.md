@@ -16,8 +16,10 @@ Use this skill when the task is about:
 
 Open and follow:
 
+- `START_HERE_AGENT.md`
 - `docs/codex-native-assessment/README.md`
 - `docs/codex-native-assessment/CODEX_CAPABILITY_BASELINE.md`
+- `docs/governance/codex-collaboration-contract.md`
 
 Treat the capability baseline as the starting point for the term `codex-native`.
 

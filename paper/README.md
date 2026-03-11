@@ -14,12 +14,26 @@ This folder is a **Markdown-first** manuscript workspace intended for drafting a
 Prerequisite: `pandoc` (tested with Pandoc 3.x).
 
 ```bash
-./scripts/paper/build_docx.sh
+make paper-build
 ```
 
 Outputs:
 - `paper/out/manuscript.docx`
 - `paper/out/build.log`
+
+## Governance and checks
+
+This manuscript workspace sits inside a branch-level governance system.
+
+- Branch constitution: `AGENTS.md`
+- Governance contracts: `docs/governance/`
+- Human and agent quickstarts: `START_HERE_HUMAN.md`, `START_HERE_AGENT.md`
+
+Recommended health check:
+
+```bash
+make paper-check
+```
 
 ## Nature Communications formatting (submission)
 Nature Communications is typeset in two columns at publication, but Word submissions should be formatted for review readability (e.g., double-spaced, single-column, no full justification, with Arabic page numbers). The journal does not provide a Word template; formatting is imposed later during production.

@@ -1,0 +1,36 @@
+# Start Here for Humans
+
+This worktree exists to write, validate, and prepare a Nature Communications manuscript. It is not primarily a package-development branch and not primarily a figure-only branch.
+
+## Read in this order
+
+1. [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
+2. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
+3. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
+4. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+
+## Use these depending on task
+
+- Writing or revising the manuscript:
+  - `paper/manuscript/manuscript.md`
+  - `docs/governance/manuscript-contract.md`
+- Nature submission or artwork compliance:
+  - `docs/nature-communications/nature-communications-submission-requirements.md`
+  - `docs/governance/submission-contract.md`
+- Experiments, results commits, or reproducibility:
+  - `docs/governance/experiment-contract.md`
+- Codex and multi-agent workflow design:
+  - `docs/governance/codex-collaboration-contract.md`
+  - `docs/codex-native-assessment/README.md`
+
+## Common commands
+
+- `make paper-build`
+- `make paper-check`
+- `make manuscript`
+- `make paper-review-assets`
+- `make paper-review-gate`
+
+## Historical material
+
+Older package-era and toolkit-era material has been removed from the main entry path. Use `docs/archive/` only when you intentionally need historical context.

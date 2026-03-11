@@ -1,4 +1,35 @@
-# Project Memory - Acoustic Localization Experiments
+# Governance Constitution - Nature Communications Manuscript Worktree
+
+This worktree is a manuscript-first Nature Communications branch. Figure generation, provenance checks, and experiment artifacts exist to support paper writing, paper review, and submission readiness.
+
+## Governance Precedence
+
+When instructions conflict, follow this order:
+
+1. This file as the branch constitution
+2. Canonical task documents
+3. Operational contracts under `docs/governance/`
+4. Executable checks and scripts under `scripts/paper/` and top-level `Makefile`
+5. Archived or historical notes under `docs/archive/` and legacy redirect files
+
+## Canonical Entry Points
+
+- Human quickstart: [START_HERE_HUMAN.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_HUMAN.md)
+- Agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
+- Branch overview: [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
+- Manuscript workspace: [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
+- Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+
+## Task Routing
+
+- For manuscript, figure, or submission work, start from the Nature Communications canonical requirements file and the manuscript or submission contract.
+- For experiments, results commits, and validation on real data, follow the experiment contract.
+- For Codex-native workflow design, multi-agent assessment, or collaboration governance, follow the Codex collaboration contract.
+- Archived package-era documents are not source of truth for this branch unless a current canonical file explicitly points to them.
+
+## Migration Note
+
+Detailed experiment, manuscript, and collaboration policies remain below while they are being split into contract documents. If a current contract document exists under `docs/governance/`, treat that contract as the operational version and use the in-file prose below as supporting detail.
 
 ## 🚨 CRITICAL: Every Commit Must Be Executable
 
@@ -249,6 +280,8 @@ This repository is a codex-native project. Manuscript and submission work must b
   [.codex/skills/paper-asset-review/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/paper-asset-review/SKILL.md)
 - Project-local assessment skill:
   [.codex/skills/codex-native-assessment/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/codex-native-assessment/SKILL.md)
+- Governance contracts:
+  [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
 
 Mandatory agent behavior for any task touching `paper/`, `figures/`, figure exports, tables, figure legends, submission metadata, or journal-facing documentation:
 
