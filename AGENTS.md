@@ -237,6 +237,34 @@ Whenever introducing a symbol or a derivation step, include an explicit bridge s
 - **Guardrail:** When editing the manuscript, **do not delete existing equations** unless explicitly requested; reorganizing/moving equations is allowed.
 - **Symbol Continuity:** Ensure symbols flow logically across Physics Model → SVD → OMP → Neural Network.
 
+## Codex-Native Manuscript Workflow
+
+This repository is a codex-native project. Manuscript and submission work must be grounded in both repository memory and project-local skills.
+
+- Canonical Nature Communications requirements file:
+  [docs/nature-communications/nature-communications-submission-requirements.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/nature-communications-submission-requirements.md)
+- Project-local skill:
+  [.codex/skills/nature-communications-submission/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/nature-communications-submission/SKILL.md)
+- Project-local assessment skill:
+  [.codex/skills/codex-native-assessment/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/codex-native-assessment/SKILL.md)
+
+Mandatory agent behavior for any task touching `paper/`, `figures/`, figure exports, tables, figure legends, submission metadata, or journal-facing documentation:
+
+- Read the canonical requirements file before proposing or making edits.
+- Use the project-local Nature Communications skill when the task concerns manuscript structure, figure/table formatting, artwork export, source-data packaging, or submission readiness.
+- Treat the canonical requirements file as higher priority than legacy local notes or stale helper defaults.
+- If local code or documentation conflicts with current Nature guidance, call out the conflict explicitly and update the canonical requirements file and implementation together.
+
+Mandatory agent behavior for any task asking whether this branch is more `codex-native` or `agent-native`, or how to improve Codex collaboration:
+
+- Use the project-local Codex Native Assessment skill.
+- Ground recommendations in both the local Codex capability baseline and the repository's existing manuscript workflow.
+- Treat manuscript-first collaboration as the primary target, with figure generation as supporting infrastructure.
+
+Legacy note:
+
+- `NATURE_FIGURE_GUIDELINES.md` is not the authoritative source anymore. It is a redirect-only note kept for backwards compatibility.
+
 ## Language Policy
 **All project content must be written in English**, including:
 - Code comments and documentation
