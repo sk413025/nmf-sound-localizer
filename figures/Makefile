@@ -1,24 +1,28 @@
 .PHONY: all generate validate review-prepare review-gate deploy release clean
 
+REPO_ROOT := $(abspath ..)
+PYTHONPATH_PREFIX = PYTHONPATH="$(REPO_ROOT):$${PYTHONPATH}"
+
 all: generate validate deploy review-prepare
 
 generate:
-	python -m figures.build.pipeline generate
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python -m figures.build.pipeline generate
 
 validate:
-	python -m figures.build.pipeline validate
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python -m figures.build.pipeline validate
 
 review-prepare:
-	python ../scripts/paper/review_paper_assets.py prepare
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python scripts/paper/review_paper_assets.py prepare
 
 review-gate:
-	python ../scripts/paper/review_paper_assets.py gate
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python scripts/paper/review_paper_assets.py gate
 
 deploy: validate
-	python -m figures.build.pipeline deploy
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python -m figures.build.pipeline deploy
 
 release:
-	python -m figures.build.pipeline release
+	cd "$(REPO_ROOT)" && $(PYTHONPATH_PREFIX) python -m figures.build.pipeline release
 
 clean:
-	rm -rf output/ review_artifacts/
+	find output -type f ! -name '.gitignore' -delete
+	find review_artifacts -type f ! -name '.gitignore' -delete

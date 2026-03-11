@@ -113,8 +113,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     qk_wrong_hm = D_wrong[freq_mask, :] * qk_wrong_atoms[np.newaxis, :]
 
     # Build figure
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=200)
-    gs_top = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1, 1.2], hspace=0.35, left=0.08, right=0.95, bottom=0.05, top=0.94)
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=165)
+    gs_top = gridspec.GridSpec(
+        2,
+        1,
+        figure=fig,
+        height_ratios=[0.95, 1.05],
+        hspace=0.3,
+        left=0.08,
+        right=0.96,
+        bottom=0.07,
+        top=0.94,
+    )
 
     # Panel (a): 2x2 heatmaps
     gs_a = gridspec.GridSpecFromSubplotSpec(2, 2, subplot_spec=gs_top[0], hspace=0.35, wspace=0.30)
@@ -140,11 +150,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.set_yticks(y_ticks); ax.tick_params(labelsize=5)
         cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         cbar.set_label(cbar_label, fontsize=5); cbar.ax.tick_params(labelsize=4)
+        cbar.outline.set_linewidth(0.5)
 
     fig.text(0.06, 0.94, "a", fontsize=10, fontweight="bold", va="top")
 
     # Panel (b): 5 band line plots
-    gs_b = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=gs_top[1], wspace=0.45)
+    gs_b = gridspec.GridSpecFromSubplotSpec(1, 5, subplot_spec=gs_top[1], wspace=0.35)
     freqs = np.linspace(300, 3000, D.shape[0])
     tick_positions = [0, 9, 18, 27, 36]
     tick_vals = [angles[i] for i in tick_positions if i < len(angles)]
@@ -157,8 +168,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         if y_top <= 0:
             y_top = 1.0
 
-        ax.grid(True, alpha=0.2, linestyle="--", color="gray"); ax.set_axisbelow(True)
-        ax.plot(angles, physics_scores, "o-", color="coral", linewidth=0.7, markersize=1.5, alpha=0.6, label="OMP")
+        ax.grid(True, alpha=0.25, linestyle="--", color="gray", linewidth=0.5); ax.set_axisbelow(True)
+        ax.plot(angles, physics_scores, "o-", color="coral", linewidth=0.9, markersize=1.5, alpha=0.6, label="OMP")
         ax.plot(angles, qk_scores, "-", color="darkgreen", linewidth=1.2, alpha=0.9, label="QK")
 
         peak_idx = np.argmax(qk_scores)
@@ -166,7 +177,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
         true_angle = angles[true_expert]
         ax.axvline(true_angle, color="lime", linewidth=1.0, linestyle="--", alpha=0.8)
-        ax.scatter([true_angle], [y_top * 1.05], marker="*", color="lime", s=30, edgecolors="black", linewidths=0.4, zorder=4)
+        ax.scatter([true_angle], [y_top * 1.05], marker="*", color="lime", s=30, edgecolors="black", linewidths=0.5, zorder=4)
 
         ax.set_title(band_cfg["label"], fontsize=5, fontweight="bold")
         ax.set_xlabel("Angle", fontsize=5)
