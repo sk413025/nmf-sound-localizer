@@ -14,7 +14,7 @@ export PYTHONPATH="${WORKSPACE}:${PYTHONPATH}"
 DATA_BASE="$HOME/LDV-data-experiments/snr-synthetic-2025-12/processed-16k"
 RESULTS_BASE="$HOME/LDV-data-experiments/snr-synthetic-2025-12/results/white_noise"
 H_MATRIX="${HOME}/LDV-data-processed/h_matrix_box_ldv_correct.pth"
-USM_MODEL="${WORKSPACE}/doa_normalized_config_c_corrected/models/usm.pth"
+USM_MODEL="${WORKSPACE}/legacy/assets/doa_normalized_config_c_corrected/models/usm.pth"
 
 # Evaluation parameters (match training)
 FREQ_MIN=300.0

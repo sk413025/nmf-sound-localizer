@@ -306,7 +306,7 @@ def main():
     ap = argparse.ArgumentParser(description='Offline DT trajectory builder (g-teacher)')
     # Data paths
     ap.add_argument('--h_path', type=str, default='/Users/sbplab/jiawei/LDV-data-processed/h_matrix_box_ldv_correct.pth')
-    ap.add_argument('--w_path', type=str, default='doa_normalized_config_c_corrected/models/usm.pth')
+    ap.add_argument('--w_path', type=str, default='legacy/assets/doa_normalized_config_c_corrected/models/usm.pth')
     ap.add_argument('--dataset_root', type=str, default='/Users/sbplab/jiawei/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized')
     # STFT/grid
     ap.add_argument('--fs', type=int, default=16000)

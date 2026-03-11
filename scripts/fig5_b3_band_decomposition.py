@@ -2,7 +2,7 @@
 """
 Equivalence-preserving frequency-band decomposition for Figure 5 panel B3.
 
-Spec: docs/fig5_b3_band_decomposition_spec.md
+Spec: docs/working-notes/fig5_b3_band_decomposition_spec.md
 
 This script produces two band decompositions for a single sample:
 1) Physics baseline decomposition equivalent to modal_routing_val.npz:g_energy_expert (sign-aligned).

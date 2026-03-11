@@ -48,7 +48,7 @@ def main():
     ap.add_argument('--dataset_root', type=str, required=True, help='Root with angle_XX/*.npy')
     ap.add_argument('--angles', type=int, nargs='*', default=None, help='Angles to include, e.g., 0 15 30')
     ap.add_argument('--H_path', type=str, default='h_matrix_normalized_original_to_box.pth')
-    ap.add_argument('--W_path', type=str, default='doa_normalized_config_c_corrected/models/usm.pth')
+    ap.add_argument('--W_path', type=str, default='legacy/assets/doa_normalized_config_c_corrected/models/usm.pth')
     ap.add_argument('--freq_min', type=float, default=300.0)
     ap.add_argument('--freq_max', type=float, default=3000.0)
     ap.add_argument('--steps', type=int, default=6)

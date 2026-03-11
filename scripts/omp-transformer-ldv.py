@@ -1395,7 +1395,7 @@ def main():
                         default='/Users/sbplab/jiawei/LDV-data-processed/h_matrix_box_ldv_correct.pth',
                         help='Path to H matrix (commit dd1e20d)')
     parser.add_argument('--w_path', type=str,
-                        default='doa_normalized_config_c_corrected/models/usm.pth',
+                        default='legacy/assets/doa_normalized_config_c_corrected/models/usm.pth',
                         help='Path to W matrix (commit b573aa6)')
     parser.add_argument('--dataset_root', type=str,
                         default='/Users/sbplab/jiawei/LDV-data-processed/white_noise_box_data_no_edge_sync_vad',
