@@ -22,6 +22,9 @@ The intended operating model is agent-first: Codex and other agents do the detai
   - `docs/governance/submission-contract.md`
 - Experiments, results commits, or reproducibility:
   - `docs/governance/experiment-contract.md`
+- Active code or package substrate:
+  - `docs/governance/runtime-substrate-contract.md`
+  - `docs/governance/ASSET_CLASSES.md`
 - Codex and multi-agent workflow design:
   - `docs/governance/codex-collaboration-contract.md`
   - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`

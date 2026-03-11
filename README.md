@@ -21,6 +21,8 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `figures/FIGURE_REGISTRY.md`
 - Task routing:
   - `docs/agent-ops/TASK_PACKETS.md`
+- Asset classification:
+  - `docs/governance/ASSET_CLASSES.md`
 
 ## Command surface
 
@@ -39,7 +41,11 @@ make paper-review-gate
 - `scripts/paper/`: manuscript build and paper-facing checks
 - `docs/governance/`: operational contracts
 - `docs/agent-ops/`: supervisor model, roles, task packets, and review loop
+- `docs/evidence/`: evidence, lineage, and provenance notes that still support current work
+- `docs/working-notes/`: exploratory notes, prompts, and analysis that are not canonical
+- `nmf_localizer/`, `doa_rl/`, `scripts/`, `tests/`: active runtime substrate governed by `docs/governance/runtime-substrate-contract.md`
 - `docs/archive/`: historical material that is not current source of truth
+- `legacy/`: quarantined scripts and assets outside the main workflow
 
 ## Historical material
 

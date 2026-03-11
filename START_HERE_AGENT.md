@@ -9,20 +9,22 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 3. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
 4. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
-## Route in four steps
+## Route in five steps
 
 1. Identify the task type:
    - manuscript or submission
    - paper asset review
    - experiment or results interpretation
    - orchestration or governance
+   - runtime substrate maintenance
 2. Choose one skill only:
    - `.codex/skills/paper-submission/SKILL.md`
    - `.codex/skills/paper-asset-review/SKILL.md`
    - `.codex/skills/experiment-results/SKILL.md`
    - `.codex/skills/agent-orchestrator/SKILL.md`
-3. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
-4. If the task could shift claims, governance, or submission posture, route through the supervisor model first.
+3. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md`.
+4. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
+5. If the task could shift claims, governance, or submission posture, route through the supervisor model first.
 
 ## Agent-first operating model
 

@@ -10,6 +10,8 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - Nature requirements and manuscript workspace docs
 - Operational contracts:
   - files in this directory
+- Asset classification:
+  - `ASSET_CLASSES.md`
 - Agent operations:
   - `docs/agent-ops/`
 - Executable gates:
@@ -24,6 +26,8 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
 - [manuscript-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/manuscript-contract.md)
 - [submission-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/submission-contract.md)
 - [codex-collaboration-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/codex-collaboration-contract.md)
+- [runtime-substrate-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/runtime-substrate-contract.md)
+- [ASSET_CLASSES.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/ASSET_CLASSES.md)
 
 ## When to use what
 
@@ -35,5 +39,7 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use the submission contract
 - Designing or auditing Codex and multi-agent workflows:
   - use the Codex collaboration contract
+- Changing active runtime code, scripts, tests, or package metadata:
+  - use the runtime substrate contract
 - Running multi-agent task orchestration:
   - use `docs/agent-ops/`

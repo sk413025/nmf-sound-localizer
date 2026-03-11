@@ -7,6 +7,7 @@ paper-check:
 	python scripts/paper/check_required_sections.py
 	python scripts/paper/check_figure_references.py
 	python scripts/paper/check_governance_links.py
+	python scripts/paper/check_asset_boundaries.py
 	python scripts/paper/verify_provenance.py
 	bash scripts/paper/build_docx.sh
 

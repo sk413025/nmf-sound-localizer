@@ -17,6 +17,8 @@ This branch is governed as a manuscript-first research worktree. Contributions s
   - Follow `docs/governance/submission-contract.md`
 - Experiments, validations, and results commits:
   - Follow `docs/governance/experiment-contract.md`
+- Runtime substrate or package-facing changes:
+  - Follow `docs/governance/runtime-substrate-contract.md`
 - Codex or multi-agent workflow changes:
   - Follow `docs/governance/codex-collaboration-contract.md`
 
@@ -45,7 +47,4 @@ make paper-review-gate
 
 ## Historical package-era guidance
 
-Older package-oriented contribution guidance is no longer the main operating model for this branch. Historical context is preserved under `docs/archive/`.
-
-- Package-era identity note: `docs/archive/package-era-identity.md`
-- Historical package changelog: `CHANGELOG.md`
+Older package-oriented contribution guidance is no longer the main operating model for this branch. Historical context is preserved under `docs/archive/` and git history.

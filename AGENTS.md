@@ -37,6 +37,8 @@ When instructions conflict, follow this order:
 - Manuscript writing and claim/evidence discipline: `docs/governance/manuscript-contract.md`
 - Submission packaging and Nature compliance: `docs/governance/submission-contract.md`
 - Codex-native routing, skills, and orchestration: `docs/governance/codex-collaboration-contract.md`
+- Active code and package substrate: `docs/governance/runtime-substrate-contract.md`
+- Asset classification: `docs/governance/ASSET_CLASSES.md`
 
 ## Skill Routing
 
@@ -63,6 +65,12 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - The supervisor or orchestrator decomposes multi-agent work.
 - Specialists execute bounded paper-facing tasks.
 - Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
+
+## Asset Boundaries
+
+- Evidence docs may support provenance and paper evidence, but they are not branch entrypoints.
+- Working notes may inform future work, but they are never canonical source of truth by themselves.
+- Quarantined assets must remain outside the main workflow.
 
 ## Historical Material
 
