@@ -21,7 +21,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 ALLOWED_WIDTHS_MM = (89, 183)  # single / double column
 WIDTH_TOL_MM = 1.0
-MAX_HEIGHT_MM = 247
+MAX_HEIGHT_MM = 170
 HEIGHT_TOL_MM = 1.0
 MIN_DPI = 300
 ALLOWED_FONT_FAMILIES = {"Arial", "Helvetica", "DejaVu Sans", "DejaVuSans"}

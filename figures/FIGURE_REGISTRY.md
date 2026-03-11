@@ -141,9 +141,21 @@ make -C figures generate
 # Validate compliance (dimensions, fonts, DPI)
 make -C figures validate
 
-# Deploy to paper/figures/ (requires validation pass)
+# Deploy automated assets into paper/figures/
 make -C figures deploy
 
-# Full pipeline
+# Prepare Codex review bundles for manuscript-facing assets
+make -C figures review-prepare
+
+# Manuscript-facing review entrypoint
+python scripts/paper/review_paper_assets.py prepare
+
+# After Codex writes role reports + final review.json, enforce review gate
+python scripts/paper/review_paper_assets.py gate
+
+# Existing build pipeline
 make -C figures all
+
+# Release pipeline (requires passing review gate)
+make -C figures release
 ```

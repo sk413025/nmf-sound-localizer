@@ -4,7 +4,10 @@ Figure build pipeline — orchestrates generation, validation, and deployment.
 Usage:
     python -m figures.build.pipeline generate
     python -m figures.build.pipeline validate
+    python -m figures.build.pipeline review_prepare
+    python -m figures.build.pipeline review_gate
     python -m figures.build.pipeline deploy
+    python -m figures.build.pipeline release
     python -m figures.build.pipeline all
 """
 
@@ -96,9 +99,23 @@ def cmd_deploy() -> None:
     print(f"Deployed {copied} files to {paper_dir}")
 
 
+def cmd_review_prepare() -> list[Path]:
+    """Build Codex review bundles for paper-facing figure assets."""
+    from figures.review import prepare_all
+
+    return prepare_all(_repo_root())
+
+
+def cmd_review_gate() -> bool:
+    """Require passing Codex review reports before release deployment."""
+    from figures.review import gate_all
+
+    return gate_all(_repo_root())
+
+
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python -m figures.build.pipeline {generate|validate|deploy|all}")
+        print("Usage: python -m figures.build.pipeline {generate|validate|review_prepare|review_gate|deploy|release|all}")
         sys.exit(1)
 
     action = sys.argv[1]
@@ -112,7 +129,16 @@ def main() -> None:
             print("\nValidation failed — deployment blocked.")
             sys.exit(1)
 
-    if action in ("deploy", "all"):
+    if action in ("review_prepare", "all", "release"):
+        cmd_review_prepare()
+
+    if action in ("review_gate", "release"):
+        ok = cmd_review_gate()
+        if not ok:
+            print("\nCodex review gate failed — release blocked.")
+            sys.exit(1)
+
+    if action in ("deploy", "all", "release"):
         cmd_deploy()
 
 

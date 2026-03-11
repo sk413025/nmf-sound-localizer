@@ -9,6 +9,7 @@ This module is intentionally side-effect free on import.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ import yaml
 # ---------------------------------------------------------------------------
 SINGLE_COL_MM = 89
 DOUBLE_COL_MM = 183
-MAX_HEIGHT_MM = 247
+MAX_HEIGHT_MM = 170
 
 # ---------------------------------------------------------------------------
 # Colourblind-friendly palette (Wong 2011, Viridis-anchored)
@@ -55,6 +56,11 @@ PALETTE_VIRIDIS_8 = [
 def mm_to_in(mm: float) -> float:
     """Convert millimetres to inches."""
     return mm / 25.4
+
+
+def in_to_mm(inches: float) -> float:
+    """Convert inches to millimetres."""
+    return inches * 25.4
 
 
 # ---------------------------------------------------------------------------
@@ -154,7 +160,66 @@ def save_outputs(
         dpi=dpi_tiff,
         pil_kwargs={"compression": "tiff_lzw"},
     )
+    _write_layout_metadata(fig, out_prefix)
     return [pdf_path, tiff_path]
+
+
+def collect_layout_metadata(fig: plt.Figure) -> dict[str, Any]:
+    """Collect figure and axes geometry in mm for downstream review tooling."""
+    width_in, height_in = fig.get_size_inches()
+    width_mm = in_to_mm(width_in)
+    height_mm = in_to_mm(height_in)
+
+    axes_payload: list[dict[str, Any]] = []
+    for idx, ax in enumerate(fig.axes):
+        bbox = ax.get_position()
+        x_mm = bbox.x0 * width_mm
+        y_mm = bbox.y0 * height_mm
+        w_mm = bbox.width * width_mm
+        h_mm = bbox.height * height_mm
+        title = ax.get_title()
+        xlabel = ax.get_xlabel()
+        ylabel = ax.get_ylabel()
+        axes_payload.append(
+            {
+                "index": idx,
+                "kind": getattr(ax, "name", "axes"),
+                "has_data": bool(ax.has_data()),
+                "title": title or None,
+                "xlabel": xlabel or None,
+                "ylabel": ylabel or None,
+                "bbox_norm": {
+                    "x0": round(float(bbox.x0), 6),
+                    "y0": round(float(bbox.y0), 6),
+                    "width": round(float(bbox.width), 6),
+                    "height": round(float(bbox.height), 6),
+                },
+                "bbox_mm": {
+                    "x0": round(float(x_mm), 3),
+                    "y0": round(float(y_mm), 3),
+                    "width": round(float(w_mm), 3),
+                    "height": round(float(h_mm), 3),
+                },
+            }
+        )
+
+    return {
+        "figure_mm": {
+            "width": round(float(width_mm), 3),
+            "height": round(float(height_mm), 3),
+        },
+        "axes": axes_payload,
+    }
+
+
+def _write_layout_metadata(fig: plt.Figure, out_prefix: str | Path) -> Path:
+    """Persist a sidecar JSON file with figure/axes layout metadata."""
+    out_prefix = Path(out_prefix)
+    layout_path = out_prefix.with_suffix(".layout.json")
+    payload = collect_layout_metadata(fig)
+    with open(layout_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+    return layout_path
 
 
 # ---------------------------------------------------------------------------

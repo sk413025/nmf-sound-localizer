@@ -1,0 +1,123 @@
+# Paper-facing figure assets that require Codex multimodal review.
+# All paths are relative to the repository root.
+
+review_dir: figures/review_artifacts
+canonical_requirements: docs/nature-communications/nature-communications-submission-requirements.md
+
+targets:
+  - figure_id: fig01
+    role: main
+    asset: paper/figures/fig01_paradigm-shift.jpg
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 1"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Single-point structural response produces direction-specific spectral fingerprints."
+    panel_order: ["a", "b"]
+    legend_summary: "Experimental setup photograph and spectral fingerprint schematic."
+
+  - figure_id: fig02
+    role: main
+    asset: paper/figures/fig02_svd-physical-dictionary.jpg
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 2"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
+    panel_order: ["a", "b", "c"]
+    legend_summary: "Singular spectrum, modal decomposition, and structured physical dictionary."
+
+  - figure_id: fig03
+    role: main
+    asset: paper/figures/fig03_unrolled-attention-omp.jpg
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 3"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "The inference model is a physics-guided unrolled architecture with attention-based routing."
+    panel_order: ["a"]
+    legend_summary: "Full-page architecture diagram of the unrolled OMP-transformer."
+
+  - figure_id: fig04
+    role: main
+    asset: paper/figures/fig04_noise-robustness-ablation.jpg
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 4"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Performance remains robust under additive noise and degrades under architectural ablations."
+    panel_order: ["a", "b"]
+    legend_summary: "Noise robustness and ablation comparison."
+
+  - figure_id: fig05
+    role: main
+    asset: paper/figures/fig05_routing-mechanism-analysis.png
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 5"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Routing exhibits coherent structure across global, micro, and macro scales."
+    panel_order: ["a", "b", "c"]
+    legend_summary: "Global routing structure, micro-mechanism case study, and macro selection statistics."
+
+  - figure_id: fig06
+    role: main
+    asset: paper/figures/fig06_cross-material-universality.jpg
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 6"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "The physical encoding mechanism generalizes across structurally distinct materials."
+    panel_order: ["a", "b", "c"]
+    legend_summary: "Cross-material examples, heatmaps, and RMSE comparison."
+
+  - figure_id: supp_fig09_heatmaps
+    role: supp
+    asset: paper/figures/fig09_heatmaps.pdf
+    width_mode: double
+    manuscript_section: Supplementary Information
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Supplementary / Fig. 9a"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Baseline and no-transformer confusion heatmaps reveal class-level routing differences."
+    panel_order: ["a"]
+    legend_summary: "Supplementary confusion matrix heatmaps."
+
+  - figure_id: supp_fig09_angle55
+    role: supp
+    asset: paper/figures/fig09_angle55.pdf
+    width_mode: double
+    manuscript_section: Supplementary Information
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Supplementary / Fig. 9b"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Per-angle distributions show characteristic differences near 55 degrees."
+    panel_order: ["b"]
+    legend_summary: "Supplementary per-angle distribution at 55 degrees."
+
+  - figure_id: supp_fig09_angle100
+    role: supp
+    asset: paper/figures/fig09_angle100.pdf
+    width_mode: double
+    manuscript_section: Supplementary Information
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Supplementary / Fig. 9c"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Per-angle distributions show characteristic differences near 100 degrees."
+    panel_order: ["c"]
+    legend_summary: "Supplementary per-angle distribution at 100 degrees."
