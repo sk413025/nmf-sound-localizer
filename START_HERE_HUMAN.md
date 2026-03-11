@@ -2,7 +2,7 @@
 
 This worktree exists to write, validate, and prepare a Nature Communications manuscript. It is not primarily a package-development branch and not primarily a figure-only branch.
 
-The intended operating model is agent-first: Codex and other agents do the detailed manuscript, evidence, and review work; the human primarily sets direction and approves milestones.
+The intended operating model is agent-first: Codex and other agents do the detailed manuscript, evidence, and review work; the human mainly sets direction and approves milestones.
 
 ## Read in this order
 
@@ -24,7 +24,7 @@ The intended operating model is agent-first: Codex and other agents do the detai
   - `docs/governance/experiment-contract.md`
 - Codex and multi-agent workflow design:
   - `docs/governance/codex-collaboration-contract.md`
-  - `docs/codex-native-assessment/README.md`
+  - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
 
 ## Common commands
 

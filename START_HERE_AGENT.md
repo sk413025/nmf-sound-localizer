@@ -6,37 +6,28 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 
 1. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 2. [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
-3. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
-4. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
-5. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
+3. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+4. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
-## Task routing
+## Route in four steps
 
-- Manuscript or submission task:
-  - Read `docs/nature-communications/nature-communications-submission-requirements.md`
-  - Use `.codex/skills/nature-communications-submission/SKILL.md`
-- Manuscript revision task:
-  - Use `.codex/skills/manuscript-revision/SKILL.md`
-  - Start from `docs/agent-ops/task-packets/manuscript-revision-packet.md`
-- Claim or evidence audit:
-  - Use `.codex/skills/claim-evidence-audit/SKILL.md`
-  - Start from `docs/agent-ops/task-packets/claim-audit-packet.md`
-- Results interpretation:
-  - Use `.codex/skills/results-interpretation/SKILL.md`
-  - Start from `docs/agent-ops/task-packets/results-interpretation-packet.md`
-- Paper-facing asset review:
-  - Use `.codex/skills/paper-asset-review/SKILL.md`
-  - Run `python scripts/paper/review_paper_assets.py prepare`
-- Codex-native or multi-agent governance task:
-  - Use `.codex/skills/agent-orchestrator/SKILL.md` or `.codex/skills/codex-native-assessment/SKILL.md`
-  - Read `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
-- Experiment or results task:
-  - Follow `docs/governance/experiment-contract.md`
+1. Identify the task type:
+   - manuscript or submission
+   - paper asset review
+   - experiment or results interpretation
+   - orchestration or governance
+2. Choose one skill only:
+   - `.codex/skills/paper-submission/SKILL.md`
+   - `.codex/skills/paper-asset-review/SKILL.md`
+   - `.codex/skills/experiment-results/SKILL.md`
+   - `.codex/skills/agent-orchestrator/SKILL.md`
+3. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
+4. If the task could shift claims, governance, or submission posture, route through the supervisor model first.
 
 ## Agent-first operating model
 
 - Code is substrate. Read code when needed to support a paper task, not as the default starting point.
-- Prefer a role packet and a skill before improvising a workflow.
+- Prefer a task packet and a skill before improvising a workflow.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
 - Treat the human as an occasional approver unless the task packet says otherwise.
 
@@ -50,7 +41,6 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 
 ## Do not use as source of truth
 
-- `README.md` content from older package-era history in git
-- `CONTRIBUTING.md` from older package-era history in git
+- older package-era README or CONTRIBUTING text from git history
 - `NATURE_FIGURE_GUIDELINES.md` as an authoritative policy source
 - archived notes under `docs/archive/`

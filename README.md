@@ -1,6 +1,6 @@
 # Nature Communications Manuscript Worktree
 
-This branch is a manuscript-first workspace for writing, validating, and packaging a Nature Communications submission on non-contact acoustic sensing with everyday objects as physical encoders. Code, figures, and results are treated as substrate that Codex and other agents use to serve manuscript work, not as the primary identity of the branch.
+This branch is a manuscript-first workspace for writing, validating, and packaging a Nature Communications submission on non-contact acoustic sensing with everyday objects as physical encoders. Code, figures, and results are substrate that Codex and other agents use to serve paper work.
 
 ## Start here
 
@@ -19,25 +19,16 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `paper/manuscript/manuscript.md`
 - Figure registry:
   - `figures/FIGURE_REGISTRY.md`
-- Codex-native assessment pack:
-  - `docs/codex-native-assessment/README.md`
+- Task routing:
+  - `docs/agent-ops/TASK_PACKETS.md`
 
 ## Command surface
 
 ```bash
-# Build the manuscript DOCX only
 make paper-build
-
-# Run manuscript and governance checks
 make paper-check
-
-# Rebuild figures, then rebuild the manuscript
 make manuscript
-
-# Prepare manuscript-facing asset review bundles
 make paper-review-assets
-
-# Enforce paper asset review decisions
 make paper-review-gate
 ```
 
@@ -46,14 +37,10 @@ make paper-review-gate
 - `paper/`: manuscript source, references, templates, and final paper assets
 - `figures/`: generator, validator, review-bundle, and deployment pipeline
 - `scripts/paper/`: manuscript build and paper-facing checks
-- `docs/governance/`: operational contracts for experiments, manuscript work, submission work, and Codex collaboration
-- `docs/agent-ops/`: role catalog, task lifecycle, handoff rules, and task packet templates for Codex orchestration
-- `docs/archive/`: historical or package-era materials that are not source of truth for this branch
+- `docs/governance/`: operational contracts
+- `docs/agent-ops/`: supervisor model, roles, task packets, and review loop
+- `docs/archive/`: historical material that is not current source of truth
 
 ## Historical material
 
-This worktree evolved out of a broader acoustic-localization toolkit repository. That history still matters for provenance and legacy experiments, but it is not the primary identity of this branch.
-
-- Historical notes: `docs/archive/`
-- Package-era module docs: `nmf_localizer/README.md`
-- Historical package changelog: `CHANGELOG.md`
+This worktree evolved out of a broader acoustic-localization toolkit repository. Use `docs/archive/`, `CHANGELOG.md`, and `nmf_localizer/README.md` only when historical context is genuinely needed.

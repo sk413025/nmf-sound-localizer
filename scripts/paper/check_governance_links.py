@@ -20,12 +20,11 @@ REQUIRED_FILES = [
     REPO_ROOT / "docs" / "agent-ops" / "README.md",
     REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md",
     REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md",
-    REPO_ROOT / "docs" / "agent-ops" / "TASK_LIFECYCLE.md",
-    REPO_ROOT / "docs" / "agent-ops" / "HANDOFF_RULES.md",
+    REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md",
     REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md",
-    REPO_ROOT / ".codex" / "skills" / "manuscript-revision" / "SKILL.md",
-    REPO_ROOT / ".codex" / "skills" / "claim-evidence-audit" / "SKILL.md",
-    REPO_ROOT / ".codex" / "skills" / "results-interpretation" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md",
     REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md",
 ]
 
@@ -38,10 +37,18 @@ STRING_CHECKS = [
     (REPO_ROOT / "AGENTS.md", "docs/agent-ops/README.md"),
     (REPO_ROOT / "CONTRIBUTING.md", "docs/governance/README.md"),
     (REPO_ROOT / "START_HERE_AGENT.md", "docs/agent-ops/README.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/paper-submission/SKILL.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", "docs/agent-ops/TASK_PACKETS.md"),
 ]
 
 STALE_STRING_CHECKS = [
     (REPO_ROOT / "README.md", "Nature Figure Workspace"),
+    (REPO_ROOT / "README.md", "docs/codex-native-assessment/README.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/manuscript-revision/SKILL.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/claim-evidence-audit/SKILL.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/results-interpretation/SKILL.md"),
+    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/codex-native-assessment/SKILL.md"),
+    (REPO_ROOT / "START_HERE_HUMAN.md", "docs/codex-native-assessment/README.md"),
 ]
 
 

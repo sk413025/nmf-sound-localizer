@@ -25,6 +25,14 @@ Red-team review is mandatory for:
 - `NEEDS_REWRITE`: the output is not safe to use as-is
 - `ESCALATE_HUMAN`: milestone-level decision required from the human approver
 
+## Common warning codes
+
+- `WARN_SCOPE`: the task drifted away from manuscript-first outcomes
+- `WARN_CAPABILITY`: the proposal assumes Codex features that are not grounded in local primitives
+- `WARN_ACTIONABILITY`: the output cannot be handed to another agent without new decisions
+- `WARN_DUPLICATION`: the output duplicates an existing role, skill, or document path
+- `WARN_EVIDENCE`: claims or recommendations are not tied to files, commands, or artifacts
+
 ## Human gates
 
 Escalate to the human approver at these boundaries:

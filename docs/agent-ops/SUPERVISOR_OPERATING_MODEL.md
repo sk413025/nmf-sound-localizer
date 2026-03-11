@@ -6,6 +6,18 @@ The supervisor is the default coordinator for any task that changes manuscript c
 
 Convert high-level goals into agent-safe work units and keep the branch aligned with manuscript-first outcomes.
 
+## Codex-native baseline
+
+Define `codex-native` from real primitives in this branch:
+
+- `AGENTS.md`
+- the four project-local skills
+- `docs/governance/`
+- `docs/agent-ops/`
+- `scripts/paper/` and `make paper-check`
+
+Do not propose an orchestration layer that duplicates these primitives without a concrete gap.
+
 ## Default flow
 
 1. classify the task

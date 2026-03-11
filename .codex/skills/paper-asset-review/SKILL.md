@@ -16,6 +16,9 @@ Use this skill for:
 
 Open and follow:
 
+- `START_HERE_AGENT.md`
+- `docs/governance/submission-contract.md`
+- `docs/agent-ops/TASK_PACKETS.md`
 - [docs/nature-communications/nature-communications-submission-requirements.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/nature-communications-submission-requirements.md)
 - [docs/nature-communications/paper-asset-review-workflow.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/paper-asset-review-workflow.md)
 

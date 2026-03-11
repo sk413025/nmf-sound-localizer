@@ -8,7 +8,6 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - `START_HERE_AGENT.md`
 - project-local skills under `.codex/skills/`
 - `docs/agent-ops/`
-- Codex-native assessment workflows
 - supervisor, specialist, and red-team coordination
 
 ## Core rules
@@ -23,7 +22,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 ## Required outputs
 
 - clear routing for human, agent, and supervisor roles
-- reusable role packets or skills for repeated work
+- reusable skills and unified task packets for repeated work
 - evidence-backed recommendations
 - executable checks where policy is high value and low ambiguity
 - a stable agent operating model for task decomposition, handoff, and review
@@ -31,14 +30,13 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 ## Acceptance criteria
 
 - main entrypoints clearly route to the right canonical docs
-- local skills align with branch governance
-- agent task packets and role definitions are discoverable from the main governance path
+- local skills align with branch governance and stay limited to the core branch workflows
+- task packets and role definitions are discoverable from the main governance path
 - governance checks confirm the key files and links exist
-- Codex-native assessment pack remains discoverable from the main governance path
+- Codex-native orchestration guidance remains discoverable from the main governance path
 
 ## Executable gates
 
 - `python scripts/paper/check_governance_links.py`
 - `make paper-check`
-- `docs/codex-native-assessment/README.md`
 - `docs/agent-ops/README.md`
