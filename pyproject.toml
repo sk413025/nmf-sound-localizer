@@ -8,8 +8,8 @@ version = "1.0.0"
 authors = [
     {name = "Speech Processing Lab", email = "contact@speechlab.example"},
 ]
-description = "A modular toolkit for NMF-based sound source localization"
-readme = "README.md"
+description = "Runtime substrate for transfer-function, USM, and soft-OMP workflows"
+readme = "docs/governance/runtime-package-readme.md"
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -27,7 +27,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
-    "Environment :: Console",
     "Environment :: GPU :: NVIDIA CUDA",
 ]
 keywords = [
@@ -81,9 +80,6 @@ all = [
     "nmf-sound-localizer[dev,docs,viz]"
 ]
 
-[project.scripts]
-nmf-localizer = "nmf_localizer.cli:main"
-
 [project.urls]
 Homepage = "https://github.com/speechlab/nmf-sound-localizer"
 Documentation = "https://nmf-sound-localizer.readthedocs.io/"
@@ -93,7 +89,7 @@ Changelog = "https://github.com/speechlab/nmf-sound-localizer/blob/main/CHANGELO
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["nmf_localizer*"]
+include = ["nmf_localizer*", "doa_rl*"]
 exclude = ["tests*", "docs*", "examples*"]
 
 [tool.setuptools.package-data]
@@ -157,7 +153,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["nmf_localizer"]
+source = ["nmf_localizer", "doa_rl"]
 omit = [
     "*/tests/*",
     "*/examples/*",

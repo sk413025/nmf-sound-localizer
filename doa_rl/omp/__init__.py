@@ -1,17 +1,8 @@
-from .is_omp import (
-    is_divergence,
-    build_blocks,
-    concat_blocks,
-    solve_x_is_smu,
-    teacher_scores_is,
-    is_omp_select,
-)
+"""Maintained soft-OMP surface."""
+
+from .soft_omp import TrainableRoutedSoftOMP, build_dictionary
 
 __all__ = [
-    "is_divergence",
-    "build_blocks",
-    "concat_blocks",
-    "solve_x_is_smu",
-    "teacher_scores_is",
-    "is_omp_select",
+    "TrainableRoutedSoftOMP",
+    "build_dictionary",
 ]

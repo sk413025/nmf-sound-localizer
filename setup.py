@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""
-Setup script for nmf-sound-localizer package.
-"""
+"""Setup script for the maintained runtime substrate package."""
 
 from setuptools import setup, find_packages
 from pathlib import Path
 
-# Read the contents of README file
+# Read the runtime-substrate package readme
 this_directory = Path(__file__).parent
-long_description = (this_directory / "README.md").read_text(encoding='utf-8')
+long_description = (
+    this_directory / "docs" / "governance" / "runtime-package-readme.md"
+).read_text(encoding='utf-8')
 
 # Read requirements
 def read_requirements():
@@ -33,7 +33,7 @@ setup(
     version="1.0.0",
     author="Speech Processing Lab",
     author_email="contact@speechlab.example",
-    description="A modular toolkit for NMF-based sound source localization",
+    description="Runtime substrate for transfer-function, USM, and soft-OMP workflows",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/speechlab/nmf-sound-localizer",
@@ -43,7 +43,7 @@ setup(
         "Documentation": "https://nmf-sound-localizer.readthedocs.io/",
         "Changelog": "https://github.com/speechlab/nmf-sound-localizer/blob/main/CHANGELOG.md",
     },
-    packages=find_packages(),
+    packages=find_packages(include=["nmf_localizer*", "doa_rl*"]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -60,7 +60,6 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
-        "Environment :: Console",
         "Environment :: GPU :: NVIDIA CUDA",
     ],
     python_requires=">=3.8",
@@ -100,11 +99,6 @@ setup(
             "pytest>=7.0.0",
             "pytest-cov>=4.0.0",
         ]
-    },
-    entry_points={
-        "console_scripts": [
-            "nmf-localizer=nmf_localizer.cli:main",
-        ],
     },
     include_package_data=True,
     package_data={
