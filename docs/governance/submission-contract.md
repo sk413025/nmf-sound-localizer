@@ -16,11 +16,24 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - Legacy local figure notes are redirects, not authority.
 - Paper-facing asset review must stay manuscript-first.
 - When local implementation conflicts with current Nature guidance, update the canonical document and implementation together.
+- Figure style must follow the branch visual grammar derived from the canonical Nature requirements.
+- Typography must use the branch type scale:
+  - panel labels about `8 pt` bold
+  - most other figure text within `5–7 pt`
+- Figure color must follow paper-wide semantic roles rather than ad hoc per-figure choices, unless the figure is encoding a genuinely local scientific variable such as mode identity.
+- In-figure narration must stay restrained; slide-style master titles, oversized internal headers, and colored explanatory text are not acceptable defaults.
+- Multi-panel layouts should minimize white space and size panels by claim importance rather than force equal-size symmetry when the content does not warrant it.
+- Every multi-panel figure must preserve one final paper-facing composite plus a set of split top-level panel assets and a panel manifest under `figures/output/`.
+- Split panel assets are internal reproducibility and review artifacts; the Nature-facing submission asset remains the final composite figure.
+- Every paper-facing figure judgment must begin with visual inspection of the actual asset.
+- `jpg` and `png` assets must be reviewed directly; `pdf` assets must first be converted page-by-page into PNG previews for visual inspection.
+- Generated or data-backed figures are not submission-ready unless the visual asset has been reconciled against both its generator or composition code and its upstream evidence or provenance sources.
 
 ## Required outputs
 
 - submission-ready manuscript assets under `paper/`
 - validated figure outputs and review artifacts
+- split panel assets and panel manifests for every multi-panel figure
 - required submission sections and metadata
 - explicit handling of data and code availability
 
@@ -30,10 +43,15 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - manuscript includes the required branch-level submission sections
 - figure files and references are consistent with branch policy
 - canonical Nature requirements remain reachable from main entrypoints
+- main-paper figures do not rely on oversized internal headers or presentation-board narration
+- typography and semantic colors are consistent with the branch visual grammar
+- every multi-panel figure has a matching panel manifest whose panel order agrees with the composite
+- figure acceptance does not rely on filenames, registry prose, or manuscript text alone when visual inspection or provenance backtrace would change the interpretation
 
 ## Executable gates
 
 - `make paper-review-assets`
 - `make paper-review-gate`
+- `make -C figures validate`
 - `python scripts/paper/check_figure_references.py`
 - `python scripts/paper/check_governance_links.py`

@@ -32,6 +32,8 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Prefer a task packet and a skill before improvising a workflow.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
 - Treat the human as an occasional approver unless the task packet says otherwise.
+- Before making any paper-figure judgment, visually inspect the actual figure asset. If the asset is a PDF, convert every page to PNG previews first.
+- For generated or data-backed paper figures, trace the figure through its generator or composition code and upstream evidence sources before deciding panel identity, lineage, claim support, or Nature suitability.
 
 ## Common commands
 

@@ -17,6 +17,9 @@ When instructions conflict, follow this order:
 
 - Keep the branch manuscript-first. Do not treat it as a generic package-development branch or a figure-only sandbox.
 - Keep code subordinate to paper work. Read or change code only when it supports manuscript, evidence, review, or submission tasks.
+- For any paper-related figure task, inspect the actual figure visually before interpreting, comparing, replacing, renumbering, or approving it.
+- For `jpg` and `png` paper assets, inspect the image directly. For `pdf` paper assets, convert every page to viewable PNG previews before judging content or suitability.
+- For any generated or data-backed paper figure, inspect the visual asset, the generator or composition code, and the upstream evidence or provenance source before concluding what the figure shows or how it should be used in the manuscript.
 - Keep experiment and results commits executable, reproducible, and grounded in real runs with real artifacts.
 - Keep outputs under declared subdirectories such as `results/<run_name>/`; do not write run artifacts to the repository root.
 - Keep fail-fast behavior. Do not add silent fallbacks, coercions, or best-effort recovery to experiment-critical paths.

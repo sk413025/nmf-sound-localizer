@@ -17,6 +17,9 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 - Methods carries procedural detail and reproducibility-critical specifications.
 - Symbols and advanced concepts must be introduced with bridge sentences and clear physical meaning.
 - Paragraphs should end with evidence-anchored take-home claims.
+- Any manuscript change that depends on figure meaning, panel mapping, or figure lineage must be grounded in actual visual inspection of the figure asset.
+- For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
+- For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
 
 ## Required outputs
 
@@ -29,6 +32,7 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 
 - required manuscript sections are present
 - figure references are consistent with the manuscript and figure registry
+- figure-dependent claim edits are grounded in visual inspection plus generator and provenance backtrace when applicable
 - unresolved placeholders are explicitly tracked or resolved
 - paper-facing checks under `make paper-check` pass
 

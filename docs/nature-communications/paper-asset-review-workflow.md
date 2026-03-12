@@ -12,6 +12,7 @@ Therefore:
 - `scripts/paper/` owns manuscript-facing review entrypoints
 - Codex multimodal review is the primary acceptance judge
 - AGENTS and local skills define the governance contract
+- Paper-facing figure review is visual-first: figure meaning, panel identity, and suitability cannot be inferred from filenames or metadata alone
 
 ## Entry points
 
@@ -31,9 +32,9 @@ python scripts/paper/review_paper_assets.py gate
 Every paper-facing figure review uses three explicit roles:
 
 1. `visual-reviewer`
-   - judges readability, hierarchy, spacing, and overload
+   - judges readability, hierarchy, spacing, overload, typography compliance, semantic color consistency, and narration restraint
 2. `manuscript-fit-reviewer`
-   - judges whether the figure supports the intended claim and belongs in the intended paper role
+   - judges whether the figure supports the intended claim, belongs in the intended paper role, and delegates explanation to the caption instead of overexplaining inside the artwork
 3. `supervisor`
    - consolidates both role reports into the final `review.json`
 
@@ -54,14 +55,25 @@ The final accepted artifact is:
 
 - `review.json`
 
-`context.json` is expected to distinguish three asset layers when applicable:
+`context.json` is expected to distinguish four asset layers when applicable:
 
 - `evidence source`: results/data files that support the claim
 - `generator output`: clean code-produced figure asset
+- `split panel assets`: top-level manuscript panels (`a/b/c/...`) stored as internal recomposition assets
 - `manuscript asset`: final paper-facing composite that is actually reviewed
 
-For manual figures, only the manuscript asset may exist. For data-backed figures,
+For single-panel manual figures, only the manuscript asset may exist. For data-backed figures,
 the manuscript asset must remain traceable to the upstream evidence and generator outputs.
+For multi-panel figures in this branch, split top-level panel assets are required internal assets even though the journal-facing release target remains the final composite.
+
+Review must follow this inspection order:
+
+1. Inspect the manuscript asset visually.
+2. If the manuscript asset or any reviewed upstream figure asset is a `pdf`, inspect PNG page previews for every page before interpreting the asset.
+3. Inspect split panel assets or upstream figure assets listed in `context.json`.
+4. Inspect the generator or composition code that produced the figure.
+5. Inspect the evidence or provenance sources that the figure claims to summarize.
+6. Only then decide manuscript fit, lineage, and Nature suitability.
 
 ## Acceptance rules
 
@@ -74,6 +86,21 @@ A paper-facing figure is not releasable unless:
 - `overall_verdict = pass`
 - the role fit matches the target role
 - no split or supplementary move is recommended for a main-paper figure
+- the review does not identify typography-band violations, semantic-color drift, or presentation-style narration overload as unresolved blockers
+
+## Required visual rubric
+
+Every `visual-reviewer` pass must explicitly judge:
+
+- whether non-panel text stays within the branch `5–7 pt` band
+- whether panel labels stay near the branch `8 pt` bold standard
+- whether semantic colors are consistent with the paper-wide visual grammar
+- whether the figure uses internal headers or narration that should live in the caption instead
+- whether the panel layout minimizes white space and makes the main claim visually dominant
+- whether any weakness is intrinsic to a split panel or introduced only by the final recomposition
+- whether the reviewer inspected the actual asset rather than inferring content from filenames or manuscript text
+- whether any PDF assets were reviewed through page-by-page PNG previews
+- whether the visual story agrees with the generator or composition code and the listed evidence sources
 
 ## Governance principle
 

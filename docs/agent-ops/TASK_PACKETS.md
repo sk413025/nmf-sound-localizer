@@ -14,6 +14,7 @@ Use these packet templates to turn a high-level request into a bounded agent tas
 - Required outputs:
   - revised text, audit findings, or compliance gap list
   - figure and Methods anchors for every claim-level change
+  - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
   - explicit unresolved issues if evidence is weak
 - Escalate when:
   - a change could alter scientific interpretation
@@ -31,6 +32,7 @@ Use these packet templates to turn a high-level request into a bounded agent tas
 - Required outputs:
   - executed-run interpretation grounded in logs and artifacts
   - reproduction commands and artifact paths
+  - figure-facing backtrace when a run artifact is being promoted into manuscript evidence
   - success, failure, and next-step analysis written in contract language
 - Escalate when:
   - logs, metrics, or provenance inputs are missing
@@ -48,9 +50,11 @@ Use these packet templates to turn a high-level request into a bounded agent tas
 - Required outputs:
   - keep, revise, split, or move recommendation
   - manuscript-fit justification
+  - recorded confirmation that the figure was visually inspected and that generator and evidence layers were checked when applicable
   - review JSON artifacts required by the review gate
 - Escalate when:
   - a figure looks acceptable visually but weakens the paper-level claim
+  - visual content, generator code, and provenance source disagree about what the figure is showing
   - the review implies main-paper versus supplementary reclassification
 
 ## Governance and orchestration packet

@@ -131,6 +131,25 @@ Nature's live figure guide is stricter than some older PDF guidance. When unsure
 - Keep axis symbols, units, and notation consistent with the manuscript.
 - For microscopy or scale-dependent imaging, use scale bars rather than magnification labels.
 
+### Project visual grammar for this branch
+
+The official Nature guidance above is translated into the following branch policy for paper-facing figures:
+
+- Panel labels use lowercase bold letters at about `8 pt`.
+- Most other figure text should stay within `5–7 pt`.
+- Subplot titles are allowed only when they remove real ambiguity, and should stay within the normal non-panel text band.
+- Default figure text should be black rather than colored.
+- Use a paper-wide semantic palette rather than ad hoc per-figure color choices:
+  - baseline / physics / classical methods
+  - learned / AI / transformer-driven methods
+  - ablation / weakened variants
+  - truth / target / emphasis
+- Mode-specific colors are allowed only for genuinely mode-encoded figures such as Fig. 2; they are not the paper-wide semantic palette.
+- Prefer sequential colormaps for nonnegative quantities and diverging colormaps for signed quantities.
+- Avoid internal “master figure” headers, oversized section titles, and presentation-style narration inside figures.
+- In multi-panel figures, size panels according to claim importance and minimize white space instead of forcing equal-size symmetry by default.
+- Branch-local internal rule: every multi-panel figure must also keep split top-level panel assets plus a panel manifest under `figures/output/` for review and recomposition support. These split panels are internal assets, not the Nature-facing primary submission figures.
+
 ## Table Requirements
 
 - Main-text tables should remain editable inside the manuscript file.
@@ -179,6 +198,9 @@ For this repository, the following operational rules apply:
 - If local code disagrees with this file, assume the local code may be stale and reconcile it deliberately.
 - If Nature's live guidance changes, update this file before or alongside the code that implements the requirement.
 - Codex multimodal review is the primary paper-level judge for figure suitability; code support should stay thin and should not be expanded into a heavy heuristic layout engine by default.
+- Paper-facing figure decisions must be visual-first: do not infer figure meaning, panel identity, or claim support from filenames, legends, registry prose, or manuscript text alone.
+- For `jpg` and `png`, review the image directly. For `pdf`, convert every page to PNG previews before Codex reviews the figure.
+- For generated or data-backed figures, reconcile the visual asset against both the generator or composition code and the upstream evidence or provenance source before accepting it for manuscript or submission use.
 
 ### Codex-native review workflow
 
@@ -191,8 +213,10 @@ make -C figures all
 # Prepare Codex review bundles
 python scripts/paper/review_paper_assets.py prepare
 
-# Review preview.png + preview_overlay.png in Codex
-# and write role reports + review.json into each bundle directory
+# Review the actual image assets in Codex.
+# If any reviewed asset is a PDF, inspect the generated page-by-page PNG previews first.
+# Then trace the figure through its generator/composition code and evidence sources
+# before writing role reports + review.json into each bundle directory
 
 # Enforce stored review verdicts before release
 python scripts/paper/review_paper_assets.py gate
@@ -212,7 +236,7 @@ Review bundles are written under `figures/review_artifacts/<figure_id>/` and inc
 
 - [figures/style.py](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/figures/style.py) and [figures/validate.py](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/figures/validate.py) now enforce `MAX_HEIGHT_MM = 170`; expect older figure layouts to fail until they are redesigned.
 - The current validator enforces paired `PDF + TIFF` outputs; the official guidance is more nuanced and centers on editable vector masters for main figures.
-- The current validator does not yet fully check figure-text point sizes, legend-length limits, or presence of required submission sections.
+- The current validator still uses lightweight heuristics for text-size and palette-policy checks; final figure suitability still depends on Codex review.
 
 ## Suggested Codex Checklist
 
@@ -223,6 +247,9 @@ Before closing any manuscript or figure task, verify:
 - display-item count remains within journal guidance
 - figure width is 89 mm or 183 mm
 - figure height is justified if it approaches 170 mm
+- each paper-related figure decision was based on actual visual inspection of the asset
+- each reviewed PDF was converted page-by-page into PNG previews before visual judgment
+- each generated or data-backed figure was reconciled against its generator/composition code and upstream evidence source
 - fonts are sans-serif and embedded
 - exported figures preserve editable text
 - legends are concise and within limit

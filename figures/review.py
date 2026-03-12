@@ -43,6 +43,7 @@ class ReviewTarget:
     registry_path: str
     claim: str
     panel_order: list[str]
+    panel_manifest: str | None
     legend_summary: str
     evidence_sources: list[str]
     generator_outputs: list[str]
@@ -79,6 +80,7 @@ def _load_targets(repo_root: Path) -> tuple[Path, Path, list[ReviewTarget]]:
             registry_path=item.get("registry_path", "figures/FIGURE_REGISTRY.md"),
             claim=item["claim"],
             panel_order=list(item.get("panel_order", [])),
+            panel_manifest=item.get("panel_manifest"),
             legend_summary=item.get("legend_summary", ""),
             evidence_sources=list(item.get("evidence_sources", [])),
             generator_outputs=list(item.get("generator_outputs", [])),
@@ -100,6 +102,16 @@ def _load_layout_metadata(repo_root: Path, stem: str) -> dict[str, Any] | None:
     return None
 
 
+def _load_panel_manifest(repo_root: Path, panel_manifest: str | None) -> dict[str, Any] | None:
+    if panel_manifest is None:
+        return None
+    manifest_path = repo_root / panel_manifest
+    if not manifest_path.exists():
+        return None
+    with open(manifest_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 def _render_pdf_preview(pdf_path: Path, out_path: Path, max_width_px: int = 1800) -> None:
     if fitz is None:
         raise RuntimeError("PyMuPDF is required to render PDF previews")
@@ -113,6 +125,25 @@ def _render_pdf_preview(pdf_path: Path, out_path: Path, max_width_px: int = 1800
         scale = max_width_px / img.width
         img = img.resize((int(img.width * scale), int(img.height * scale)))
     img.save(out_path)
+
+
+def _render_pdf_page_previews(pdf_path: Path, pages_dir: Path, max_width_px: int = 1800) -> list[str]:
+    if fitz is None:
+        raise RuntimeError("PyMuPDF is required to render PDF previews")
+
+    pages_dir.mkdir(parents=True, exist_ok=True)
+    rel_paths: list[str] = []
+    with fitz.open(str(pdf_path)) as doc:
+        for page_index, page in enumerate(doc):
+            pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), alpha=False)
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            if img.width > max_width_px:
+                scale = max_width_px / img.width
+                img = img.resize((int(img.width * scale), int(img.height * scale)))
+            out_path = pages_dir / f"page_{page_index + 1:03d}.png"
+            img.save(out_path)
+            rel_paths.append(out_path.name)
+    return rel_paths
 
 
 def _render_image_preview(image_path: Path, out_path: Path, max_width_px: int = 1800) -> None:
@@ -206,6 +237,43 @@ def _compute_bundle_hash(paths: list[Path]) -> str:
     return digest.hexdigest()
 
 
+def _prepare_panel_previews(bundle_dir: Path, repo_root: Path, panel_manifest: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if panel_manifest is None:
+        return []
+    previews_dir = bundle_dir / "panel_previews"
+    previews_dir.mkdir(parents=True, exist_ok=True)
+    prepared: list[dict[str, Any]] = []
+    for panel in panel_manifest.get("panels", []):
+        asset_rel = panel.get("asset_path")
+        if not asset_rel:
+            continue
+        asset_path = repo_root / asset_rel
+        if not asset_path.exists():
+            continue
+        preview_name = f"{panel.get('panel_id', 'panel')}.png"
+        preview_path = previews_dir / preview_name
+        if asset_path.suffix.lower() == ".pdf":
+            _render_pdf_preview(asset_path, preview_path, max_width_px=1200)
+            pages_dir = previews_dir / f"{panel.get('panel_id', 'panel')}_pages"
+            page_names = _render_pdf_page_previews(asset_path, pages_dir, max_width_px=1200)
+            page_preview_paths = [str((pages_dir / name).relative_to(bundle_dir)) for name in page_names]
+        else:
+            _render_image_preview(asset_path, preview_path, max_width_px=1200)
+            page_preview_paths = [str(preview_path.relative_to(bundle_dir))]
+        prepared.append(
+            {
+                "panel_id": panel.get("panel_id"),
+                "title": panel.get("title"),
+                "asset_path": asset_rel,
+                "preview_path": str(preview_path.relative_to(bundle_dir)),
+                "page_preview_paths": page_preview_paths,
+                "storage_mode": panel.get("storage_mode"),
+                "provenance_mode": panel.get("provenance_mode"),
+            }
+        )
+    return prepared
+
+
 def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str) -> None:
     reviews_dir = bundle_dir / "reviews"
     reviews_dir.mkdir(parents=True, exist_ok=True)
@@ -222,9 +290,18 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "reviewer_role": "visual-reviewer",
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
+            "inspection_complete": False,
+            "visual_assets_inspected": [],
+            "pdf_pages_converted_and_inspected": [],
+            "generator_paths_inspected": [],
+            "evidence_paths_inspected": [],
+            "typography_issues": [],
+            "semantic_color_issues": [],
+            "narration_issues": [],
             "readability_issues": [],
             "hierarchy_issues": [],
             "style_consistency_notes": [],
+            "white_space_efficiency_notes": [],
             "recommended_width_mode": "single|double",
             "recommended_height_mm": 0,
             "panel_changes": [],
@@ -235,8 +312,14 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "reviewer_role": "manuscript-fit-reviewer",
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
+            "inspection_complete": False,
+            "visual_assets_inspected": [],
+            "pdf_pages_converted_and_inspected": [],
+            "generator_paths_inspected": [],
+            "evidence_paths_inspected": [],
             "claim_support_assessment": "",
             "claim_mismatch_issues": [],
+            "caption_delegation_issues": [],
             "move_to_supplementary": False,
             "split_recommended": False,
             "panel_changes": [],
@@ -248,16 +331,26 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
             "consolidated_from_roles": ["visual-reviewer", "manuscript-fit-reviewer"],
+            "inspection_complete": False,
+            "visual_assets_inspected": [],
+            "pdf_pages_converted_and_inspected": [],
+            "generator_paths_inspected": [],
+            "evidence_paths_inspected": [],
             "primary_reason": "",
+            "typography_issues": [],
+            "semantic_color_issues": [],
+            "narration_issues": [],
             "readability_issues": [],
             "hierarchy_issues": [],
             "claim_mismatch_issues": [],
+            "caption_delegation_issues": [],
             "recommended_width_mode": "single|double",
             "recommended_height_mm": 0,
             "panel_changes": [],
             "split_recommended": False,
             "move_to_supplementary": False,
             "style_consistency_notes": [],
+            "white_space_efficiency_notes": [],
         },
     }
     for role, payload in templates.items():
@@ -271,6 +364,20 @@ def _write_workflow(bundle_dir: Path, target: ReviewTarget, canonical_rel: str, 
         "bundle_hash": bundle_hash,
         "canonical_requirements_path": canonical_rel,
         "required_roles": list(REQUIRED_REVIEW_ROLES),
+        "required_inspection_order": [
+            "inspect_manuscript_asset_visually",
+            "convert_and_inspect_all_pdf_pages",
+            "inspect_split_panel_or_upstream_figure_assets",
+            "inspect_generator_or_composition_code",
+            "inspect_evidence_or_provenance_sources",
+            "then_judge_manuscript_fit_and_release_readiness",
+        ],
+        "review_doctrine": {
+            "visual_first": True,
+            "metadata_only_inference_forbidden": True,
+            "all_pdf_pages_must_be_converted_before_review": True,
+            "generated_figures_require_code_and_provenance_backtrace": True,
+        },
         "target": {
             "figure_id": target.figure_id,
             "role": target.role,
@@ -306,20 +413,27 @@ Use the `paper-asset-review` skill and the canonical Nature Communications requi
 Required roles:
 
 1. `visual-reviewer`
-   - inspect visual readability, hierarchy, spacing, and overload
+   - inspect the actual visual asset first; do not infer content from filenames, manuscript prose, or registry text
+   - if any reviewed asset is a PDF, inspect the generated PNG previews for every page before drawing conclusions
+   - inspect visual readability, hierarchy, spacing, overload, typography compliance, semantic color consistency, and narration restraint
    - write `reviews/visual-reviewer.json`
 2. `manuscript-fit-reviewer`
-   - inspect manuscript fit, claim support, and whether the asset belongs in the intended paper role
+   - inspect manuscript fit, claim support, caption delegation, and whether the asset belongs in the intended paper role
+   - reconcile the figure's visual content with its generator or composition code and its evidence or provenance sources before concluding what the figure means
    - write `reviews/manuscript-fit-reviewer.json`
 3. `supervisor`
+   - reject reviews that skip visual inspection, PDF page conversion, or code/provenance reconciliation
    - consolidate both role reports
    - write final `review.json`
 
 Asset model reminder:
 
 - `context.json` distinguishes the manuscript-facing review asset from any upstream generator outputs and evidence sources.
+- For multi-panel figures, inspect the split top-level panel assets listed in `context.json` to separate panel-local problems from recomposition problems.
+- Use `registry_path`, `manuscript_path`, and the figure metadata in `context.json` to locate the generator or composition code path when needed.
 - For `data_backed_*` provenance modes, judge the final manuscript asset as the release candidate, but use the upstream evidence references to detect provenance gaps or slide-style recomposition mistakes.
 - If the final asset appears to discard or distort the data-backed upstream figure, call that out explicitly in the role reports.
+- Apply the branch visual grammar: panel labels about 8 pt, most other figure text within 5–7 pt, restrained internal narration, and stable semantic colors across the paper.
 
 Bundle hash:
 
@@ -346,13 +460,21 @@ def prepare_all(repo_root: Path | None = None) -> list[Path]:
 
         if asset_path.suffix.lower() == ".pdf":
             _render_pdf_preview(asset_path, preview_path)
+            pdf_pages_dir = bundle_dir / "preview_pages"
+            asset_page_names = _render_pdf_page_previews(asset_path, pdf_pages_dir)
+            asset_page_preview_paths = [str((pdf_pages_dir / name).relative_to(bundle_dir)) for name in asset_page_names]
         else:
             _render_image_preview(asset_path, preview_path)
+            asset_page_preview_paths = [str(preview_path.relative_to(bundle_dir))]
 
         geometry = _geometry_for_asset(asset_path, _width_mm_for_mode(target.width_mode))
         layout_meta = _load_layout_metadata(repo_root, asset_path.stem)
         findings = _geometry_findings(target, geometry, layout_meta)
+        panel_manifest = _load_panel_manifest(repo_root, target.panel_manifest)
+        if len(target.panel_order) > 1 and panel_manifest is None:
+            findings.append("Missing panel manifest for a multi-panel figure.")
         _draw_overlay(preview_path, overlay_path, geometry, layout_meta)
+        panel_preview_records = _prepare_panel_previews(bundle_dir, repo_root, panel_manifest)
 
         context = {
             "figure_id": target.figure_id,
@@ -368,20 +490,40 @@ def prepare_all(repo_root: Path | None = None) -> list[Path]:
             "registry_path": target.registry_path,
             "claim": target.claim,
             "panel_order": target.panel_order,
+            "panel_manifest_path": target.panel_manifest,
             "legend_summary": target.legend_summary,
             "asset_model": {
                 "manuscript_asset": target.asset,
                 "asset_layer": target.asset_layer,
                 "provenance_mode": target.provenance_mode,
+                "split_panel_assets": panel_manifest,
                 "evidence_sources": target.evidence_sources,
                 "generator_outputs": target.generator_outputs,
                 "provenance_note": target.provenance_note,
             },
             "canonical_requirements": canonical_rel,
+            "inspection_requirements": {
+                "visual_first": True,
+                "metadata_only_inference_forbidden": True,
+                "all_pdf_pages_must_be_converted_before_review": True,
+                "generator_or_composition_code_must_be_inspected_for_generated_figures": True,
+                "evidence_or_provenance_sources_must_be_inspected_for_generated_figures": True,
+            },
+            "asset_visual_review": {
+                "asset_path": target.asset,
+                "asset_suffix": asset_path.suffix.lower(),
+                "page_preview_paths": asset_page_preview_paths,
+            },
+            "generator_trace_sources": {
+                "registry_path": target.registry_path,
+                "review_targets_path": "figures/conf/review_targets.yaml",
+                "experiments_path": "figures/conf/experiments.yaml",
+            },
             "geometry": geometry,
             "geometry_findings": findings,
             "layout_metadata_available": layout_meta is not None,
             "layout_metadata": layout_meta,
+            "panel_previews": panel_preview_records,
         }
         context_path.write_text(json.dumps(context, indent=2, sort_keys=True), encoding="utf-8")
 
