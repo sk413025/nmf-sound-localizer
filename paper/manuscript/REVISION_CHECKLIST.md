@@ -44,7 +44,7 @@ How to use:
 ### R0-5 Results: Every key equation gets interpretation + figure evidence
 - [x] After every standalone key equation in Results, add 1–2 sentences:
   - Physical interpretation (what it means in the physics/measurement context).
-  - Evidence pointer to specific figure panels (e.g., Fig. 2a–c, Fig. 5b).
+  - Evidence pointer to specific figure panels (e.g., Fig. 2a–c, Fig. 6a, Fig. 7b).
   - Evidence: `paper/manuscript/manuscript.md:40,49,59,65,75,86,105,125`
 
 ### R0-6 Contact-loading claim: align claim with evidence placeholders
@@ -117,8 +117,10 @@ How to use:
 - Results (Fig. 1): {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_SIM_WITHIN_MEAN}, {TBD_SIM_WITHIN_SD}, {TBD_SIM_BETWEEN_MEAN}, {TBD_SIM_BETWEEN_SD}.
 - Results (Fig. 2): {TBD_SVD_R}, {TBD_SVD_ENERGY_PCT}, {TBD_SVD_INFERENCE_POLICY}.
 - Results (Fig. 4): {TBD_SPEECH_N_CLIPS_TOTAL}, {TBD_SPEECH_CLIPS_PER_ANGLE}, {TBD_SPEECH_TOP1_ACC_PCT}, {TBD_SPEECH_MAE_DEG}, {TBD_SPEECH_P95_DEG}, {TBD_N_INDEP_RUNS}, {TBD_ACC_SNR10_PCT}, {TBD_ACC_SNR5_PCT}, {TBD_ACC_SNR0_PCT}, {TBD_ACC_ABL_NO_TRANSFORMER_PCT}, {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}, {TBD_ACC_ABL_DENSE_ROUTING_PCT}.
-- Results (Fig. 5): {TBD_DIAGONAL_CONC_FACTOR}.
-- Results (Fig. 6): {TBD_RMSE_RANGE_DEG}, {TBD_RMSE_OMP_COMPLEX_DEG}.
+- Results (Fig. 5): quantify diagonal concentration in the restored macro selection panel if a numeric claim is required.
+- Results (Fig. 6): if the angle-specific percentages are promoted into the caption, freeze the exact `55°` / `100°` values.
+- Results (Figs. 7–8): add a bandwise concentration summary only if a quantitative low/mid/high-frequency ordering is needed.
+- Results (Fig. 9): {TBD_RMSE_RANGE_DEG}, {TBD_RMSE_OMP_COMPLEX_DEG}.
 - Experimental setup: {TBD_RADIUS_M}, {TBD_N_ANGLES}, {TBD_ANGLE_RANGE_DEG}, {TBD_ANGLE_STEP_DEG}, {TBD_ANGLE_ZERO_REFERENCE}, {TBD_ANGLE_SIGN_CONVENTION}, {TBD_LDV_MODEL}, {TBD_LDV_SPOT_LOCATION}, {TBD_OBJECT_MOUNTING_CONDITION}, {TBD_TRIAL_DURATION_S}.
 - Controls: {TBD_CONTACT_SENSOR_TYPE}, {TBD_CONTACT_SENSOR_MASS_G}, {TBD_CONTACT_SENSOR_LOCATION}, {TBD_CONTACT_SENSOR_ATTACHMENT}, {TBD_CONTACT_LOADING_RESULT_SUMMARY}, {TBD_CONTACT_LOADING_PANEL_REF}.
 - Calibration/splits: {TBD_WN_CALIB_CLIPS_PER_ANGLE}, {TBD_WN_EVAL_CLIPS_PER_ANGLE}, {TBD_WN_SPLIT_RULE}, {TBD_SPEECH_SPLIT_RULE}, {TBD_SPLIT_TRAIN}, {TBD_SPLIT_VAL}, {TBD_SPLIT_TEST}.
