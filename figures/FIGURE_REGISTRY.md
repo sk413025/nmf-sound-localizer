@@ -92,6 +92,12 @@ Manuscript title: "Deciphering model behaviour across scales: attention structur
   - `figures/output/fig05_structure_alignment.{pdf,tiff}`
   - `figures/output/fig06_routing_mechanism.{pdf,tiff}`
 - **Manuscript asset:** `paper/figures/fig05_routing-mechanism-analysis.png`
+- **Historical alias:** Earlier branches and slide-style composites referred to this figure family as `Master Figure 3` ("Deciphering AI Understanding via Micro-Mechanism & Macro-Robustness"). That historical `panel b` is the predecessor of manuscript Fig. 5b, not a separate manuscript figure.
+- **Panel-b provenance note:** The older `Master Figure 3 / panel b` went through at least two code-backed forms before the current manuscript assembly:
+  - `scripts/create_master_figure.py` and the pre-registry master-figure workflow rendered an early micro-mechanism case study panel.
+  - `generate_figure5_atomic*.py` produced intermediate `B`-series assets such as `Fig5_B3_POLAR_ESTIMATION` and later band-wise line plots.
+  - The current manuscript-facing upstream source is `figures/generators/fig06_routing_mechanism.py`, whose deployed output is `figures/output/fig06_routing_mechanism.{pdf,tiff}`.
+- **Panel-b asset caveat:** Unlike panels (a) and (c), panel (b) is currently registered via the full upstream generator output `figures/output/fig06_routing_mechanism.{pdf,tiff}` rather than a dedicated split asset under `fig05_routing_mechanism_analysis_panels/`. This is intentional in the current registry, but it means the registry tracks panel-b provenance at the generator-output level, not as an isolated panel PDF.
 - **Note:** The two generators produce separate PDFs. The final manuscript figure was composed from these panels, so review must check both composition quality and fidelity to the upstream data-backed outputs.
 
 ---
