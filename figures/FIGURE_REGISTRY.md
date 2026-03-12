@@ -18,7 +18,7 @@
 
 | Figure | Description | Asset model | Upstream contract |
 |--------|-------------|-------------|-------------------|
-| Fig 1 | Setup photo + spectral fingerprint schematic | Manual manuscript composite with provisional split panels | No generator expected |
+| Fig 1 | Setup photo + spectral fingerprint schematic | Manual manuscript composite with canonical split panels | No generator expected |
 | Fig 2 | SVD spectrum + modal decomposition + dictionary | Data-backed manuscript composite | `fig02_svd_spectrum.py` + `h_matrix` |
 | Fig 3 | Unrolled network architecture diagram | Manual manuscript asset | No generator expected |
 | Fig 4 | Noise robustness + component ablation | Data-backed manuscript composite | `fig04_snr_ablation.py` + `figure4_data.json` |
@@ -42,7 +42,7 @@
 - **Manuscript asset:** `paper/figures/fig01_paradigm-shift.jpg`
 - **Split panel assets:** `figures/output/fig01_paradigm_shift_panels/`
 - **Panel manifest:** `figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json`
-- **Provenance note:** The current manuscript asset is a clean panel-first recomposition, but its split panels remain provisional crops inherited from the earlier manual composite. No separate upstream manual source package has been registered.
+- **Provenance note:** The current manuscript asset is a clean panel-first recomposition. The split panel PNGs under `figures/output/fig01_paradigm_shift_panels/` are now treated as the canonical manual panel assets for review and submission support; no generator-backed upstream source is expected.
 
 ---
 

@@ -233,7 +233,7 @@ fig01_manual:
   title: "Experimental Setup + Spectral Fingerprint"
   type: manual
   asset: paper/figures/fig01_paradigm-shift.jpg
-  note: "Current manuscript asset is a panel-first recomposition. Split panel assets remain provisional crops from the earlier manual composite."
+  note: "Current manuscript asset is a panel-first recomposition. Split panel PNGs under figures/output/fig01_paradigm_shift_panels/ are the canonical manual panel assets for review and submission support."
 
 fig03_manual:
   figure: "Fig 3"

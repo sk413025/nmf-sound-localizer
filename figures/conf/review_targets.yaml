@@ -22,7 +22,7 @@ targets:
     panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
     evidence_sources: []
     generator_outputs: []
-    provenance_note: "Manual setup photo plus schematic. The current manuscript composite is panel-first, but the split panels remain provisional crops inherited from the earlier manual layout; no separate generator-backed upstream asset is expected."
+    provenance_note: "Manual setup photo plus schematic. The current manuscript composite is panel-first, and the split panel PNGs under figures/output/fig01_paradigm_shift_panels/ now serve as the canonical manual panel assets; no separate generator-backed upstream asset is expected."
 
   - figure_id: fig02
     role: main

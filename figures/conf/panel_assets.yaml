@@ -1,28 +1,7 @@
 figures:
   fig01:
     composite_asset: paper/figures/fig01_paradigm-shift.jpg
-    panel_dir: figures/output/fig01_paradigm_shift_panels
-    storage_mode: provisional_crop
-    source_layer: manuscript_asset
-    panels:
-      - panel_id: a
-        title: Experimental setup
-        provenance_mode: manual
-        asset_prefix: fig01_panel_a_experimental_setup
-        bbox_norm:
-          x0: 0.0
-          y0: 0.08
-          width: 0.5
-          height: 0.88
-      - panel_id: b
-        title: Spectral fingerprint schematic
-        provenance_mode: manual
-        asset_prefix: fig01_panel_b_spectral_fingerprint
-        bbox_norm:
-          x0: 0.5
-          y0: 0.08
-          width: 0.5
-          height: 0.88
+    panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
 
   fig02:
     composite_asset: figures/output/fig02_svd_spectrum.pdf

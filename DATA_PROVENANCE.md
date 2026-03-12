@@ -20,7 +20,7 @@
 | **Type** | Manual asset (photograph + illustration) |
 | **Asset** | `paper/figures/fig01_paradigm-shift.jpg` ✅ |
 | **Data pipeline** | None — no code-generated content |
-| **Panel-first status** | Current manuscript asset is a clean panel-first recomposition, but the split panel assets remain provisional crops inherited from the earlier manual composite |
+| **Panel-first status** | Current manuscript asset is a clean panel-first recomposition; the split panel PNGs under `figures/output/fig01_paradigm_shift_panels/` are the canonical manual panel assets |
 | **Commit** | N/A |
 
 ---
@@ -217,7 +217,7 @@
 
 | Figure | Generator | paths.yaml key | experiments.yaml entry | Data verified |
 |--------|-----------|----------------|----------------------|---------------|
-| Fig 1 | — | — | `fig01_manual` | ✅ (jpg exists; split panels remain provisional crops) |
+| Fig 1 | — | — | `fig01_manual` | ✅ (jpg exists; canonical manual split panels registered) |
 | Fig 2 | fig02_svd_spectrum.py | h_matrix | fig02_svd | ✅ |
 | Fig 3 | — | — | — | ✅ (jpg exists) |
 | Fig 4 | fig04_snr_ablation.py | ablation_sweep | fig04_ablation | ✅ |
