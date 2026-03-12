@@ -33,8 +33,8 @@ Unrolling across stages accumulates a sparse vector \(x_T\), which is mapped to 
 ![](fig04_noise-robustness-ablation.jpg)
 
 **Fig. 4 | Performance under additive noise and architectural ablations.**
-a, Validation accuracy under additive white noise (SNR = 10, 5 and 0 dB) comparing the full physics-aware model, a no-transformer variant, and a fixed heuristic baseline; points denote independent trials and horizontal bars indicate means.
-b, Ablation of core components comparing the full model with no-transformer, dense routing, and fixed heuristic baselines.
+a, Ablation strip chart at clean / infinite SNR comparing the full model with no-transformer, fixed-heuristic, no-type-bias, dense-routing, and teacher-guided variants; points denote independent runs and horizontal bars indicate means.
+b, Validation accuracy across additive white-noise levels (0, 5, 10, 15, 20, 30 dB and clean) comparing the full physics-aware model against the same ablation family.
 
 ## Fig. 5 (asset: `fig05_structure-macro-selection.png`)
 

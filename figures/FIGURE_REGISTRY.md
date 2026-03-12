@@ -18,7 +18,7 @@
 
 | Figure | Description | Asset model | Upstream contract |
 |--------|-------------|-------------|-------------------|
-| Fig 1 | Setup photo + spectral fingerprint schematic | Manual manuscript asset | No generator expected |
+| Fig 1 | Setup photo + spectral fingerprint schematic | Manual manuscript composite with provisional split panels | No generator expected |
 | Fig 2 | SVD spectrum + modal decomposition + dictionary | Data-backed manuscript composite | `fig02_svd_spectrum.py` + `h_matrix` |
 | Fig 3 | Unrolled network architecture diagram | Manual manuscript asset | No generator expected |
 | Fig 4 | Noise robustness + component ablation | Data-backed manuscript composite | `fig04_snr_ablation.py` + `figure4_data.json` |
@@ -42,6 +42,7 @@
 - **Manuscript asset:** `paper/figures/fig01_paradigm-shift.jpg`
 - **Split panel assets:** `figures/output/fig01_paradigm_shift_panels/`
 - **Panel manifest:** `figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json`
+- **Provenance note:** The current manuscript asset is a clean panel-first recomposition, but its split panels remain provisional crops inherited from the earlier manual composite. No separate upstream manual source package has been registered.
 
 ---
 
@@ -182,7 +183,8 @@ Manuscript title: "Global structure alignment and all-angle macro selection robu
 - **Manuscript asset:** `paper/figures/fig09_cross-material-universality.jpg`
 - **Split panel assets:** `figures/output/fig09_cross_material_universality_panels/`
 - **Panel manifest:** `figures/output/fig09_cross_material_universality_panels/fig09_panel_manifest.json`
-- **Release note:** Fig. 9 should not be treated as a purely manual figure. It currently has a manuscript asset but lacks a registered upstream evidence/generator contract, which must be fixed before release.
+- **Panel-source note:** The current panel-first manuscript composite is rebuilt from legacy split panels copied from `figures/output/fig06_cross_material_universality_panels/`, not from a newly registered generator.
+- **Release note:** Fig. 9 should not be treated as a purely manual figure. It currently has a panel-first manuscript asset, but the upstream data-backed generator/evidence contract is still missing and must be fixed before release.
 - **Historical note:** This family was previously numbered as the manuscript `Fig. 6`, and before that as temporary `Fig. 7` during the split-era figure workflow.
 
 ---

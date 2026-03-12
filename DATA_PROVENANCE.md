@@ -20,6 +20,7 @@
 | **Type** | Manual asset (photograph + illustration) |
 | **Asset** | `paper/figures/fig01_paradigm-shift.jpg` ✅ |
 | **Data pipeline** | None — no code-generated content |
+| **Panel-first status** | Current manuscript asset is a clean panel-first recomposition, but the split panel assets remain provisional crops inherited from the earlier manual composite |
 | **Commit** | N/A |
 
 ---
@@ -151,12 +152,13 @@
 
 ---
 
-## Fig 6 — Cross-Material Universality (MANUSCRIPT COMPOSITE; UPSTREAM PROVENANCE GAP)
+## Fig 9 — Cross-Material Universality (MANUSCRIPT COMPOSITE; UPSTREAM PROVENANCE GAP)
 
 | Field | Value |
 |-------|-------|
 | **Type** | Manuscript composite with missing machine-readable upstream provenance |
-| **Manuscript asset** | `paper/figures/fig06_cross-material-universality.jpg` ✅ |
+| **Manuscript asset** | `paper/figures/fig09_cross-material-universality.jpg` ✅ |
+| **Current panel-first source** | Rebuilt from legacy split panels under `figures/output/fig06_cross_material_universality_panels/` |
 | **Scientific source** | Per-object calibrate-and-retrain (Methods §Cross-material) |
 | **Generator / evidence registration** | Not yet registered in machine-readable form |
 | **Commit** | N/A (results not yet registered in this repo) |
@@ -204,7 +206,7 @@
 | # | Issue | Severity | Action |
 |---|-------|----------|--------|
 | 1 | Commit `15b2981` (Fig 2 branch tip) not reachable | WARN | Likely rebased; data pipeline commits (`d9b11d1`, `c96860b`) are intact |
-| 2 | Commit `88a8940` (Fig 9 branch tip) not reachable | WARN | Likely rebased; experiment commit `34403c7` is intact |
+| 2 | Commit `88a8940` (supplementary confusion / angle-specific branch tip) not reachable | WARN | Likely rebased; experiment commit `34403c7` is intact |
 | 3 | Fig 9 baseline `code_state.json` is LFS pointer | WARN | Run `git lfs pull` to fetch; non-blocking (metrics.npz is present) |
 | 4 | Stage 0 script (`wav_to_npy`) is external to repo | INFO | Script at `/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py` |
 | 5 | Fig 4 sweep uses babble noise; manuscript says "white noise" | WARN | Verify manuscript language matches experiment |
@@ -215,10 +217,13 @@
 
 | Figure | Generator | paths.yaml key | experiments.yaml entry | Data verified |
 |--------|-----------|----------------|----------------------|---------------|
-| Fig 1 | — | — | — | ✅ (jpg exists) |
+| Fig 1 | — | — | `fig01_manual` | ✅ (jpg exists; split panels remain provisional crops) |
 | Fig 2 | fig02_svd_spectrum.py | h_matrix | fig02_svd | ✅ |
 | Fig 3 | — | — | — | ✅ (jpg exists) |
 | Fig 4 | fig04_snr_ablation.py | ablation_sweep | fig04_ablation | ✅ |
 | Fig 5 | fig05 + fig06 | primary_run | fig05_routing | ✅ |
-| Fig 6 | — | — | `fig06_manual` (`type: provenance_gap`) | Manuscript asset exists; upstream evidence contract still missing |
+| Fig 6 | fig09_confusion_matrix.py | confusion_matrix | fig06_angle_specific | ✅ |
+| Fig 7 | fig5_b3_band_decomposition.py | primary_run + committed PDFs | fig07_bandwise_part1 | ✅ |
+| Fig 8 | fig5_b3_band_decomposition.py | primary_run + committed PDFs | fig08_bandwise_part2 | ✅ |
+| Fig 9 | — | — | `fig09_manual` (`type: provenance_gap`) | Manuscript asset exists; rebuilt from legacy split panels, but upstream evidence contract still missing |
 | Supp Fig 9 | fig09_confusion_matrix.py | confusion_matrix | fig09_confusion | ✅ |

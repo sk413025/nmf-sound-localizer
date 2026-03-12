@@ -22,7 +22,7 @@ targets:
     panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
     evidence_sources: []
     generator_outputs: []
-    provenance_note: "Manual setup photo plus schematic. No generator-backed upstream asset is expected."
+    provenance_note: "Manual setup photo plus schematic. The current manuscript composite is panel-first, but the split panels remain provisional crops inherited from the earlier manual layout; no separate generator-backed upstream asset is expected."
 
   - figure_id: fig02
     role: main
@@ -203,7 +203,7 @@ targets:
     panel_manifest: figures/output/fig09_cross_material_universality_panels/fig09_panel_manifest.json
     evidence_sources: []
     generator_outputs: []
-    provenance_note: "The manuscript asset exists, but the upstream data-backed generator/evidence layer has not yet been registered in machine-readable form. Treat this as a provenance gap, not as a manual-only figure."
+    provenance_note: "The current manuscript composite is panel-first and rebuilt from legacy split panels copied from figures/output/fig06_cross_material_universality_panels/. The upstream data-backed generator/evidence layer has not yet been registered in machine-readable form, so treat this as a provenance gap rather than as a manual-only figure."
 
   - figure_id: supp_fig09_heatmaps
     role: supp

@@ -233,6 +233,7 @@ fig01_manual:
   title: "Experimental Setup + Spectral Fingerprint"
   type: manual
   asset: paper/figures/fig01_paradigm-shift.jpg
+  note: "Current manuscript asset is a panel-first recomposition. Split panel assets remain provisional crops from the earlier manual composite."
 
 fig03_manual:
   figure: "Fig 3"
@@ -245,4 +246,4 @@ fig09_manual:
   title: "Cross-Material Universality"
   type: provenance_gap
   asset: paper/figures/fig09_cross-material-universality.jpg
-  note: "Final manuscript asset exists, but the upstream data-backed generator/evidence layer is not yet registered in machine-readable form."
+  note: "Current manuscript asset is a panel-first recomposition built from legacy split panels under figures/output/fig06_cross_material_universality_panels/, but the upstream data-backed generator/evidence layer is not yet registered in machine-readable form."

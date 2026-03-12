@@ -143,13 +143,13 @@ At stage \(t\), the residual \(r_t\) is correlated with the physical dictionary 
 ### Experimental validation: end-to-end DOA decoding in speech remains robust under noise (Fig. 4)
 On speech recordings, the physics-aware model decodes DOA under non-stationary content with high accuracy (Fig. 4; Methods). We evaluate {TBD_SPEECH_N_CLIPS_TOTAL} LDV clips, with {TBD_SPEECH_CLIPS_PER_ANGLE} clips per angle (Methods: Dictionary calibration and data splits). The evaluation grid contains {TBD_N_ANGLES} angles spanning {TBD_ANGLE_RANGE_DEG} at {TBD_ANGLE_STEP_DEG}° resolution. The model achieves {TBD_SPEECH_TOP1_ACC_PCT}% top-1 validation accuracy with mean absolute error {TBD_SPEECH_MAE_DEG}° (95th percentile {TBD_SPEECH_P95_DEG}°). Together, these results show that a single-point fingerprint supports accurate DOA decoding in speech (Fig. 4).
 
-Across additive white-noise conditions, performance remains high at 10 and 5 dB SNR and degrades gracefully at 0 dB (Fig. 4a; Methods), averaged over {TBD_N_INDEP_RUNS} independent runs. Top-1 accuracy is {TBD_ACC_SNR10_PCT}% / {TBD_ACC_SNR5_PCT}% / {TBD_ACC_SNR0_PCT}% at 10/5/0 dB. Architectural ablations confirm that learned routing drives the gain: removing the transformer reduces accuracy to {TBD_ACC_ABL_NO_TRANSFORMER_PCT}%, while fixed-heuristic or dense routing collapse to {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}% and {TBD_ACC_ABL_DENSE_ROUTING_PCT}% (Fig. 4b; Methods). Together, these results show that manifold-aware routing provides robustness beyond greedy pursuit under noise and content variability (Fig. 4a,b).
+Architectural ablations first isolate which components drive the gain: at clean / infinite SNR, removing the transformer reduces accuracy to {TBD_ACC_ABL_NO_TRANSFORMER_PCT}%, while fixed-heuristic or dense routing collapse to {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}% and {TBD_ACC_ABL_DENSE_ROUTING_PCT}% (Fig. 4a; Methods). Across additive white-noise conditions, performance remains high at 10 and 5 dB SNR and degrades gracefully at 0 dB (Fig. 4b; Methods), averaged over {TBD_N_INDEP_RUNS} independent runs. Top-1 accuracy is {TBD_ACC_SNR10_PCT}% / {TBD_ACC_SNR5_PCT}% / {TBD_ACC_SNR0_PCT}% at 10/5/0 dB. Together, these results show that manifold-aware routing provides robustness beyond greedy pursuit under noise and content variability (Fig. 4a,b).
 
 ![](../figures/fig04_noise-robustness-ablation.jpg)
 
 **Fig. 4 | Physics-guided sparse routing remains robust under noise.**
-a, Validation accuracy at SNR = 10, 5, and 0 dB.
-b, Component ablation confirming the value of physics-aware sparse routing.
+a, Component ablation at clean / infinite SNR confirming the value of physics-aware sparse routing.
+b, Validation accuracy across the additive-noise sweep.
 
 ### Learned routing mirrors the physical angle manifold and remains globally diagonal (Fig. 5)
 We first isolate the global mechanism from the case-specific diagnostics. The physical manifold itself exhibits strong diagonal locality in the `H`-matrix correlation structure, and the learned `QK` structure is even more sharply diagonal (Fig. 5a), indicating that the router has learned locality on the underlying angle manifold rather than an arbitrary attention pattern. At the dataset scale, this alignment converts directly into cleaner all-angle selection behaviour: traditional OMP spreads selection mass over a persistent off-diagonal set of experts, whereas the physics-aware model concentrates almost entirely on the diagonal across the full angle range (Fig. 5b). These statistics show that the routing advantage is already visible at the expert-selection level before any final decoding metric is computed.
@@ -327,13 +327,13 @@ The physics-guided unrolled network was implemented in PyTorch [@paszke2019pytor
 
 **Training.** We trained the unrolled network using {TBD_TRAIN_LOSS_DESCRIPTION}, optimized with {TBD_OPTIMIZER} (learning rate \(\eta\) = {TBD_LR}, weight decay \(\lambda\) = {TBD_WEIGHT_DECAY}) for {TBD_EPOCHS} epochs with batch size {TBD_BATCH_SIZE} and random seed {TBD_RANDOM_SEED}. Speech clips were split deterministically stratified by angle ({TBD_SPEECH_SPLIT_RULE}; {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST} clips).
 
-**Ablations (Fig. 4b).** We report three ablations with all other components held fixed. **No-transformer** replaces the transformer router with {TBD_ABL_NO_TRANSFORMER_DEF}. **Fixed heuristic** replaces learned routing with {TBD_ABL_FIXED_HEURISTIC_DEF}. **Dense routing** uses {TBD_ABL_DENSE_ROUTING_DEF}. Each ablation uses the same dictionary construction and evaluation protocol as the full model.
+**Ablations (Fig. 4a).** We report three ablations with all other components held fixed. **No-transformer** replaces the transformer router with {TBD_ABL_NO_TRANSFORMER_DEF}. **Fixed heuristic** replaces learned routing with {TBD_ABL_FIXED_HEURISTIC_DEF}. **Dense routing** uses {TBD_ABL_DENSE_ROUTING_DEF}. Each ablation uses the same dictionary construction and evaluation protocol as the full model.
 
 Noise robustness experiments add zero-mean white noise at SNR levels {TBD_SNR_LEVELS_DB} in the time domain:
 $$
 v_\mathrm{noisy} = v + \alpha \xi,\quad \xi\sim\mathcal{N}(0,1),\quad \mathrm{SNR}=10\log_{10}\frac{\lVert v\rVert_2^2}{\lVert \alpha \xi\rVert_2^2}.
 $$
-The SNR sweep in Fig. 4 uses the same feature extraction and dictionary construction for each noise level.
+The SNR sweep in Fig. 4b uses the same feature extraction and dictionary construction for each noise level.
 
 **Evaluation metrics.** We report top-1 accuracy \(\frac{1}{N}\sum_{i=1}^{N}\mathbb{1}[\hat\theta_i=\theta_i]\) on the discrete angle grid. When reporting angular error in degrees, we compute the minimal angular difference \(\Delta(\hat\theta,\theta)=\min_{k\in\mathbb{Z}}|\hat\theta-\theta+360k|\) and report \(\mathrm{RMSE}=\sqrt{\frac{1}{N}\sum_i \Delta(\hat\theta_i,\theta_i)^2}\).
 
