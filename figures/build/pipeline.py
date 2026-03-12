@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import importlib
+import subprocess
 import shutil
 import sys
 from pathlib import Path
@@ -38,6 +39,7 @@ def _discover_generators() -> list:
 def cmd_generate() -> list[Path]:
     """Run all generators. Returns list of output paths."""
     from figures.style import load_paths
+    from figures.panel_assets import prepare_all as prepare_panel_assets
 
     root = _repo_root()
     paths_cfg = load_paths()
@@ -57,6 +59,7 @@ def cmd_generate() -> list[Path]:
         except Exception as e:
             print(f"[{name}] ERROR: {e}")
 
+    all_outputs.extend(prepare_panel_assets(root))
     print(f"\nGeneration complete: {len(all_outputs)} files")
     return all_outputs
 
@@ -95,6 +98,14 @@ def cmd_deploy() -> None:
         dest = paper_dir / f.name
         shutil.copy2(f, dest)
         copied += 1
+
+    compose_script = root / "scripts" / "paper" / "compose_master_figure3_family.py"
+    if compose_script.exists():
+        subprocess.run(
+            [sys.executable, str(compose_script)],
+            check=True,
+            cwd=str(root),
+        )
 
     print(f"Deployed {copied} files to {paper_dir}")
 

@@ -1,0 +1,68 @@
+figures:
+  fig01:
+    composite_asset: paper/figures/fig01_paradigm-shift.jpg
+    panel_dir: figures/output/fig01_paradigm_shift_panels
+    storage_mode: provisional_crop
+    source_layer: manuscript_asset
+    panels:
+      - panel_id: a
+        title: Experimental setup
+        provenance_mode: manual
+        asset_prefix: fig01_panel_a_experimental_setup
+        bbox_norm:
+          x0: 0.0
+          y0: 0.08
+          width: 0.5
+          height: 0.88
+      - panel_id: b
+        title: Spectral fingerprint schematic
+        provenance_mode: manual
+        asset_prefix: fig01_panel_b_spectral_fingerprint
+        bbox_norm:
+          x0: 0.5
+          y0: 0.08
+          width: 0.5
+          height: 0.88
+
+  fig02:
+    composite_asset: figures/output/fig02_svd_spectrum.pdf
+    panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
+
+  fig04:
+    composite_asset: figures/output/fig04_snr_ablation.pdf
+    panel_dir: figures/output/fig04_snr_ablation_panels
+    storage_mode: reference_existing_outputs
+    source_layer: generator_output
+    panels:
+      - panel_id: a
+        title: Ablation strip chart
+        provenance_mode: data_backed
+        asset_path: figures/output/fig04_snr_ablation_panels/fig04_panel_a_ablation_strip.pdf
+      - panel_id: b
+        title: SNR robustness curves
+        provenance_mode: data_backed
+        asset_path: figures/output/fig04_snr_ablation_panels/fig04_panel_b_snr_curves.pdf
+
+  fig05:
+    composite_asset: paper/figures/fig05_structure-macro-selection.png
+    panel_manifest: figures/output/fig05_structure_macro_panels/fig05_panel_manifest.json
+
+  fig06:
+    composite_asset: paper/figures/fig06_angle-specific-mechanism.png
+    panel_manifest: figures/output/fig06_angle_specific_mechanism_panels/fig06_panel_manifest.json
+
+  fig07:
+    composite_asset: paper/figures/fig07_bandwise-routing-analysis-part1.png
+    panel_manifest: figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_manifest.json
+
+  fig08:
+    composite_asset: paper/figures/fig08_bandwise-routing-analysis-part2.png
+    panel_manifest: figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_manifest.json
+
+  fig09:
+    composite_asset: paper/figures/fig09_cross-material-universality.jpg
+    panel_manifest: figures/output/fig09_cross_material_universality_panels/fig09_panel_manifest.json
+
+  supp_fig09:
+    composite_asset: paper/figures/fig09_heatmaps.pdf
+    panel_manifest: figures/output/supp_fig09_confusion_panels/supp_fig09_panel_manifest.json
