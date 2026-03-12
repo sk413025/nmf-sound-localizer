@@ -207,7 +207,7 @@
 |---|-------|----------|--------|
 | 1 | Commit `15b2981` (Fig 2 branch tip) not reachable | WARN | Likely rebased; data pipeline commits (`d9b11d1`, `c96860b`) are intact |
 | 2 | Commit `88a8940` (supplementary confusion / angle-specific branch tip) not reachable | WARN | Likely rebased; experiment commit `34403c7` is intact |
-| 3 | Fig 9 baseline `code_state.json` is LFS pointer | WARN | Run `git lfs pull` to fetch; non-blocking (metrics.npz is present) |
+| 3 | Supplementary confusion baseline `code_state.json` is LFS pointer | WARN | Run `git lfs pull` to fetch; non-blocking (`metrics.npz` is present) |
 | 4 | Stage 0 script (`wav_to_npy`) is external to repo | INFO | Script at `/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py` |
 | 5 | Fig 4 sweep uses babble noise; manuscript says "white noise" | WARN | Verify manuscript language matches experiment |
 

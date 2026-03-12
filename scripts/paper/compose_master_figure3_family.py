@@ -47,8 +47,7 @@ FIG05_PANEL_A = REPO_ROOT / "figures/output/fig05_routing_mechanism_analysis_pan
 FIG05_PANEL_B = REPO_ROOT / "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_c_macro_robustness.pdf"
 FIG06_ANGLE55 = REPO_ROOT / "figures/output/fig09_angle55.pdf"
 FIG06_ANGLE100 = REPO_ROOT / "figures/output/fig09_angle100.pdf"
-FIG09_SOURCE = REPO_ROOT / "paper/figures/fig06_cross-material-universality.jpg"
-FIG09_SOURCE_PANEL_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
+FIG09_LEGACY_PANEL_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
 
 FIG07_PARTS = [
     (
@@ -493,7 +492,7 @@ def compose_fig09() -> list[Path]:
     created: list[Path] = []
     rendered: list[tuple[str, str, Image.Image, Path]] = []
     for panel_id, title, src_name, dst_name in panel_specs:
-        src_path = FIG09_SOURCE_PANEL_DIR / src_name
+        src_path = FIG09_LEGACY_PANEL_DIR / src_name
         dst_path = panel_dir / dst_name
         if not src_path.exists():
             raise FileNotFoundError(f"Missing cross-material panel asset: {src_path}")
@@ -515,7 +514,7 @@ def compose_fig09() -> list[Path]:
                 "provenance_mode": "provenance_gap",
                 "storage_mode": "reference_existing_outputs",
                 "asset_path": str(dst_path.relative_to(REPO_ROOT)),
-                "source_asset": str((FIG09_SOURCE_PANEL_DIR / src_name).relative_to(REPO_ROOT)),
+                "source_asset": str((FIG09_LEGACY_PANEL_DIR / src_name).relative_to(REPO_ROOT)),
                 "source_layer": "legacy_split_panel_asset",
             }
         )
