@@ -21,12 +21,16 @@ The original legacy composite that anchors the lineage discussion.
 ### `01_current_canonical/`
 
 - `current_fig05_composite.png`
+- `current_fig05_structure_macro.png`
+- `current_fig06_angle_specific.png`
+- `current_fig07_bandwise_part1.png`
+- `current_fig08_bandwise_part2.png`
 
-The current paper-facing composite descendant. Visually, this remains the direct descendant of the old three-panel `Master Figure 3` concept:
+These are the current active manuscript descendants. The old one-figure mechanism family has been expanded into:
 
-- panel a: global physics-consistent attention
-- panel b: micro-level mechanism
-- panel c: macro-level selection robustness
+- `Fig. 5`: restored `a + c` structure/macro descendant
+- `Fig. 6`: angle-specific descendant of the old micro-level upper block
+- `Fig. 7–8`: band-wise descendants of the old micro-level lower branch
 
 ### `02_upstream_pdfs/`
 
@@ -34,12 +38,9 @@ The current paper-facing composite descendant. Visually, this remains the direct
 - `fig06_routing_mechanism.pdf`
 - `fig05_panel_a_global_attention.pdf`
 - `fig05_panel_c_macro_robustness.pdf`
+- `fig05_panel_c_transformer_confusion_heatmaps.pdf`
 
-These PDFs show how the original composite was split during the generator era:
-
-- old panel `a + c` flowed into `fig05_structure_alignment.pdf`
-- old panel `b` flowed into `fig06_routing_mechanism.pdf`
-- current isolated panel assets exist for `a` and `c`
+These PDFs preserve the split-era decomposition and the intermediate manuscript-era replacement that has now been retired from the active main-paper path.
 
 ### `03_panel_b_support_results/`
 
@@ -50,18 +51,18 @@ These PDFs show how the original composite was split during the generator era:
 - `fig5_b3_line_1000_2000_nosmooth.pdf`
 - `fig5_b3_line_2000_3000_nosmooth.pdf`
 
-These are support descendants of the old panel `b`, not a separate figure family. They preserve the later band-wise decomposition branch of the micro-mechanism case-study analysis.
+These are the committed band-wise descendants of the old panel `b`. They are now active manuscript inputs for `Figs. 7–8`.
 
 ### `04_separate_families/`
 
 - `master_figure4_cross_material_legacy.jpg`
-- `current_fig06_cross_material.jpg`
+- `current_fig09_cross_material.jpg`
 - `supp_fig09_heatmaps.pdf`
 - `supp_fig09_angle55.pdf`
 - `supp_fig09_angle100.pdf`
 - `legacy_performance_family.jpg`
 
-These assets are included to prevent a numbering trap. They are nearby in historical numbering, but they do not descend from `Master Figure 3`.
+These assets are included to prevent a numbering trap. The cross-material and supplementary confusion families remain separate from the `Master Figure 3` lineage.
 
 ### `05_pdf_previews/`
 
@@ -69,17 +70,17 @@ PNG previews of the PDFs above, generated from page 1, for rapid visual comparis
 
 ## Core Lineage Conclusions
 
-1. The active descendant of the original `Master Figure 3` is the current `Fig. 5` family.
-2. The split-era generator outputs decomposed that lineage into:
-   - `fig05_structure_alignment.pdf` for the old `a + c`
-   - `fig06_routing_mechanism.pdf` for the old `b`
-3. The `Fig5_B3_LINE_*` PDFs are later support descendants of panel `b`.
-4. Current `Fig. 6`, the old cross-material family, and the supplementary confusion family are separate lineages.
+1. The active manuscript descendants of `Master Figure 3` are now `Figs. 5–8`, not a single recomposed `Fig. 5`.
+2. `Fig. 5` restores the direct `a + c` lineage through `fig05_structure_alignment.pdf`.
+3. `Fig. 6` updates the old upper micro-mechanism block into angle-specific probability distributions.
+4. `Figs. 7–8` elevate the committed `Fig5_B3_LINE_*` branch into active manuscript figures.
+5. The old polar estimate is now legacy-only provenance.
+6. Current `Fig. 9` and `Supp Fig. 9` remain separate families and should not be treated as descendants of `Master Figure 3`.
 
 ## Recommended Reading Order
 
 1. `00_original_anchor/master_figure3_original.png`
-2. `01_current_canonical/current_fig05_composite.png`
+2. `01_current_canonical/`
 3. `02_upstream_pdfs/`
 4. `03_panel_b_support_results/`
 5. `04_separate_families/`

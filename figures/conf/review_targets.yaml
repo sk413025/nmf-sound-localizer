@@ -19,6 +19,7 @@ targets:
     claim: "Single-point structural response produces direction-specific spectral fingerprints."
     panel_order: ["a", "b"]
     legend_summary: "Experimental setup photograph and spectral fingerprint schematic."
+    panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
     evidence_sources: []
     generator_outputs: []
     provenance_note: "Manual setup photo plus schematic. No generator-backed upstream asset is expected."
@@ -37,6 +38,7 @@ targets:
     claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
     panel_order: ["a", "b", "c"]
     legend_summary: "Singular spectrum, modal decomposition, and structured physical dictionary."
+    panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
     evidence_sources:
       - h_matrix_normalized_original_to_box.pth
     generator_outputs:
@@ -76,6 +78,7 @@ targets:
     claim: "Performance remains robust under additive noise and degrades under architectural ablations."
     panel_order: ["a", "b"]
     legend_summary: "Noise robustness and ablation comparison."
+    panel_manifest: figures/output/fig04_snr_ablation_panels/fig04_panel_manifest.json
     evidence_sources:
       - results/figure4_data.json
     generator_outputs:
@@ -85,7 +88,7 @@ targets:
 
   - figure_id: fig05
     role: main
-    asset: paper/figures/fig05_routing-mechanism-analysis.png
+    asset: paper/figures/fig05_structure-macro-selection.png
     asset_layer: manuscript_composite
     provenance_mode: data_backed_composite
     width_mode: double
@@ -94,33 +97,110 @@ targets:
     manuscript_anchor: "Results / Fig. 5"
     legend_path: paper/figures/Figure-Legends.md
     registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Routing exhibits coherent structure across global, micro, and macro scales."
-    panel_order: ["a", "b", "c"]
-    legend_summary: "Global routing structure, micro-mechanism case study, and macro selection statistics."
+    claim: "The learned router mirrors the physical angle manifold and yields globally diagonal selection statistics."
+    panel_order: ["a", "b"]
+    legend_summary: "Structure alignment and all-angle macro selection robustness."
+    panel_manifest: figures/output/fig05_structure_macro_panels/fig05_panel_manifest.json
     evidence_sources:
       - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
     generator_outputs:
       - figures/output/fig05_structure_alignment.pdf
       - figures/output/fig05_structure_alignment.tiff
-      - figures/output/fig06_routing_mechanism.pdf
-      - figures/output/fig06_routing_mechanism.tiff
-    provenance_note: "This final manuscript figure is a composition of two upstream generator outputs. Review should catch any recomposition that harms readability or obscures the data-backed panels."
+    provenance_note: "This figure restores the direct Master Figure 3 a+c lineage. The left panel shows physical-vs-learned structure; the right panel shows OMP-vs-physics-aware selection probability."
 
   - figure_id: fig06
     role: main
-    asset: paper/figures/fig06_cross-material-universality.jpg
+    asset: paper/figures/fig06_angle-specific-mechanism.png
     asset_layer: manuscript_composite
-    provenance_mode: provenance_gap
+    provenance_mode: data_backed_composite
     width_mode: double
     manuscript_section: Results
     manuscript_path: paper/manuscript/manuscript.md
     manuscript_anchor: "Results / Fig. 6"
     legend_path: paper/figures/Figure-Legends.md
     registry_path: figures/FIGURE_REGISTRY.md
+    claim: "At representative angles, the transformer concentrates probability on the correct atom more sharply than the no-transformer ablation."
+    panel_order: ["a", "b"]
+    legend_summary: "Angle-specific routing distributions at 55 and 100 degrees."
+    panel_manifest: figures/output/fig06_angle_specific_mechanism_panels/fig06_panel_manifest.json
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+    generator_outputs:
+      - figures/output/fig09_angle55.pdf
+      - figures/output/fig09_angle55.tiff
+      - figures/output/fig09_angle100.pdf
+      - figures/output/fig09_angle100.tiff
+    provenance_note: "This figure reuses the committed angle-specific distribution diagnostics from the confusion family, but it is now elevated into the main mechanism sequence as the active descendant of the old micro-level upper block."
+
+  - figure_id: fig07
+    role: main
+    asset: paper/figures/fig07_bandwise-routing-analysis-part1.png
+    asset_layer: manuscript_composite
+    provenance_mode: data_backed_composite
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 7"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Full-band and low-band routing diagnostics expose the same case-study mechanism in progressively finer frequency windows."
+    panel_order: ["a", "b", "c"]
+    legend_summary: "Band-wise routing diagnostics: full-band smooth, full-band no-smooth, and 300-500 Hz."
+    panel_manifest: figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_manifest.json
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+      - results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_3000.pdf
+      - results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_3000.pdf
+      - results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_500.pdf
+    generator_outputs:
+      - figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_a_fullband_smooth.pdf
+      - figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_b_fullband_nosmooth.pdf
+      - figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_c_300_500.pdf
+    provenance_note: "These panels are direct, committed descendants of the Master Figure 3b band-decomposition branch. They preserve both the original smoothed full-band view and the corrected no-smoothing rerun."
+
+  - figure_id: fig08
+    role: main
+    asset: paper/figures/fig08_bandwise-routing-analysis-part2.png
+    asset_layer: manuscript_composite
+    provenance_mode: data_backed_composite
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 8"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
+    claim: "Mid- and high-band routing diagnostics localize how angle selectivity persists as the frequency window changes."
+    panel_order: ["a", "b", "c"]
+    legend_summary: "Band-wise routing diagnostics: 500-1000 Hz, 1000-2000 Hz, and 2000-3000 Hz."
+    panel_manifest: figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_manifest.json
+    evidence_sources:
+      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+      - results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_500_1000.pdf
+      - results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_1000_2000.pdf
+      - results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_2000_3000.pdf
+    generator_outputs:
+      - figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_a_500_1000.pdf
+      - figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_b_1000_2000.pdf
+      - figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_c_2000_3000.pdf
+    provenance_note: "This is the second half of the Master Figure 3b band-wise support family, elevated into the main paper instead of being treated as lineage-only provenance."
+
+  - figure_id: fig09
+    role: main
+    asset: paper/figures/fig09_cross-material-universality.jpg
+    asset_layer: manuscript_composite
+    provenance_mode: provenance_gap
+    width_mode: double
+    manuscript_section: Results
+    manuscript_path: paper/manuscript/manuscript.md
+    manuscript_anchor: "Results / Fig. 9"
+    legend_path: paper/figures/Figure-Legends.md
+    registry_path: figures/FIGURE_REGISTRY.md
     claim: "The physical encoding mechanism generalizes across structurally distinct materials."
     panel_order: ["a", "b", "c"]
     legend_summary: "Cross-material examples, heatmaps, and RMSE comparison."
+    panel_manifest: figures/output/fig09_cross_material_universality_panels/fig09_panel_manifest.json
     evidence_sources: []
     generator_outputs: []
     provenance_note: "The manuscript asset exists, but the upstream data-backed generator/evidence layer has not yet been registered in machine-readable form. Treat this as a provenance gap, not as a manual-only figure."
@@ -136,9 +216,10 @@ targets:
     manuscript_anchor: "Supplementary / Fig. 9a"
     legend_path: paper/figures/Figure-Legends.md
     registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Baseline and no-transformer confusion heatmaps reveal class-level routing differences."
+    claim: "Baseline and no-transformer confusion heatmaps quantify final prediction outcomes for the ablation family."
     panel_order: ["a"]
     legend_summary: "Supplementary confusion matrix heatmaps."
+    panel_manifest: figures/output/supp_fig09_confusion_panels/supp_fig09_panel_manifest.json
     evidence_sources:
       - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
@@ -158,9 +239,10 @@ targets:
     manuscript_anchor: "Supplementary / Fig. 9b"
     legend_path: paper/figures/Figure-Legends.md
     registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Per-angle distributions show characteristic differences near 55 degrees."
+    claim: "Per-angle distributions show the baseline-versus-no-transformer contrast near 55 degrees."
     panel_order: ["b"]
     legend_summary: "Supplementary per-angle distribution at 55 degrees."
+    panel_manifest: figures/output/supp_fig09_confusion_panels/supp_fig09_panel_manifest.json
     evidence_sources:
       - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
@@ -180,9 +262,10 @@ targets:
     manuscript_anchor: "Supplementary / Fig. 9c"
     legend_path: paper/figures/Figure-Legends.md
     registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Per-angle distributions show characteristic differences near 100 degrees."
+    claim: "Per-angle distributions show the baseline-versus-no-transformer contrast near 100 degrees."
     panel_order: ["c"]
     legend_summary: "Supplementary per-angle distribution at 100 degrees."
+    panel_manifest: figures/output/supp_fig09_confusion_panels/supp_fig09_panel_manifest.json
     evidence_sources:
       - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz

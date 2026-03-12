@@ -8,7 +8,7 @@ fig02_svd:
   title: "SVD Spectrum + Modal Decomposition + Dictionary"
   generator: figures/generators/fig02_svd_spectrum.py
   branch: feature/omp-transformer-modal-viz
-  branch_tip_commit: "15b2981"       # WARN: not reachable (likely rebased)
+  branch_tip_commit: "15b2981"
   data_artifacts:
     - path: h_matrix_normalized_original_to_box.pth
       type: pth
@@ -16,7 +16,7 @@ fig02_svd:
   pipeline:
     stage0:
       description: "WAV → NPY conversion"
-      commit: null                   # external script, not in repo
+      commit: null
       script: "/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py"
       date: "2025-08-15"
     stage1:
@@ -70,17 +70,14 @@ fig04_ablation:
     seeds_per_condition: 5
     sweep_suffix: babble_speech260_full_20260209_011327
 
-# ─── Fig 5: Routing Mechanism Analysis ───────────────────────────────────────
+# ─── Fig 5: Structure + Macro Selection Robustness ──────────────────────────
 
-fig05_routing:
+fig05_structure_macro:
   figure: "Fig 5"
-  title: "Routing Mechanism Analysis (Structure + Micro + Macro)"
-  generators:
-    - figures/generators/fig05_structure_alignment.py   # panels (a), (c)
-    - figures/generators/fig06_routing_mechanism.py      # panel (b)
+  title: "Structure Alignment + Macro Selection Robustness"
+  generator: figures/generators/fig05_structure_alignment.py
   branch: feature/master-figure-nature-comm
   branch_tip_commit: "97942ac"
-  commit_message: "Results: Fig5 B3 — 5 band-wise line plots"
   primary_run:
     dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
     code_state_git_head: "3785b1f"
@@ -118,22 +115,100 @@ fig05_routing:
     n_val_clips: 1924
     clips_per_angle: 52
     n_angles: 37
-    diagonal_concentration_factor: 55.2
 
-# ─── Supp Fig 9: Confusion Matrix Heatmaps ──────────────────────────────────
+# ─── Fig 6: Angle-Specific Mechanism Diagnostics ────────────────────────────
+
+fig06_angle_specific:
+  figure: "Fig 6"
+  title: "Angle-Specific Routing Diagnostics"
+  generator: figures/generators/fig09_confusion_matrix.py
+  branch: exp/omp-ablation-20251209
+  branch_tip_commit: "88a8940"
+  data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+      type: npz
+      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
+      description: "Baseline transformer metrics used for angle-specific distribution panels"
+      best_accuracy: 0.9459
+    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+      type: npz
+      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
+      description: "No-transformer metrics used for angle-specific distribution panels"
+      best_accuracy: 0.631
+  angle_specific_probabilities:
+    angle_55:
+      baseline_correct_probability: 0.5576923076923077
+      no_transformer_correct_probability: 0.40384615384615385
+    angle_100:
+      baseline_correct_probability: 0.6538461538461539
+      no_transformer_correct_probability: 0.5192307692307693
+
+# ─── Fig 7: Band-Wise Routing Diagnostics I ─────────────────────────────────
+
+fig07_bandwise_part1:
+  figure: "Fig 7"
+  title: "Band-Wise Routing Diagnostics I"
+  generator: scripts/fig5_b3_band_decomposition.py
+  branch: feature/master-figure-nature-comm
+  branch_tip_commit: "97942ac"
+  primary_run:
+    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+    code_state_git_head: "3785b1f"
+  data_artifacts:
+    - path: results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_3000.pdf
+      type: pdf
+      description: "Smoothed full-band routing diagnostic"
+      source_commit: "afac0a13f4af3215a59cb15735488f5ff84df0b4"
+    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_3000.pdf
+      type: pdf
+      description: "Corrected no-smoothing full-band routing diagnostic"
+      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
+    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_500.pdf
+      type: pdf
+      description: "No-smoothing low-band routing diagnostic"
+      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
+  provenance_note: "The no-smoothing run was executed on a dirty tree atop afac0a13 and later committed canonically as 97942ac."
+
+# ─── Fig 8: Band-Wise Routing Diagnostics II ────────────────────────────────
+
+fig08_bandwise_part2:
+  figure: "Fig 8"
+  title: "Band-Wise Routing Diagnostics II"
+  generator: scripts/fig5_b3_band_decomposition.py
+  branch: feature/master-figure-nature-comm
+  branch_tip_commit: "97942ac"
+  primary_run:
+    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+    code_state_git_head: "3785b1f"
+  data_artifacts:
+    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_500_1000.pdf
+      type: pdf
+      description: "No-smoothing low-mid band routing diagnostic"
+      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
+    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_1000_2000.pdf
+      type: pdf
+      description: "No-smoothing mid band routing diagnostic"
+      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
+    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_2000_3000.pdf
+      type: pdf
+      description: "No-smoothing high band routing diagnostic"
+      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
+  provenance_note: "These panels are the continuation of the same committed Fig5 B3 band-decomposition lineage as Fig. 7."
+
+# ─── Supp Fig 9: Confusion Matrix Diagnostics ───────────────────────────────
 
 fig09_confusion:
   figure: "Supp Fig 9"
-  title: "Confusion Matrix Heatmaps"
+  title: "Confusion Matrix Heatmaps and Angle-Specific Distributions"
   generator: figures/generators/fig09_confusion_matrix.py
   branch: exp/omp-ablation-20251209
-  branch_tip_commit: "88a8940"       # WARN: not reachable (likely rebased)
+  branch_tip_commit: "88a8940"
   data_artifacts:
     - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
       is_symlink: false
       keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
-      description: "Baseline (full transformer) confusion matrix"
+      description: "Baseline transformer confusion matrix"
       best_accuracy: 0.9459
       code_state_git_head: "b2943040270c4e4bcd835f98e9df6f2b435b77c1"
       code_state_timestamp: "2025-12-03T07:44:09"
@@ -151,7 +226,7 @@ fig09_confusion:
       d_model: 64
       seed: 42
 
-# ─── Manual Figures ──────────────────────────────────────────────────────────
+# ─── Manual / Provenance-Gap Figures ────────────────────────────────────────
 
 fig01_manual:
   figure: "Fig 1"
@@ -165,9 +240,9 @@ fig03_manual:
   type: manual
   asset: paper/figures/fig03_unrolled-attention-omp.jpg
 
-fig06_manual:
-  figure: "Fig 6"
+fig09_manual:
+  figure: "Fig 9"
   title: "Cross-Material Universality"
   type: provenance_gap
-  asset: paper/figures/fig06_cross-material-universality.jpg
+  asset: paper/figures/fig09_cross-material-universality.jpg
   note: "Final manuscript asset exists, but the upstream data-backed generator/evidence layer is not yet registered in machine-readable form."

@@ -121,7 +121,11 @@ def check_file_existence(repo: Path, report: AuditReport) -> None:
         "results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz",
         "paper/figures/fig01_paradigm-shift.jpg",
         "paper/figures/fig03_unrolled-attention-omp.jpg",
-        "paper/figures/fig06_cross-material-universality.jpg",
+        "paper/figures/fig05_structure-macro-selection.png",
+        "paper/figures/fig06_angle-specific-mechanism.png",
+        "paper/figures/fig07_bandwise-routing-analysis-part1.png",
+        "paper/figures/fig08_bandwise-routing-analysis-part2.png",
+        "paper/figures/fig09_cross-material-universality.jpg",
     ]
     for rel in required:
         p = repo / rel

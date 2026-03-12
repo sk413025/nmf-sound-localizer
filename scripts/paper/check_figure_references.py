@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MANUSCRIPT = REPO_ROOT / "paper" / "manuscript" / "manuscript.md"
 REGISTRY = REPO_ROOT / "figures" / "FIGURE_REGISTRY.md"
 PAPER_FIGURES = REPO_ROOT / "paper" / "figures"
-MAIN_FIGURES = [1, 2, 3, 4, 5, 6]
+MAIN_FIGURES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 
 def _check_exists(path: Path, label: str) -> list[str]:
@@ -57,7 +57,7 @@ def main() -> int:
             print(f"- paper/figures missing assets for figures: {missing_assets}")
         return 1
 
-    print("OK: manuscript references, registry entries, and paper assets exist for Figs. 1-6.")
+    print("OK: manuscript references, registry entries, and paper assets exist for Figs. 1-9.")
     return 0
 
 
