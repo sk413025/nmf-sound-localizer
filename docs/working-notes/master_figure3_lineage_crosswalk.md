@@ -30,7 +30,7 @@ The classification uses visual content first, then registry metadata, results pr
 
 | Asset | Type | Visual title / content | Classification |
 |---|---|---|---|
-| `old/Figure-5.png` | legacy image | `Master Figure 3 (Final): Deciphering AI Understanding via Micro-Mechanism & Macro-Robustness` with three panels: global attention, micro-level mechanism, macro-level selection robustness | Original anchor |
+| `legacy/assets/master_figure3_reference_images/Figure-5.png` | legacy image | `Master Figure 3 (Final): Deciphering AI Understanding via Micro-Mechanism & Macro-Robustness` with three panels: global attention, micro-level mechanism, macro-level selection robustness | Original anchor |
 
 ### Original panel semantics
 
