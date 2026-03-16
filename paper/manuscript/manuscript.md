@@ -1,14 +1,14 @@
 # Non-contact acoustic sensing via the natural physical encoding of everyday objects
 
 ## Abstract
-Conventional acoustic direction sensing relies on microphone arrays, limiting miniaturization and deployment in harsh or constrained environments. Here we show that everyday objects can themselves act as direction-dependent physical encoders: incident sound excites dispersive structural vibrations whose superposition produces a single-point spectral fingerprint measurable by a non-contact laser Doppler vibrometer. Modeling the angle–frequency response as a response matrix reveals a rapidly decaying singular-value spectrum, indicating a limited number of dominant encoding channels. This motivates a structured sparse inverse problem over an angle-indexed physical dictionary and a physics-guided unrolled solver that replaces heuristic atom selection with learnable attention-based routing while enforcing residual consistency. In speech, we achieve {TBD_SPEECH_TOP1_ACC_PCT}% top-1 accuracy on a {TBD_N_ANGLES}-angle grid spanning {TBD_ANGLE_RANGE_DEG} with {TBD_ANGLE_STEP_DEG}° resolution. Performance remains robust under additive noise down to {TBD_SNR_MIN_DB} dB SNR. Across five everyday targets, we reproduce direction-dependent fingerprints and maintain low DOA error under per-object calibration and retraining.
+Conventional acoustic direction sensing relies on microphone arrays, limiting miniaturization and deployment in harsh or constrained environments. Here we show that everyday objects can themselves act as direction-dependent physical encoders: incident sound excites dispersive structural vibrations (frequency-dependent wave propagation through the structure) whose superposition produces a single-point spectral fingerprint measurable by a non-contact laser Doppler vibrometer. Modeling the angle–frequency response as a response matrix reveals a rapidly decaying singular-value spectrum, indicating a limited number of dominant encoding channels. This low-rank structure motivates a sparse inverse formulation: given a single measurement, we identify the most likely incidence direction from a calibrated dictionary of angle-specific spectral templates. A physics-guided neural solver replaces heuristic selection rules with learned routing while preserving consistency with the physical dictionary. In speech, we achieve {TBD_SPEECH_TOP1_ACC_PCT}% top-1 accuracy on a {TBD_N_ANGLES}-angle grid spanning {TBD_ANGLE_RANGE_DEG} with {TBD_ANGLE_STEP_DEG}° resolution. Performance remains robust under additive noise down to {TBD_SNR_MIN_DB} dB SNR. Crucially, the learned routing structure spontaneously aligns with the physical angle manifold, providing an interpretable link between data-driven inference and the underlying modal physics. Across five everyday targets, we reproduce direction-dependent fingerprints and maintain low DOA error under per-object calibration and retraining.
 
 ## Introduction
 Extracting spatial information from wave fields is a recurring challenge spanning acoustics, optics, and seismology. In real environments, structural dispersion, multiple scattering, and boundary reverberation entangle propagation paths and produce seemingly chaotic time-domain signals [@rotter2017complex_media; @kuttruff2025room_acoustics]. Classical DOA estimation therefore relies on **spatial sampling** with sensor arrays and analytical inversion—beamforming and high-resolution estimators [@capon1969fkw], or subspace methods such as MUSIC and ESPRIT [@schmidt1986music; @roy1989esprit]—with standard treatments in array and microphone-array texts [@krim1996array; @vantrees2002optimum; @johnson1993array; @brandstein2001microphone_arrays; @benesty2008microphone_array]. However, the need for an aperture imposes severe constraints on size and placement, limiting integration in compact devices or harsh environments [@grumiaux2022_ssl_survey_deep_learning].
 
 In this work, we propose a paradigm shift inspired by computational wave physics. Instead of fighting structural dispersion and scattering, we ask whether everyday objects can harness them as a **direction-dependent physical encoder**. Can an object’s material dynamics map acoustic incidence direction to a reproducible spectral fingerprint, such that a single non-contact vibration measurement is sufficient to decode DOA? Related ideas appear in time-reversed acoustics [@fink1997time; @draeger1997one], single-pixel imaging [@duarte2008single], structural health monitoring [@ing2008lamb], and transmission-matrix / wavefront-shaping views of complex media [@popoff2010transmission_matrix; @mosk2012complex_media; @rotter2017complex_media], where complexity is treated as a computational resource. If valid, the sensing footprint reduces from an array aperture to a single optical spot, enabling compact integration where microphone arrays are infeasible (Fig. 1; Methods: Experimental setup).
 
-Here we show that everyday objects act as reproducible **direction-dependent physical encoders** for sound (Fig. 1). We show that the resulting angle–frequency response is governed by a small number of dominant channels, motivating a **structured sparse inverse problem** on a discrete angle dictionary (Fig. 2). We show that a physics-guided unrolled solver with learnable routing decodes DOA from a single laser-vibrometry spot with high accuracy and robustness in speech conditions (Figs. 3–5).
+Here we show that everyday objects act as reproducible **direction-dependent physical encoders** for sound (Fig. 1). We show that the resulting angle–frequency response is governed by a small number of dominant channels, motivating a **structured sparse inverse problem** on a discrete angle dictionary (Fig. 2). We show that a physics-guided unrolled solver with learnable routing decodes DOA from a single laser-vibrometry spot with high accuracy and robustness in speech conditions (Figs. 3 and 5). The encoding is statistically discriminable and repeatable across the full angular grid (Fig. 4), and the mechanism generalizes across five structurally diverse everyday objects (Fig. 6).
 
 We employ a laser Doppler vibrometer (LDV) not merely as a convenient readout, but as a methodological necessity to preserve the integrity of the physical encoder. LDV provides non-contact vibration measurement with high bandwidth and sensitivity [@rothberg2017ldv; @castellini2006ldv; @wagner2021_laser_microphone_calibration]. In contrast, contact sensors (e.g., piezoelectric patches or accelerometers) introduce local mass and stiffness perturbations that modify measured frequency-response functions and boundary conditions [@ewins2000modal; @bi2013transducer_mass_loading; @nassif2005ldv_contact_sensors].
 
@@ -16,9 +16,9 @@ Recent studies suggest that a single structural vibration measurement can carry 
 
 A central open question is whether this apparent single-point “fingerprint” reflects a reproducible physical mechanism or merely target-specific idiosyncrasies. Here we treat the target structure as a *physical encoder* that transforms incident direction into a direction-dependent superposition of dispersive modes. This view suggests two falsifiable predictions. First, the angle-to-spectrum mapping should be governed by a small number of dominant physical channels. Second, inference should remain stable under moderate noise and should transfer across structurally distinct targets if the underlying mechanism is universal.
 
-We operationalize these predictions in three steps. First, we translate structural dynamics into an angle–frequency response model and interrogate its effective degrees of freedom via singular value decomposition. Second, we pose DOA inference as a structured sparse inverse problem on an angle-indexed dictionary and use orthogonal matching pursuit as an analytical baseline [@tropp2007omp]. Third, we derive a physics-guided unrolled solver with learnable routing and test noise robustness, routing mechanisms, and cross-material generality across five targets (Figs. 1–9).
+We operationalize these predictions in three steps. First, we translate structural dynamics into an angle–frequency response model and interrogate its effective degrees of freedom via singular value decomposition. Second, we pose DOA inference as a structured sparse inverse problem on an angle-indexed dictionary and use orthogonal matching pursuit as an analytical baseline [@tropp2007omp]. Third, we derive a physics-guided unrolled solver with learnable routing and test noise robustness, routing mechanisms, and cross-material generality across five targets (Figs. 1–6; Supplementary Figs. 1–4).
 
-**Road map.** In Results, Fig. 1 establishes reproducible direction-dependent fingerprints; Fig. 2 reveals a low-dimensional physical subspace and defines the dictionary; Fig. 3 introduces a physics-guided unrolled solver; Fig. 4 provides robustness evidence; Figs. 5–8 unpack the routing mechanism from global structure to angle-specific and band-resolved diagnostics; and Fig. 9 tests universality across materials under per-object calibration and retraining.
+**Road map.** In Results, Fig. 1 establishes reproducible direction-dependent fingerprints; Fig. 2 reveals a low-dimensional physical subspace and defines the dictionary; Fig. 3 introduces a physics-guided unrolled solver; Fig. 4 provides statistical evidence that the spectral fingerprints are discriminable and repeatable; Fig. 5 shows that the learned routing structure spontaneously aligns with the physical angle manifold and remains robust under noise; and Fig. 6 tests universality across materials under per-object calibration and retraining. Angle-specific and band-resolved routing diagnostics are provided in Supplementary Figs. 1–3; confusion matrices appear in Supplementary Fig. 4.
 
 **Minimal notation (measurement).** We denote the out-of-plane displacement field by \(W(x,y,\omega)\) and the laser-measured velocity by \(V(x_L,y_L,\omega)=i\omega W(x_L,y_L,\omega)\). For incidence direction \(\theta\), the complex single-point response is \(Y(\omega;\theta)=V(x_L,y_L,\omega)\) (Methods: Derivation details and assumptions).
 
@@ -33,9 +33,7 @@ We operationalize these predictions in three steps. First, we translate structur
 ### Everyday objects act as naturally randomized physical encoders (Fig. 1)
 Single-point vibroacoustic spectra of everyday objects exhibit reproducible, direction-dependent fingerprints (Fig. 1b): structural complexity—often dismissed as disorder—acts as a robust mechanism for spatial encoding. This spectral order persists even when the corresponding time-domain vibration appears irregular due to dispersion, multiple scattering, and room reverberation (Fig. 1a) [@rotter2017complex_media; @kuttruff2025room_acoustics]. A non-contact LDV provides the single-point readout while preserving the target’s native boundary conditions (Methods: Experimental setup).
 
-These fingerprints are specific and repeatable across trials (Fig. 1b; Methods: Fingerprint similarity analysis). On a {TBD_N_ANGLES}-angle white-noise evaluation set ({TBD_WN_EVAL_CLIPS_PER_ANGLE} clips per angle), within-angle similarity is high (Pearson \(\rho\) = {TBD_SIM_WITHIN_MEAN} ± {TBD_SIM_WITHIN_SD}), while between-angle similarity is substantially lower ({TBD_SIM_BETWEEN_MEAN} ± {TBD_SIM_BETWEEN_SD}). This within–between gap indicates that the fingerprints are deterministic and angle-specific rather than random noise artifacts (Fig. 1b; Methods: Fingerprint similarity analysis).
-
-To test whether this encoding depends on preserving the target’s native boundary conditions, we perform a contact-loading control (Methods; {TBD_CONTACT_LOADING_PANEL_REF}). Contact loading produces {TBD_CONTACT_LOADING_RESULT_SUMMARY}, consistent with local mass–stiffness perturbations shifting the measured frequency-response structure [@ewins2000modal; @bi2013transducer_mass_loading]. Therefore, we use non-contact LDV to preserve the fidelity of the natural physical encoder (Methods: Experimental setup).
+These fingerprints are specific and repeatable across trials (Fig. 1b; Methods: Fingerprint similarity analysis). On a {TBD_N_ANGLES}-angle white-noise evaluation set ({TBD_WN_EVAL_CLIPS_PER_ANGLE} clips per angle), within-angle similarity is consistently high while between-angle similarity is markedly lower, indicating that the fingerprints are deterministic and angle-specific rather than random noise artifacts (Fig. 1b; quantitative discriminability analysis in Fig. 4).
 
 ![](../figures/fig01_paradigm-shift.jpg)
 
@@ -43,59 +41,14 @@ To test whether this encoding depends on preserving the target’s native bounda
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)); inset shows a representative single-point vibration waveform exhibiting complex, seemingly chaotic fluctuations.
 b, Conceptual schematic illustrating that different incidence directions excite distinct combinations of a small number of structural modes, whose spectral superposition yields direction-specific single-point “spectral fingerprints”.
 
+To test whether this encoding depends on preserving the target’s native boundary conditions, we perform a contact-loading control (Methods; {TBD_CONTACT_LOADING_PANEL_REF}). Contact loading produces {TBD_CONTACT_LOADING_RESULT_SUMMARY}, consistent with local mass–stiffness perturbations shifting the measured frequency-response structure [@ewins2000modal; @bi2013transducer_mass_loading]. Therefore, we use non-contact LDV to preserve the fidelity of the natural physical encoder (Methods: Experimental setup).
+
 ### Spectral fingerprints arise from a low-dimensional physical manifold (Fig. 2)
-The measured angle–frequency response exhibits a pronounced low-dimensional structure: the singular spectrum decays rapidly, indicating that only a small number of dominant spectral–spatial channels account for most direction-dependent variability (Fig. 2a–c). For a representative response matrix \(H\in\mathbb{R}^{F\times E}\), the effective rank is \(r\) = {TBD_SVD_R} (Fig. 2a). This rank captures {TBD_SVD_ENERGY_PCT}% of the singular-value energy. This concentration motivates a compressed inference space that remains physically interpretable while reducing sensitivity to noise and mismatch (Fig. 2a–c). We use a minimal physics model and linear algebra as **tools for discovery** to formalize this observation and define the structured dictionary used for inference (Fig. 2c; Methods).
+The measured angle–frequency response exhibits a pronounced low-dimensional structure: the singular spectrum decays rapidly, indicating that only a small number of dominant spectral–spatial channels account for most direction-dependent variability (Fig. 2a–c). For a representative response matrix \(H\in\mathbb{R}^{F\times E}\), the effective rank is \(r\) = {TBD_SVD_R} (Fig. 2a), capturing {TBD_SVD_ENERGY_PCT}% of the singular-value energy.
 
-#### A single-point response maps direction to spectrum
-Under small-amplitude dynamics, plate-like targets can be approximated as linear systems that map a direction-dependent acoustic forcing into a single-point velocity response. Representative operator and Green’s-function formulations are provided in Methods (Derivation details and assumptions). In such models, direction enters through the forcing term \(P(\cdot,\theta,\omega)\), and the object converts it into a frequency-dependent response measured at the LDV spot—consistent with the empirical direction-dependent fingerprints in Fig. 1b.
+This low-rank structure has a physical origin. Under small-amplitude dynamics, an everyday object acts as a linear system that maps incident direction into a frequency-dependent velocity response at the LDV spot. Because the response is a superposition of a limited number of dispersive structural modes (frequency-dependent wave propagation through the structure) — each with its own frequency signature and direction-dependent coupling strength — the resulting angle–frequency map is inherently low-dimensional (Methods: Derivation details and assumptions) [@ewins2000modal; @meirovitch2001fundamentals]. Even after compressing phase into magnitude statistics, the fingerprints retain this low effective dimensionality (Fig. 2a–c).
 
-The LDV measures out-of-plane velocity \(v(t)=\partial W(x_L,y_L,t)/\partial t\); in the frequency domain \(V(x_L,y_L,\omega)=i\omega W(x_L,y_L,\omega)\). Throughout, we define the complex single-point response \(Y(\omega;\theta)=V(x_L,y_L,\omega)\). Because our fingerprints are defined by magnitude statistics, we use the time-averaged velocity power spectrum \(S(\omega;\theta)\) (Methods) rather than the phase of \(Y\). This mapping can be viewed as a truncated modal expansion and, empirically, as a low-rank decomposition of the measured angle–frequency response (Fig. 2), motivating an approximate separable form (modal superposition)
-
-$$ 
- Y(\omega;\theta) \;\approx\; \sum_{m=1}^{M} s_m(\omega)\,\alpha_m(\theta),
-$$ 
-
-where \(s_m(\omega)\) captures a dispersive spectral signature and \(\alpha_m(\theta)\) captures angle-dependent coupling [@ewins2000modal; @meirovitch2001fundamentals].
-Even after compressing phase into magnitude statistics, the fingerprints retain a low effective dimensionality: only a small number of dominant channels are needed to explain most angle-dependent variation (Fig. 2a–c).
-
-#### An angle-indexed dictionary formalizes fingerprints
-To analyze these fingerprints on a discrete frequency grid \(\{\omega_f\}_{f=1}^F\), we represent each trial by a real feature vector
-
-$$
-y[f] \;=\; \phi\!\left(S(\omega_f;\theta)\right),
-\qquad f=1,\dots,F,
-$$
-
-where \(\phi(\cdot)\) is a fixed transform (e.g., log-power) defined in Methods (Signal processing pipeline). This step isolates the stable spectral signature that differentiates directions (Fig. 1b) and defines the feature space used to construct the dictionary (Fig. 2c). Each atom \(h_e\) is an empirical prototype fingerprint for direction \(\theta_e\) estimated from calibration recordings (Methods: Dictionary calibration and data splits). For concision, we write \(y\) for the standardized feature vector \(\tilde y\) in the inverse model. We stack these atoms into the angle response matrix
-
-$$
-H \;=\; [h_1,\dots,h_E] \in \mathbb{R}^{F\times E}.
-$$
-
-Stacking prototypes across the angle grid yields the structured response matrix visualized in Fig. 2c.
-
-Given an observation \(y\), we model it as a sparse combination of candidate angles:
-
-$$
-y \approx Hx + n,
-\qquad \lVert x\rVert_0 \le K,
-$$
-
-where \(x\in\mathbb{R}^E\) is sparse over angles and \(n\) captures noise and mismatch.
-This sparse-prototype model provides an interpretable link between fingerprint separability (Fig. 1) and pursuit-based inference (Fig. 3).
-
-In our single-source setting, the ideal coefficient vector is 1-sparse. We retain a \(K\)-stage pursuit formulation as an optimization budget that provides residual correction under noise and feature mismatch. Because \(\phi\) is generally nonlinear, the linear sparse model is interpreted as a prototype approximation in the resulting feature space; for a single source, it reduces to selecting the best-matching column of \(H\). This framing connects fingerprint separability to pursuit-based inference and motivates inspecting residual correction across \(K\) stages (Fig. 3; Methods: Inference algorithms).
-
-#### A few dominant channels explain most variability
-The Singular Value Decomposition (SVD) of \(H = U\Sigma V^\top\) exposes effective degrees of freedom [@golub2013matrix_computations]. By the Eckart–Young theorem, truncating to the leading \(r\) components gives the best rank-\(r\) approximation (in Frobenius norm), providing a principled notion of a dominant physical subspace [@eckart1936approximation]. Equivalently,
-
-$$
-H = \sum_{m=1}^{\min(F,E)} \sigma_m\, u_m v_m^\top.
-$$
-
-A rapidly decaying singular spectrum (Fig. 2a) indicates that only a limited number of dominant channels contribute strongly, analogous to eigenchannels in complex media [@davy2015eigenchannels].
-
-Projecting the inverse model into the rank-\(r\) subspace via \(z = U_r^\top y\) and \(A = U_r^\top H\) reduces the problem to \(z \approx Ax\). Premultiplying by \(U_r^\top\) yields \(z = Ax + n'\), where \(n' = U_r^\top n\) captures projected noise and mismatch. This projection preserves the angle-indexed structure while focusing inference on the physically significant spectral channels (Fig. 2a–c).
+This concentration motivates a compressed inference space. We construct an angle-indexed dictionary \(H\) by stacking empirical prototype fingerprints estimated from white-noise calibration — one column per candidate direction (Fig. 2c; Methods: Dictionary calibration and data splits). Given a new observation, DOA inference reduces to identifying which column of \(H\) best matches the measured fingerprint — a structured sparse inverse problem that we solve with pursuit-based algorithms (Methods: Inference algorithms). Projecting into the dominant SVD subspace focuses inference on the physically significant channels while suppressing noise (Fig. 2a–c; Methods: SVD compression).
 
 ![](../figures/fig02_svd-physical-dictionary.jpg)
 
@@ -105,95 +58,57 @@ b, Modal decomposition into frequency-selective spectra \(u_r(f)\) and direction
 c, The structured angle dictionary \(H\) and its rank-\(r\) SVD compression used for inference.
 
 ### Physics-guided routing resolves dispersive ambiguity (Fig. 3)
-Dispersive fingerprints are informative but intrinsically ambiguous: multiple candidate angles can produce partially overlapping spectral responses, and greedy selection can pick off-axis atoms when noise corrupts correlations. We resolve this ambiguity by coupling a structured sparse inverse formulation to a learnable routing mechanism that remains anchored to the physical dictionary and enforces residual-consistent updates (Fig. 3). Evidence for ambiguity resolution is reflected in sustained accuracy under additive noise (Fig. 4), globally diagonal routing statistics (Fig. 5), and sharper angle-specific as well as band-resolved selection diagnostics (Figs. 6–8). Formally, we frame DOA estimation as sparse recovery on the physical angle manifold: the coefficient vector \(x\) indexes candidate directions, and the projected dictionary \(A\) encodes their SVD-compressed spectral signatures. This defines a common objective for both the analytical OMP baseline and the learned unrolled solver (Fig. 3; Methods: Inference algorithms).
+Dispersive fingerprints are informative but intrinsically ambiguous: multiple candidate angles can produce partially overlapping spectral responses. A classical greedy solver — orthogonal matching pursuit (OMP) — selects the dictionary entry most correlated with the current measurement residual [@tropp2007omp; @tropp2004greed]. In complex media, noise and spectral overlap can cause OMP to select incorrect directions (Fig. 5c; Supplementary Fig. 1), motivating a solver that can learn from the structure of the angle manifold.
 
-$$ 
-\min_{x}\; \lVert z - Ax\rVert_2^2
-\quad \text{s.t.}\quad \lVert x\rVert_0 \le K.
-$$ 
+We address this by deriving a physics-guided neural solver that unrolls the iterative pursuit algorithm into a trainable network (Fig. 3; Methods: Inference algorithms) [@gregor2010lista; @monga2021unrolling]. At each stage, the solver computes how well each dictionary entry matches the remaining unexplained signal — a physically grounded correlation step. Instead of selecting the single best match (as OMP does), a learned attention mechanism produces a soft weighting over all candidate directions, informed by the full dictionary structure. This weighting gates a sparse update, after which the explained portion is subtracted to maintain consistency with the physical dictionary (Methods: Attention routing equations). The number of iterative selection steps \(K\) (the pursuit depth) provides a controlled residual-correction budget under noise and feature mismatch, and is shared between OMP and the learned solver for fair comparison.
 
-Here \(K\) is the pursuit depth (selection budget) used by both analytical OMP and the unrolled solver, providing a controlled residual-correction budget under noise and feature mismatch (Fig. 3; Methods: Inference algorithms).
-
-This sparse-reconstruction viewpoint parallels classical sparse DOA methods that discretize a propagation manifold and solve for a sparse angular spectrum [@malioutov2005sparse_doa; @baraniuk2007compressive_sensing] (Methods: Inference algorithms).
-
-#### Greedy selection can drift off-axis under overlap (OMP baseline)
-Orthogonal matching pursuit (OMP) is a canonical greedy solver for the \(\ell_0\)-constrained least-squares problem [@tropp2007omp; @tropp2004greed]. We use OMP as an interpretable baseline that probes the informativeness of the SVD-compressed physical dictionary: it greedily selects the atom most correlated with the current residual and refits coefficients on the selected support. In complex media, noise and partial spectral overlap can cause OMP to select off-axis angles (Figs. 5b and 6), motivating a learned router that regularizes selection while preserving residual consistency. Algorithmic details are provided in Methods (Inference algorithms).
-
-#### Learned routing stabilizes pursuit while enforcing residual consistency
-OMP’s argmax selection is a fixed heuristic and can be brittle under noise and model mismatch in complex media. We therefore derive a neural solver by **unrolling** \(K\) pursuit stages into a network and replacing the discrete selection rule with learnable attention-based routing, while retaining physics-consistent residual updates [@gregor2010lista; @monga2021unrolling].
-
-At stage \(t\), we start from residual \(r_t\in\mathbb{R}^r\) and correlations \(g_t=A^\top r_t\in\mathbb{R}^E\), where \(g_t\) provides a physically grounded match between the residual and each candidate angle. Routing weights \(w_t\in\mathbb{R}^E\) (a distribution over atoms) are produced by an attention router that conditions on the residual state and the full dictionary (Methods: Derivation details and assumptions). These weights gate a sparse update in coefficient space:
-
-$$
-\Delta x_t = \eta_t\,(w_t \odot g_t),
-\qquad
-r_{t+1} = r_t - A\,\Delta x_t,
-$$
-
-where \(\eta_t\) is a step size (learned or fixed) and \(\odot\) denotes element-wise product. After \(K\) stages, we accumulate \(x=\sum_{t=0}^{K-1}\Delta x_t\) and estimate DOA on the discrete grid from the coefficient mass (e.g., \(\hat\theta=\theta_{\arg\max_e |x[e]|}\); Methods).
-
-**Physical Interpretation.** Attention makes the OMP→unrolling link explicit: when \(w_t\) concentrates to a one-hot vector at the maximally correlated atom, the update reduces to greedy selection; residual consistency keeps the solver anchored to the SVD-compressed physical dictionary.
-As depicted in Fig. 3, the update alternates between physical matching (correlation with \(A\)) and learned manifold-aware routing (weights \(w_t\)), providing a mechanism for suppressing spurious off-axis correlations (Figs. 5–8).
+When the learned weights concentrate on a single entry, the update reduces to classical greedy selection; when they spread across nearby angles, the solver exploits the smooth structure of the angle manifold to regularize its choices. Evidence that this routing mechanism aligns with physical structure — rather than learning an arbitrary pattern — is presented in Fig. 5. Sustained accuracy under noise (Fig. 5a) and sharper selection statistics (Fig. 5b,c; Supplementary Figs. 1–3) confirm that the learned routing provides a principled advantage over heuristic selection. This sparse-reconstruction viewpoint parallels classical sparse DOA methods that discretize a propagation manifold and solve for a sparse angular spectrum [@malioutov2005sparse_doa; @baraniuk2007compressive_sensing].
 
 ![](../figures/fig03_unrolled-attention-omp.jpg)
 
 **Fig. 3 | Physics-guided deep unrolled network with attention-based gating.**
 At stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(A\). A transformer encoder generates routing weights that gate sparse updates \(\Delta x_t\), enforcing residual consistency \(r_{t+1}=r_t-A\Delta x_t\).
 
-### Experimental validation: end-to-end DOA decoding in speech remains robust under noise (Fig. 4)
-On speech recordings, the physics-aware model decodes DOA under non-stationary content with high accuracy (Fig. 4; Methods). We evaluate {TBD_SPEECH_N_CLIPS_TOTAL} LDV clips, with {TBD_SPEECH_CLIPS_PER_ANGLE} clips per angle (Methods: Dictionary calibration and data splits). The evaluation grid contains {TBD_N_ANGLES} angles spanning {TBD_ANGLE_RANGE_DEG} at {TBD_ANGLE_STEP_DEG}° resolution. The model achieves {TBD_SPEECH_TOP1_ACC_PCT}% top-1 validation accuracy with mean absolute error {TBD_SPEECH_MAE_DEG}° (95th percentile {TBD_SPEECH_P95_DEG}°). Together, these results show that a single-point fingerprint supports accurate DOA decoding in speech (Fig. 4).
+### Spectral fingerprints are statistically discriminable and repeatable (Fig. 4)
+Before validating the solver on speech (Fig. 5), we establish that the input — the spectral fingerprints themselves — carries a statistically robust directional signal. Across the full {TBD_N_ANGLES}-angle grid, within-angle fingerprint similarity is significantly higher than between-angle similarity, with a large effect size (Fig. 4b).
 
-Architectural ablations first isolate which components drive the gain: at clean / infinite SNR, removing the transformer reduces accuracy to {TBD_ACC_ABL_NO_TRANSFORMER_PCT}%, while fixed-heuristic or dense routing collapse to {TBD_ACC_ABL_FIXED_HEURISTIC_PCT}% and {TBD_ACC_ABL_DENSE_ROUTING_PCT}% (Fig. 4a; Methods). Across additive white-noise conditions, performance remains high at 10 and 5 dB SNR and degrades gracefully at 0 dB (Fig. 4b; Methods), averaged over {TBD_N_INDEP_RUNS} independent runs. Top-1 accuracy is {TBD_ACC_SNR10_PCT}% / {TBD_ACC_SNR5_PCT}% / {TBD_ACC_SNR0_PCT}% at 10/5/0 dB. Together, these results show that manifold-aware routing provides robustness beyond greedy pursuit under noise and content variability (Fig. 4a,b).
+The dictionary \(H\) reveals clear direction-dependent spectral structure (Fig. 4a): each column represents a prototype fingerprint for a discrete incidence angle, and the frequency profiles vary systematically across the angular grid. To quantify discriminability, we compute pairwise Pearson correlations between all trial-level fingerprints and partition them into within-angle pairs (trials recorded at the same direction) and between-angle pairs (trials recorded at different directions). Within-angle correlations ({TBD_DISCRIM_WITHIN_MEAN} ± {TBD_DISCRIM_WITHIN_SEM}) are significantly higher than between-angle correlations ({TBD_DISCRIM_BETWEEN_MEAN} ± {TBD_DISCRIM_BETWEEN_SEM}; Mann–Whitney \(U\) = {TBD_DISCRIM_U}, \(p\) < {TBD_DISCRIM_P}; Cohen’s \(d\) = {TBD_DISCRIM_COHENS_D}; Fig. 4b). The large effect size confirms that the spectral encoding carries a strong directional signal well above chance similarity.
 
-![](../figures/fig04_noise-robustness-ablation.jpg)
+To assess whether this discriminability is uniform across the angle grid rather than driven by a subset of favourable directions, we examine per-angle fingerprint repeatability (Fig. 4c). The mean within-angle correlation remains consistently high across all {TBD_N_ANGLES} directions (range: {TBD_REPEAT_MIN}–{TBD_REPEAT_MAX}; grand mean {TBD_REPEAT_GRAND_MEAN} ± {TBD_REPEAT_GRAND_SEM} SEM), indicating that the physical encoder provides a stable directional code without systematic blind spots. Together, these results establish that the spectral fingerprints introduced in Fig. 1 carry a statistically robust directional signal, motivating the decoder validation and structure-alignment analyses that follow (Fig. 5).
 
-**Fig. 4 | Physics-guided sparse routing remains robust under noise.**
-a, Component ablation at clean / infinite SNR confirming the value of physics-aware sparse routing.
-b, Validation accuracy across the additive-noise sweep.
+![](../figures/fig04_fingerprint_discriminability.jpg)
 
-### Learned routing mirrors the physical angle manifold and remains globally diagonal (Fig. 5)
-We first isolate the global mechanism from the case-specific diagnostics. The physical manifold itself exhibits strong diagonal locality in the `H`-matrix correlation structure, and the learned `QK` structure is even more sharply diagonal (Fig. 5a), indicating that the router has learned locality on the underlying angle manifold rather than an arbitrary attention pattern. At the dataset scale, this alignment converts directly into cleaner all-angle selection behaviour: traditional OMP spreads selection mass over a persistent off-diagonal set of experts, whereas the physics-aware model concentrates almost entirely on the diagonal across the full angle range (Fig. 5b). These statistics show that the routing advantage is already visible at the expert-selection level before any final decoding metric is computed.
+**Fig. 4 | Spectral fingerprints are statistically discriminable and repeatable across the angle grid.**
+a, Angle–frequency heatmap of the calibration dictionary \(H\), showing direction-dependent spectral structure across the {TBD_N_ANGLES}-angle grid.
+b, Violin plot of pairwise Pearson correlations partitioned into within-angle (same direction) and between-angle (different directions) pairs, with Mann–Whitney \(U\) test significance and Cohen’s \(d\) effect size annotated.
+c, Per-angle fingerprint repeatability: mean within-angle Pearson \(r\) (± SEM) for each direction, demonstrating consistent encoding fidelity across the angular range.
 
-![](../figures/fig05_structure-macro-selection.png)
+### Learned routing aligns with physical structure and resists noise (Fig. 5)
+The central finding of this work is that the learned attention router recovers structure already present in the physical dictionary, rather than learning an arbitrary pattern. We demonstrate this alignment and its functional consequences through three complementary analyses.
 
-**Fig. 5 | Global structure alignment and macro selection robustness.**
-a, Physical and learned manifold structure, comparing the `H`-matrix correlation map with the learned `QK` routing structure.
-b, All-angle selection-probability heatmaps showing diffuse OMP selection and sharply diagonal physics-aware selection.
+The physical angle manifold exhibits characteristic correlations in the dictionary \(H\): nearby angles share spectral features, producing a banded correlation structure. Strikingly, the learned query–key (QK) correlation of the attention router mirrors this physical structure with even sharper diagonal locality (Fig. 5b). The Pearson correlation between the upper-triangular entries of the \(H\)-correlation and QK-correlation matrices is \(r\) = {TBD_HCORR_QK_CORR} (\(p\) < {TBD_HCORR_QK_P}), confirming that the router has learned to respect the geometry of the physical angle manifold rather than fitting an unconstrained attention pattern. This alignment is the core interpretability result: it shows that the network’s internal routing reflects genuine physical structure.
 
-### Angle-specific routing distributions sharpen the correct atom (Fig. 6)
-To quantify the same mechanism at representative directions, we inspect the predicted-atom distributions at `55°` and `100°` (Fig. 6a,b). At `55°`, the transformer baseline concentrates `55.8%` of its mass on the correct atom, whereas the no-transformer ablation drops to `40.4%` and redistributes probability onto secondary off-axis atoms (Fig. 6a). At `100°`, the same pattern remains: the baseline assigns `65.4%` probability to the correct atom, compared with `51.9%` for the no-transformer ablation (Fig. 6b). These per-angle distributions show that learned routing does not merely sharpen aggregate accuracy; it increases the dominant correct-atom peak while suppressing structured alternatives that remain physically plausible but incorrect.
+The consequences of this alignment are visible in the selection statistics (Fig. 5c). Across the full angle grid, OMP spreads selection mass over a persistent off-diagonal set of dictionary entries, reflecting the spectral overlap that confuses greedy pursuit. By contrast, the physics-aware model concentrates selection probability sharply along the diagonal, indicating that it selects the correct direction for each incidence angle with high consistency. This concentration mirrors the sharpened QK structure and demonstrates that manifold-aligned routing translates directly into cleaner direction selection.
 
-![](../figures/fig06_angle-specific-mechanism.png)
+Furthermore, this structural advantage confers noise robustness (Fig. 5a). On speech recordings, the physics-aware model achieves {TBD_SPEECH_TOP1_ACC_PCT}% top-1 accuracy at clean SNR, with graceful degradation to {TBD_ACC_SNR10_PCT}% / {TBD_ACC_SNR5_PCT}% / {TBD_ACC_SNR0_PCT}% at 10 / 5 / 0 dB SNR (averaged over {TBD_N_INDEP_RUNS} independent runs). Removing the transformer degrades accuracy to {TBD_ACC_ABL_NO_TRANSFORMER_PCT}%, while the analytical OMP baseline falls further behind under noise (Fig. 5a; Methods). Detailed ablation results and architectural comparisons are provided in Methods; full confusion matrices appear in Supplementary Fig. 4. Angle-specific routing distributions and band-resolved diagnostics further corroborate the physical mechanism (Supplementary Figs. 1–3).
 
-**Fig. 6 | Angle-specific routing distributions sharpen the correct atom.**
-a, Baseline and no-transformer distributions at `55°`.
-b, Baseline and no-transformer distributions at `100°`.
+![](../figures/fig05_performance_structure.jpg)
 
-### Band-resolved diagnostics localize where the case-study mechanism lives in frequency (Figs. 7 and 8)
-The micro-mechanism can also be decomposed into full-band and sub-band views (Figs. 7 and 8). The full-band traces reproduce the same target-angle concentration seen in the single-case diagnostics, and the corrected no-smoothing rerun preserves that localization without relying on post hoc smoothing (Fig. 7a,b). When the analysis is restricted to narrower bands, the `300–500 Hz` and `500–1000 Hz` windows retain the clearest angle contrast, while the `1000–2000 Hz` and `2000–3000 Hz` windows become visibly weaker and more variable but still preserve structured angle dependence (Figs. 7c and 8a–c). Together, these diagnostics show that the routing mechanism is frequency-distributed rather than tied to a single narrow resonance, while also revealing which bands carry the most reliable directional evidence.
+**Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
+a, SNR degradation curves for the physics-aware model, no-transformer ablation, and analytical OMP baseline, showing graceful degradation under additive noise.
+b, Correlation structure of the physical dictionary \(H\) (left) and the learned QK attention map (right), revealing that the router recovers the geometry of the angle manifold — the core interpretability finding.
+c, All-angle selection-probability heatmaps comparing OMP (diffuse off-diagonal mass) with the physics-aware model (sharply diagonal), demonstrating that structure-aligned routing concentrates selection on the correct direction.
 
-![](../figures/fig07_bandwise-routing-analysis-part1.png)
+Angle-specific and band-resolved diagnostics further support the physical mechanism (Supplementary Figs. 1–3). At representative directions, the physics-aware model concentrates selection mass on the correct direction while suppressing physically plausible but incorrect alternatives. The routing mechanism persists across frequency bands, confirming that directional encoding is frequency-distributed rather than tied to a single resonance. A natural question is whether this mechanism — low-rank modal encoding decoded by manifold-aligned routing — is specific to a single object or reflects a universal physical principle.
 
-**Fig. 7 | Band-wise routing diagnostics I.**
-a, Full-band smoothed view.
-b, Full-band corrected no-smoothing view.
-c, `300–500 Hz` diagnostic.
+### Physical encoding is universal across everyday materials (Fig. 6)
+Across five targets with distinct material properties (damping, stiffness) and geometries—acrylic, paper cup, wood, cardboard, and a laptop shell (Fig. 6a)—we consistently observe direction-dependent dispersion signatures (Fig. 6b). Under a per-object calibrate-and-retrain protocol (Methods: Dictionary calibration and data splits), the physics-aware model maintains low DOA error (Fig. 6c). The RMSE is {TBD_RMSE_RANGE_DEG}°. In contrast, analytical OMP degrades substantially on the most complex targets. Its RMSE exceeds {TBD_RMSE_OMP_COMPLEX_DEG}° (Fig. 6c).
 
-![](../figures/fig08_bandwise-routing-analysis-part2.png)
-
-**Fig. 8 | Band-wise routing diagnostics II.**
-a, `500–1000 Hz` diagnostic.
-b, `1000–2000 Hz` diagnostic.
-c, `2000–3000 Hz` diagnostic.
-
-### Physical encoding is universal across everyday materials (Fig. 9)
-Across five targets with distinct material properties (damping, stiffness) and geometries—acrylic, paper cup, wood, cardboard, and a laptop shell (Fig. 9a)—we consistently observe direction-dependent dispersion signatures (Fig. 9b). Under a per-object calibrate-and-retrain protocol (Methods: Dictionary calibration and data splits), the physics-aware model maintains low DOA error (Fig. 9c). The RMSE is {TBD_RMSE_RANGE_DEG}°. In contrast, analytical OMP degrades substantially on the most complex targets. Its RMSE exceeds {TBD_RMSE_OMP_COMPLEX_DEG}° (Fig. 9c).
-
-**Mechanism of Universality.** While specific material parameters (stiffness \(D_p\), density \(\rho\)) shift resonance frequencies and mode shapes, the fundamental **linear superposition principle** governs all targets. Calibration yields an object-specific dictionary \(H\) that captures each object’s dispersive fingerprints, and retraining learns an inverse mapping that exploits the shared sparse-superposition logic. This supports the interpretation that the solver learns the physical logic encoded by \(H\) rather than memorizing individual trials (Fig. 9b,c).
+**Mechanism of Universality.** While specific material parameters (stiffness \(D_p\), density \(\rho\)) shift resonance frequencies and mode shapes, the fundamental **linear superposition principle** governs all targets. Calibration yields an object-specific dictionary \(H\) that captures each object’s dispersive fingerprints, and retraining learns an inverse mapping that exploits the shared sparse-superposition logic. This supports the interpretation that the solver learns the physical logic encoded by \(H\) rather than memorizing individual trials (Fig. 6b,c).
 
 ![](../figures/fig09_cross-material-universality.jpg)
 
-**Fig. 9 | Universal physical encoding across diverse materials.**
+**Fig. 6 | Universal physical encoding across diverse materials.**
 a, The five target objects.
 b, Representative dictionary heatmaps showing shared dispersive structure.
 c, Cross-material RMSE comparison.
@@ -205,9 +120,9 @@ These results establish a complementary sensing paradigm in which passive everyd
 
 **Mechanism (low effective rank).** The rapid decay of the singular spectrum (Fig. 2a) indicates that the measured angle–frequency response is governed by a small number of dominant channels, consistent with eigenchannel interpretations of complex media. This low effective rank explains why projecting into the dominant subspace improves robustness: it retains the physically informative variation while suppressing directions that contribute weakly or inconsistently. As damping increases, modal overlap grows and directional identifiability can degrade because distinct directions become less separable in the compressed channel space [@ewins2000modal; @inman2013engineering_vibration].
 
-**Mechanism (routing on an angle manifold).** Greedy pursuit can fail when content-induced spectral overlap causes spurious off-axis correlations (Figs. 5b and 6). The physics-guided unrolled solver addresses this by learning a soft routing distribution \(w_t\) that regularizes selection using context across the entire angle manifold, while preserving residual-consistent updates anchored to the physical dictionary (Fig. 3). The emergent near-diagonal learned structure (Fig. 5a), the sharply diagonal all-angle selection maps (Fig. 5b), the stronger correct-atom peaks at representative directions (Fig. 6), and the band-resolved persistence of the same mechanism (Figs. 7 and 8) together indicate that the solver exploits manifold smoothness—nearby angles share similar dispersive structure—to stabilize inference under noise and nonstationary speech (Fig. 4).
+**Mechanism (routing on an angle manifold).** Greedy pursuit can fail when content-induced spectral overlap causes spurious off-axis correlations (Fig. 5c; Supplementary Fig. 1). The physics-guided unrolled solver addresses this by learning a soft routing distribution \(w_t\) that regularizes selection using context across the entire angle manifold, while preserving residual-consistent updates anchored to the physical dictionary (Fig. 3). The emergent near-diagonal learned structure (Fig. 5b), the sharply diagonal all-angle selection maps (Fig. 5c), the stronger correct-atom peaks at representative directions (Supplementary Fig. 1), and the band-resolved persistence of the same mechanism (Supplementary Figs. 2 and 3) together indicate that the solver exploits manifold smoothness—nearby angles share similar dispersive structure—to stabilize inference under noise and nonstationary speech (Fig. 5a).
 
-**Scientific frontiers and outlook.** Our current pipeline requires per-object calibration to construct an object-specific dictionary \(H\) and retraining to learn the inverse mapping (Fig. 9), highlighting a frontier question: which invariances of the angle–frequency manifold are shared across objects, and which are inherently object-specific? A second frontier is to quantify information-theoretic limits of single-point decoding as angle fingerprints become less separable (Fig. 2a), and to determine how mounting conditions and LDV spot placement trade off robustness versus sensitivity. Extending the framework to multi-source and moving-source regimes will require modeling how fingerprints superpose and evolve across time windows, and identifying when the residual-correction depth \(K\) captures meaningful additional structure versus overfitting.
+**Scientific frontiers and outlook.** Our current pipeline requires per-object calibration to construct an object-specific dictionary \(H\) and retraining to learn the inverse mapping (Fig. 6), highlighting a frontier question: which invariances of the angle–frequency manifold are shared across objects, and which are inherently object-specific? A second frontier is to quantify information-theoretic limits of single-point decoding as angle fingerprints become less separable (Fig. 2a), and to determine how mounting conditions and LDV spot placement trade off robustness versus sensitivity. Extending the framework to multi-source and moving-source regimes will require modeling how fingerprints superpose and evolve across time windows, and identifying when the residual-correction depth \(K\) captures meaningful additional structure versus overfitting.
 
 ## Methods
 ### Software and hardware
@@ -226,9 +141,9 @@ We used two excitation regimes: (i) white-noise playback for dictionary calibrat
 ### Dictionary calibration and data splits
 The angle dictionary \(H\) is constructed exclusively from white-noise calibration recordings. For each target object, we acquire a white-noise dataset organized by angle and partition it into (i) a **calibration subset** used solely to estimate \(H\) and (ii) a disjoint **evaluation subset** used to quantify fingerprint repeatability/separability (Fig. 1) and verify dictionary validity. The calibration subset contains {TBD_WN_CALIB_CLIPS_PER_ANGLE} clips per angle selected by {TBD_WN_SPLIT_RULE}; the remaining {TBD_WN_EVAL_CLIPS_PER_ANGLE} clips per angle are reserved for evaluation. Calibration clips are never used for training or evaluation of the DOA decoder.
 
-For speech decoding (Figs. 4–8), we train the decoder on a speech dataset split into train/validation/test sets stratified by angle using {TBD_SPEECH_SPLIT_RULE} (counts: {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST} clips). All speech results use the fixed \(H\) estimated from white-noise calibration only.
+For speech decoding (Fig. 5; Supplementary Figs. 1–3), we train the decoder on a speech dataset split into train/validation/test sets stratified by angle using {TBD_SPEECH_SPLIT_RULE} (counts: {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST} clips). All speech results use the fixed \(H\) estimated from white-noise calibration only.
 
-For cross-material experiments (Fig. 9), we repeat the full pipeline per target: acquire object-specific white-noise calibration data, estimate that object’s \(H\), and retrain a separate model for that object. Universality is therefore assessed at the level of a shared physical mechanism and inference recipe, not by reusing weights across objects.
+For cross-material experiments (Fig. 6), we repeat the full pipeline per target: acquire object-specific white-noise calibration data, estimate that object’s \(H\), and retrain a separate model for that object. Universality is therefore assessed at the level of a shared physical mechanism and inference recipe, not by reusing weights across objects.
 
 ### Signal processing pipeline
 **Definition ladder (waveform → dictionary).** For a clip at direction \(\theta\), the LDV provides an out-of-plane velocity waveform \(v[n]\) (m/s). We compute an STFT \(V[k,t]\), form a time-averaged power spectrum estimate \(\widehat S(\omega_k;\theta)=\frac{1}{T}\sum_t |V[k,t]|^2\), and restrict it to a frequency band to obtain a band-limited fingerprint. Features are defined as \(y=\phi(\widehat S)\), standardized to \(\tilde y\), and averaged across calibration trials to form per-angle prototypes \(h_e\) and the dictionary \(H=[h_1,\dots,h_E]\).
@@ -283,7 +198,7 @@ r_{t+1} &= z - A x^{(t+1)},
 $$
 where \(a_e\) is the \(e\)-th column of \(A\) and \(A_{S}\) denotes the subdictionary restricted to indices \(S\). After \(K\) stages, we set \(x=x^{(K)}\) and predict \(\hat\theta=\theta_{\arg\max_e |x[e]|}\) on the discrete angle grid.
 
-**Physics-guided unrolling.** We unroll \(K\) pursuit stages into a network, replace the discrete selection rule with learnable attention-based routing, and retain residual-consistent updates (Results, Fig. 3). This yields a differentiable solver whose routing weights can be inspected as mechanistic evidence (Results, Figs. 5–8).
+**Physics-guided unrolling.** We unroll \(K\) pursuit stages into a network, replace the discrete selection rule with learnable attention-based routing, and retain residual-consistent updates (Results, Fig. 3). This yields a differentiable solver whose routing weights can be inspected as mechanistic evidence (Results, Fig. 5b,c; Supplementary Figs. 1–3).
 
 ### Derivation details and assumptions
 **Assumptions.** The derivations above and below rely on three modeling choices. First, over each analysis window the target is approximated as linear and time-invariant under small-amplitude dynamics, so that direction-dependent responses superpose in the frequency domain. Second, after the nonlinear feature transform \(\phi\) (log-power), we interpret \(Hx\) as a sparse *prototype approximation* in the resulting standardized feature space, not as a literal physical power-additivity law. Third, SVD projection preserves the angle-indexed structure while mapping the noise/mismatch term to \(n' = U_r^\top n\).
@@ -327,13 +242,13 @@ The physics-guided unrolled network was implemented in PyTorch [@paszke2019pytor
 
 **Training.** We trained the unrolled network using {TBD_TRAIN_LOSS_DESCRIPTION}, optimized with {TBD_OPTIMIZER} (learning rate \(\eta\) = {TBD_LR}, weight decay \(\lambda\) = {TBD_WEIGHT_DECAY}) for {TBD_EPOCHS} epochs with batch size {TBD_BATCH_SIZE} and random seed {TBD_RANDOM_SEED}. Speech clips were split deterministically stratified by angle ({TBD_SPEECH_SPLIT_RULE}; {TBD_SPLIT_TRAIN} / {TBD_SPLIT_VAL} / {TBD_SPLIT_TEST} clips).
 
-**Ablations (Fig. 4a).** We report three ablations with all other components held fixed. **No-transformer** replaces the transformer router with {TBD_ABL_NO_TRANSFORMER_DEF}. **Fixed heuristic** replaces learned routing with {TBD_ABL_FIXED_HEURISTIC_DEF}. **Dense routing** uses {TBD_ABL_DENSE_ROUTING_DEF}. Each ablation uses the same dictionary construction and evaluation protocol as the full model.
+**Ablations (Fig. 5a).** We report three ablations with all other components held fixed. **No-transformer** replaces the transformer router with {TBD_ABL_NO_TRANSFORMER_DEF}. **Fixed heuristic** replaces learned routing with {TBD_ABL_FIXED_HEURISTIC_DEF}. **Dense routing** uses {TBD_ABL_DENSE_ROUTING_DEF}. Each ablation uses the same dictionary construction and evaluation protocol as the full model.
 
 Noise robustness experiments add zero-mean white noise at SNR levels {TBD_SNR_LEVELS_DB} in the time domain:
 $$
 v_\mathrm{noisy} = v + \alpha \xi,\quad \xi\sim\mathcal{N}(0,1),\quad \mathrm{SNR}=10\log_{10}\frac{\lVert v\rVert_2^2}{\lVert \alpha \xi\rVert_2^2}.
 $$
-The SNR sweep in Fig. 4b uses the same feature extraction and dictionary construction for each noise level.
+The SNR sweep in Fig. 5a uses the same feature extraction and dictionary construction for each noise level.
 
 **Evaluation metrics.** We report top-1 accuracy \(\frac{1}{N}\sum_{i=1}^{N}\mathbb{1}[\hat\theta_i=\theta_i]\) on the discrete angle grid. When reporting angular error in degrees, we compute the minimal angular difference \(\Delta(\hat\theta,\theta)=\min_{k\in\mathbb{Z}}|\hat\theta-\theta+360k|\) and report \(\mathrm{RMSE}=\sqrt{\frac{1}{N}\sum_i \Delta(\hat\theta_i,\theta_i)^2}\).
 
