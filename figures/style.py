@@ -49,6 +49,14 @@ PALETTE_VIRIDIS_8 = [
     "#FDE725",
 ]
 
+# Semantic role palette — consistent colors across restructured figures
+SEMANTIC_PALETTE = {
+    "physics": "#0072B2",    # blue — physical/H-based quantities
+    "learned": "#009E73",    # green — learned/AI quantities
+    "ablation": "#D55E00",   # vermilion — ablation/baseline comparisons
+    "highlight": "#E69F00",  # orange — highlighted ablation variant
+}
+
 
 # ---------------------------------------------------------------------------
 # Unit conversion
