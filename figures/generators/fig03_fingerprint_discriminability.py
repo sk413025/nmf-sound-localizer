@@ -5,9 +5,9 @@ Panel (b): Within-angle vs between-angle Pearson r (violin/box) + statistical
            annotation (Mann-Whitney U, Cohen's d).
 Panel (c): Per-angle fingerprint repeatability (line + SEM band).
 Panel (d): Full pairwise similarity matrix (37x37) from trial-level data.
-Panel (e): Prediction confidence histogram (correct vs incorrect trials).
+Panel (e): OMP per-angle accuracy bar chart (classical baseline).
 
-Data: dictionary.npz (H, angles) + modal_routing_val.npz (Y_val, labels).
+Data: dictionary.npz (H, angles) + modal_routing_val.npz (Y_val, labels, g_energy_expert).
 """
 
 from __future__ import annotations
@@ -193,7 +193,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     dict_data = dict(np.load(dict_path, allow_pickle=True))
     Y_val = routing_data["Y_val"]
     labels = routing_data["labels"].astype(int)
-    scores_expert = routing_data["scores_expert"]
+    g_energy_expert = routing_data["g_energy_expert"]
     H = dict_data["H"]
     angles = dict_data["angles"]
     n_angles = len(angles)
@@ -222,13 +222,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Compute trial-level pairwise similarity matrix (panel d)
     sim_matrix = _compute_trial_pairwise_matrix(Y_val, labels, n_angles)
 
-    # Compute prediction confidence (panel e)
-    pred_labels = np.argmax(scores_expert, axis=1)
-    correct_mask = pred_labels == labels
-    # Confidence = max softmax score
-    scores_exp = np.exp(scores_expert - scores_expert.max(axis=1, keepdims=True))
-    scores_softmax = scores_exp / scores_exp.sum(axis=1, keepdims=True)
-    confidence = np.max(scores_softmax, axis=1)
+    # Compute OMP per-angle accuracy (panel e)
+    omp_pred = np.argmax(g_energy_expert, axis=1)
+    omp_per_angle_acc = np.array([
+        np.mean(omp_pred[labels == a] == a) if np.sum(labels == a) > 0 else 0.0
+        for a in range(n_angles)
+    ])
+    omp_mean_acc = np.mean(omp_per_angle_acc)
 
     # -----------------------------------------------------------------------
     # Build composite figure (2 rows: top 3 panels, bottom 2 panels)
@@ -322,25 +322,22 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_d, "d", x=-0.10, y=1.06)
 
-    # Panel (e): Prediction confidence histogram
+    # Panel (e): OMP per-angle accuracy bar chart
     ax_e = fig.add_subplot(gs[1, 3:6])
-    bins = np.linspace(0, 1, 30)
-    ax_e.hist(confidence[correct_mask], bins=bins, alpha=0.7,
-              color=SEMANTIC_PALETTE["learned"], label="Correct",
-              density=True, edgecolor="none")
-    ax_e.hist(confidence[~correct_mask], bins=bins, alpha=0.7,
-              color=SEMANTIC_PALETTE["ablation"], label="Incorrect",
-              density=True, edgecolor="none")
-    ax_e.set_xlabel("Prediction confidence", fontsize=6)
-    ax_e.set_ylabel("Density", fontsize=6)
-    ax_e.set_title("Confidence distribution", fontsize=6.5)
-    ax_e.legend(fontsize=5, frameon=False, loc="upper left")
+    bar_colors_e = [SEMANTIC_PALETTE["physics"]] * n_angles
+    for i in range(n_angles):
+        if omp_per_angle_acc[i] < omp_mean_acc:
+            bar_colors_e[i] = SEMANTIC_PALETTE["ablation"]
+    ax_e.bar(angles, omp_per_angle_acc, width=4, color=bar_colors_e,
+             alpha=0.8, edgecolor="none")
+    ax_e.axhline(omp_mean_acc, color="black", linestyle="--", linewidth=0.6,
+                 alpha=0.7, label=f"Mean = {omp_mean_acc:.2f}")
+    ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
+    ax_e.set_ylabel("OMP accuracy", fontsize=6)
+    ax_e.set_title("Classical OMP baseline", fontsize=6.5)
+    ax_e.set_ylim(0, 1.05)
+    ax_e.legend(fontsize=6, frameon=False, loc="lower left")
     ax_e.grid(axis="y", linestyle="--", alpha=0.3)
-    n_correct = correct_mask.sum()
-    n_total = len(correct_mask)
-    ax_e.text(0.95, 0.95, f"Acc: {n_correct/n_total:.1%}",
-              transform=ax_e.transAxes, ha="right", va="top", fontsize=5.5,
-              style="italic")
     add_panel_label(ax_e, "e", x=-0.10, y=1.06)
 
     # Save composite
@@ -428,18 +425,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel e standalone
     fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_e.add_subplot(111)
-    ax.hist(confidence[correct_mask], bins=bins, alpha=0.7,
-            color=SEMANTIC_PALETTE["learned"], label="Correct", density=True,
-            edgecolor="none")
-    ax.hist(confidence[~correct_mask], bins=bins, alpha=0.7,
-            color=SEMANTIC_PALETTE["ablation"], label="Incorrect", density=True,
-            edgecolor="none")
-    ax.set_xlabel("Prediction confidence")
-    ax.set_ylabel("Density")
-    ax.legend(fontsize=5, frameon=False)
+    bar_colors_e_s = [SEMANTIC_PALETTE["physics"]] * n_angles
+    for i in range(n_angles):
+        if omp_per_angle_acc[i] < omp_mean_acc:
+            bar_colors_e_s[i] = SEMANTIC_PALETTE["ablation"]
+    ax.bar(angles, omp_per_angle_acc, width=4, color=bar_colors_e_s,
+           alpha=0.8, edgecolor="none")
+    ax.axhline(omp_mean_acc, color="black", linestyle="--", linewidth=0.6, alpha=0.7)
+    ax.set_xlabel("Angle (\u00b0)")
+    ax.set_ylabel("OMP accuracy")
+    ax.set_ylim(0, 1.05)
     add_panel_label(ax, "e")
     fig_e.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_confidence"))
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_omp_accuracy"))
     plt.close(fig_e)
 
     # Panel manifest
@@ -476,15 +474,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "e",
-                "title": "Prediction confidence distribution",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_confidence.pdf",
+                "title": "OMP per-angle accuracy",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_omp_accuracy.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Histograms of prediction confidence for correct vs incorrect trials.",
+                "description": "37-bar chart of OMP per-angle accuracy; below-mean angles highlighted.",
             },
         ],
     )
     all_paths.append(manifest)
 
     print(f"[fig03] Generated {len(all_paths)} files "
-          f"(Mann-Whitney p={p_value:.2e}, Cohen d={d_value:.2f})")
+          f"(Mann-Whitney p={p_value:.2e}, Cohen d={d_value:.2f}, "
+          f"OMP mean acc={omp_mean_acc:.3f})")
     return all_paths
