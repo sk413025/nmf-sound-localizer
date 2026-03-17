@@ -48,7 +48,7 @@ targets:
 
   - figure_id: fig03
     role: main
-    asset: paper/figures/fig03_unrolled-attention-omp.jpg
+    asset: paper/figures/fig04_unrolled-attention-omp.jpg
     asset_layer: manuscript_composite
     provenance_mode: manual_illustration
     width_mode: double

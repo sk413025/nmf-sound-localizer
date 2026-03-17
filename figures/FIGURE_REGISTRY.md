@@ -67,7 +67,7 @@
 - **Panels:** Full-page architecture diagram of the unrolled OMP-Transformer
 - **Evidence source:** Architecture illustration
 - **Generator output:** None expected
-- **Manuscript asset:** `paper/figures/fig03_unrolled-attention-omp.jpg`
+- **Manuscript asset:** `paper/figures/fig04_unrolled-attention-omp.jpg`
 
 ---
 

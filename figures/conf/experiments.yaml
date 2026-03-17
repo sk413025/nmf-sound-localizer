@@ -239,7 +239,7 @@ fig03_manual:
   figure: "Fig 3"
   title: "Unrolled Network Architecture"
   type: manual
-  asset: paper/figures/fig03_unrolled-attention-omp.jpg
+  asset: paper/figures/fig04_unrolled-attention-omp.jpg
 
 fig09_manual:
   figure: "Fig 9"

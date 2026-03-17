@@ -1,4 +1,4 @@
-"""Figure 4 — Fingerprint Discriminability (5 panels).
+"""Figure 3 — Fingerprint Discriminability (5 panels).
 
 Panel (a): Angle-frequency heatmap of the physical dictionary H.
 Panel (b): Within-angle vs between-angle Pearson r (violin/box) + statistical
@@ -157,10 +157,10 @@ def _p_to_stars(p: float) -> str:
 
 
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
-    manifest_path = panel_dir / "fig04_panel_manifest.json"
+    manifest_path = panel_dir / "fig03_panel_manifest.json"
     payload = {
-        "figure_id": "fig04",
-        "composite_asset": "figures/output/fig04_fingerprint_discriminability.pdf",
+        "figure_id": "fig03",
+        "composite_asset": "figures/output/fig03_fingerprint_discriminability.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
@@ -176,7 +176,7 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 # ---------------------------------------------------------------------------
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 4 — Fingerprint Discriminability (5 panels)."""
+    """Generate Figure 3 — Fingerprint Discriminability (5 panels)."""
     set_nature_rcparams(base_fontsize=7)
 
     paths_cfg = load_paths()
@@ -186,7 +186,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     dict_path = run_dir / "dictionary.npz"
 
     if not routing_path.exists() or not dict_path.exists():
-        print(f"[fig04] SKIP: data not found at {run_dir}")
+        print(f"[fig03] SKIP: data not found at {run_dir}")
         return []
 
     routing_data = dict(np.load(routing_path, allow_pickle=True))
@@ -344,13 +344,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax_e, "e", x=-0.10, y=1.06)
 
     # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig04_fingerprint_discriminability")
+    all_paths = save_outputs(fig, output_dir / "fig03_fingerprint_discriminability")
     plt.close(fig)
 
     # -----------------------------------------------------------------------
     # Split panel assets
     # -----------------------------------------------------------------------
-    panel_dir = output_dir / "fig04_fingerprint_discriminability_panels"
+    panel_dir = output_dir / "fig03_fingerprint_discriminability_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
     # Panel a standalone
@@ -365,7 +365,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Amplitude", fontsize=5)
     add_panel_label(ax, "a")
     fig_a.subplots_adjust(left=0.1, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_a, panel_dir / "fig04_panel_a_heatmap"))
+    all_paths.extend(save_outputs(fig_a, panel_dir / "fig03_panel_a_heatmap"))
     plt.close(fig_a)
 
     # Panel b standalone
@@ -386,7 +386,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             ha="center", va="bottom", fontsize=5.5, linespacing=1.2)
     add_panel_label(ax, "b")
     fig_b.subplots_adjust(left=0.1, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig04_panel_b_similarity"))
+    all_paths.extend(save_outputs(fig_b, panel_dir / "fig03_panel_b_similarity"))
     plt.close(fig_b)
 
     # Panel c standalone
@@ -406,7 +406,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.legend(fontsize=5, frameon=False, loc="lower right")
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.1, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig04_panel_c_repeatability"))
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_repeatability"))
     plt.close(fig_c)
 
     # Panel d standalone
@@ -422,7 +422,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Mean Pearson r", fontsize=6)
     add_panel_label(ax, "d")
     fig_d.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig04_panel_d_pairwise"))
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig03_panel_d_pairwise"))
     plt.close(fig_d)
 
     # Panel e standalone
@@ -439,7 +439,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.legend(fontsize=5, frameon=False)
     add_panel_label(ax, "e")
     fig_e.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_e, panel_dir / "fig04_panel_e_confidence"))
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_confidence"))
     plt.close(fig_e)
 
     # Panel manifest
@@ -449,35 +449,35 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             {
                 "panel_id": "a",
                 "title": "Direction-dependent spectral fingerprints",
-                "asset_path": "figures/output/fig04_fingerprint_discriminability_panels/fig04_panel_a_heatmap.pdf",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_a_heatmap.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Angle-frequency heatmap of dictionary H (37 angles x 346 freq bins).",
             },
             {
                 "panel_id": "b",
                 "title": "Within vs between-angle similarity",
-                "asset_path": "figures/output/fig04_fingerprint_discriminability_panels/fig04_panel_b_similarity.pdf",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_b_similarity.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Violin plot with Mann-Whitney U test and Cohen's d annotation.",
             },
             {
                 "panel_id": "c",
                 "title": "Per-angle fingerprint repeatability",
-                "asset_path": "figures/output/fig04_fingerprint_discriminability_panels/fig04_panel_c_repeatability.pdf",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_repeatability.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Line plot of mean within-angle Pearson r +/- SEM across the angle grid.",
             },
             {
                 "panel_id": "d",
                 "title": "Full pairwise similarity matrix",
-                "asset_path": "figures/output/fig04_fingerprint_discriminability_panels/fig04_panel_d_pairwise.pdf",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_pairwise.pdf",
                 "provenance_mode": "data_backed",
                 "description": "37x37 mean Pearson r between all angle pairs from trial-level data.",
             },
             {
                 "panel_id": "e",
                 "title": "Prediction confidence distribution",
-                "asset_path": "figures/output/fig04_fingerprint_discriminability_panels/fig04_panel_e_confidence.pdf",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_confidence.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Histograms of prediction confidence for correct vs incorrect trials.",
             },
@@ -485,6 +485,6 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     all_paths.append(manifest)
 
-    print(f"[fig04] Generated {len(all_paths)} files "
+    print(f"[fig03] Generated {len(all_paths)} files "
           f"(Mann-Whitney p={p_value:.2e}, Cohen d={d_value:.2f})")
     return all_paths

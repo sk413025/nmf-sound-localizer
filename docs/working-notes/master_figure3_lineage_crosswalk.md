@@ -118,7 +118,7 @@ Interpretation:
 |---|---|---|---|
 | `paper/figures/fig09_cross-material-universality.jpg` | cross-material objects + per-material heatmaps + RMSE statistics | separate family, not in Master Figure 3 lineage | this is the old `Master Figure 4` / cross-material branch |
 | `paper/figures/fig09_heatmaps.pdf` | confusion-matrix heatmaps | separate supplementary family | this is a final-outcome ablation diagnostic, not a selection-probability mechanism panel |
-| `paper/figures/fig03_unrolled-attention-omp.jpg` | architecture diagram | separate family | architecture figure |
+| `paper/figures/fig04_unrolled-attention-omp.jpg` | architecture diagram | separate family | architecture figure |
 | `paper/figures/fig04_noise-robustness-ablation.jpg` | robustness + ablation figure | separate family | performance/ablation figure |
 
 ---

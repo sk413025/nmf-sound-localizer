@@ -1,4 +1,4 @@
-"""Figure 3 — Solver Dynamics: Architecture + Training + Ablation + Per-angle.
+"""Figure 4 — Solver Dynamics: Architecture + Training + Ablation + Per-angle.
 
 Panel (a): Architecture diagram (external JPG asset).
 This generator produces the NEW data panels:
@@ -44,10 +44,10 @@ ABLATION_VARIANTS = [
 
 
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
-    manifest_path = panel_dir / "fig03_panel_manifest.json"
+    manifest_path = panel_dir / "fig04_panel_manifest.json"
     payload = {
-        "figure_id": "fig03",
-        "composite_asset": "figures/output/fig03_solver_dynamics.pdf",
+        "figure_id": "fig04",
+        "composite_asset": "figures/output/fig04_solver_dynamics.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
@@ -63,7 +63,7 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 # ---------------------------------------------------------------------------
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 3 data panels (b, c, d)."""
+    """Generate Figure 4 data panels (b, c, d)."""
     set_nature_rcparams(base_fontsize=7)
 
     paths_cfg = load_paths()
@@ -71,7 +71,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     metrics_path = run_dir / "metrics.npz"
 
     if not metrics_path.exists():
-        print(f"[fig03] SKIP: metrics not found at {metrics_path}")
+        print(f"[fig04] SKIP: metrics not found at {metrics_path}")
         return []
 
     # Load primary run metrics
@@ -178,13 +178,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 
     # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig03_solver_dynamics")
+    all_paths = save_outputs(fig, output_dir / "fig04_solver_dynamics")
     plt.close(fig)
 
     # -----------------------------------------------------------------------
     # Split panel assets
     # -----------------------------------------------------------------------
-    panel_dir = output_dir / "fig03_solver_dynamics_panels"
+    panel_dir = output_dir / "fig04_solver_dynamics_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
     # Panel b standalone
@@ -200,7 +200,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.legend(fontsize=5, frameon=False)
     add_panel_label(ax, "b")
     fig_b.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig03_panel_b_convergence"))
+    all_paths.extend(save_outputs(fig_b, panel_dir / "fig04_panel_b_convergence"))
     plt.close(fig_b)
 
     # Panel c standalone
@@ -228,7 +228,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.invert_yaxis()
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.20, right=0.95, bottom=0.12, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_ablation"))
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig04_panel_c_ablation"))
     plt.close(fig_c)
 
     # Panel d standalone
@@ -242,7 +242,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_ylim(0, 1.05)
     add_panel_label(ax, "d")
     fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig03_panel_d_perangle"))
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig04_panel_d_perangle"))
     plt.close(fig_d)
 
     # Panel manifest
@@ -252,21 +252,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             {
                 "panel_id": "b",
                 "title": "Training convergence",
-                "asset_path": "figures/output/fig03_solver_dynamics_panels/fig03_panel_b_convergence.pdf",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Training loss and subset accuracy over 20 epochs, best epoch marked.",
             },
             {
                 "panel_id": "c",
                 "title": "Clean-condition ablation",
-                "asset_path": "figures/output/fig03_solver_dynamics_panels/fig03_panel_c_ablation.pdf",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Strip chart of 7-variant ablation at clean SNR with individual seeds and mean bars.",
             },
             {
                 "panel_id": "d",
                 "title": "Per-angle accuracy profile",
-                "asset_path": "figures/output/fig03_solver_dynamics_panels/fig03_panel_d_perangle.pdf",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf",
                 "provenance_mode": "data_backed",
                 "description": "37-point bar chart showing accuracy per angle; below-mean angles highlighted.",
             },
@@ -274,6 +274,6 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     all_paths.append(manifest)
 
-    print(f"[fig03] Generated {len(all_paths)} files "
+    print(f"[fig04] Generated {len(all_paths)} files "
           f"(best_epoch={best_epoch}, mean_acc={mean_acc:.3f})")
     return all_paths

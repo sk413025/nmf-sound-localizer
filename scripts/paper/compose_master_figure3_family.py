@@ -6,8 +6,8 @@ from panel-level assets whenever possible:
 
 - Fig. 1: Paradigm Shift (5 panels: a,b external + c,d,e generated)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
-- Fig. 3: Solver Dynamics (4 panels: a external + b,c,d generated)
-- Fig. 4: Fingerprint Discriminability (5 panels: all generated)
+- Fig. 3: Fingerprint Discriminability (5 panels: all generated)
+- Fig. 4: Solver Dynamics (4 panels: a external + b,c,d generated)
 - Fig. 5: Performance + Structure (6 panels: all generated)
 - Fig. 6: Universality (5 panels: a,b,c external + d,e generated)
 """
@@ -34,12 +34,12 @@ FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
 # --- Figure 2: SVD Spectrum (7 panels: all generated as composite PDF) ---
 FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 
-# --- Figure 3: Solver Dynamics (4 panels: a external + b,c,d generated) ---
-FIG03_PANEL_A = REPO_ROOT / "paper/figures/fig03_unrolled-attention-omp.jpg"
-FIG03_COMPOSITE_BCD = REPO_ROOT / "figures/output/fig03_solver_dynamics.pdf"
+# --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
+FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Fingerprint Discriminability (5 panels: all generated) ---
-FIG04_COMPOSITE = REPO_ROOT / "figures/output/fig04_fingerprint_discriminability.pdf"
+# --- Figure 4: Solver Dynamics (4 panels: a external + b,c,d generated) ---
+FIG04_PANEL_A = REPO_ROOT / "paper/figures/fig04_unrolled-attention-omp.jpg"
+FIG04_COMPOSITE_BCD = REPO_ROOT / "figures/output/fig04_solver_dynamics.pdf"
 
 # --- Figure 5: Performance + Structure (6 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
@@ -162,11 +162,29 @@ def compose_fig02() -> list[Path]:
 
 
 def compose_fig03() -> list[Path]:
-    """Fig 3: a (external architecture JPG) on top + b,c,d (generated PDF) below."""
-    fig03_asset = REPO_ROOT / "paper/figures/fig03_solver-dynamics.jpg"
+    """Fig 3: All 5 panels from composite PDF (a-e)."""
+    fig03_asset = REPO_ROOT / "paper/figures/fig03_fingerprint-discriminability.jpg"
 
-    panel_a = _trim_white_border(Image.open(FIG03_PANEL_A).convert("RGB"), padding=0)
-    panel_bcd = _trim_white_border(_render_pdf(FIG03_COMPOSITE_BCD), padding=4)
+    composite = _trim_white_border(_render_pdf(FIG03_COMPOSITE, scale=4.0), padding=4)
+    target_width = 2200
+    composite = _resize_to_width(composite, target_width)
+
+    margin = 40
+    canvas_w = margin * 2 + composite.width
+    canvas_h = margin * 2 + composite.height
+    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
+    canvas.paste(composite, (margin, margin))
+
+    _save_composite(canvas, fig03_asset)
+    return [fig03_asset]
+
+
+def compose_fig04() -> list[Path]:
+    """Fig 4: a (external architecture JPG) on top + b,c,d (generated PDF) below."""
+    fig04_asset = REPO_ROOT / "paper/figures/fig04_solver-dynamics.jpg"
+
+    panel_a = _trim_white_border(Image.open(FIG04_PANEL_A).convert("RGB"), padding=0)
+    panel_bcd = _trim_white_border(_render_pdf(FIG04_COMPOSITE_BCD), padding=4)
 
     target_width = 2100
     panel_a = _resize_to_width(panel_a, target_width)
@@ -187,24 +205,6 @@ def compose_fig03() -> list[Path]:
     # Panels b,c,d (labels already in PDF)
     y_bottom = margin + panel_a.height + gap + 50
     canvas.paste(panel_bcd, (margin, y_bottom))
-
-    _save_composite(canvas, fig03_asset)
-    return [fig03_asset]
-
-
-def compose_fig04() -> list[Path]:
-    """Fig 4: All 5 panels from composite PDF (a-e)."""
-    fig04_asset = REPO_ROOT / "paper/figures/fig04_fingerprint-discriminability.jpg"
-
-    composite = _trim_white_border(_render_pdf(FIG04_COMPOSITE, scale=4.0), padding=4)
-    target_width = 2200
-    composite = _resize_to_width(composite, target_width)
-
-    margin = 40
-    canvas_w = margin * 2 + composite.width
-    canvas_h = margin * 2 + composite.height
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(composite, (margin, margin))
 
     _save_composite(canvas, fig04_asset)
     return [fig04_asset]

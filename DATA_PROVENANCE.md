@@ -64,7 +64,7 @@
 | Field | Value |
 |-------|-------|
 | **Type** | Manual asset (architecture diagram) |
-| **Asset** | `paper/figures/fig03_unrolled-attention-omp.jpg` ✅ |
+| **Asset** | `paper/figures/fig04_unrolled-attention-omp.jpg` ✅ |
 | **Data pipeline** | None — illustration |
 | **Commit** | N/A |
 

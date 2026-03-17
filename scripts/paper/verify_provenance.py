@@ -120,7 +120,7 @@ def check_file_existence(repo: Path, report: AuditReport) -> None:
         "results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz",
         "results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz",
         "paper/figures/fig01_paradigm-shift.jpg",
-        "paper/figures/fig03_unrolled-attention-omp.jpg",
+        "paper/figures/fig04_unrolled-attention-omp.jpg",
         "paper/figures/fig05_structure-macro-selection.png",
         "paper/figures/fig06_angle-specific-mechanism.png",
         "paper/figures/fig07_bandwise-routing-analysis-part1.png",
