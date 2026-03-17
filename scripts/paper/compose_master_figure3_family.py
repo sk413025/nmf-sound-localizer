@@ -251,34 +251,51 @@ def compose_fig06() -> list[Path]:
     # Load generated d,e composite
     panel_de = _trim_white_border(_render_pdf(FIG06_COMPOSITE_DE), padding=4)
 
-    # Layout: top row a,b,c side by side, bottom row d,e composite
+    # Layout: top section [a,b stacked left 2/3 | c right 1/3],
+    #          bottom row d,e composite
     label_font = _load_font(54)
     margin = 70
-    gap = 45
+    gap_x = 45
+    gap_y = 50
     target_width = 2100
 
-    # Resize top panels to fit in 3 columns
-    col_width = (target_width - gap * 2) // 3
-    resized_top = []
-    for panel_id, img in external_panels:
-        resized_top.append((panel_id, _resize_to_width(img, col_width)))
+    # Split top into left (a+b stacked) and right (c)
+    left_w = int(target_width * 0.65)
+    right_w = target_width - left_w - gap_x
 
-    top_h = max(img.height for _, img in resized_top)
+    _, panel_a = external_panels[0]
+    _, panel_b = external_panels[1]
+    _, panel_c = external_panels[2]
+
+    panel_a = _resize_to_width(panel_a, left_w)
+    panel_b = _resize_to_width(panel_b, left_w)
+    left_h = panel_a.height + gap_y // 2 + panel_b.height
+
+    panel_c = _resize_to_width(panel_c, right_w)
+    # If c is taller than left stack, scale c to match
+    if panel_c.height > left_h:
+        scale = left_h / panel_c.height
+        panel_c = panel_c.resize(
+            (int(panel_c.width * scale), left_h), Image.Resampling.LANCZOS
+        )
+
+    top_h = max(left_h, panel_c.height)
 
     # Bottom row
     panel_de = _resize_to_width(panel_de, target_width)
 
-    gap_y = 50
     canvas_w = margin * 2 + target_width
     canvas_h = margin * 2 + top_h + gap_y + panel_de.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
 
-    # Top row: a, b, c (external panels already contain their own labels)
-    for idx, (panel_id, img) in enumerate(resized_top):
-        x = margin + idx * (col_width + gap)
-        canvas.paste(img, (x, margin))
+    # Top-left: a above b
+    canvas.paste(panel_a, (margin, margin))
+    canvas.paste(panel_b, (margin, margin + panel_a.height + gap_y // 2))
 
-    # Bottom row: d,e composite (panel labels already embedded in PDF)
+    # Top-right: c
+    canvas.paste(panel_c, (margin + left_w + gap_x, margin))
+
+    # Bottom row: d,e composite
     y_bottom = margin + top_h + gap_y
     canvas.paste(panel_de, (margin, y_bottom))
 
