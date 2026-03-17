@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
-"""Compose panel-first paper-facing figures.
+"""Compose panel-first paper-facing figures (6-figure, 32-panel structure).
 
 This script rebuilds the manuscript assets for the current main-paper figure set
 from panel-level assets whenever possible:
 
-- Fig. 1: setup + spectral fingerprint
-- Fig. 2: SVD / modal decomposition / dictionary
-- Fig. 4: ablation + SNR robustness
-- Fig. 5: structure + macro selection robustness
-- Fig. 6: angle-specific routing diagnostics
-- Fig. 7: band-wise routing diagnostics I
-- Fig. 8: band-wise routing diagnostics II
-- Fig. 9: cross-material universality
-
-It also syncs lineage-bundle preview copies for the expanded Master Figure 3
-family under ``docs/working-notes/`` and ``results/``.
+- Fig. 1: Paradigm Shift (5 panels: a,b external + c,d,e generated)
+- Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
+- Fig. 3: Solver Dynamics (4 panels: a external + b,c,d generated)
+- Fig. 4: Fingerprint Discriminability (5 panels: all generated)
+- Fig. 5: Performance + Structure (6 panels: all generated)
+- Fig. 6: Universality (5 panels: a,b,c external + d,e generated)
 """
 
 from __future__ import annotations
 
-import json
-import shutil
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
@@ -32,64 +25,28 @@ except ImportError as exc:  # pragma: no cover - runtime dependency
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DOCS_BUNDLE_ROOT = REPO_ROOT / "docs/working-notes/master_figure3_lineage_bundle_20260312"
-LOCAL_BUNDLE_ROOT = REPO_ROOT / "results/master_figure3_lineage_bundle_20260312"
 
+# --- Figure 1: Paradigm Shift (5 panels: a,b external + c,d,e generated) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
 FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png"
-FIG02_PANEL_A = REPO_ROOT / "figures/output/fig02_svd_spectrum_panels/fig02_panel_a_singular_values.pdf"
-FIG02_PANEL_B = REPO_ROOT / "figures/output/fig02_svd_spectrum_panels/fig02_panel_b_modal_decomposition.pdf"
-FIG02_PANEL_C = REPO_ROOT / "figures/output/fig02_svd_spectrum_panels/fig02_panel_c_dictionary_modes.pdf"
-FIG04_PANEL_A = REPO_ROOT / "figures/output/fig04_snr_ablation_panels/fig04_panel_a_ablation_strip.pdf"
-FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_snr_ablation_panels/fig04_panel_b_snr_curves.pdf"
-FIG05_SOURCE = REPO_ROOT / "figures/output/fig05_structure_alignment.tiff"
-FIG05_PANEL_A = REPO_ROOT / "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_a_global_attention.pdf"
-FIG05_PANEL_B = REPO_ROOT / "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_c_macro_robustness.pdf"
-FIG06_ANGLE55 = REPO_ROOT / "figures/output/fig09_angle55.pdf"
-FIG06_ANGLE100 = REPO_ROOT / "figures/output/fig09_angle100.pdf"
-FIG09_LEGACY_PANEL_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
+FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
 
-FIG07_PARTS = [
-    (
-        "a",
-        "Full-band (smoothed)",
-        REPO_ROOT / "results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_3000.pdf",
-        "fig07_panel_a_fullband_smooth.pdf",
-    ),
-    (
-        "b",
-        "Full-band (no smoothing)",
-        REPO_ROOT / "results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_3000.pdf",
-        "fig07_panel_b_fullband_nosmooth.pdf",
-    ),
-    (
-        "c",
-        "300-500 Hz",
-        REPO_ROOT / "results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_500.pdf",
-        "fig07_panel_c_300_500.pdf",
-    ),
-]
+# --- Figure 2: SVD Spectrum (7 panels: all generated as composite PDF) ---
+FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 
-FIG08_PARTS = [
-    (
-        "a",
-        "500-1000 Hz",
-        REPO_ROOT / "results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_500_1000.pdf",
-        "fig08_panel_a_500_1000.pdf",
-    ),
-    (
-        "b",
-        "1000-2000 Hz",
-        REPO_ROOT / "results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_1000_2000.pdf",
-        "fig08_panel_b_1000_2000.pdf",
-    ),
-    (
-        "c",
-        "2000-3000 Hz",
-        REPO_ROOT / "results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_2000_3000.pdf",
-        "fig08_panel_c_2000_3000.pdf",
-    ),
-]
+# --- Figure 3: Solver Dynamics (4 panels: a external + b,c,d generated) ---
+FIG03_PANEL_A = REPO_ROOT / "paper/figures/fig03_unrolled-attention-omp.jpg"
+FIG03_COMPOSITE_BCD = REPO_ROOT / "figures/output/fig03_solver_dynamics.pdf"
+
+# --- Figure 4: Fingerprint Discriminability (5 panels: all generated) ---
+FIG04_COMPOSITE = REPO_ROOT / "figures/output/fig04_fingerprint_discriminability.pdf"
+
+# --- Figure 5: Performance + Structure (6 panels: all generated) ---
+FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
+
+# --- Figure 6: Universality (5 panels: a,b,c external + d,e generated) ---
+FIG06_PANELS_ABC_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
+FIG06_COMPOSITE_DE = REPO_ROOT / "figures/output/fig06_universality.pdf"
 
 
 def _ensure_parent(path: Path) -> None:
@@ -123,17 +80,6 @@ def _trim_white_border(img: Image.Image, padding: int = 8) -> Image.Image:
     return rgb.crop((left, top, right, bottom))
 
 
-def _crop_pixels(img: Image.Image, left: int = 0, top: int = 0, right: int = 0, bottom: int = 0) -> Image.Image:
-    return img.crop((left, top, max(img.width - right, left + 1), max(img.height - bottom, top + 1)))
-
-
-def _cover_with_white(img: Image.Image, left: int, top: int, right: int, bottom: int) -> Image.Image:
-    patched = img.copy()
-    draw = ImageDraw.Draw(patched)
-    draw.rectangle((left, top, right, bottom), fill="white")
-    return patched
-
-
 def _render_pdf(pdf_path: Path, scale: float = 3.0) -> Image.Image:
     with fitz.open(str(pdf_path)) as doc:
         page = doc[0]
@@ -158,424 +104,196 @@ def _save_composite(img: Image.Image, path: Path) -> None:
         raise ValueError(f"Unsupported composite suffix for {path}")
 
 
-def _write_manifest(manifest_path: Path, payload: dict) -> None:
-    _ensure_parent(manifest_path)
-    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-
-
 def compose_fig01() -> list[Path]:
+    """Fig 1: a,b (external PNGs) on top + c,d,e (generated PDF) below."""
     fig01_asset = REPO_ROOT / "paper/figures/fig01_paradigm-shift.jpg"
-    left_panel = _trim_white_border(Image.open(FIG01_PANEL_A).convert("RGB"), padding=0)
-    right_panel = _trim_white_border(Image.open(FIG01_PANEL_B).convert("RGB"), padding=0)
+
+    panel_a = _trim_white_border(Image.open(FIG01_PANEL_A).convert("RGB"), padding=0)
+    panel_b = _trim_white_border(Image.open(FIG01_PANEL_B).convert("RGB"), padding=0)
+    panel_cde = _trim_white_border(_render_pdf(FIG01_COMPOSITE_CDE), padding=4)
 
     target_width = 970
-    left_panel = _resize_to_width(left_panel, target_width)
-    right_panel = _resize_to_width(right_panel, target_width)
+    panel_a = _resize_to_width(panel_a, target_width)
+    panel_b = _resize_to_width(panel_b, target_width)
 
+    # Bottom row spans full width
+    full_width = target_width * 2 + 70  # gap=70
+    panel_cde = _resize_to_width(panel_cde, full_width)
+
+    label_font = _load_font(54)
     margin = 70
     gap = 70
-    canvas_w = margin * 2 + target_width * 2 + gap
-    canvas_h = margin * 2 + max(left_panel.height, right_panel.height)
+    canvas_w = margin * 2 + full_width
+    top_h = max(panel_a.height, panel_b.height)
+    canvas_h = margin * 2 + top_h + gap + panel_cde.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(left_panel, (margin, margin))
-    canvas.paste(right_panel, (margin + target_width + gap, margin))
+    draw = ImageDraw.Draw(canvas)
+
+    # Top row: a, b
+    draw.text((margin, margin - 10), "a", fill="black", font=label_font)
+    canvas.paste(panel_a, (margin, margin + 50))
+    draw.text((margin + target_width + gap, margin - 10), "b", fill="black", font=label_font)
+    canvas.paste(panel_b, (margin + target_width + gap, margin + 50))
+
+    # Bottom row: c,d,e composite (labels already in PDF)
+    y_bottom = margin + top_h + gap + 50
+    canvas.paste(panel_cde, (margin, y_bottom))
+
     _save_composite(canvas, fig01_asset)
     return [fig01_asset]
 
 
 def compose_fig02() -> list[Path]:
+    """Fig 2: All 7 panels from composite PDF (a-g)."""
     fig02_asset = REPO_ROOT / "paper/figures/fig02_svd-physical-dictionary.jpg"
-    panel_a = _trim_white_border(_render_pdf(FIG02_PANEL_A), padding=4)
-    panel_b = _trim_white_border(_render_pdf(FIG02_PANEL_B), padding=4)
-    panel_c = _trim_white_border(_render_pdf(FIG02_PANEL_C), padding=4)
-    panel_a = _crop_pixels(panel_a, left=18, top=18)
-    panel_b = _crop_pixels(panel_b, left=18, top=18)
-    panel_c = _crop_pixels(panel_c, left=18, top=18)
 
-    widths = [600, 760, 760]
-    panel_a = _resize_to_width(panel_a, widths[0])
-    panel_b = _resize_to_width(panel_b, widths[1])
-    panel_c = _resize_to_width(panel_c, widths[2])
+    composite = _trim_white_border(_render_pdf(FIG02_COMPOSITE, scale=4.0), padding=4)
+    target_width = 2200
+    composite = _resize_to_width(composite, target_width)
 
-    label_font = _load_font(54)
-    margin = 65
-    header_h = 70
-    gap = 45
-    canvas_w = margin * 2 + sum(widths) + gap * 2
-    canvas_h = margin * 2 + header_h + max(panel_a.height, panel_b.height, panel_c.height)
+    margin = 40
+    canvas_w = margin * 2 + composite.width
+    canvas_h = margin * 2 + composite.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
-    x_positions = [
-        margin,
-        margin + widths[0] + gap,
-        margin + widths[0] + widths[1] + gap * 2,
-    ]
-    for label, x in zip(["a", "b", "c"], x_positions):
-        draw.text((x, margin), label, fill="black", font=label_font)
-    y = margin + header_h
-    canvas.paste(panel_a, (x_positions[0], y))
-    canvas.paste(panel_b, (x_positions[1], y))
-    canvas.paste(panel_c, (x_positions[2], y))
+    canvas.paste(composite, (margin, margin))
+
     _save_composite(canvas, fig02_asset)
     return [fig02_asset]
 
 
-def compose_fig04() -> list[Path]:
-    fig04_asset = REPO_ROOT / "paper/figures/fig04_noise-robustness-ablation.jpg"
-    panel_a = _trim_white_border(_render_pdf(FIG04_PANEL_A), padding=4)
-    panel_b = _trim_white_border(_render_pdf(FIG04_PANEL_B), padding=4)
-    panel_a = _crop_pixels(panel_a, left=18, top=18)
-    panel_b = _crop_pixels(panel_b, left=18, top=18)
+def compose_fig03() -> list[Path]:
+    """Fig 3: a (external architecture JPG) on top + b,c,d (generated PDF) below."""
+    fig03_asset = REPO_ROOT / "paper/figures/fig03_solver-dynamics.jpg"
 
-    widths = [900, 1020]
-    panel_a = _resize_to_width(panel_a, widths[0])
-    panel_b = _resize_to_width(panel_b, widths[1])
+    panel_a = _trim_white_border(Image.open(FIG03_PANEL_A).convert("RGB"), padding=0)
+    panel_bcd = _trim_white_border(_render_pdf(FIG03_COMPOSITE_BCD), padding=4)
+
+    target_width = 2100
+    panel_a = _resize_to_width(panel_a, target_width)
+    panel_bcd = _resize_to_width(panel_bcd, target_width)
 
     label_font = _load_font(54)
     margin = 70
-    header_h = 70
-    gap = 70
-    canvas_w = margin * 2 + sum(widths) + gap
-    canvas_h = margin * 2 + header_h + max(panel_a.height, panel_b.height)
+    gap = 50
+    canvas_w = margin * 2 + target_width
+    canvas_h = margin * 2 + panel_a.height + gap + panel_bcd.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
     draw = ImageDraw.Draw(canvas)
-    x_positions = [margin, margin + widths[0] + gap]
-    draw.text((x_positions[0], margin), "a", fill="black", font=label_font)
-    draw.text((x_positions[1], margin), "b", fill="black", font=label_font)
-    y = margin + header_h
-    canvas.paste(panel_a, (x_positions[0], y))
-    canvas.paste(panel_b, (x_positions[1], y))
+
+    # Panel a
+    draw.text((margin, margin - 10), "a", fill="black", font=label_font)
+    canvas.paste(panel_a, (margin, margin + 50))
+
+    # Panels b,c,d (labels already in PDF)
+    y_bottom = margin + panel_a.height + gap + 50
+    canvas.paste(panel_bcd, (margin, y_bottom))
+
+    _save_composite(canvas, fig03_asset)
+    return [fig03_asset]
+
+
+def compose_fig04() -> list[Path]:
+    """Fig 4: All 5 panels from composite PDF (a-e)."""
+    fig04_asset = REPO_ROOT / "paper/figures/fig04_fingerprint-discriminability.jpg"
+
+    composite = _trim_white_border(_render_pdf(FIG04_COMPOSITE, scale=4.0), padding=4)
+    target_width = 2200
+    composite = _resize_to_width(composite, target_width)
+
+    margin = 40
+    canvas_w = margin * 2 + composite.width
+    canvas_h = margin * 2 + composite.height
+    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
+    canvas.paste(composite, (margin, margin))
+
     _save_composite(canvas, fig04_asset)
     return [fig04_asset]
 
 
 def compose_fig05() -> list[Path]:
-    fig05_asset = REPO_ROOT / "paper/figures/fig05_structure-macro-selection.png"
-    panel_dir = REPO_ROOT / "figures/output/fig05_structure_macro_panels"
-    bundle_dir = DOCS_BUNDLE_ROOT / "01_current_canonical"
-    local_bundle_dir = LOCAL_BUNDLE_ROOT / "01_current_canonical"
-    panel_dir.mkdir(parents=True, exist_ok=True)
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    local_bundle_dir.mkdir(parents=True, exist_ok=True)
-    left_panel = _trim_white_border(_render_pdf(FIG05_PANEL_A), padding=6)
-    right_panel = _trim_white_border(_render_pdf(FIG05_PANEL_B), padding=6)
-    left_panel = left_panel.crop((70, 0, left_panel.width, left_panel.height))
-    right_panel = right_panel.crop((70, 0, right_panel.width, right_panel.height))
-    target_width = 1020
-    left_panel = _resize_to_width(left_panel, target_width)
-    right_panel = _resize_to_width(right_panel, target_width)
+    """Fig 5: All 6 panels from composite PDF (a-f)."""
+    fig05_asset = REPO_ROOT / "paper/figures/fig05_performance-structure.jpg"
 
-    label_font = _load_font(54)
-    margin = 70
-    header_h = 70
-    gap = 70
-    canvas_w = margin * 2 + target_width * 2 + gap
-    canvas_h = margin * 2 + header_h + max(left_panel.height, right_panel.height)
+    composite = _trim_white_border(_render_pdf(FIG05_COMPOSITE, scale=4.0), padding=4)
+    target_width = 2200
+    composite = _resize_to_width(composite, target_width)
+
+    margin = 40
+    canvas_w = margin * 2 + composite.width
+    canvas_h = margin * 2 + composite.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
-
-    draw.text((margin, margin), "a", fill="black", font=label_font)
-    draw.text((margin + target_width + gap, margin), "b", fill="black", font=label_font)
-    canvas.paste(left_panel, (margin, margin + header_h))
-    canvas.paste(right_panel, (margin + target_width + gap, margin + header_h))
+    canvas.paste(composite, (margin, margin))
 
     _save_composite(canvas, fig05_asset)
-    shutil.copy2(fig05_asset, bundle_dir / "current_fig05_composite.png")
-    shutil.copy2(fig05_asset, bundle_dir / "current_fig05_structure_macro.png")
-    shutil.copy2(fig05_asset, local_bundle_dir / "current_fig05_composite.png")
-    shutil.copy2(fig05_asset, local_bundle_dir / "current_fig05_structure_macro.png")
-
-    manifest = {
-        "figure_id": "fig05",
-        "composite_asset": "paper/figures/fig05_structure-macro-selection.png",
-        "storage_mode": "reference_existing_outputs",
-        "panel_order": ["a", "b"],
-        "panels": [
-            {
-                "panel_id": "a",
-                "title": "Global structure alignment",
-                "provenance_mode": "data_backed",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_a_global_attention.pdf",
-                "source_asset": "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_a_global_attention.pdf",
-                "source_layer": "generator_output",
-            },
-            {
-                "panel_id": "b",
-                "title": "Macro selection robustness",
-                "provenance_mode": "data_backed",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_c_macro_robustness.pdf",
-                "source_asset": "figures/output/fig05_routing_mechanism_analysis_panels/fig05_panel_c_macro_robustness.pdf",
-                "source_layer": "generator_output",
-            },
-        ],
-    }
-    manifest_path = panel_dir / "fig05_panel_manifest.json"
-    _write_manifest(manifest_path, manifest)
-    return [fig05_asset, manifest_path]
+    return [fig05_asset]
 
 
 def compose_fig06() -> list[Path]:
-    fig06_asset = REPO_ROOT / "paper/figures/fig06_angle-specific-mechanism.png"
-    panel_dir = REPO_ROOT / "figures/output/fig06_angle_specific_mechanism_panels"
-    bundle_dir = DOCS_BUNDLE_ROOT / "01_current_canonical"
-    local_bundle_dir = LOCAL_BUNDLE_ROOT / "01_current_canonical"
-    panel_dir.mkdir(parents=True, exist_ok=True)
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    local_bundle_dir.mkdir(parents=True, exist_ok=True)
+    """Fig 6: a,b,c (external panel crops) on top + d,e (generated PDF) below."""
+    fig06_asset = REPO_ROOT / "paper/figures/fig06_universality.jpg"
 
-    panels = [
-        ("a", "55-degree routing distribution", _trim_white_border(_render_pdf(FIG06_ANGLE55), padding=6)),
-        ("b", "100-degree routing distribution", _trim_white_border(_render_pdf(FIG06_ANGLE100), padding=6)),
+    # Load external panels a,b,c
+    panel_specs = [
+        ("a", "fig06_panel_a_material_exemplars.png"),
+        ("b", "fig06_panel_b_heatmaps.png"),
+        ("c", "fig06_panel_c_rmse_comparison.png"),
     ]
 
+    external_panels = []
+    for panel_id, filename in panel_specs:
+        src = FIG06_PANELS_ABC_DIR / filename
+        if not src.exists():
+            raise FileNotFoundError(f"Missing cross-material panel: {src}")
+        img = Image.open(src).convert("RGB")
+        img = _trim_white_border(img, padding=0)
+        external_panels.append((panel_id, img))
+
+    # Load generated d,e composite
+    panel_de = _trim_white_border(_render_pdf(FIG06_COMPOSITE_DE), padding=4)
+
+    # Layout: top row a,b,c side by side, bottom row d,e composite
     label_font = _load_font(54)
-    target_width = 2100
-    resized = [(panel_id, title, _resize_to_width(img, target_width)) for panel_id, title, img in panels]
-    margin = 70
-    header_h = 70
-    gap = 70
-    canvas_h = margin * 2 + header_h * len(resized) + sum(img.height for _, _, img in resized) + gap
-    canvas = Image.new("RGB", (target_width + margin * 2, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
-    y = margin + header_h
-    for index, (panel_id, _, img) in enumerate(resized):
-        draw.text((margin, y - 56), panel_id, fill="black", font=label_font)
-        canvas.paste(img, (margin, y))
-        y += img.height + gap + (header_h if index == 0 else 0)
-
-    _save_composite(canvas, fig06_asset)
-    shutil.copy2(fig06_asset, bundle_dir / "current_fig06_angle_specific.png")
-    shutil.copy2(fig06_asset, local_bundle_dir / "current_fig06_angle_specific.png")
-
-    manifest = {
-        "figure_id": "fig06",
-        "composite_asset": "paper/figures/fig06_angle-specific-mechanism.png",
-        "storage_mode": "reference_existing_outputs",
-        "panel_order": ["a", "b"],
-        "panels": [
-            {
-                "panel_id": "a",
-                "title": "Angle-specific routing distribution at 55 degrees",
-                "provenance_mode": "data_backed",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": "figures/output/fig09_angle55.pdf",
-                "source_asset": "figures/output/fig09_angle55.pdf",
-                "source_layer": "generator_output",
-            },
-            {
-                "panel_id": "b",
-                "title": "Angle-specific routing distribution at 100 degrees",
-                "provenance_mode": "data_backed",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": "figures/output/fig09_angle100.pdf",
-                "source_asset": "figures/output/fig09_angle100.pdf",
-                "source_layer": "generator_output",
-            },
-        ],
-    }
-    manifest_path = panel_dir / "fig06_panel_manifest.json"
-    _write_manifest(manifest_path, manifest)
-    return [fig06_asset, manifest_path]
-
-
-def _compose_bandwise(
-    figure_id: str,
-    output_name: str,
-    bundle_name: str,
-    panel_dir_name: str,
-    specs: list[tuple[str, str, Path, str]],
-) -> list[Path]:
-    output_path = REPO_ROOT / "paper/figures" / output_name
-    panel_dir = REPO_ROOT / "figures/output" / panel_dir_name
-    bundle_dir = DOCS_BUNDLE_ROOT / "01_current_canonical"
-    local_bundle_dir = LOCAL_BUNDLE_ROOT / "01_current_canonical"
-    panel_dir.mkdir(parents=True, exist_ok=True)
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    local_bundle_dir.mkdir(parents=True, exist_ok=True)
-
-    rendered: list[tuple[str, str, Image.Image, Path]] = []
-    created: list[Path] = []
-    for panel_id, title, source_pdf, copied_name in specs:
-        if not source_pdf.exists():
-            raise FileNotFoundError(f"Missing source PDF for {figure_id}: {source_pdf}")
-        copied_pdf = panel_dir / copied_name
-        shutil.copy2(source_pdf, copied_pdf)
-        img = _trim_white_border(_render_pdf(source_pdf), padding=6)
-        img = _crop_pixels(img, top=95)
-        rendered.append((panel_id, title, img, copied_pdf))
-        created.append(copied_pdf)
-
-    target_width = 740
     margin = 70
     gap = 45
-    header_h = 105
-    label_font = _load_font(54)
-    title_font = _load_font(22)
-    resized = [(panel_id, title, _resize_to_width(img, target_width), copied_pdf) for panel_id, title, img, copied_pdf in rendered]
-    max_h = max(img.height for _, _, img, _ in resized)
-    canvas_w = margin * 2 + target_width * 3 + gap * 2
-    canvas_h = margin * 2 + header_h + max_h
+    target_width = 2100
+
+    # Resize top panels to fit in 3 columns
+    col_width = (target_width - gap * 2) // 3
+    resized_top = []
+    for panel_id, img in external_panels:
+        resized_top.append((panel_id, _resize_to_width(img, col_width)))
+
+    top_h = max(img.height for _, img in resized_top)
+
+    # Bottom row
+    panel_de = _resize_to_width(panel_de, target_width)
+
+    gap_y = 50
+    canvas_w = margin * 2 + target_width
+    canvas_h = margin * 2 + top_h + gap_y + panel_de.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
-    for idx, (panel_id, title, img, _) in enumerate(resized):
-        x = margin + idx * (target_width + gap)
-        y = margin + header_h
-        draw.text((x, y - 74), panel_id, fill="black", font=label_font)
-        draw.text((x + 34, y - 68), title, fill="black", font=title_font)
-        canvas.paste(img, (x, y))
 
-    _save_composite(canvas, output_path)
-    shutil.copy2(output_path, bundle_dir / bundle_name)
-    shutil.copy2(output_path, local_bundle_dir / bundle_name)
-    created.append(output_path)
+    # Top row: a, b, c (external panels already contain their own labels)
+    for idx, (panel_id, img) in enumerate(resized_top):
+        x = margin + idx * (col_width + gap)
+        canvas.paste(img, (x, margin))
 
-    manifest = {
-        "figure_id": figure_id,
-        "composite_asset": str(output_path.relative_to(REPO_ROOT)),
-        "storage_mode": "reference_existing_outputs",
-        "panel_order": [panel_id for panel_id, _, _, _ in specs],
-        "panels": [
-            {
-                "panel_id": panel_id,
-                "title": title,
-                "provenance_mode": "data_backed",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": str((panel_dir / copied_name).relative_to(REPO_ROOT)),
-                "source_asset": str(source_pdf.relative_to(REPO_ROOT)),
-                "source_layer": "results_pdf",
-            }
-            for panel_id, title, source_pdf, copied_name in specs
-        ],
-    }
-    manifest_path = panel_dir / f"{figure_id}_panel_manifest.json"
-    _write_manifest(manifest_path, manifest)
-    created.append(manifest_path)
-    return created
+    # Bottom row: d,e composite (panel labels already embedded in PDF)
+    y_bottom = margin + top_h + gap_y
+    canvas.paste(panel_de, (margin, y_bottom))
 
-
-def compose_fig07() -> list[Path]:
-    return _compose_bandwise(
-        figure_id="fig07",
-        output_name="fig07_bandwise-routing-analysis-part1.png",
-        bundle_name="current_fig07_bandwise_part1.png",
-        panel_dir_name="fig07_bandwise_routing_part1_panels",
-        specs=FIG07_PARTS,
-    )
-
-
-def compose_fig08() -> list[Path]:
-    return _compose_bandwise(
-        figure_id="fig08",
-        output_name="fig08_bandwise-routing-analysis-part2.png",
-        bundle_name="current_fig08_bandwise_part2.png",
-        panel_dir_name="fig08_bandwise_routing_part2_panels",
-        specs=FIG08_PARTS,
-    )
-
-
-def compose_fig09() -> list[Path]:
-    fig09_asset = REPO_ROOT / "paper/figures/fig09_cross-material-universality.jpg"
-    panel_dir = REPO_ROOT / "figures/output/fig09_cross_material_universality_panels"
-    bundle_dir = DOCS_BUNDLE_ROOT / "04_separate_families"
-    local_bundle_dir = LOCAL_BUNDLE_ROOT / "04_separate_families"
-    panel_dir.mkdir(parents=True, exist_ok=True)
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    local_bundle_dir.mkdir(parents=True, exist_ok=True)
-    panel_specs = [
-        ("a", "Material exemplars", "fig06_panel_a_material_exemplars.png", "fig09_panel_a_material_exemplars.png"),
-        ("b", "Cross-material heatmaps", "fig06_panel_b_heatmaps.png", "fig09_panel_b_heatmaps.png"),
-        ("c", "RMSE comparison", "fig06_panel_c_rmse_comparison.png", "fig09_panel_c_rmse_comparison.png"),
-    ]
-    panels = []
-    created: list[Path] = []
-    rendered: list[tuple[str, str, Image.Image, Path]] = []
-    for panel_id, title, src_name, dst_name in panel_specs:
-        src_path = FIG09_LEGACY_PANEL_DIR / src_name
-        dst_path = panel_dir / dst_name
-        if not src_path.exists():
-            raise FileNotFoundError(f"Missing cross-material panel asset: {src_path}")
-        shutil.copy2(src_path, dst_path)
-        img = Image.open(dst_path).convert("RGB")
-        if panel_id == "a":
-            img = _crop_pixels(img, left=14, top=66, bottom=26)
-        elif panel_id == "b":
-            img = _crop_pixels(img, left=14, top=58, bottom=68)
-            img = _cover_with_white(img, 0, 0, 64, 52)
-        else:
-            img = _crop_pixels(img, left=14, top=42, bottom=14)
-        img = _trim_white_border(img, padding=0)
-        rendered.append((panel_id, title, img, dst_path))
-        panels.append(
-            {
-                "panel_id": panel_id,
-                "title": title,
-                "provenance_mode": "provenance_gap",
-                "storage_mode": "reference_existing_outputs",
-                "asset_path": str(dst_path.relative_to(REPO_ROOT)),
-                "source_asset": str((FIG09_LEGACY_PANEL_DIR / src_name).relative_to(REPO_ROOT)),
-                "source_layer": "legacy_split_panel_asset",
-            }
-        )
-        created.append(dst_path)
-
-    panel_map = {panel_id: (title, img, path) for panel_id, title, img, path in rendered}
-    panel_a = _resize_to_width(panel_map["a"][1], 1730)
-    panel_b = _resize_to_width(panel_map["b"][1], 1730)
-    panel_c = _resize_to_width(panel_map["c"][1], 620)
-
-    label_font = _load_font(54)
-    margin = 70
-    header_h = 70
-    gap_x = 55
-    gap_y = 48
-    left_w = max(panel_a.width, panel_b.width)
-    canvas_w = margin * 2 + left_w + gap_x + panel_c.width
-    canvas_h = margin * 2 + header_h * 2 + panel_a.height + gap_y + max(panel_b.height, panel_c.height)
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
-    ax_x = margin
-    bx_x = margin
-    cx_x = margin + left_w + gap_x
-    ay = margin + header_h
-    by = ay + panel_a.height + gap_y + header_h
-    cy = margin + header_h
-    draw.text((ax_x, margin), "a", fill="black", font=label_font)
-    draw.text((bx_x, ay + panel_a.height + gap_y), "b", fill="black", font=label_font)
-    draw.text((cx_x, margin), "c", fill="black", font=label_font)
-    canvas.paste(panel_a, (ax_x, ay))
-    canvas.paste(panel_b, (bx_x, by))
-    canvas.paste(panel_c, (cx_x, cy))
-
-    _save_composite(canvas, fig09_asset)
-    shutil.copy2(fig09_asset, bundle_dir / "current_fig09_cross_material.jpg")
-    shutil.copy2(fig09_asset, local_bundle_dir / "current_fig09_cross_material.jpg")
-    created.insert(0, fig09_asset)
-
-    manifest = {
-        "figure_id": "fig09",
-        "composite_asset": "paper/figures/fig09_cross-material-universality.jpg",
-        "storage_mode": "reference_existing_outputs",
-        "panel_order": ["a", "b", "c"],
-        "panels": panels,
-    }
-    manifest_path = panel_dir / "fig09_panel_manifest.json"
-    _write_manifest(manifest_path, manifest)
-    created.append(manifest_path)
-    return created
+    _save_composite(canvas, fig06_asset)
+    return [fig06_asset]
 
 
 def main() -> None:
     created: list[Path] = []
     created.extend(compose_fig01())
     created.extend(compose_fig02())
+    created.extend(compose_fig03())
     created.extend(compose_fig04())
     created.extend(compose_fig05())
     created.extend(compose_fig06())
-    created.extend(compose_fig07())
-    created.extend(compose_fig08())
-    created.extend(compose_fig09())
     print("\n".join(str(path) for path in created))
 
 
