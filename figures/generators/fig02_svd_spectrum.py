@@ -1,13 +1,16 @@
-"""Figure 2 — SVD Spectrum + Modal Decomposition + Dictionary.
+"""Figure 2 — SVD Spectrum + Modal Decomposition + Dictionary + Manifold.
 
-Single composite figure at double-column width (183 mm):
-  Row 1: (a) SVD singular-value spectrum
-  Row 2: Mode 1–3 frequency profiles (left) + polar angular modes (right)
-  Row 3: Mode 1–3 dictionary heatmaps
+Double-column width (183 mm), 6 panels:
+  Row 1: (a) SVD singular-value spectrum + cumulative energy
+  Row 2: (b-d) Mode 1-3 frequency profiles (left) + polar angular modes (right)
+  Row 3 left: (e) Full dictionary H heatmap (angle x freq)
+  Row 3 centre: (f) Rank-r reconstruction quality (original vs reconstructed)
+  Row 3 right: (g) Inter-angle correlation matrix of H
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +26,7 @@ from figures.style import (
     add_panel_label,
     load_paths,
     DOUBLE_COL_MM,
+    SEMANTIC_PALETTE,
 )
 
 
@@ -94,6 +98,21 @@ def _process_angular_mode(v_half: np.ndarray, angles_half: np.ndarray, n_interp:
     return v_norm, angles_smooth
 
 
+def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
+    manifest_path = panel_dir / "fig02_panel_manifest.json"
+    payload = {
+        "figure_id": "fig02",
+        "composite_asset": "figures/output/fig02_svd_spectrum.pdf",
+        "storage_mode": "direct_generator_outputs",
+        "panel_order": [item["panel_id"] for item in panel_specs],
+        "panels": panel_specs,
+    }
+    manifest_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    return manifest_path
+
+
 # ---------------------------------------------------------------------------
 # Public interface
 # ---------------------------------------------------------------------------
@@ -136,15 +155,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         v_norm, angles_smooth = _process_angular_mode(V[:, r], angles_deg)
         modes_data.append((u_smooth, freqs_smooth, v_norm, angles_smooth))
 
-    # Build composite figure: 3 rows
-    # Row 1: singular values (spans full width)
-    # Row 2: 3 x (freq + polar) = 6 columns
-    # Row 3: 3 dictionary heatmaps
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=165)
+    # -----------------------------------------------------------------------
+    # Build composite figure: 4 rows (expanded from 3)
+    # Row 1: (a) singular values (spans full width)
+    # Row 2: (b-d) 3 x (freq + polar) = 6 columns
+    # Row 3: (e) full H heatmap, (f) reconstruction quality, (g) correlation
+    # -----------------------------------------------------------------------
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=170)
     gs = gridspec.GridSpec(
         3, 6, figure=fig,
-        height_ratios=[1.1, 0.95, 0.8],
-        hspace=0.38, wspace=0.45,
+        height_ratios=[0.9, 0.85, 0.85],
+        hspace=0.42, wspace=0.45,
         left=0.07, right=0.96, bottom=0.06, top=0.95,
     )
 
@@ -163,7 +184,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_sv.legend(lines, [l.get_label() for l in lines], loc="center right", fontsize=6, frameon=False)
     add_panel_label(ax_sv, "a", x=-0.08)
 
-    # --- Row 2: Freq + Polar for each mode ---
+    # --- Row 2: Freq + Polar for each mode (b, c, d) ---
     panel_labels = ["b", "c", "d"]
     for r in range(n_modes):
         u_smooth, freqs_smooth, v_norm, angles_smooth = modes_data[r]
@@ -196,27 +217,163 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_p.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=5)
         ax_p.tick_params(pad=-2)
 
-    # --- Row 3: Dictionary heatmaps ---
-    panel_labels_d = ["e", "f", "g"]
-    for r in range(n_modes):
-        u_smooth, freqs_smooth, v_norm, angles_smooth = modes_data[r]
-        mask = angles_smooth <= 180
-        v_half = v_norm[mask]
-        D_r = np.outer(np.abs(u_smooth), v_half)
+    # --- Row 3: (e) Full H heatmap, (f) Reconstruction, (g) Correlation ---
 
-        ax_d = fig.add_subplot(gs[2, r * 2:r * 2 + 2])
-        extent = [0, D_r.shape[1], freqs_smooth[0], freqs_smooth[-1]]
-        ax_d.imshow(D_r, aspect="auto", origin="lower", cmap="viridis", extent=extent)
-        ax_d.set_title(f"Dict Mode {r+1}", fontsize=7)
-        ax_d.set_xlabel("Atom index", fontsize=6, labelpad=1)
-        if r == 0:
-            ax_d.set_ylabel("Freq (Hz)", fontsize=6, labelpad=1)
-        ax_d.tick_params(labelsize=5, pad=1)
-        ax_d.grid(False)
-        add_panel_label(ax_d, panel_labels_d[r], x=-0.08)
+    # Panel (e): Full dictionary H heatmap
+    ax_e = fig.add_subplot(gs[2, 0:2])
+    im_e = ax_e.imshow(
+        np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
+        extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
+    )
+    ax_e.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
+    ax_e.set_title("Full dictionary H", fontsize=6.5)
+    cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.04)
+    cbar.set_label("Amplitude", fontsize=5)
+    cbar.ax.tick_params(labelsize=5)
+    add_panel_label(ax_e, "e", x=-0.15)
+
+    # Panel (f): Rank-r reconstruction quality
+    ax_f = fig.add_subplot(gs[2, 2:4])
+    # Show original vs reconstructed at a representative angle (90 deg)
+    rep_angle_idx = int(np.argmin(np.abs(angles_deg - 90)))
+    original = H_log_centered[:, rep_angle_idx]
+
+    for rank, ls, alpha_val in [(3, "--", 0.7), (5, "-.", 0.5), (10, ":", 0.4)]:
+        H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
+        reconstructed = H_reconstructed[:, rep_angle_idx]
+        residual = np.sqrt(np.mean((original - reconstructed) ** 2))
+        ax_f.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
+                  alpha=alpha_val, label=f"r={rank} (RMSE={residual:.2f})")
+
+    ax_f.plot(freqs / 1000, original, "-", linewidth=1.0,
+              color="black", alpha=0.9, label="Original")
+    ax_f.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_f.set_ylabel("Log amplitude (centered)", fontsize=6)
+    ax_f.set_title(f"Reconstruction @ {angles_deg[rep_angle_idx]:.0f}\u00b0", fontsize=6.5)
+    ax_f.legend(fontsize=4, frameon=False, loc="lower left")
+    ax_f.grid(axis="y", linestyle="--", alpha=0.3)
+    add_panel_label(ax_f, "f", x=-0.15)
+
+    # Panel (g): Inter-angle correlation matrix of H
+    ax_g = fig.add_subplot(gs[2, 4:6])
+    H_corr = np.corrcoef(np.abs(H_np).T)  # E x E correlation
+    im_g = ax_g.imshow(H_corr, cmap="RdBu_r", aspect="equal",
+                        vmin=-1.0, vmax=1.0)
+    tick_pos = [0, 9, 18, 27, 36]
+    tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos if i < len(angles_deg)]
+    ax_g.set_xticks(tick_pos[:len(tick_lab)])
+    ax_g.set_xticklabels(tick_lab, fontsize=5)
+    ax_g.set_yticks(tick_pos[:len(tick_lab)])
+    ax_g.set_yticklabels(tick_lab, fontsize=5)
+    ax_g.set_xlabel("Angle (\u00b0)", fontsize=6)
+    ax_g.set_ylabel("Angle (\u00b0)", fontsize=6)
+    ax_g.set_title("Inter-angle correlation", fontsize=6.5)
+    cbar = plt.colorbar(im_g, ax=ax_g, fraction=0.046, pad=0.04)
+    cbar.set_label("Pearson r", fontsize=5)
+    cbar.ax.tick_params(labelsize=5)
+    add_panel_label(ax_g, "g", x=-0.15)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")
     plt.close(fig)
+
+    # -----------------------------------------------------------------------
+    # Split panel assets for new panels (e, f, g)
+    # -----------------------------------------------------------------------
+    panel_dir = output_dir / "fig02_svd_spectrum_panels"
+    panel_dir.mkdir(parents=True, exist_ok=True)
+
+    # Panel e standalone
+    fig_e_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_e_s.add_subplot(111)
+    im = ax.imshow(
+        np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
+        extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
+    )
+    ax.set_xlabel("Frequency (kHz)")
+    ax.set_ylabel("Angle (\u00b0)")
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Amplitude", fontsize=6)
+    add_panel_label(ax, "e")
+    fig_e_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_e_s, panel_dir / "fig02_panel_e_full_H"))
+    plt.close(fig_e_s)
+
+    # Panel f standalone
+    fig_f_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    ax = fig_f_s.add_subplot(111)
+    ax.plot(freqs / 1000, original, "-", linewidth=1.0, color="black", label="Original")
+    for rank, ls, alpha_val in [(3, "--", 0.7), (5, "-.", 0.5), (10, ":", 0.4)]:
+        H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
+        reconstructed = H_reconstructed[:, rep_angle_idx]
+        residual = np.sqrt(np.mean((original - reconstructed) ** 2))
+        ax.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
+                alpha=alpha_val, label=f"r={rank} (RMSE={residual:.2f})")
+    ax.set_xlabel("Frequency (kHz)")
+    ax.set_ylabel("Log amplitude (centered)")
+    ax.legend(fontsize=5, frameon=False)
+    add_panel_label(ax, "f")
+    fig_f_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_reconstruction"))
+    plt.close(fig_f_s)
+
+    # Panel g standalone
+    fig_g_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_g_s.add_subplot(111)
+    im = ax.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
+    ax.set_xticks(tick_pos[:len(tick_lab)])
+    ax.set_xticklabels(tick_lab, fontsize=6)
+    ax.set_yticks(tick_pos[:len(tick_lab)])
+    ax.set_yticklabels(tick_lab, fontsize=6)
+    ax.set_xlabel("Angle (\u00b0)")
+    ax.set_ylabel("Angle (\u00b0)")
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=6)
+    add_panel_label(ax, "g")
+    fig_g_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
+    all_paths.extend(save_outputs(fig_g_s, panel_dir / "fig02_panel_g_correlation"))
+    plt.close(fig_g_s)
+
+    # Panel manifest
+    manifest = _save_panel_manifest(
+        panel_dir,
+        [
+            {
+                "panel_id": "a",
+                "title": "Singular-value spectrum",
+                "asset_path": "figures/output/fig02_svd_spectrum.pdf",
+                "provenance_mode": "data_backed",
+                "description": "SVD spectrum with cumulative energy and DOA capacity.",
+            },
+            {
+                "panel_id": "b-d",
+                "title": "Modal decomposition (modes 1-3)",
+                "asset_path": "figures/output/fig02_svd_spectrum.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Frequency-selective spectra and direction-selective polar patterns for modes 1-3.",
+            },
+            {
+                "panel_id": "e",
+                "title": "Full dictionary H heatmap",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_full_H.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Complete angle-frequency heatmap of H (37 angles x 346 freq bins).",
+            },
+            {
+                "panel_id": "f",
+                "title": "Rank-r reconstruction quality",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_reconstruction.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Original vs reconstructed fingerprint at 90 deg for rank 3, 5, 10.",
+            },
+            {
+                "panel_id": "g",
+                "title": "Inter-angle correlation matrix",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_g_correlation.pdf",
+                "provenance_mode": "data_backed",
+                "description": "37x37 Pearson correlation matrix showing smooth angle-manifold structure.",
+            },
+        ],
+    )
+    all_paths.append(manifest)
 
     print(f"[fig02] Generated {len(all_paths)} files")
     return all_paths
