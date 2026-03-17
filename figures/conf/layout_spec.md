@@ -159,8 +159,8 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 │                                                      │  │
 │  Row 1 — 48.7 mm                                     │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(a) WN violin │(b) Sp violin │(c) Repeat.   │      │  │
-│  │ within/betw  │ within/betw  │ WN vs Speech │      │  │
+│  │(a) WN violin │(b) Sp violin │(c) Discrim.  │      │  │
+│  │ within/betw  │ within/betw  │ margin W/S   │      │  │
 │  │42.9 × 48.7   │42.9 × 48.7   │42.9 × 48.7  │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 │  ├── 42.9 ──┤17.2├── 42.9 ──┤17.2├── 42.9 ──┤       │  │ 130.0 mm
@@ -169,8 +169,8 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 │                                                      │  │
 │  Row 2 — 48.7 mm                                     │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(d) OMP acc   │(e) Pairwise  │(f) Dose-resp │      │  │
-│  │ WN vs Speech │ sim matrix   │ SNR sweep    │      │  │
+│  │(d) OMP acc   │(e) Split sim │(f) Dose-resp │      │  │
+│  │ WN vs Speech │ WN / Speech  │ SNR sweep    │      │  │
 │  │42.9 × 48.7   │42.9 × 48.7   │42.9 × 48.7  │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 └──────────────────────────────────────────────────────┘ ─┴─

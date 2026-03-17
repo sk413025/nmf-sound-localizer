@@ -2,9 +2,9 @@
 
 Panel (a): White noise within vs between Pearson r (violin + stats).
 Panel (b): Speech within vs between Pearson r (violin + stats).
-Panel (c): Per-angle repeatability comparison (WN vs Speech lines +/- SEM).
+Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech.
 Panel (d): OMP per-angle accuracy comparison (WN vs Speech grouped bars).
-Panel (e): 37x37 pairwise similarity matrix (speech trial-level).
+Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
 Panel (f): OMP accuracy dose-response curve across SNR levels.
 
 Data: dictionary.npz (D, angles) + modal_routing_val.npz (Y_val, labels,
@@ -203,6 +203,21 @@ def _compute_trial_pairwise_matrix(Y_val: np.ndarray, labels: np.ndarray,
     return sim_matrix
 
 
+def _discriminability_margin(sim_matrix: np.ndarray) -> np.ndarray:
+    """Compute per-angle discriminability margin from a pairwise similarity matrix.
+
+    margin[a] = within_r[a] - mean(between_r[a])
+    where within_r is the diagonal and between_r is the off-diagonal row mean.
+    """
+    n = sim_matrix.shape[0]
+    within_r = np.diag(sim_matrix)
+    between_r = np.array([
+        np.nanmean(np.concatenate([sim_matrix[a, :a], sim_matrix[a, a + 1:]]))
+        for a in range(n)
+    ])
+    return within_r - between_r
+
+
 def _cohens_d(a: np.ndarray, b: np.ndarray) -> float:
     na, nb = len(a), len(b)
     pooled_std = np.sqrt(((na - 1) * np.var(a, ddof=1) +
@@ -346,8 +361,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     omp_mean_sp = float(np.mean(omp_acc_sp))
     print(f"[fig03] OMP accuracy — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
 
-    # --- Pairwise similarity matrix (speech) ---
-    sim_matrix = _compute_trial_pairwise_matrix(Y_val, labels, n_angles)
+    # --- Pairwise similarity matrices (both) ---
+    sim_matrix_sp = _compute_trial_pairwise_matrix(Y_val, labels, n_angles)
+    sim_matrix_wn = _compute_trial_pairwise_matrix(Y_wn, labels_wn, n_angles)
+
+    # --- Discriminability margin (panel c) ---
+    margin_wn = _discriminability_margin(sim_matrix_wn)
+    margin_sp = _discriminability_margin(sim_matrix_sp)
+    print(f"[fig03] Discrim. margin — WN: {np.nanmean(margin_wn):.3f}, "
+          f"Speech: {np.nanmean(margin_sp):.3f}")
 
     # --- SNR sweep dose-response (panel f) ---
     snr_base = paths_cfg.get("snr_sweep_base", "")
@@ -409,32 +431,23 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ylim=violin_ylim,
     )
 
-    # --- Panel (c): Per-angle repeatability comparison ---
+    # --- Panel (c): Discriminability margin per angle ---
     ax_c = fig.add_subplot(gs[0, 2])
-    valid_wn = ~np.isnan(pa_mean_wn)
-    valid_sp = ~np.isnan(pa_mean_sp)
+    valid_wn = ~np.isnan(margin_wn)
+    valid_sp = ~np.isnan(margin_sp)
 
-    ax_c.plot(angles[valid_wn], pa_mean_wn[valid_wn], "-o", markersize=2,
-              linewidth=0.9, color=SEMANTIC_PALETTE["physics"], label="White noise")
-    ax_c.fill_between(
-        angles[valid_wn],
-        pa_mean_wn[valid_wn] - pa_sem_wn[valid_wn],
-        pa_mean_wn[valid_wn] + pa_sem_wn[valid_wn],
-        alpha=0.20, color=SEMANTIC_PALETTE["physics"],
-    )
-    ax_c.plot(angles[valid_sp], pa_mean_sp[valid_sp], "-s", markersize=2,
-              linewidth=0.9, color=SEMANTIC_PALETTE["ablation"], label="Speech")
-    ax_c.fill_between(
-        angles[valid_sp],
-        pa_mean_sp[valid_sp] - pa_sem_sp[valid_sp],
-        pa_mean_sp[valid_sp] + pa_sem_sp[valid_sp],
-        alpha=0.20, color=SEMANTIC_PALETTE["ablation"],
-    )
+    ax_c.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
+              linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
+              label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
+    ax_c.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
+              linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
+              label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
+    ax_c.axhline(0, color="black", linewidth=0.5, alpha=0.3)
     ax_c.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_c.set_ylabel("Mean within-angle r", fontsize=6)
-    ax_c.set_title("Fingerprint repeatability", fontsize=6.5)
+    ax_c.set_ylabel("Discriminability margin\n(within r \u2212 between r)", fontsize=5.5)
+    ax_c.set_title("Per-angle discriminability", fontsize=6.5)
     ax_c.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_c.legend(fontsize=5.5, frameon=False, loc="center left")
+    ax_c.legend(fontsize=5.5, frameon=False, loc="upper right")
     add_panel_label(ax_c, "c", x=-0.12, y=1.06)
 
     # --- Panel (d): OMP per-angle accuracy comparison ---
@@ -453,10 +466,25 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.15, y=1.06)
 
-    # --- Panel (e): Pairwise similarity matrix (speech) ---
+    # --- Panel (e): Split-triangle pairwise matrix (WN lower-left, Speech upper-right) ---
     ax_e = fig.add_subplot(gs[1, 1])
-    im_e = ax_e.imshow(sim_matrix, cmap="RdBu_r", aspect="auto",
+    # Build composite matrix: lower-left = WN, upper-right = Speech
+    split_matrix = np.full((n_angles, n_angles), np.nan)
+    for i in range(n_angles):
+        for j in range(n_angles):
+            if i > j:
+                split_matrix[i, j] = sim_matrix_wn[i, j]  # lower-left = WN
+            elif i < j:
+                split_matrix[i, j] = sim_matrix_sp[i, j]  # upper-right = Speech
+            else:
+                # Diagonal: average of both for visual continuity
+                split_matrix[i, j] = (sim_matrix_wn[i, j] + sim_matrix_sp[i, j]) / 2
+
+    im_e = ax_e.imshow(split_matrix, cmap="RdBu_r", aspect="auto",
                         vmin=-0.2, vmax=1.0)
+    # Draw diagonal line to separate the two halves
+    ax_e.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
+              color="black", linewidth=0.8, alpha=0.7)
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels_e = [f"{int(angles[i])}" for i in tick_positions]
     ax_e.set_xticks(tick_positions)
@@ -465,9 +493,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.set_yticklabels(tick_labels_e, fontsize=5)
     ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_title("Pairwise similarity (speech)", fontsize=6.5)
+    ax_e.set_title("Pairwise similarity", fontsize=6.5)
     cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.02)
     cbar.ax.tick_params(labelsize=5)
+    # Labels for the two halves
+    ax_e.text(n_angles * 0.75, n_angles * 0.25, "Speech",
+              ha="center", va="center", fontsize=5.5, fontstyle="italic",
+              color="black", alpha=0.7)
+    ax_e.text(n_angles * 0.25, n_angles * 0.75, "WN",
+              ha="center", va="center", fontsize=5.5, fontstyle="italic",
+              color="black", alpha=0.7)
     add_panel_label(ax_e, "e", x=-0.12, y=1.06)
 
     # --- Panel (f): SNR dose-response curve ---
@@ -541,25 +576,20 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel c standalone
     fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_c.add_subplot(111)
-    ax.plot(angles[valid_wn], pa_mean_wn[valid_wn], "-o", markersize=2,
-            linewidth=0.9, color=SEMANTIC_PALETTE["physics"], label="White noise")
-    ax.fill_between(angles[valid_wn],
-                    pa_mean_wn[valid_wn] - pa_sem_wn[valid_wn],
-                    pa_mean_wn[valid_wn] + pa_sem_wn[valid_wn],
-                    alpha=0.20, color=SEMANTIC_PALETTE["physics"])
-    ax.plot(angles[valid_sp], pa_mean_sp[valid_sp], "-s", markersize=2,
-            linewidth=0.9, color=SEMANTIC_PALETTE["ablation"], label="Speech")
-    ax.fill_between(angles[valid_sp],
-                    pa_mean_sp[valid_sp] - pa_sem_sp[valid_sp],
-                    pa_mean_sp[valid_sp] + pa_sem_sp[valid_sp],
-                    alpha=0.20, color=SEMANTIC_PALETTE["ablation"])
+    ax.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
+            linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
+            label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
+    ax.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
+            linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
+            label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
+    ax.axhline(0, color="black", linewidth=0.5, alpha=0.3)
     ax.set_xlabel("Angle (\u00b0)")
-    ax.set_ylabel("Mean within-angle Pearson r")
+    ax.set_ylabel("Discriminability margin (within r \u2212 between r)")
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=5, frameon=False, loc="center left")
+    ax.legend(fontsize=5, frameon=False, loc="upper right")
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_repeatability"))
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_discrim_margin"))
     plt.close(fig_c)
 
     # Panel d standalone
@@ -582,7 +612,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel e standalone
     fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_e.add_subplot(111)
-    im = ax.imshow(sim_matrix, cmap="RdBu_r", aspect="auto", vmin=-0.2, vmax=1.0)
+    im = ax.imshow(split_matrix, cmap="RdBu_r", aspect="auto", vmin=-0.2, vmax=1.0)
+    ax.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
+            color="black", linewidth=0.8, alpha=0.7)
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(tick_labels_e)
     ax.set_yticks(tick_positions)
@@ -590,9 +622,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Mean Pearson r", fontsize=6)
+    ax.text(n_angles * 0.75, n_angles * 0.25, "Speech",
+            ha="center", va="center", fontsize=6, fontstyle="italic", alpha=0.7)
+    ax.text(n_angles * 0.25, n_angles * 0.75, "WN",
+            ha="center", va="center", fontsize=6, fontstyle="italic", alpha=0.7)
     add_panel_label(ax, "e")
     fig_e.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
-    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_pairwise"))
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_split_pairwise"))
     plt.close(fig_e)
 
     # Panel f standalone
@@ -640,10 +676,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "c",
-                "title": "Per-angle repeatability comparison",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_repeatability.pdf",
+                "title": "Per-angle discriminability margin",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_discrim_margin.pdf",
                 "provenance_mode": "data_backed",
-                "description": "WN vs Speech mean within-angle r per angle with SEM bands.",
+                "description": "WN vs Speech discriminability margin (within_r - between_r) per angle.",
             },
             {
                 "panel_id": "d",
@@ -654,10 +690,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "e",
-                "title": "Trial-level pairwise similarity matrix",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_pairwise.pdf",
+                "title": "Split-triangle pairwise similarity (WN vs Speech)",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_split_pairwise.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 mean Pearson r between all angle pairs (speech trial-level).",
+                "description": "37x37 split-triangle matrix: lower-left=WN, upper-right=Speech.",
             },
             {
                 "panel_id": "f",
