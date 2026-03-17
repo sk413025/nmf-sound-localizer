@@ -278,7 +278,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (d): Confusion matrices (baseline vs no-transformer)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
-            1, 2, subplot_spec=gs[1, 0], wspace=0.30,
+            2, 1, subplot_spec=gs[1, 0], hspace=0.20,
         )
 
         # Normalize confusion matrices to row-probabilities
@@ -297,25 +297,26 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                      interpolation="nearest", vmin=0, vmax=1)
         ax_d1.set_title("Baseline", fontsize=5.5, fontweight="bold")
         ax_d1.set_xticks(tick_positions)
-        ax_d1.set_xticklabels(tick_labels, fontsize=5.5)
+        ax_d1.set_xticklabels(tick_labels, fontsize=5)
         ax_d1.set_yticks(tick_positions)
-        ax_d1.set_yticklabels(tick_labels, fontsize=5.5)
+        ax_d1.set_yticklabels(tick_labels, fontsize=5)
         ax_d1.set_xlabel("Predicted", fontsize=5)
         ax_d1.set_ylabel("True", fontsize=5)
-        add_panel_label(ax_d1, "d", x=-0.25, y=1.12)
+        add_panel_label(ax_d1, "d", x=-0.20, y=1.12)
 
-        ax_d2 = fig.add_subplot(gs_d[0, 1])
+        ax_d2 = fig.add_subplot(gs_d[1, 0])
         im_d2 = ax_d2.imshow(no_trans_cm_norm, cmap="viridis", aspect="equal",
                               interpolation="nearest", vmin=0, vmax=1)
         ax_d2.set_title("No transformer", fontsize=5.5, fontweight="bold")
         ax_d2.set_xticks(tick_positions)
-        ax_d2.set_xticklabels(tick_labels, fontsize=5.5)
+        ax_d2.set_xticklabels(tick_labels, fontsize=5)
         ax_d2.set_yticks(tick_positions)
-        ax_d2.set_yticklabels(tick_labels, fontsize=5.5)
+        ax_d2.set_yticklabels(tick_labels, fontsize=5)
         ax_d2.set_xlabel("Predicted", fontsize=5)
+        ax_d2.set_ylabel("True", fontsize=5)
         cbar = plt.colorbar(im_d2, ax=ax_d2, fraction=0.046, pad=0.04)
-        cbar.set_label("P(pred|true)", fontsize=5.5)
-        cbar.ax.tick_params(labelsize=5.5)
+        cbar.set_label("P(pred|true)", fontsize=5)
+        cbar.ax.tick_params(labelsize=5)
     else:
         ax_d_placeholder = fig.add_subplot(gs[1, 0])
         ax_d_placeholder.text(0.5, 0.5, "Confusion matrix\ndata unavailable",
