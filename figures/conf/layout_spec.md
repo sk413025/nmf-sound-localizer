@@ -54,7 +54,7 @@ panel_width  = n_span × col_width + (n_span−1) × wspace × col_width
 
 ---
 
-## Figure 1 — Paradigm Shift (5 panels)
+## Figure 1 — Direction-Dependent Structural Filtering (5 panels)
 
 Composed: external a,b (top) + generated c,d,e (bottom strip)
 
@@ -63,7 +63,7 @@ Composed: external a,b (top) + generated c,d,e (bottom strip)
 ├──────────────────────────────────────────────────────┤
 ┌─────────────────────────┬───────────────────────────┐ ─┬─
 │                         │                           │  │
-│   (a) Setup photo       │   (b) Conceptual schem.   │  │ 65.0 mm
+│   (a) Setup photo       │   (b) Physical principle   │  │ 65.0 mm
 │   89.0 × 65.0 mm       │   89.0 × 65.0 mm          │  │ (external)
 │                         │                           │  │
 ├─────────────────────────┴───────────────────────────┤ ─┼─  ← 5mm compose gap
@@ -74,11 +74,9 @@ Composed: external a,b (top) + generated c,d,e (bottom strip)
 │  Usable: 166.5 × 45.5 mm                            │  │
 │                                                     │  │ 65.0 mm
 │  ┌──────────────┬──────────────┬──────────────┐      │  │ (generated)
-│  │(c) Waveforms │(d) Spectra   │(e) Control   │      │  │
+│  │(c) Input→Out │(d) Repeat.   │(e) Directiv. │      │  │
+│  │ 5 angles     │ mean±std     │ polar, 4band │      │  │
 │  │ 43.8 × 45.5  │ 43.8 × 45.5  │ 43.8 × 45.5 │      │  │
-│  │              │              │              │      │  │
-│  │  plot area:  │  plot area:  │  plot area:  │      │  │
-│  │  38 × 40 mm  │  38 × 40 mm  │  38 × 40 mm │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 │  ├── 43.8mm ──┤wsp├── 43.8mm ──┤wsp├── 43.8mm ──┤   │  │
 │               17.5              17.5                  │  │

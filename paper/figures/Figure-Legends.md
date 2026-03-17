@@ -4,38 +4,40 @@ This document provides concise manuscript-ready legends for the six main-paper f
 
 ## Fig. 1 (5 panels)
 
-**Fig. 1 | From chaotic acoustic scattering to sparse physical order in complex-media sensing.**
-a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)); inset shows a representative single-point vibration waveform exhibiting complex, seemingly chaotic fluctuations.
-b, Conceptual schematic illustrating that different incidence directions excite distinct combinations of a small number of structural modes, whose spectral superposition yields direction-specific single-point "spectral fingerprints".
-c, Time-domain vibration waveforms at three representative angles (0, 90, 180 degrees) appear visually similar due to dispersion and reverberation, motivating spectral analysis.
-d, Spectral fingerprints for the same three angles reveal distinct, direction-dependent frequency structures — the core phenomenon underlying single-point DOA sensing.
-e, Contact-loading control: spectral distinctiveness (1 - mean inter-angle Pearson r) is substantially reduced under contact readout compared with non-contact LDV, confirming that preserving the target's native boundary conditions is essential for directional encoding.
+**Fig. 1 | Direction-dependent structural filtering revealed by single-point laser vibrometry.**
+a, Photograph of the experimental setup: a loudspeaker excites an acrylic sensor plate while a laser Doppler vibrometer (LDV) records single-point surface vibrations at varying incidence angles.
+b, Conceptual schematic: the structure acts as a direction-dependent spectral filter H(θ, f) — a flat broadband source is transformed into angle-specific spectral fingerprints by the structural transfer function.
+c, Input-to-output spectral shaping: the flat white-noise source spectrum (grey dashed) is reshaped differently at five representative angles (0°, 45°, 90°, 135°, 180°), directly demonstrating the filtering predicted in (b).
+d, Trial repeatability: mean spectra (±1 s.d. shading) from three independent white-noise recordings at each of the same five angles. The near-invisible error bands confirm that the spectral fingerprint is a stable physical property of the structure, while the clear separation between angles confirms direction-dependent encoding.
+e, Frequency-dependent directivity: polar plot of the normalized transfer-function amplitude H(θ, f) across the full 0°–180° angular range for four frequency bands (0.3–0.5, 0.5–1, 1–2, 2–3 kHz), showing that each band carries a distinct directional response pattern.
 
-## Fig. 2 (7 panels: a, b-d, e, f, g)
+## Fig. 2 (6 panels)
 
-**Fig. 2 | Physical encoding via spectral-spatial modes and construction of a structured dictionary.**
-a, Singular-value spectrum showing rapid decay, indicating that the measured structural response is dominated by a small set of modes; cumulative energy and DOA capacity curves quantify the information concentration.
-b-d, Modal decomposition of modes 1-3 into frequency-selective spectra (left) and direction-selective polar patterns (right), forming virtual directional sensing channels.
-e, Full angle-frequency heatmap of the dictionary H (37 angles x 346 frequency bins), showing systematic spectral variation across directions.
-f, Rank-r reconstruction quality: original versus reconstructed fingerprint at a representative angle for ranks 3, 5, and 10, quantifying the information retained by low-rank compression.
-g, Inter-angle correlation matrix of H, revealing the smooth structure of the physical angle manifold — nearby angles share similar spectral fingerprints.
+**Fig. 2 | Low-rank modal structure of the physical dictionary.**
+a, Singular-value spectrum of H with cumulative energy and DOA capacity curves, showing that the structural response is dominated by a small number of modes.
+b, Frequency profiles of the three leading SVD modes, revealing frequency-selective spectral channels.
+c, Polar patterns of the same three modes, showing orthogonal direction-selective angular responses.
+d, Full angle-frequency heatmap of the dictionary H (37 angles × 346 frequency bins), displaying systematic spectral variation across the angular grid.
+e, Rank-r reconstruction quality at a representative angle (90°) for ranks 3, 5, and 10, quantifying the information retained by low-rank approximation.
+f, Inter-angle correlation matrix of H, revealing smooth manifold structure — nearby angles share similar fingerprints while distant angles decorrelate progressively.
 
-## Fig. 3 (4 panels)
+## Fig. 3 (6 panels)
 
-**Fig. 3 | Physics-guided deep unrolled network with attention-based gating for sparse DOA inference.**
-a, Architecture: at stage t, the residual is correlated with the static physics dictionary D to form a physical match; a transformer encoder outputs attention weights that gate sparse updates, followed by residual update. Unrolling across stages accumulates a sparse vector mapped to the final DOA estimate.
+**Fig. 3 | Encoding is preserved under content variation but classical decoding fails catastrophically.**
+a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (Mann-Whitney U test, Cohen's d = 2.83), showing near-perfect fingerprint discriminability in the absence of content variation (mean within-angle r = 1.000).
+b, Speech stimulus: same analysis reveals that discriminability remains statistically significant (d = 1.95, p < 10⁻⁴) despite content variation (mean within-angle r = 0.907).
+c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11). The speech margin is reduced but positive at all angles, confirming that directional information survives content variation.
+d, OMP per-angle accuracy: classical OMP achieves 83.8% on white noise but only 1.7% on speech (below chance at 2.7%), demonstrating that the decoding bottleneck lies in the solver, not the encoding.
+e, Split-triangle pairwise similarity matrix: lower-left triangle shows white noise (near-identity, clean separation), upper-right shows speech (diffuse but structured manifold). The contrast directly visualizes why OMP succeeds for white noise but fails for speech — the manifold structure exists but requires a geometry-aware solver.
+f, OMP dose-response curves: accuracy as a function of SNR for white-noise signal (blue, starting at 84%) and speech signal with babble noise (orange, starting at 44%, 5-seed mean ± SEM). Both curves decline monotonically with increasing noise, converging near chance at 0 dB, establishing content variation as the causal factor.
+
+## Fig. 4 (4 panels)
+
+**Fig. 4 | Physics-guided deep unrolled network with attention-based gating for sparse DOA inference.**
+a, Architecture: at each unrolling stage the residual is correlated with the static physics dictionary D to form a physical match; a transformer encoder outputs attention weights that gate sparse updates, followed by a residual update.
 b, Training convergence: total and classification loss decrease steadily over 20 epochs; the vertical dashed line marks the best validation epoch.
-c, Clean-condition ablation: strip chart comparing the full model against six ablation variants (individual seeds shown as dots, horizontal bars indicate means), demonstrating that the transformer routing and type-bias components are essential for high accuracy.
+c, Clean-condition ablation: strip chart comparing the full model against ablation variants (individual seeds as dots, horizontal bars indicate means), demonstrating that transformer routing and type-bias components are essential for high accuracy.
 d, Per-angle accuracy profile: 37-point bar chart confirms near-uniform performance across the full angular grid, with below-mean angles highlighted.
-
-## Fig. 4 (5 panels)
-
-**Fig. 4 | Spectral fingerprints are statistically discriminable and repeatable across the angle grid.**
-a, Angle-frequency heatmap of the calibration dictionary H, showing direction-dependent spectral structure across the 37-angle grid.
-b, Violin plot of pairwise Pearson correlations partitioned into within-angle and between-angle pairs, with Mann-Whitney U test significance and Cohen's d effect size annotated.
-c, Per-angle fingerprint repeatability: mean within-angle Pearson r (+/- SEM) for each direction, demonstrating consistent encoding fidelity across the angular range.
-d, Full pairwise similarity matrix (37 x 37): mean Pearson r between all angle pairs computed from trial-level data, revealing the smooth manifold structure of the angle space.
-e, Prediction confidence distribution: histograms of maximum softmax confidence for correct versus incorrect trials, showing well-calibrated high-confidence correct predictions.
 
 ## Fig. 5 (6 panels)
 
