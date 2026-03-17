@@ -35,7 +35,7 @@ Everyday objects transform incident sound into direction-dependent spectral fing
 
 These fingerprints are highly repeatable: independent white-noise recordings at the same angle produce nearly identical spectra (Fig. 1d), with trial-to-trial variability (±1 s.d. shading) far smaller than the between-angle differences. This stability confirms that the spectral fingerprint is a deterministic physical property of the structure rather than a noise artifact (quantitative discriminability analysis in Fig. 3). The directional encoding is frequency-selective: different frequency bands exhibit distinct angular response patterns (Fig. 1e), consistent with the excitation of multiple dispersive structural modes whose relative amplitudes depend on incidence direction (Fig. 2b,c).
 
-![](../figures/fig01_paradigm-shift.jpg)
+![](../figures/fig01_paradigm_data.jpg)
 
 **Fig. 1 | Direction-dependent structural filtering revealed by single-point laser vibrometry.**
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)).
@@ -51,7 +51,7 @@ This low-rank structure has a physical origin. Under small-amplitude dynamics, a
 
 This concentration motivates a compressed inference space. We construct an angle-indexed dictionary \(H\) by stacking empirical prototype fingerprints estimated from white-noise calibration — one column per candidate direction (Fig. 2d; Methods: Dictionary calibration and data splits). Given a new observation, DOA inference reduces to identifying which column of \(H\) best matches the measured fingerprint — a structured sparse inverse problem that we solve with pursuit-based algorithms (Methods: Inference algorithms). Projecting into the dominant SVD subspace focuses inference on the physically significant channels while suppressing noise (Fig. 2a–b; Methods: SVD compression).
 
-![](../figures/fig02_svd-physical-dictionary.jpg)
+![](../figures/fig02_svd_spectrum.jpg)
 
 **Fig. 2 | Physical encoding via spectral–spatial modes and construction of a structured dictionary.**
 a, Singular-value spectrum showing rapid decay, indicating that the measured structural response is dominated by a small set of modes; cumulative energy and DOA capacity curves quantify the information concentration.
@@ -68,7 +68,7 @@ Under white-noise excitation, within-angle Pearson correlation is near-perfect (
 
 Yet classical OMP decoding (\(g = |D^\top y|\), argmax over experts) fails catastrophically: 83.8% accuracy on white noise versus only 1.7% on speech — below the 2.7% chance level (Fig. 3d). The split-triangle pairwise similarity matrix (Fig. 3e) visualizes the underlying cause: white noise produces a near-identity matrix (clean separation amenable to greedy pursuit), whereas speech produces a diffuse but structured manifold that requires a geometry-aware solver. A dose-response analysis across SNR levels (Fig. 3f) confirms that content variation is the causal factor: OMP accuracy declines monotonically from 84% (pure white noise) to 4% (0 dB SNR) for the white-noise signal, and from 44% to 4% for the speech signal with babble noise (5-seed mean ± SEM). Together, these results localize the bottleneck: encoding is robust, but classical pursuit cannot exploit the residual discriminability under content variation. This motivates a physics-guided solver that can learn to navigate the angle manifold (Fig. 4).
 
-![](../figures/fig03_fingerprint-discriminability.jpg)
+![](../figures/fig03_fingerprint_discriminability.jpg)
 
 **Fig. 3 | Encoding is preserved under content variation but classical decoding fails catastrophically.**
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
@@ -87,7 +87,7 @@ Training converges stably within 20 epochs (Fig. 4b). A systematic ablation at c
 
 When the learned weights concentrate on a single entry, the update reduces to classical greedy selection; when they spread across nearby angles, the solver exploits the smooth structure of the angle manifold to regularize its choices. Evidence that this routing mechanism aligns with physical structure — rather than learning an arbitrary pattern — is presented in Fig. 5. Sustained accuracy under noise (Fig. 5a) and sharper selection statistics (Fig. 5b,c,e; Supplementary Figs. 1–3) confirm that the learned routing provides a principled advantage over heuristic selection. This sparse-reconstruction viewpoint parallels classical sparse DOA methods that discretize a propagation manifold and solve for a sparse angular spectrum [@malioutov2005sparse_doa; @baraniuk2007compressive_sensing].
 
-![](../figures/fig04_solver-dynamics.jpg)
+![](../figures/fig04_solver_dynamics.jpg)
 
 **Fig. 4 | Physics-guided deep unrolled network with attention-based gating.**
 a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(A\). A transformer encoder generates routing weights that gate sparse updates \(\Delta x_t\), enforcing residual consistency \(r_{t+1}=r_t-A\Delta x_t\).
@@ -121,7 +121,7 @@ Across five targets with distinct material properties (damping, stiffness) and g
 
 **Mechanism of Universality.** While specific material parameters (stiffness \(D_p\), density \(\rho\)) shift resonance frequencies and mode shapes, the fundamental **linear superposition principle** governs all targets. The per-band SVD spectra (Fig. 6d) show consistent rapid singular-value decay across frequency bands, confirming that the low-rank structure is a shared physical property rather than a frequency-specific artifact. Band-resolved routing accuracy (Fig. 6e) further demonstrates that the encoding mechanism is frequency-distributed: the physics-aware model outperforms OMP in every frequency band. Calibration yields an object-specific dictionary \(H\) that captures each object’s dispersive fingerprints, and retraining learns an inverse mapping that exploits the shared sparse-superposition logic. This supports the interpretation that the solver learns the physical logic encoded by \(H\) rather than memorizing individual trials (Fig. 6b–e).
 
-![](../figures/fig09_cross-material-universality.jpg)
+![](../figures/fig06_universality.jpg)
 
 **Fig. 6 | Universal physical encoding across diverse materials.**
 a, The five target objects spanning a broad spectrum of material and geometric complexity (acrylic plate, paper cup, wooden board, cardboard box, and a laptop shell).
