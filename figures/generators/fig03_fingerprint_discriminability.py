@@ -372,14 +372,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
           f"Speech: {np.nanmean(margin_sp):.3f}")
 
     # --- SNR sweep dose-response (panel f) ---
+    # Line 1: WN signal + speech noise (OMP computed inline)
     snr_base = paths_cfg.get("snr_sweep_base", "")
     snr_levels_cfg = paths_cfg.get("snr_sweep_levels", [])
 
     snr_labels: list[str] = []
-    snr_x_positions: list[float] = []
-    snr_omp_accs: list[float] = []
+    wn_omp_accs: list[float] = []
 
-    print("[fig03] Computing SNR dose-response curve...")
+    print("[fig03] Computing WN SNR dose-response curve...")
     for item in snr_levels_cfg:
         snr_db = str(item["snr_db"])
         suffix = item["dir_suffix"]
@@ -390,13 +390,38 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         Y_snr, lab_snr, _ = _load_white_noise_features(str(ds_path))
         acc = _compute_omp_mean_accuracy(Y_snr, lab_snr, D, n_angles, n_atoms)
         snr_labels.append(snr_db)
-        # Map SNR to x position: Inf -> 7, 30 -> 6, 20 -> 5, ... 0 -> 1
-        snr_omp_accs.append(acc)
-        print(f"[fig03]   SNR={snr_db:>3s} dB: OMP acc = {acc:.3f}")
+        wn_omp_accs.append(acc)
+        print(f"[fig03]   WN SNR={snr_db:>3s}: OMP acc = {acc:.3f}")
 
-    # Append pure speech as rightmost point
-    snr_labels.append("Speech")
-    snr_omp_accs.append(omp_mean_sp)
+    # Line 2: Speech signal + babble noise (from pre-computed 5-seed data)
+    sp_babble_path = data_root / paths_cfg.get("speech_babble_omp_snr", "")
+    sp_omp_accs: list[float] = []
+    sp_omp_sems: list[float] = []
+
+    if sp_babble_path.exists():
+        with open(sp_babble_path) as f:
+            sp_babble_data = json.load(f)
+        snr_key_map = {"Inf": "Inf", "30": "30dB", "20": "20dB",
+                        "15": "15dB", "10": "10dB", "5": "5dB", "0": "0dB"}
+        for lbl in snr_labels:
+            key = snr_key_map.get(lbl, "")
+            if key in sp_babble_data:
+                entry = sp_babble_data[key]
+                sp_omp_accs.append(entry["mean"])
+                n_seeds = entry["n"]
+                sp_omp_sems.append(entry["std"] / np.sqrt(n_seeds) if n_seeds > 1 else 0.0)
+            else:
+                sp_omp_accs.append(np.nan)
+                sp_omp_sems.append(0.0)
+        print("[fig03] Speech+babble OMP loaded:")
+        for lbl, acc in zip(snr_labels, sp_omp_accs):
+            print(f"[fig03]   Sp SNR={lbl:>3s}: OMP acc = {acc:.3f}")
+    else:
+        print(f"[fig03] WARN: speech_babble_omp_snr not found at {sp_babble_path}")
+
+    # X positions: evenly spaced categorical axis
+    n_snr_points = len(snr_labels)
+    snr_x_positions = list(range(n_snr_points))
 
     # X positions: evenly spaced categorical axis
     n_snr_points = len(snr_labels)
@@ -505,43 +530,30 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
               color="black", alpha=0.7)
     add_panel_label(ax_e, "e", x=-0.12, y=1.06)
 
-    # --- Panel (f): SNR dose-response curve ---
+    # --- Panel (f): SNR dose-response curve (two lines) ---
     ax_f = fig.add_subplot(gs[1, 2])
-    # Color gradient: blue (WN) -> red (speech)
-    n_pts = len(snr_x_positions)
-    cmap_dr = plt.cm.RdYlBu_r
-    colors_dr = [cmap_dr(i / max(n_pts - 1, 1)) for i in range(n_pts)]
 
-    ax_f.plot(snr_x_positions, snr_omp_accs, "-", color="gray",
-              linewidth=1.0, alpha=0.5, zorder=1)
-    for xi, yi, ci in zip(snr_x_positions, snr_omp_accs, colors_dr):
-        ax_f.scatter(xi, yi, color=ci, s=25, zorder=2, edgecolors="black",
-                     linewidths=0.3)
+    # Line 1: WN signal (blue)
+    ax_f.plot(snr_x_positions, wn_omp_accs, "-o", markersize=3,
+              linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
+              label=f"WN signal ({wn_omp_accs[0]:.0%})", zorder=2)
+
+    # Line 2: Speech signal + babble (orange, with SEM error bars)
+    if sp_omp_accs:
+        ax_f.errorbar(snr_x_positions, sp_omp_accs, yerr=sp_omp_sems,
+                      fmt="-s", markersize=3, linewidth=1.0, capsize=2, capthick=0.6,
+                      color=SEMANTIC_PALETTE["ablation"],
+                      label=f"Speech signal ({sp_omp_accs[0]:.0%})", zorder=2)
 
     ax_f.set_xticks(snr_x_positions)
-    # X-tick labels: "Inf", "30", ..., "0", "Speech" (add dB to numeric)
-    xtick_labels_f = []
-    for lbl in snr_labels:
-        if lbl == "Inf":
-            xtick_labels_f.append("\u221e")
-        elif lbl == "Speech":
-            xtick_labels_f.append("Speech")
-        else:
-            xtick_labels_f.append(f"{lbl}")
+    xtick_labels_f = ["\u221e" if lbl == "Inf" else lbl for lbl in snr_labels]
     ax_f.set_xticklabels(xtick_labels_f, fontsize=5, rotation=45, ha="right")
-    ax_f.set_xlabel("SNR (dB)  \u2192  content variation", fontsize=6)
+    ax_f.set_xlabel("SNR (dB) \u2192 noise", fontsize=6)
     ax_f.set_ylabel("OMP accuracy", fontsize=6)
-    ax_f.set_title("Dose-response curve", fontsize=6.5)
+    ax_f.set_title("OMP dose-response", fontsize=6.5)
     ax_f.set_ylim(-0.02, 1.05)
     ax_f.grid(axis="y", linestyle="--", alpha=0.3)
-
-    # Annotate endpoints
-    ax_f.annotate(f"{snr_omp_accs[0]:.1%}", (snr_x_positions[0], snr_omp_accs[0]),
-                  textcoords="offset points", xytext=(8, -4), fontsize=5.5,
-                  color=SEMANTIC_PALETTE["physics"])
-    ax_f.annotate(f"{snr_omp_accs[-1]:.1%}", (snr_x_positions[-1], snr_omp_accs[-1]),
-                  textcoords="offset points", xytext=(-20, 8), fontsize=5.5,
-                  color=SEMANTIC_PALETTE["ablation"])
+    ax_f.legend(fontsize=5, frameon=False, loc="upper right")
 
     add_panel_label(ax_f, "f", x=-0.12, y=1.06)
 
@@ -634,23 +646,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel f standalone
     fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_f.add_subplot(111)
-    ax.plot(snr_x_positions, snr_omp_accs, "-", color="gray", linewidth=1.0,
-            alpha=0.5, zorder=1)
-    for xi, yi, ci in zip(snr_x_positions, snr_omp_accs, colors_dr):
-        ax.scatter(xi, yi, color=ci, s=30, zorder=2, edgecolors="black",
-                   linewidths=0.3)
+    ax.plot(snr_x_positions, wn_omp_accs, "-o", markersize=4,
+            linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
+            label=f"WN signal ({wn_omp_accs[0]:.0%})")
+    if sp_omp_accs:
+        ax.errorbar(snr_x_positions, sp_omp_accs, yerr=sp_omp_sems,
+                    fmt="-s", markersize=4, linewidth=1.0, capsize=2, capthick=0.6,
+                    color=SEMANTIC_PALETTE["ablation"],
+                    label=f"Speech signal ({sp_omp_accs[0]:.0%})")
     ax.set_xticks(snr_x_positions)
     ax.set_xticklabels(xtick_labels_f, fontsize=6, rotation=45, ha="right")
-    ax.set_xlabel("SNR (dB)  \u2192  content variation")
+    ax.set_xlabel("SNR (dB) \u2192 noise")
     ax.set_ylabel("OMP accuracy")
     ax.set_ylim(-0.02, 1.05)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.annotate(f"{snr_omp_accs[0]:.1%}", (snr_x_positions[0], snr_omp_accs[0]),
-                textcoords="offset points", xytext=(8, -4), fontsize=6,
-                color=SEMANTIC_PALETTE["physics"])
-    ax.annotate(f"{snr_omp_accs[-1]:.1%}", (snr_x_positions[-1], snr_omp_accs[-1]),
-                textcoords="offset points", xytext=(-20, 8), fontsize=6,
-                color=SEMANTIC_PALETTE["ablation"])
+    ax.legend(fontsize=6, frameon=False, loc="upper right")
     add_panel_label(ax, "f")
     fig_f.subplots_adjust(left=0.08, right=0.95, bottom=0.20, top=0.92)
     all_paths.extend(save_outputs(fig_f, panel_dir / "fig03_panel_f_dose_response"))
@@ -710,5 +720,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     print(f"[fig03] WN: p={p_wn:.2e}, d={d_wn:.2f}, mean_within_r={mean_within_wn:.3f}")
     print(f"[fig03] Speech: p={p_sp:.2e}, d={d_sp:.2f}, mean_within_r={mean_within_sp:.3f}")
     print(f"[fig03] OMP — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
-    print(f"[fig03] Dose-response: {' -> '.join(f'{a:.1%}' for a in snr_omp_accs)}")
+    print(f"[fig03] WN dose-response: {' -> '.join(f'{a:.1%}' for a in wn_omp_accs)}")
+    if sp_omp_accs:
+        print(f"[fig03] Sp dose-response: {' -> '.join(f'{a:.1%}' for a in sp_omp_accs)}")
     return all_paths

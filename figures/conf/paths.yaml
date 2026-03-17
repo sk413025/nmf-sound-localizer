@@ -33,6 +33,9 @@ snr_sweep_levels:
   - {snr_db: "5",   dir_suffix: "snr5dB"}
   - {snr_db: "0",   dir_suffix: "snr0dB"}
 
+# Speech + babble noise OMP SNR sweep (Fig 3f, second line)
+speech_babble_omp_snr: results/speech_babble_omp_snr_sweep.json
+
 # Output directories
 output_dir: figures/output
 paper_figures_dir: paper/figures
