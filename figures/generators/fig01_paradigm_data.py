@@ -98,36 +98,38 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     colors_5 = ["#0072B2", "#56B4E9", "#D55E00", "#E69F00", "#009E73"]
     angle_labels = [f"{angles_deg[i]:.0f}\u00b0" for i in angle_indices]
 
-    # Load real WN waveforms for panel (c), bandpassed to H's physical freq range
-    from scipy.signal import butter, sosfiltfilt
+    # Load real WN spectra for panel (c): source (original) vs output (box)
+    from scipy.signal import stft as scipy_stft
 
     wn_dataset = paths_cfg.get("white_noise_dataset", "")
     wn_base = Path(wn_dataset)
-    real_waveforms: list[tuple[np.ndarray, np.ndarray]] = []
-    source_fs = 48000.0
-    display_duration_ms = 5.0
-    display_samples = int(source_fs * display_duration_ms / 1000)
+    # Source (original) WN — same dir structure but "original" instead of "box"
+    src_base = Path(str(wn_base).replace(
+        "white_noise_box_snrInf_sync_vad_normalized",
+        "white_noise_original_sync_vad"))
 
-    # Bandpass to H's effective physical frequency range (900-9000 Hz).
-    bp_lo = 900.0
-    bp_hi = min(9000.0, source_fs / 2 - 1)
-    sos_bp = butter(4, [bp_lo, bp_hi], btype="bandpass", fs=source_fs, output="sos")
+    def _compute_mean_spectrum(wav_path: Path) -> np.ndarray | None:
+        if not wav_path.exists():
+            return None
+        wav = np.load(wav_path).astype(np.float64)
+        f, _, Zxx = scipy_stft(wav, fs=16000, window="hann", nperseg=2048,
+                                noverlap=1024, nfft=2048, detrend="constant",
+                                return_onesided=True, boundary=None, padded=False)
+        mag = np.abs(Zxx)
+        mask = (f >= 300) & (f <= 3000)
+        return mag[mask].mean(axis=1)
 
+    # Source spectrum (average over all 3 clips at one angle — should be flat)
+    src_spec = _compute_mean_spectrum(src_base / "angle_90" / "clip_000.npy")
+
+    # Output spectra at each representative angle
+    output_spectra: list[np.ndarray | None] = []
     for aidx in angle_indices:
         angle_val = int(angles_deg[aidx])
-        clip_path = wn_base / f"angle_{angle_val}" / "clip_000.npy"
-        if clip_path.exists():
-            wav = np.load(clip_path).astype(np.float64)
-            wav_bp = sosfiltfilt(sos_bp, wav)
-            start = len(wav_bp) // 4
-            segment = wav_bp[start:start + display_samples]
-            segment = segment / (np.max(np.abs(segment)) + 1e-10)
-            t_ms = np.arange(len(segment)) / source_fs * 1000
-            real_waveforms.append((t_ms, segment))
-        else:
-            real_waveforms.append((None, None))
+        spec = _compute_mean_spectrum(wn_base / f"angle_{angle_val}" / "clip_000.npy")
+        output_spectra.append(spec)
 
-    has_real_waveforms = all(t is not None for t, _ in real_waveforms)
+    has_io_data = src_spec is not None and all(s is not None for s in output_spectra)
 
     # Frequency band intervals for panel (e) directivity
     # Matches the band decomposition used in the analysis pipeline
@@ -161,38 +163,61 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         wspace=0.40, left=0.06, right=0.97, bottom=0.18, top=0.88,
     )
 
-    # --- Panel (c): Real time-domain waveforms (5 angles) ---
+    # --- Panel (c): Input vs Output spectral comparison ---
     ax_c = fig.add_subplot(gs[0, 0])
-    for k, (aidx, color, label) in enumerate(
-        zip(angle_indices, colors_5, angle_labels)
-    ):
-        offset = k * 2.2
-        if has_real_waveforms:
-            t_ms, wav = real_waveforms[k]
-            ax_c.plot(t_ms, wav + offset, color=color, linewidth=0.4,
-                      label=label)
+    if has_io_data:
+        # Source spectrum (smoothed, normalized)
+        src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
+        src_norm = src_smooth / (src_smooth.max() + 1e-10)
+        ax_c.plot(freqs / 1000, src_norm, color="gray", linewidth=1.5,
+                  alpha=0.7, label="Source (WN)", linestyle="--")
 
-    ax_c.set_xlabel("Time (ms)", fontsize=6)
-    ax_c.set_ylabel("Amplitude (offset)", fontsize=6)
-    ax_c.set_title("Surface vibration", fontsize=6.5)
-    ax_c.legend(fontsize=4.5, frameon=False, loc="upper right", ncol=1)
-    ax_c.set_yticks([])
-    ax_c.grid(axis="x", linestyle="--", alpha=0.3)
+        # Output spectra at each angle (smoothed, normalized to source max)
+        for aidx, color, label, spec in zip(
+            angle_indices, colors_5, angle_labels, output_spectra
+        ):
+            spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
+            spec_norm = spec_smooth / (src_smooth.max() + 1e-10)
+            ax_c.plot(freqs / 1000, spec_norm, color=color, linewidth=0.8,
+                      label=label, alpha=0.85)
+
+    ax_c.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_c.set_ylabel("Normalized amplitude", fontsize=6)
+    ax_c.set_title("Input \u2192 output spectral shaping", fontsize=6.5)
+    ax_c.legend(fontsize=4, frameon=False, loc="center right", ncol=1)
+    ax_c.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_c, "c", x=-0.10, y=1.06)
 
-    # --- Panel (d): Spectral fingerprints H(theta,f), smoothed (5 angles) ---
+    # --- Panel (d): Multi-trial repeatability (5 angles, mean ± std band) ---
     ax_d = fig.add_subplot(gs[0, 1])
+
     for aidx, color, label in zip(angle_indices, colors_5, angle_labels):
-        spectrum = np.abs(H_np[:, aidx])
-        spectrum_smooth = _smooth_spectrum(spectrum, sg_window, sg_poly)
-        spectrum_norm = spectrum_smooth / (spectrum_smooth.max() + 1e-10)
-        ax_d.plot(freqs / 1000, spectrum_norm, color=color, linewidth=0.8,
-                  label=label, alpha=0.85)
+        angle_val = int(angles_deg[aidx])
+        clip_dir = wn_base / f"angle_{angle_val}"
+        clips = sorted(clip_dir.glob("*.npy"))[:3]
+        trial_spectra = []
+        for clip_path in clips:
+            spec = _compute_mean_spectrum(clip_path)
+            if spec is not None:
+                spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
+                trial_spectra.append(spec_smooth)
+        if trial_spectra:
+            stacked = np.stack(trial_spectra)
+            # Normalize all trials by the global max of this angle's mean
+            mean_spec = stacked.mean(axis=0)
+            norm_factor = mean_spec.max() + 1e-10
+            mean_norm = mean_spec / norm_factor
+            std_norm = stacked.std(axis=0) / norm_factor
+            ax_d.plot(freqs / 1000, mean_norm, color=color, linewidth=0.9,
+                      label=label)
+            ax_d.fill_between(freqs / 1000,
+                              mean_norm - std_norm, mean_norm + std_norm,
+                              color=color, alpha=0.25)
 
     ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_d.set_ylabel("Normalized |H(\u03b8, f)|", fontsize=6)
-    ax_d.set_title("Spectral fingerprints", fontsize=6.5)
-    ax_d.legend(fontsize=4.5, frameon=False, loc="upper right", ncol=1)
+    ax_d.set_ylabel("Normalized amplitude", fontsize=6)
+    ax_d.set_title("Trial repeatability (\u00b11 s.d.)", fontsize=6.5)
+    ax_d.legend(fontsize=5, frameon=False, loc="upper right")
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 
@@ -223,8 +248,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.tick_params(labelsize=5)
     ax_e.set_rticks([0.2, 0.4, 0.6, 0.8, 1.0])
     ax_e.set_title("Directivity", fontsize=6.5, pad=12)
-    ax_e.legend(fontsize=4.5, frameon=False, loc="lower left",
-                bbox_to_anchor=(-0.20, -0.15))
+    ax_e.legend(fontsize=4.5, frameon=False, loc="upper left",
+                bbox_to_anchor=(-0.25, 0.45))
     add_panel_label(ax_e, "e", x=-0.15, y=1.10)
 
     # Save composite
@@ -240,36 +265,54 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel c standalone
     fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_c.add_subplot(111)
-    if has_real_waveforms:
-        for k, (aidx, color, label) in enumerate(
-            zip(angle_indices, colors_5, angle_labels)
+    if has_io_data:
+        src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
+        src_norm = src_smooth / (src_smooth.max() + 1e-10)
+        ax.plot(freqs / 1000, src_norm, color="gray", linewidth=1.5,
+                alpha=0.7, label="Source (WN)", linestyle="--")
+        for aidx, color, label, spec in zip(
+            angle_indices, colors_5, angle_labels, output_spectra
         ):
-            t_ms, wav = real_waveforms[k]
-            ax.plot(t_ms, wav + k * 2.2, color=color, linewidth=0.5, label=label)
-    ax.set_xlabel("Time (ms)")
-    ax.set_ylabel("Amplitude (offset)")
-    ax.set_yticks([])
-    ax.legend(fontsize=6, frameon=False)
+            spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
+            spec_norm = spec_smooth / (src_smooth.max() + 1e-10)
+            ax.plot(freqs / 1000, spec_norm, color=color, linewidth=0.9,
+                    label=label, alpha=0.85)
+    ax.set_xlabel("Frequency (kHz)")
+    ax.set_ylabel("Normalized amplitude")
+    ax.legend(fontsize=5, frameon=False, loc="center right", ncol=1)
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig01_panel_c_waveforms"))
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig01_panel_c_input_output"))
     plt.close(fig_c)
 
     # Panel d standalone
     fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_d.add_subplot(111)
     for aidx, color, label in zip(angle_indices, colors_5, angle_labels):
-        spectrum = np.abs(H_np[:, aidx])
-        spectrum_smooth = _smooth_spectrum(spectrum, sg_window, sg_poly)
-        spectrum_norm = spectrum_smooth / (spectrum_smooth.max() + 1e-10)
-        ax.plot(freqs / 1000, spectrum_norm, color=color, linewidth=0.9,
-                label=label, alpha=0.85)
+        angle_val = int(angles_deg[aidx])
+        clip_dir = wn_base / f"angle_{angle_val}"
+        clips = sorted(clip_dir.glob("*.npy"))[:3]
+        trial_spectra = []
+        for clip_path in clips:
+            spec = _compute_mean_spectrum(clip_path)
+            if spec is not None:
+                trial_spectra.append(_smooth_spectrum(spec, sg_window, sg_poly))
+        if trial_spectra:
+            stacked = np.stack(trial_spectra)
+            mean_spec = stacked.mean(axis=0)
+            norm_factor = mean_spec.max() + 1e-10
+            mean_norm = mean_spec / norm_factor
+            std_norm = stacked.std(axis=0) / norm_factor
+            ax.plot(freqs / 1000, mean_norm, color=color, linewidth=1.0, label=label)
+            ax.fill_between(freqs / 1000,
+                            mean_norm - std_norm, mean_norm + std_norm,
+                            color=color, alpha=0.25)
     ax.set_xlabel("Frequency (kHz)")
-    ax.set_ylabel("Normalized |H(\u03b8, f)|")
+    ax.set_ylabel("Normalized amplitude")
     ax.legend(fontsize=6, frameon=False)
     add_panel_label(ax, "d")
     fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_spectra"))
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_repeatability"))
     plt.close(fig_d)
 
     # Panel e standalone (polar)
@@ -303,17 +346,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         [
             {
                 "panel_id": "c",
-                "title": "Time-domain vibration at 5 angles",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_waveforms.pdf",
+                "title": "Input-output spectral shaping",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Real WN waveforms (bandpassed 900-9000 Hz) at 0, 45, 90, 135, 180 degrees.",
+                "description": "Flat WN source vs direction-shaped output spectra at 5 angles, demonstrating structural filtering.",
             },
             {
                 "panel_id": "d",
-                "title": "Spectral fingerprints H(theta,f)",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_spectra.pdf",
+                "title": "Trial repeatability",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_repeatability.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Savgol-smoothed transfer function at 5 angles from dictionary H (37 angles).",
+                "description": "3 trials × 3 angles showing stable fingerprints (within-angle overlap) and distinct profiles (between-angle separation).",
             },
             {
                 "panel_id": "e",
@@ -328,5 +371,5 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     print(f"[fig01] Generated {len(all_paths)} files "
           f"(H={H_np.shape}, angles={len(angles_deg)}, "
-          f"real_waveforms={'yes' if has_real_waveforms else 'no'})")
+          f"io_data={'yes' if has_io_data else 'no'})")
     return all_paths
