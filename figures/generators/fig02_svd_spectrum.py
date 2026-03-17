@@ -1,11 +1,12 @@
 """Figure 2 — SVD Spectrum + Modal Decomposition + Dictionary + Manifold.
 
-Double-column width (183 mm), 6 panels:
+Double-column width (183 mm), 6 panels in a 2×3 grid:
   Row 1: (a) SVD singular-value spectrum + cumulative energy
-  Row 2: (b-d) Mode 1-3 frequency profiles (left) + polar angular modes (right)
-  Row 3 left: (e) Full dictionary H heatmap (angle x freq)
-  Row 3 centre: (f) Rank-r reconstruction quality (original vs reconstructed)
-  Row 3 right: (g) Inter-angle correlation matrix of H
+         (b) Mode 1-3 frequency profiles (overlaid)
+         (c) Mode 1-3 polar patterns (overlaid)
+  Row 2: (d) Full dictionary H heatmap (angle x freq)
+         (e) Rank-r reconstruction quality (original vs reconstructed)
+         (f) Inter-angle correlation matrix of H
 """
 
 from __future__ import annotations
@@ -71,7 +72,9 @@ def _process_frequency_mode(
     return u_smoothed, freqs
 
 
+
 def _process_angular_mode(v_half: np.ndarray, angles_half: np.ndarray, n_interp: int = 360) -> tuple[np.ndarray, np.ndarray]:
+    """Mirror 0–180° to 0–360°, interpolate and smooth for polar plot."""
     angles_mirror = 360.0 - angles_half
     angles_combined = np.concatenate([angles_half, angles_mirror])
     v_combined = np.concatenate([v_half, v_half])
@@ -147,6 +150,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     n_modes = 3
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    mode_labels = ["Mode 1", "Mode 2", "Mode 3"]
 
     # Process modes
     modes_data = []
@@ -156,21 +160,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         modes_data.append((u_smooth, freqs_smooth, v_norm, angles_smooth))
 
     # -----------------------------------------------------------------------
-    # Build composite figure: 4 rows (expanded from 3)
-    # Row 1: (a) singular values (spans full width)
-    # Row 2: (b-d) 3 x (freq + polar) = 6 columns
-    # Row 3: (e) full H heatmap, (f) reconstruction quality, (g) correlation
+    # Build composite figure: 2×3 grid
+    # Row 1: (a) SVD spectrum, (b) overlaid freq profiles, (c) overlaid polar
+    # Row 2: (d) full H heatmap, (e) reconstruction quality, (f) correlation
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=170)
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=130)
     gs = gridspec.GridSpec(
-        3, 6, figure=fig,
-        height_ratios=[0.9, 0.85, 0.85],
-        hspace=0.45, wspace=0.55,
-        left=0.07, right=0.96, bottom=0.06, top=0.95,
+        2, 3, figure=fig,
+        hspace=0.35, wspace=0.40,
+        left=0.07, right=0.96, bottom=0.07, top=0.95,
     )
 
-    # --- Row 1: Singular values (a) ---
-    ax_sv = fig.add_subplot(gs[0, 1:5])
+    # --- Panel (a): Singular values ---
+    ax_sv = fig.add_subplot(gs[0, 0])
     r_idx = np.arange(1, len(S) + 1)
     line1, = ax_sv.semilogy(r_idx, S, marker="o", markersize=2, label=r"$\sigma_r$", color="C0", linewidth=0.9)
     ax_sv.set_xlabel("Mode index r")
@@ -182,60 +184,55 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_sv2.set_ylabel("Cumulative fraction")
     lines = [line1, line2, line3]
     ax_sv.legend(lines, [l.get_label() for l in lines], loc="center right", fontsize=6, frameon=False)
-    add_panel_label(ax_sv, "a", x=-0.08)
+    add_panel_label(ax_sv, "a", x=-0.15)
 
-    # --- Row 2: Freq + Polar for each mode (b, c, d) ---
-    panel_labels = ["b", "c", "d"]
+    # --- Panel (b): Overlaid frequency profiles ---
+    ax_b = fig.add_subplot(gs[0, 1])
     for r in range(n_modes):
-        u_smooth, freqs_smooth, v_norm, angles_smooth = modes_data[r]
-        color = colors[r]
-
-        # Frequency mode (left sub-column)
-        ax_f = fig.add_subplot(gs[1, r * 2])
+        u_smooth, freqs_smooth, _, _ = modes_data[r]
         u_abs = np.abs(u_smooth)
-        ax_f.plot(freqs_smooth, u_abs, color=color, linewidth=0.9)
-        ax_f.fill_between(freqs_smooth, u_abs, color=color, alpha=0.15)
-        ax_f.set_ylabel(f"$|u_{r+1}(f)|$", labelpad=1)
-        ax_f.tick_params(axis="both", which="major", pad=1, labelsize=5)
-        ax_f.set_xticks([500, 1500, 2500])
-        ax_f.set_xticklabels(["0.5k", "1.5k", "2.5k"])
-        ax_f.grid(True, alpha=0.3, linewidth=0.5)
-        ax_f.set_title(f"Mode {r+1}", fontsize=7)
-        if r == 0:
-            add_panel_label(ax_f, panel_labels[r], x=-0.3)
-        else:
-            add_panel_label(ax_f, panel_labels[r], x=-0.15)
+        ax_b.plot(freqs_smooth, u_abs, color=colors[r], linewidth=0.9, label=mode_labels[r])
+        ax_b.fill_between(freqs_smooth, u_abs, color=colors[r], alpha=0.15)
+    ax_b.set_xlabel("Frequency (kHz)")
+    ax_b.set_ylabel(r"$|u_r(f)|$", labelpad=1)
+    ax_b.tick_params(axis="both", which="major", pad=1, labelsize=5)
+    ax_b.set_xticks([500, 1500, 2500])
+    ax_b.set_xticklabels(["0.5k", "1.5k", "2.5k"])
+    ax_b.grid(True, alpha=0.3, linewidth=0.5)
+    ax_b.legend(fontsize=5.5, frameon=False, loc="upper right")
+    add_panel_label(ax_b, "b", x=-0.15)
 
-        # Angular mode (right sub-column, polar)
-        ax_p = fig.add_subplot(gs[1, r * 2 + 1], projection="polar")
+    # --- Panel (c): Overlaid polar patterns (0–360°, mirrored) ---
+    ax_c = fig.add_subplot(gs[0, 2], projection="polar")
+    for r in range(n_modes):
+        _, _, v_norm, angles_smooth = modes_data[r]
         angles_rad = np.deg2rad(angles_smooth)
-        ax_p.plot(angles_rad, v_norm, color=color, linewidth=0.9)
-        ax_p.fill(angles_rad, v_norm, color=color, alpha=0.15)
-        ax_p.grid(True, alpha=0.3, linewidth=0.5)
-        ax_p.set_yticklabels([])
-        ax_p.set_xticks(np.deg2rad([0, 90, 180, 270]))
-        ax_p.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=6)
-        ax_p.tick_params(pad=-2)
+        ax_c.plot(angles_rad, v_norm, color=colors[r], linewidth=0.9, label=mode_labels[r])
+        ax_c.fill(angles_rad, v_norm, color=colors[r], alpha=0.2)
+    ax_c.grid(True, alpha=0.3, linewidth=0.5)
+    ax_c.set_yticklabels([])
+    ax_c.set_xticks(np.deg2rad([0, 90, 180, 270]))
+    ax_c.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=6)
+    ax_c.tick_params(pad=-2)
+    ax_c.legend(fontsize=5.5, frameon=False, loc="upper right", bbox_to_anchor=(1.25, 1.15))
+    add_panel_label(ax_c, "c", x=-0.15)
 
-    # --- Row 3: (e) Full H heatmap, (f) Reconstruction, (g) Correlation ---
-
-    # Panel (e): Full dictionary H heatmap
-    ax_e = fig.add_subplot(gs[2, 0:2])
-    im_e = ax_e.imshow(
+    # --- Panel (d): Full dictionary H heatmap ---
+    ax_d = fig.add_subplot(gs[1, 0])
+    im_d = ax_d.imshow(
         np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
         extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
     )
-    ax_e.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_title("Full dictionary H", fontsize=6.5)
-    cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.035, pad=0.02)
+    ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
+    ax_d.set_title("Full dictionary H", fontsize=6.5)
+    cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.035, pad=0.02)
     cbar.set_label("Amplitude", fontsize=6)
     cbar.ax.tick_params(labelsize=5)
-    add_panel_label(ax_e, "e", x=-0.15)
+    add_panel_label(ax_d, "d", x=-0.15)
 
-    # Panel (f): Rank-r reconstruction quality
-    ax_f = fig.add_subplot(gs[2, 2:4])
-    # Show original vs reconstructed at a representative angle (90 deg)
+    # --- Panel (e): Rank-r reconstruction quality ---
+    ax_e = fig.add_subplot(gs[1, 1])
     rep_angle_idx = int(np.argmin(np.abs(angles_deg - 90)))
     original = H_log_centered[:, rep_angle_idx]
 
@@ -243,49 +240,49 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
         reconstructed = H_reconstructed[:, rep_angle_idx]
         residual = np.sqrt(np.mean((original - reconstructed) ** 2))
-        ax_f.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
+        ax_e.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
                   alpha=alpha_val, label=f"r={rank} (RMSE={residual:.2f})")
 
-    ax_f.plot(freqs / 1000, original, "-", linewidth=1.0,
+    ax_e.plot(freqs / 1000, original, "-", linewidth=1.0,
               color="black", alpha=0.9, label="Original")
-    ax_f.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_f.set_ylabel("Log amplitude (centered)", fontsize=6)
-    ax_f.set_title(f"Reconstruction @ {angles_deg[rep_angle_idx]:.0f}\u00b0", fontsize=6.5)
-    ax_f.legend(fontsize=5, frameon=False, loc="upper right")
-    ax_f.grid(axis="y", linestyle="--", alpha=0.3)
-    add_panel_label(ax_f, "f", x=-0.15)
+    ax_e.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_e.set_ylabel("Log amplitude (centered)", fontsize=6)
+    ax_e.set_title(f"Reconstruction @ {angles_deg[rep_angle_idx]:.0f}\u00b0", fontsize=6.5)
+    ax_e.legend(fontsize=5, frameon=False, loc="upper right")
+    ax_e.grid(axis="y", linestyle="--", alpha=0.3)
+    add_panel_label(ax_e, "e", x=-0.15)
 
-    # Panel (g): Inter-angle correlation matrix of H
-    ax_g = fig.add_subplot(gs[2, 4:6])
+    # --- Panel (f): Inter-angle correlation matrix ---
+    ax_f = fig.add_subplot(gs[1, 2])
     H_corr = np.corrcoef(np.abs(H_np).T)  # E x E correlation
-    im_g = ax_g.imshow(H_corr, cmap="RdBu_r", aspect="equal",
+    im_f = ax_f.imshow(H_corr, cmap="RdBu_r", aspect="auto",
                         vmin=-1.0, vmax=1.0)
     tick_pos = [0, 9, 18, 27, 36]
     tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos if i < len(angles_deg)]
-    ax_g.set_xticks(tick_pos[:len(tick_lab)])
-    ax_g.set_xticklabels(tick_lab, fontsize=5)
-    ax_g.set_yticks(tick_pos[:len(tick_lab)])
-    ax_g.set_yticklabels(tick_lab, fontsize=5)
-    ax_g.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_g.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_g.set_title("Inter-angle correlation", fontsize=6.5)
-    cbar = plt.colorbar(im_g, ax=ax_g, fraction=0.046, pad=0.04)
+    ax_f.set_xticks(tick_pos[:len(tick_lab)])
+    ax_f.set_xticklabels(tick_lab, fontsize=5)
+    ax_f.set_yticks(tick_pos[:len(tick_lab)])
+    ax_f.set_yticklabels(tick_lab, fontsize=5)
+    ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
+    ax_f.set_ylabel("Angle (\u00b0)", fontsize=6)
+    ax_f.set_title("Inter-angle correlation", fontsize=6.5)
+    cbar = plt.colorbar(im_f, ax=ax_f, fraction=0.046, pad=0.04)
     cbar.set_label("Pearson r", fontsize=6)
     cbar.ax.tick_params(labelsize=6)
-    add_panel_label(ax_g, "g", x=-0.15)
+    add_panel_label(ax_f, "f", x=-0.15)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")
     plt.close(fig)
 
     # -----------------------------------------------------------------------
-    # Split panel assets for new panels (e, f, g)
+    # Split panel assets for standalone panels (d, e, f)
     # -----------------------------------------------------------------------
     panel_dir = output_dir / "fig02_svd_spectrum_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    # Panel e standalone
-    fig_e_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
-    ax = fig_e_s.add_subplot(111)
+    # Panel d standalone
+    fig_d_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_d_s.add_subplot(111)
     im = ax.imshow(
         np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
         extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
@@ -293,14 +290,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Angle (\u00b0)")
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Amplitude", fontsize=6)
-    add_panel_label(ax, "e")
-    fig_e_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_e_s, panel_dir / "fig02_panel_e_full_H"))
-    plt.close(fig_e_s)
+    add_panel_label(ax, "d")
+    fig_d_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_d_s, panel_dir / "fig02_panel_d_full_H"))
+    plt.close(fig_d_s)
 
-    # Panel f standalone
-    fig_f_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
-    ax = fig_f_s.add_subplot(111)
+    # Panel e standalone
+    fig_e_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    ax = fig_e_s.add_subplot(111)
     ax.plot(freqs / 1000, original, "-", linewidth=1.0, color="black", label="Original")
     for rank, ls, alpha_val in [(3, "--", 0.7), (5, "-.", 0.5), (10, ":", 0.4)]:
         H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
@@ -311,14 +308,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Log amplitude (centered)")
     ax.legend(fontsize=5, frameon=False)
-    add_panel_label(ax, "f")
-    fig_f_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_reconstruction"))
-    plt.close(fig_f_s)
+    add_panel_label(ax, "e")
+    fig_e_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_e_s, panel_dir / "fig02_panel_e_reconstruction"))
+    plt.close(fig_e_s)
 
-    # Panel g standalone
-    fig_g_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
-    ax = fig_g_s.add_subplot(111)
+    # Panel f standalone
+    fig_f_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_f_s.add_subplot(111)
     im = ax.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
     ax.set_xticks(tick_pos[:len(tick_lab)])
     ax.set_xticklabels(tick_lab, fontsize=6)
@@ -327,10 +324,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=6)
-    add_panel_label(ax, "g")
-    fig_g_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
-    all_paths.extend(save_outputs(fig_g_s, panel_dir / "fig02_panel_g_correlation"))
-    plt.close(fig_g_s)
+    add_panel_label(ax, "f")
+    fig_f_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
+    all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_correlation"))
+    plt.close(fig_f_s)
 
     # Panel manifest
     manifest = _save_panel_manifest(
@@ -344,30 +341,37 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "description": "SVD spectrum with cumulative energy and DOA capacity.",
             },
             {
-                "panel_id": "b-d",
-                "title": "Modal decomposition (modes 1-3)",
+                "panel_id": "b",
+                "title": "Overlaid frequency profiles (modes 1-3)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Frequency-selective spectra and direction-selective polar patterns for modes 1-3.",
+                "description": "Frequency-selective spectra |u_r(f)| for modes 1-3 overlaid.",
             },
             {
-                "panel_id": "e",
+                "panel_id": "c",
+                "title": "Overlaid polar patterns (modes 1-3)",
+                "asset_path": "figures/output/fig02_svd_spectrum.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Direction-selective polar patterns v_r(theta) for modes 1-3 overlaid.",
+            },
+            {
+                "panel_id": "d",
                 "title": "Full dictionary H heatmap",
-                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_full_H.pdf",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_d_full_H.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Complete angle-frequency heatmap of H (37 angles x 346 freq bins).",
             },
             {
-                "panel_id": "f",
+                "panel_id": "e",
                 "title": "Rank-r reconstruction quality",
-                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_reconstruction.pdf",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_reconstruction.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Original vs reconstructed fingerprint at 90 deg for rank 3, 5, 10.",
             },
             {
-                "panel_id": "g",
+                "panel_id": "f",
                 "title": "Inter-angle correlation matrix",
-                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_g_correlation.pdf",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_correlation.pdf",
                 "provenance_mode": "data_backed",
                 "description": "37x37 Pearson correlation matrix showing smooth angle-manifold structure.",
             },
