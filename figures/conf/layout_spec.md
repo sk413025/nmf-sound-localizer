@@ -143,60 +143,50 @@ Full generated figure (no external assets).
 
 ---
 
-## Figure 3 — Fingerprint Discriminability (5 panels)
+## Figure 3 — WN vs Speech Discriminability (6 panels)
 
-Full generated figure.
+Full generated figure. Compares white noise and speech encoding/decoding.
 
 ```
                          183.0 mm
 ├──────────────────────────────────────────────────────┤
 ┌──────────────────────────────────────────────────────┐ ─┬─
-│  GridSpec 2×6, hspace=0.55, wspace=0.80              │  │
-│  Margins: L=0.06 R=0.97 B=0.08 T=0.92               │  │
-│  Usable: 166.5 × 121.8 mm                           │  │
-│  col_width = 166.5 / (6 + 5×0.80) = 16.7 mm         │  │
-│  row_height = 121.8 / (2 + 0.55) = 47.8 mm          │  │
+│  GridSpec 2×3, hspace=0.35, wspace=0.40              │  │
+│  Margins: L=0.07 R=0.96 B=0.07 T=0.95               │  │
+│  Usable: 162.9 × 114.4 mm                           │  │
+│  col_width = 162.9 / (3 + 2×0.40) = 42.9 mm         │  │
+│  row_height = 114.4 / (2 + 0.35) = 48.7 mm          │  │
 │                                                      │  │
-│  Row 1 — 47.8 mm                                     │  │
+│  Row 1 — 48.7 mm                                     │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(a) Heatmap   │(b) Violin    │(c) Line      │      │  │
-│  │ cols 0:2     │ cols 2:4     │ cols 4:6     │      │  │ 47.8 mm
-│  │ 46.7 × 47.8  │ 46.7 × 47.8  │ 46.7 × 47.8 │      │  │
-│  │              │              │              │      │  │
-│  │ plot: ~40×42 │ plot: ~40×42 │ plot: ~40×42 │      │  │
+│  │(a) WN violin │(b) Sp violin │(c) Repeat.   │      │  │
+│  │ within/betw  │ within/betw  │ WN vs Speech │      │  │
+│  │42.9 × 48.7   │42.9 × 48.7   │42.9 × 48.7  │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
-│  ├── 46.7 mm ──┤13.3├── 46.7 ──┤13.3├── 46.7 ──┤    │  │ 145.0 mm
+│  ├── 42.9 ──┤17.2├── 42.9 ──┤17.2├── 42.9 ──┤       │  │ 130.0 mm
 │                                                      │  │
-│        inter-row gap = 0.55 × 47.8 = 26.3 mm        │  │
+│        inter-row gap = 0.35 × 48.7 = 17.0 mm        │  │
 │                                                      │  │
-│  Row 2 — 47.8 mm                                     │  │
-│  ┌─────────────────────┬─────────────────────┐       │  │
-│  │(d) Pairwise matrix  │(e) OMP accuracy     │       │  │
-│  │ cols 0:3             │ cols 3:6            │       │  │ 47.8 mm
-│  │ 76.7 × 47.8 mm      │ 76.7 × 47.8 mm     │       │  │
-│  │                     │                     │       │  │
-│  │  plot: ~70×42 mm    │  plot: ~70×42 mm    │       │  │
-│  └─────────────────────┴─────────────────────┘       │  │
-│  ├───── 76.7 mm ──────┤13.3├───── 76.7 mm ──────┤    │  │
+│  Row 2 — 48.7 mm                                     │  │
+│  ┌──────────────┬──────────────┬──────────────┐      │  │
+│  │(d) OMP acc   │(e) Pairwise  │(f) Dose-resp │      │  │
+│  │ WN vs Speech │ sim matrix   │ SNR sweep    │      │  │
+│  │42.9 × 48.7   │42.9 × 48.7   │42.9 × 48.7  │      │  │
+│  └──────────────┴──────────────┴──────────────┘      │  │
 └──────────────────────────────────────────────────────┘ ─┴─
 ```
 
 | Parameter       | Value                                |
 |-----------------|--------------------------------------|
 | width_mm        | 183                                  |
-| height_mm       | 145                                  |
-| GridSpec        | 2×6, hspace=0.55, wspace=0.80       |
-| Margins         | L=0.06, R=0.97, B=0.08, T=0.92      |
-| Usable          | 166.5 × 121.8 mm                     |
-| col_width       | **16.7 mm**                          |
-| row_height      | **47.8 mm**                          |
-| Inter-row gap   | 0.55 × 47.8 = **26.3 mm**           |
-| Panel (a) 2cols | 2×16.7 + 0.80×16.7 = **46.7 mm** w  |
-| Panel (b) 2cols | **46.7 mm** w                        |
-| Panel (c) 2cols | **46.7 mm** w                        |
-| Panel (d) 3cols | 3×16.7 + 2×0.80×16.7 = **76.7 mm** w|
-| Panel (e) 3cols | **76.7 mm** w                        |
-| wspace gap      | 0.80 × 16.7 = **13.3 mm**           |
+| height_mm       | **130**                              |
+| GridSpec        | 2×3, hspace=0.35, wspace=0.40       |
+| Margins         | L=0.07, R=0.96, B=0.07, T=0.95      |
+| Usable          | 162.9 × 114.4 mm                     |
+| col_width       | **42.9 mm**                          |
+| row_height      | **48.7 mm**                          |
+| Inter-row gap   | 0.35 × 48.7 = **17.0 mm**           |
+| wspace gap      | 0.40 × 42.9 = **17.2 mm**           |
 
 ---
 

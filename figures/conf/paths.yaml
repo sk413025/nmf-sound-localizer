@@ -19,6 +19,20 @@ confusion_matrix:
   baseline: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
   no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
 
+# White noise dataset (Fig 3 WN vs Speech comparison)
+white_noise_dataset: /Users/sbplab/LDV-data-experiments/snr-synthetic-2025-12/processed-48k/white_noise_box_snrInf_sync_vad_normalized
+
+# SNR sweep datasets for dose-response curve (Fig 3f)
+snr_sweep_base: /Users/sbplab/LDV-data-experiments/snr-synthetic-2025-12/processed-48k
+snr_sweep_levels:
+  - {snr_db: "Inf", dir_suffix: "snrInf"}
+  - {snr_db: "30",  dir_suffix: "snr30dB"}
+  - {snr_db: "20",  dir_suffix: "snr20dB"}
+  - {snr_db: "15",  dir_suffix: "snr15dB"}
+  - {snr_db: "10",  dir_suffix: "snr10dB"}
+  - {snr_db: "5",   dir_suffix: "snr5dB"}
+  - {snr_db: "0",   dir_suffix: "snr0dB"}
+
 # Output directories
 output_dir: figures/output
 paper_figures_dir: paper/figures
