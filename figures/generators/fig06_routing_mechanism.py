@@ -149,7 +149,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.set_ylabel("Freq (Hz)", fontsize=5); ax.set_xlabel("Atom", fontsize=5)
         ax.set_yticks(y_ticks); ax.tick_params(labelsize=5)
         cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label(cbar_label, fontsize=5); cbar.ax.tick_params(labelsize=4)
+        cbar.set_label(cbar_label, fontsize=5); cbar.ax.tick_params(labelsize=5)
         cbar.outline.set_linewidth(0.5)
 
     fig.text(0.06, 0.94, "a", fontsize=10, fontweight="bold", va="top")
@@ -179,7 +179,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.axvline(true_angle, color="lime", linewidth=1.0, linestyle="--", alpha=0.8)
         ax.scatter([true_angle], [y_top * 1.05], marker="*", color="lime", s=30, edgecolors="black", linewidths=0.5, zorder=4)
 
-        ax.set_title(band_cfg["label"], fontsize=5, fontweight="bold")
+        ax.set_title(band_cfg["label"], fontsize=6, fontweight="bold")
         ax.set_xlabel("Angle", fontsize=5)
         if col == 0:
             ax.set_ylabel("Score", fontsize=5)
@@ -187,7 +187,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.set_xticks(tick_vals); ax.set_xticklabels(tick_strs, fontsize=4, rotation=45)
         ax.tick_params(axis="y", labelsize=4)
         if col == 0:
-            ax.legend(frameon=False, loc="upper right", fontsize=4, handlelength=1.0)
+            ax.legend(frameon=False, loc="upper right", fontsize=6, handlelength=1.0)
 
     fig.text(0.06, 0.47, "b", fontsize=10, fontweight="bold", va="top")
 

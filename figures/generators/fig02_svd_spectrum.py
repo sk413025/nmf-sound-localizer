@@ -165,7 +165,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     gs = gridspec.GridSpec(
         3, 6, figure=fig,
         height_ratios=[0.9, 0.85, 0.85],
-        hspace=0.42, wspace=0.45,
+        hspace=0.45, wspace=0.55,
         left=0.07, right=0.96, bottom=0.06, top=0.95,
     )
 
@@ -214,7 +214,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_p.grid(True, alpha=0.3, linewidth=0.5)
         ax_p.set_yticklabels([])
         ax_p.set_xticks(np.deg2rad([0, 90, 180, 270]))
-        ax_p.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=5)
+        ax_p.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=6)
         ax_p.tick_params(pad=-2)
 
     # --- Row 3: (e) Full H heatmap, (f) Reconstruction, (g) Correlation ---
@@ -228,8 +228,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.set_xlabel("Frequency (kHz)", fontsize=6)
     ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_e.set_title("Full dictionary H", fontsize=6.5)
-    cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.04)
-    cbar.set_label("Amplitude", fontsize=5)
+    cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.035, pad=0.02)
+    cbar.set_label("Amplitude", fontsize=6)
     cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_e, "e", x=-0.15)
 
@@ -251,7 +251,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_f.set_xlabel("Frequency (kHz)", fontsize=6)
     ax_f.set_ylabel("Log amplitude (centered)", fontsize=6)
     ax_f.set_title(f"Reconstruction @ {angles_deg[rep_angle_idx]:.0f}\u00b0", fontsize=6.5)
-    ax_f.legend(fontsize=4, frameon=False, loc="lower left")
+    ax_f.legend(fontsize=5, frameon=False, loc="upper right")
     ax_f.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_f, "f", x=-0.15)
 
@@ -270,8 +270,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_g.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_g.set_title("Inter-angle correlation", fontsize=6.5)
     cbar = plt.colorbar(im_g, ax=ax_g, fraction=0.046, pad=0.04)
-    cbar.set_label("Pearson r", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("Pearson r", fontsize=6)
+    cbar.ax.tick_params(labelsize=6)
     add_panel_label(ax_g, "g", x=-0.15)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")

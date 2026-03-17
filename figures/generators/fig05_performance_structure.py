@@ -105,7 +105,7 @@ def _plot_snr_panel(ax, snr_curves: dict, variants: list[tuple]) -> None:
     ax.set_ylabel("Accuracy", fontsize=6)
     ax.set_ylim(0, 1.05)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=4.5, frameon=False, loc="lower left")
+    ax.legend(fontsize=6, frameon=False, loc="lower left")
 
 
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
@@ -183,11 +183,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (2 rows x 3 columns)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=160)
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=185)
     gs = gridspec.GridSpec(
         2, 3, figure=fig,
         height_ratios=[1.0, 1.0],
-        hspace=0.35, wspace=0.35,
+        hspace=0.50, wspace=0.42,
         left=0.07, right=0.96, bottom=0.06, top=0.94,
     )
 
@@ -232,7 +232,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     cbar = plt.colorbar(im2, ax=ax_b2, fraction=0.046, pad=0.04)
     cbar.set_label("Corr", fontsize=5)
     cbar.ax.tick_params(labelsize=5)
-    ax_b2.text(0.5, -0.25, f"Pearson r = {pearson_r:.3f}",
+    ax_b2.text(0.5, -0.35, f"Pearson r = {pearson_r:.3f}",
                transform=ax_b2.transAxes, fontsize=5.5, ha="center",
                style="italic")
 
@@ -278,7 +278,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (d): Confusion matrices (baseline vs no-transformer)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
-            1, 2, subplot_spec=gs[1, 0], wspace=0.25,
+            1, 2, subplot_spec=gs[1, 0], wspace=0.40,
         )
 
         # Normalize confusion matrices to row-probabilities
@@ -297,9 +297,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                      interpolation="nearest", vmin=0, vmax=1)
         ax_d1.set_title("Baseline", fontsize=5.5, fontweight="bold")
         ax_d1.set_xticks(tick_positions)
-        ax_d1.set_xticklabels(tick_labels, fontsize=4)
+        ax_d1.set_xticklabels(tick_labels, fontsize=5.5)
         ax_d1.set_yticks(tick_positions)
-        ax_d1.set_yticklabels(tick_labels, fontsize=4)
+        ax_d1.set_yticklabels(tick_labels, fontsize=5.5)
         ax_d1.set_xlabel("Predicted", fontsize=5)
         ax_d1.set_ylabel("True", fontsize=5)
         add_panel_label(ax_d1, "d", x=-0.25, y=1.12)
@@ -309,13 +309,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                               interpolation="nearest", vmin=0, vmax=1)
         ax_d2.set_title("No transformer", fontsize=5.5, fontweight="bold")
         ax_d2.set_xticks(tick_positions)
-        ax_d2.set_xticklabels(tick_labels, fontsize=4)
+        ax_d2.set_xticklabels(tick_labels, fontsize=5.5)
         ax_d2.set_yticks(tick_positions)
-        ax_d2.set_yticklabels(tick_labels, fontsize=4)
+        ax_d2.set_yticklabels(tick_labels, fontsize=5.5)
         ax_d2.set_xlabel("Predicted", fontsize=5)
         cbar = plt.colorbar(im_d2, ax=ax_d2, fraction=0.046, pad=0.04)
-        cbar.set_label("P(pred|true)", fontsize=4)
-        cbar.ax.tick_params(labelsize=4)
+        cbar.set_label("P(pred|true)", fontsize=5.5)
+        cbar.ax.tick_params(labelsize=5.5)
     else:
         ax_d_placeholder = fig.add_subplot(gs[1, 0])
         ax_d_placeholder.text(0.5, 0.5, "Confusion matrix\ndata unavailable",
@@ -327,7 +327,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (e): Angle-specific routing at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 1], hspace=0.35,
+            2, 1, subplot_spec=gs[1, 1], hspace=0.50,
         )
 
         representative_angles = [55.0, 100.0]
@@ -359,10 +359,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             ax_e.set_xlabel("Expert index", fontsize=5)
             ax_e.set_ylabel("P(predict)", fontsize=5)
             ax_e.set_xticks(tick_positions)
-            ax_e.set_xticklabels(tick_labels, fontsize=4)
-            ax_e.tick_params(axis="y", labelsize=4)
+            ax_e.set_xticklabels(tick_labels, fontsize=5.5)
+            ax_e.tick_params(axis="y", labelsize=5.5)
             if row_idx == 0:
-                ax_e.legend(fontsize=4, frameon=False, loc="upper right")
+                ax_e.legend(fontsize=6, frameon=False, loc="upper right")
                 add_panel_label(ax_e, "e", x=-0.20, y=1.12)
     else:
         ax_e_placeholder = fig.add_subplot(gs[1, 1])
@@ -387,14 +387,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_f.set_ylabel("P(correct)", fontsize=6)
         ax_f.set_title("Per-angle accuracy", fontsize=6.5)
         ax_f.set_ylim(0, 1.05)
-        ax_f.legend(fontsize=4.5, frameon=False, loc="lower left")
+        ax_f.legend(fontsize=6, frameon=False, loc="lower left")
         ax_f.grid(axis="y", linestyle="--", alpha=0.3)
 
         # Annotate improvement count
         n_improved = np.sum(baseline_per_angle > no_trans_per_angle)
         ax_f.text(0.95, 0.05, f"{n_improved}/{len(angles)} improved",
                   transform=ax_f.transAxes, ha="right", va="bottom",
-                  fontsize=5, style="italic")
+                  fontsize=6, style="italic")
         add_panel_label(ax_f, "f", x=-0.15, y=1.06)
     else:
         ax_f_placeholder = fig.add_subplot(gs[1, 2])

@@ -135,7 +135,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.set_xlabel("Mode index r", fontsize=6)
     ax_d.set_ylabel(r"$\sigma_r / \sigma_1$ (normalized)", fontsize=6)
     ax_d.set_title("SVD decay per band", fontsize=6.5)
-    ax_d.legend(fontsize=4, frameon=False, loc="upper right", ncol=2)
+    ax_d.legend(fontsize=6, frameon=False, loc="upper right", ncol=2)
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.15, y=1.06)
 
@@ -208,7 +208,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_e.set_ylabel("Diagonal accuracy", fontsize=6)
         ax_e.set_title("Band-resolved routing", fontsize=6.5)
         ax_e.set_ylim(0, 1.05)
-        ax_e.legend(fontsize=5, frameon=False, loc="upper right")
+        ax_e.legend(fontsize=6, frameon=False, loc="upper right")
         ax_e.grid(axis="y", linestyle="--", alpha=0.3)
     else:
         ax_e.text(0.5, 0.5, "Routing data\nunavailable",

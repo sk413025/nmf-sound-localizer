@@ -114,15 +114,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b.set_xlabel("Epoch", fontsize=6)
     ax_b.set_ylabel("Loss", fontsize=6)
     ax_b.set_title("Training convergence", fontsize=6.5)
-    ax_b.legend(fontsize=4.5, frameon=False, loc="upper right")
+    ax_b.legend(fontsize=6, frameon=False, loc="upper right")
     ax_b.grid(axis="y", linestyle="--", alpha=0.3)
 
     # Secondary axis for accuracy
     ax_b2 = ax_b.twinx()
     ax_b2.plot(epochs, teacher_acc, "-^", markersize=2, linewidth=0.9,
                color=SEMANTIC_PALETTE["physics"], alpha=0.7)
-    ax_b2.set_ylabel("Subset accuracy", fontsize=5, color=SEMANTIC_PALETTE["physics"])
-    ax_b2.tick_params(axis="y", labelcolor=SEMANTIC_PALETTE["physics"], labelsize=5)
+    ax_b2.set_ylabel("Subset accuracy", fontsize=6, color=SEMANTIC_PALETTE["physics"])
+    ax_b2.tick_params(axis="y", labelcolor=SEMANTIC_PALETTE["physics"], labelsize=6)
     add_panel_label(ax_b, "b", x=-0.15, y=1.06)
 
     # --- Panel (c): Clean-condition ablation strip chart ---
@@ -148,7 +148,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                   color=color, linewidth=1.5, zorder=4)
 
     ax_c.set_yticks(y_positions)
-    ax_c.set_yticklabels(y_labels, fontsize=5)
+    ax_c.set_yticklabels(y_labels, fontsize=6)
     ax_c.set_xlabel("Accuracy (clean)", fontsize=6)
     ax_c.set_title("Ablation comparison", fontsize=6.5)
     ax_c.set_xlim(0, 1.05)
@@ -173,7 +173,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.set_ylabel("Accuracy", fontsize=6)
     ax_d.set_title("Per-angle accuracy", fontsize=6.5)
     ax_d.set_ylim(0, 1.05)
-    ax_d.legend(fontsize=4.5, frameon=False, loc="lower left")
+    ax_d.legend(fontsize=6, frameon=False, loc="lower left")
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 

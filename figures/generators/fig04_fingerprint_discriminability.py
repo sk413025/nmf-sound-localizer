@@ -233,11 +233,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (2 rows: top 3 panels, bottom 2 panels)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=135)
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=145)
     gs = gridspec.GridSpec(
         2, 6, figure=fig,
         height_ratios=[1.0, 1.0],
-        hspace=0.40, wspace=0.50,
+        hspace=0.55, wspace=0.80,
         left=0.06, right=0.97, bottom=0.08, top=0.92,
     )
 
@@ -252,9 +252,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_a.set_xlabel("Frequency (kHz)", fontsize=6)
     ax_a.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_a.set_title("Direction-dependent fingerprints", fontsize=6.5)
-    cbar = plt.colorbar(im, ax=ax_a, fraction=0.046, pad=0.04)
-    cbar.set_label("Amplitude", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar = plt.colorbar(im, ax=ax_a, fraction=0.03, pad=0.01)
+    cbar.ax.tick_params(labelsize=4)
     add_panel_label(ax_a, "a", x=-0.12, y=1.06)
 
     # Panel (b): Within vs between violin + stats
@@ -283,7 +282,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
               lw=0.8, c="black")
     stars = _p_to_stars(p_value)
     ax_b.text(0.5, bar_y + 0.005, f"{stars}\nd = {d_value:.2f}",
-              ha="center", va="bottom", fontsize=5, linespacing=1.2)
+              ha="center", va="bottom", fontsize=6.5, linespacing=1.2)
 
     # Panel (c): Per-angle repeatability
     ax_c = fig.add_subplot(gs[0, 4:6])
@@ -301,7 +300,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.set_ylabel("Mean within-angle r", fontsize=6)
     ax_c.set_title("Fingerprint repeatability", fontsize=6.5)
     ax_c.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_c.legend(fontsize=4.5, frameon=False, loc="lower right")
+    ax_c.legend(fontsize=6, frameon=False, loc="lower right")
     add_panel_label(ax_c, "c", x=-0.12, y=1.06)
 
     # --- Row 2 ---
@@ -319,9 +318,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_d.set_title("Trial-level pairwise similarity", fontsize=6.5)
-    cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.046, pad=0.04)
-    cbar.set_label("Mean Pearson r", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.03, pad=0.01)
+    cbar.ax.tick_params(labelsize=4)
     add_panel_label(ax_d, "d", x=-0.10, y=1.06)
 
     # Panel (e): Prediction confidence histogram
