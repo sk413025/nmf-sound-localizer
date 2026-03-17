@@ -184,8 +184,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         if col == 0:
             ax.set_ylabel("Score", fontsize=5)
         ax.set_xlim(angles[0], angles[-1]); ax.set_ylim(0, y_top * 1.15)
-        ax.set_xticks(tick_vals); ax.set_xticklabels(tick_strs, fontsize=4, rotation=45)
-        ax.tick_params(axis="y", labelsize=4)
+        ax.set_xticks(tick_vals); ax.set_xticklabels(tick_strs, fontsize=5, rotation=45)
+        ax.tick_params(axis="y", labelsize=5)
         if col == 0:
             ax.legend(frameon=False, loc="upper right", fontsize=6, handlelength=1.0)
 

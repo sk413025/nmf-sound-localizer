@@ -253,7 +253,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_a.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_a.set_title("Direction-dependent fingerprints", fontsize=6.5)
     cbar = plt.colorbar(im, ax=ax_a, fraction=0.03, pad=0.01)
-    cbar.ax.tick_params(labelsize=4)
+    cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_a, "a", x=-0.12, y=1.06)
 
     # Panel (b): Within vs between violin + stats
@@ -319,7 +319,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_d.set_title("Trial-level pairwise similarity", fontsize=6.5)
     cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.03, pad=0.01)
-    cbar.ax.tick_params(labelsize=4)
+    cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_d, "d", x=-0.10, y=1.06)
 
     # Panel (e): Prediction confidence histogram

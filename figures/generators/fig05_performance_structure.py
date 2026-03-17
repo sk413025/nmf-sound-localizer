@@ -183,12 +183,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (2 rows x 3 columns)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=185)
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=170)
     gs = gridspec.GridSpec(
         2, 3, figure=fig,
         height_ratios=[1.0, 1.0],
-        hspace=0.50, wspace=0.42,
-        left=0.07, right=0.96, bottom=0.06, top=0.94,
+        hspace=0.30, wspace=0.42,
+        left=0.07, right=0.96, bottom=0.05, top=0.96,
     )
 
     # --- Row 1 ---
@@ -201,7 +201,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Panel (b): H_corr vs QK_corr
     gs_b = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=gs[0, 1], hspace=0.30,
+        2, 1, subplot_spec=gs[0, 1], hspace=0.20,
     )
 
     ax_b1 = fig.add_subplot(gs_b[0, 0])
@@ -238,7 +238,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Panel (c): Selection probability
     gs_c = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=gs[0, 2], hspace=0.30,
+        2, 1, subplot_spec=gs[0, 2], hspace=0.20,
     )
     vmax_unified = max(physics_prob.max(), qk_prob.max())
 
@@ -278,7 +278,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (d): Confusion matrices (baseline vs no-transformer)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
-            1, 2, subplot_spec=gs[1, 0], wspace=0.40,
+            1, 2, subplot_spec=gs[1, 0], wspace=0.30,
         )
 
         # Normalize confusion matrices to row-probabilities
@@ -327,7 +327,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (e): Angle-specific routing at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 1], hspace=0.50,
+            2, 1, subplot_spec=gs[1, 1], hspace=0.35,
         )
 
         representative_angles = [55.0, 100.0]
