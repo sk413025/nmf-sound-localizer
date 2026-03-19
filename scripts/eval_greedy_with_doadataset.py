@@ -17,6 +17,10 @@ import torch
 
 from doa_rl.data import DoADataset, create_dataloader
 from doa_rl.omp.soft_omp import TrainableRoutedSoftOMP, build_dictionary
+try:
+    from scripts.ldv_cv import build_outer_cv_split, compute_dataset_fingerprint, print_outer_cv_split
+except ImportError:
+    from ldv_cv import build_outer_cv_split, compute_dataset_fingerprint, print_outer_cv_split
 
 
 def main():
@@ -26,6 +30,9 @@ def main():
     parser.add_argument('--dataset_root', type=str, required=True, help='Root directory of LDV dataset')
     parser.add_argument('--h_path', type=str, required=True, help='Path to H matrix')
     parser.add_argument('--w_path', type=str, required=True, help='Path to W matrix')
+    parser.add_argument('--n_folds', type=int, default=5, help='Number of deterministic outer-CV folds (default: 5)')
+    parser.add_argument('--test_fold', type=int, default=0, help='Held-out outer-test fold id (default: 0)')
+    parser.add_argument('--val_fold', type=int, default=None, help='Validation fold id; defaults to (test_fold + 1) mod n_folds')
     
     # STFT parameters (must match b573aa6)
     parser.add_argument('--freq_min', type=float, default=300.0, help='Min frequency (Hz)')
@@ -39,7 +46,7 @@ def main():
     parser.add_argument('--L', type=int, default=2, help='Top-L atoms per expert')
     
     # Evaluation
-    parser.add_argument('--n_eval', type=int, default=200, help='Max samples to evaluate')
+    parser.add_argument('--n_eval', type=int, default=-1, help='Max held-out test samples to evaluate (-1 = all)')
     
     # Output
     parser.add_argument('--device', type=str, default='cpu', help='Device (cpu/mps/cuda)')
@@ -50,7 +57,9 @@ def main():
     # Setup output directory
     if args.out_dir is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.out_dir = f"results/greedy_doadataset_{timestamp}"
+        args.out_dir = f"results/greedy_doadataset_outercv_{timestamp}"
+    os.makedirs(args.out_dir, exist_ok=True)
+    args.out_dir = os.path.join(args.out_dir, f"fold_{args.test_fold}")
     os.makedirs(args.out_dir, exist_ok=True)
     
     device = torch.device(args.device)
@@ -106,6 +115,25 @@ def main():
     )
     dataloader = create_dataloader(dataset, batch_size=1, shuffle=False)
     print(f"  Dataset size: {len(dataset)} samples")
+    dataset_fingerprint = compute_dataset_fingerprint(args.dataset_root)
+    print(f"  Dataset fingerprint (MD5): {dataset_fingerprint}")
+
+    metadata = []
+    for batch in dataloader:
+        metadata.append({
+            'angle_deg': float(batch['angle_deg'][0].item()),
+            'path': batch['path'][0],
+        })
+    train_mask, val_mask, test_mask, split_info = build_outer_cv_split(
+        metadata,
+        n_folds=args.n_folds,
+        test_fold=args.test_fold,
+        val_fold=args.val_fold,
+    )
+    print_outer_cv_split(split_info)
+    with open(os.path.join(args.out_dir, 'split_summary.json'), 'w') as f:
+        json.dump(split_info, f, indent=2)
+    dataloader = create_dataloader(dataset, batch_size=1, shuffle=False)
     
     # Create model (no training needed for greedy)
     print(f"\nCreating TrainableRoutedSoftOMP...")
@@ -123,17 +151,20 @@ def main():
     
     # Evaluation loop
     print(f"\n{'='*60}")
-    print(f"Evaluating with greedy selection (train_mode=False)...")
+    print(f"Evaluating held-out outer-test fold with greedy selection (train_mode=False)...")
     print(f"{'='*60}")
     
     n_samples = 0
     n_correct = 0
     predictions = []
     ground_truths = []
+    max_eval = split_info['test_samples'] if args.n_eval < 0 else min(args.n_eval, split_info['test_samples'])
     
     with torch.no_grad():
-        for batch in dataloader:
-            if n_samples >= args.n_eval:
+        for sample_idx, batch in enumerate(dataloader):
+            if not bool(test_mask[sample_idx]):
+                continue
+            if n_samples >= max_eval:
                 break
             
             Y = batch['Y'][0].to(device)  # (F, N) - STFT frames
@@ -163,16 +194,16 @@ def main():
             ground_truths.append(gt_idx)
             
             if n_samples % 20 == 0:
-                print(f"  Processed {n_samples}/{min(args.n_eval, len(dataset))} samples, acc={n_correct/n_samples*100:.1f}%")
+                print(f"  Processed {n_samples}/{max_eval} held-out test samples, acc={n_correct/n_samples*100:.1f}%")
     
     # Compute overall accuracy
     overall_acc = n_correct / n_samples * 100
     
     print(f"\n{'='*60}")
-    print(f"Evaluation Results:")
+    print(f"Held-Out Fold Results:")
     print(f"{'='*60}")
+    print(f"Test fold: {split_info['test_fold']}  Validation fold: {split_info['val_fold']}")
     print(f"Overall Accuracy: {overall_acc:.1f}% ({n_correct}/{n_samples})")
-    print(f"Expected (b573aa6): 83.8%")
     
     # Per-angle accuracy
     per_angle_acc = []
@@ -203,6 +234,7 @@ def main():
         'per_angle_accuracy': per_angle_acc,
         'predictions': predictions,
         'ground_truths': ground_truths,
+        'split_info': split_info,
     }
     
     results_path = os.path.join(args.out_dir, 'results.json')
@@ -216,6 +248,8 @@ def main():
         'dimensions': {'F': F, 'E': E, 'M': M, 'P': E*M},
         'coherence': {'mu_max': mu_max, 'mu_mean': mu_mean},
         'dataset_size': len(dataset),
+        'dataset_fingerprint': dataset_fingerprint,
+        'split_info': split_info,
     }
     
     meta_path = os.path.join(args.out_dir, 'metadata.json')
@@ -223,10 +257,10 @@ def main():
         json.dump(metadata, f, indent=2)
     
     print(f"{'='*60}")
-    print(f"SUCCESS: Greedy evaluation complete!")
-    if abs(overall_acc - 83.8) < 5:
+    print(f"SUCCESS: Greedy held-out fold evaluation complete! ({args.out_dir})")
+    if False:
         print(f"✅ Accuracy matches b573aa6 baseline (~83.8%)")
-    else:
+    elif False:
         print(f"❌ Accuracy differs from b573aa6 baseline (expected ~83.8%)")
     print(f"{'='*60}")
 

@@ -13,7 +13,7 @@ Migration from commit 4d9bb81 (synthetic VQ codebook) to real LDV data (commits 
 """
 from __future__ import annotations
 
-import math, os, json, hashlib
+import math, os, json
 import numpy as np
 import torch
 import torch.nn as nn
@@ -28,6 +28,10 @@ from scipy import signal as scipy_signal
 
 # Import DoADataset for proper STFT processing (matches b573aa6)
 from doa_rl.data import DoADataset, create_dataloader
+try:
+    from scripts.ldv_cv import build_outer_cv_split, compute_dataset_fingerprint, print_outer_cv_split
+except ImportError:
+    from ldv_cv import build_outer_cv_split, compute_dataset_fingerprint, print_outer_cv_split
 
 torch.manual_seed(42)
 np.random.seed(42)
@@ -1399,7 +1403,13 @@ def main():
                         help='Path to W matrix (commit b573aa6)')
     parser.add_argument('--dataset_root', type=str,
                         default='/Users/sbplab/jiawei/LDV-data-processed/white_noise_box_data_no_edge_sync_vad',
-                        help='Path to LDV samples (37 angles × 3 clips)')
+                        help='Path to LDV samples (37 angles x 3 clips)')
+    parser.add_argument('--n_folds', type=int, default=5,
+                        help='Number of deterministic outer-CV folds (default: 5)')
+    parser.add_argument('--test_fold', type=int, default=0,
+                        help='Held-out outer-test fold id (default: 0)')
+    parser.add_argument('--val_fold', type=int, default=None,
+                        help='Validation fold id; defaults to (test_fold + 1) mod n_folds')
     
     # Preprocessing
     parser.add_argument('--n_atoms', type=int, default=8,
@@ -1519,7 +1529,9 @@ def main():
     # Setup output directory
     if args.out_dir is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.out_dir = f"results/omp_transformer_ldv_{timestamp}"
+        args.out_dir = f"results/omp_transformer_ldv_outercv_{timestamp}"
+    os.makedirs(args.out_dir, exist_ok=True)
+    args.out_dir = os.path.join(args.out_dir, f"fold_{args.test_fold}")
     os.makedirs(args.out_dir, exist_ok=True)
     
     print("=" * 80)
@@ -1566,30 +1578,31 @@ def main():
     
     # Compute dataset fingerprint
     fingerprint = compute_dataset_fingerprint(args.dataset_root)
+    print(f"Dataset fingerprint (MD5): {fingerprint}")
 
-    # Deterministic train/validation split based on clip id (per-angle, stratified)
-    train_mask, val_mask, split_stats = split_train_val_by_clip_id(metadata, val_mod=5)
+    # Deterministic outer-fold train/validation/test split based on clip id.
+    train_mask, val_mask, test_mask, split_info = build_outer_cv_split(
+        metadata,
+        n_folds=args.n_folds,
+        test_fold=args.test_fold,
+        val_fold=args.val_fold,
+    )
+    print_outer_cv_split(split_info)
     Y_train = Y_samples[train_mask]
     labels_train = labels[train_mask]
     Y_val = Y_samples[val_mask]
     labels_val = labels[val_mask]
+    Y_test = Y_samples[test_mask]
+    labels_test = labels[test_mask]
 
     # Persist split information into diagnostics for reproducibility
-    split_info = {
-        "event": "train_val_split",
-        "total_samples": len(metadata),
-        "train_samples": int(train_mask.sum().item()),
-        "val_samples": int(val_mask.sum().item()),
-        "per_angle": {
-            int(angle): {"train": stats["train"], "val": stats["val"]}
-            for angle, stats in split_stats.items()
-        },
-    }
     try:
         with open(os.path.join(args.out_dir, "diagnostics.jsonl"), "a") as f:
             f.write(json.dumps(split_info) + "\n")
     except Exception:
         pass
+    with open(os.path.join(args.out_dir, "split_summary.json"), "w") as f:
+        json.dump(split_info, f, indent=2)
     
     # ========================================================================
     # STEP 2: Build model
@@ -1788,17 +1801,21 @@ def main():
     checkpoint = torch.load(os.path.join(args.out_dir, 'model_best.pth'), weights_only=False)
     model.load_state_dict(checkpoint['model_state_dict'])
     
-    final_metrics = evaluate(model, D, Y_val, labels_val, idx2angle, device=args.device)
+    val_metrics = evaluate(model, D, Y_val, labels_val, idx2angle, device=args.device)
+    final_metrics = evaluate(model, D, Y_test, labels_test, idx2angle, device=args.device)
     
-    print(f"\nFinal Results (Best model from epoch {best_epoch}):")
-    print(f"  Overall accuracy: {final_metrics['accuracy']:.3f} ({final_metrics['accuracy']*100:.1f}%)")
-    print(f"  Baseline (commit b573aa6): 0.838 (83.8%)")
+    print(
+        f"\nFinal Held-Out Test Results "
+        f"(best validation epoch {best_epoch}, test_fold={split_info['test_fold']}):"
+    )
+    print(f"  Validation accuracy: {val_metrics['accuracy']:.3f} ({val_metrics['accuracy']*100:.1f}%)")
+    print(f"  Test accuracy:       {final_metrics['accuracy']:.3f} ({final_metrics['accuracy']*100:.1f}%)")
     
     # Per-angle breakdown
-    print("\nPer-angle accuracy:")
+    print("\nPer-angle test accuracy:")
     for e, acc in enumerate(final_metrics['per_angle_accuracy']):
         angle_deg = int(angles[e].item()) if hasattr(angles[e], 'item') else int(angles[e])
-        n_samples = (labels == e).sum().item()
+        n_samples = (labels_test == e).sum().item()
         print(f"  Angle {angle_deg:3d}°: {acc:.3f} ({acc*100:5.1f}%) - {n_samples} samples")
     
     # Identify problematic angles (from b573aa6: 15°, 35°, 50°, 70°, 105°, 120°)
@@ -1849,7 +1866,6 @@ def main():
     # Per-angle accuracy
     axes[1, 1].bar(range(len(angles)), final_metrics['per_angle_accuracy'])
     axes[1, 1].axhline(y=final_metrics['accuracy'], color='r', linestyle='--', label=f'Overall: {final_metrics["accuracy"]:.3f}')
-    axes[1, 1].axhline(y=0.838, color='g', linestyle='--', label='Baseline: 0.838')
     axes[1, 1].set_title('Per-Angle Accuracy')
     axes[1, 1].set_xlabel('Angle Index')
     axes[1, 1].set_ylabel('Accuracy')
@@ -1876,10 +1892,14 @@ def main():
         confusion_matrix=final_metrics['confusion_matrix'],
         per_angle_accuracy=final_metrics['per_angle_accuracy'],
         predictions=final_metrics['predictions'],
-        labels=labels_val.cpu().numpy(),
+        labels=labels_test.cpu().numpy(),
         angles=angles,
         best_epoch=best_epoch,
-        best_accuracy=best_accuracy
+        best_accuracy=best_accuracy,
+        best_val_accuracy=val_metrics['accuracy'],
+        test_accuracy=final_metrics['accuracy'],
+        val_confusion_matrix=val_metrics['confusion_matrix'],
+        val_per_angle_accuracy=val_metrics['per_angle_accuracy'],
     )
     
     # Save code state
@@ -1889,7 +1909,8 @@ def main():
         'script': __file__,
         'timestamp': datetime.now().isoformat(),
         'args': vars(args),
-        'dataset_fingerprint': fingerprint
+        'dataset_fingerprint': fingerprint,
+        'split_info': split_info,
     }
     
     with open(os.path.join(args.out_dir, 'code_state.json'), 'w') as f:
