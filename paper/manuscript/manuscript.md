@@ -171,25 +171,38 @@ To quantify encoding quality independently of the solver (Fig. 3), white-noise a
 
 For the dose-response analysis (Fig. 3f), noise levels are swept in two conditions: (i) white-noise signal with additive speech-spectrum noise, and (ii) speech signal with additive babble noise, each evaluated over 5 independent seeds (mean ± SEM).
 
-### Inference algorithms
-Given the projected feature \(z\) and dictionary \(A\), DOA inference is posed as sparse recovery (Eq. 2). In the OMP baseline, the dictionary atom most correlated with the current residual is iteratively selected, added to the support set, and its contribution removed by least-squares refit and residual subtraction. After \(K=2\) stages, the predicted direction is \(\hat\theta=\theta_{\arg\max_e |x[e]|}\). The full recursive definition is given in Supplementary Methods 2.
+### Inference algorithms and network architecture
+Given the projected feature \(z\) and dictionary \(A\), DOA inference is posed as sparse recovery (Eq. 2). In the analytical OMP baseline, the dictionary atom most correlated with the current residual is iteratively selected, added to the support set, and its contribution removed by least-squares refit and residual subtraction. After \(K=2\) stages, the predicted direction is \(\hat\theta=\theta_{\arg\max_e |x[e]|}\); the full recursive definition is given in Supplementary Methods 2.
 
-The physics-guided solver unrolls \(K\) pursuit stages into a differentiable network. At each stage \(t\), the physical match score is computed as:
+The physics-guided solver unrolls the same \(K\)-stage pursuit into a differentiable network with learned attention-based routing, as follows. The residual is initialized as \(r_0 = z\) and the sparse coefficient vector as \(x_0 = 0\). At each stage \(t = 1,\dots,K\), the physical match score between the residual and every dictionary atom is computed as:
 
 $$g_t = A^\top r_t, \qquad (4)$$
 
-where \(r_t\) is the current residual. Rather than selecting the single best-matching atom, a transformer encoder computes query and key projections of \(g_t\) and produces soft routing weights via scaled dot-product attention:
+where \(r_t\) is the current residual. Rather than selecting the single best-matching atom as in OMP, a transformer encoder (embedding dimension \(d_\mathrm{model}=128\), 2 attention heads, 1 encoder layer) computes query and key projections of \(g_t\) and produces soft routing weights via scaled dot-product attention:
 
-$$w_t = \mathrm{softmax}\!\left(\frac{Q_t\,K_t^\top}{\sqrt{d_k}}\right) g_t, \qquad (6)$$
+$$w_t = \mathrm{softmax}\!\left(\frac{Q_t\,K_t^\top}{\sqrt{d_k}}\right) g_t, \qquad (5)$$
 
-where \(Q_t\) and \(K_t\) are learned linear projections and \(d_k\) is the key dimension. The routing weights gate a sparse update \(\Delta x_t\), and the residual is updated by dictionary-consistent subtraction:
+where \(Q_t = g_t W^Q\) and \(K_t = g_t W^K\) are learned linear projections and \(d_k\) is the key dimension. The routing weights modulate the match scores to produce a gated sparse update:
 
-$$r_{t+1} = r_t - A\,\Delta x_t. \qquad (7)$$
+$$\Delta x_t = w_t \odot g_t, \qquad (6)$$
 
-Expert-level logits are obtained by L2 aggregation of atom-level scores, and the predicted direction is \(\hat\theta=\arg\max_e p[e]\). The routing weights can be inspected as mechanistic evidence of manifold-aligned selection (Fig. 5b,c). The sparse formulation relies on three assumptions: (1) over each analysis window the target behaves as a linear time-invariant system; (2) \(Hx\) is a sparse prototype approximation in standardized feature space, not a literal power-additivity law; (3) SVD projection preserves angle-indexed structure while suppressing noise. The Kirchhoff–Love plate operator and Green’s function derivation are given in Supplementary Methods 4.
+where \(\odot\) denotes element-wise multiplication. The sparse coefficient vector is accumulated as \(x_{t+1} = x_t + \eta\,\Delta x_t\) and the residual is corrected by dictionary-consistent subtraction:
 
-### Neural network architecture and training
-The unrolled network uses \(K=2\) pursuit stages with a transformer router consisting of an embedding dimension \(d_\mathrm{model}=128\), 2 attention heads, and 1 encoder layer. The network is trained to minimize a composite loss combining three terms: a cross-entropy classification loss that ensures correct direction assignment, a dictionary-consistent reconstruction loss that enforces agreement with the physical dictionary, and a monotonicity regularizer that encourages sparse coefficients to concentrate on the selected direction (weights \(\alpha=1.0\), \(\beta=0.2\), \(\gamma=0.5\)). Optimization is performed with Adam (learning rate \(10^{-3}\), weight decay \(10^{-4}\)) for 20 epochs with batch size 32. The full attention routing equations are given in Supplementary Methods 3.
+$$r_{t+1} = r_t - A\,\Delta x_t, \qquad (7)$$
+
+ensuring that each stage explains a portion of the observation through the physical dictionary. After the final stage, expert-level logits are obtained by L2 aggregation of atom-level coefficients within each angular direction, yielding a probability vector:
+
+$$p[e] = \frac{\lVert x_K^{(e)} \rVert_2}{\sum_{e’} \lVert x_K^{(e’)} \rVert_2}, \qquad (8)$$
+
+where \(x_K^{(e)}\) denotes the sub-vector of \(x_K\) corresponding to direction \(e\). The predicted DOA is \(\hat\theta = \theta_{\arg\max_e\, p[e]}\). The routing weights \(w_t\) can be directly inspected as mechanistic evidence of manifold-aligned selection (Fig. 5b,c); Supplementary Methods 3 provides the complete per-stage equations.
+
+The network is trained to minimize a composite loss combining three terms: a cross-entropy classification loss \(\mathcal{L}_\mathrm{cls}\) over the direction probabilities \(p[e]\), a reconstruction loss \(\mathcal{L}_\mathrm{rec} = \lVert r_K \rVert_2^2\) that penalizes unexplained residual energy and thereby enforces consistency with the physical dictionary, and a monotonicity regularizer \(\mathcal{L}_\mathrm{mono}\) that encourages sparse coefficients to concentrate on the selected direction across successive stages:
+
+$$\mathcal{L} = \alpha\,\mathcal{L}_\mathrm{cls} + \beta\,\mathcal{L}_\mathrm{rec} + \gamma\,\mathcal{L}_\mathrm{mono}, \qquad (9)$$
+
+with \(\alpha=1.0\), \(\beta=0.2\), \(\gamma=0.5\). Optimization is performed with Adam (learning rate \(10^{-3}\), weight decay \(10^{-4}\)) for 20 epochs with batch size 32.
+
+The sparse formulation relies on three assumptions: (1) over each analysis window the target behaves as a linear time-invariant system, so direction-dependent responses superpose in the frequency domain; (2) \(Hx\) is a sparse prototype approximation in standardized feature space, not a literal power-additivity law; (3) SVD projection preserves angle-indexed structure while suppressing noise. The representative Kirchhoff–Love plate operator and Green’s function derivation are given in Supplementary Methods 4.
 
 ### Ablations and noise robustness
 Three ablation variants are tested, each with all other components held fixed: *no-transformer* replaces the transformer router with an identity bypass, *fixed heuristic* replaces learned routing with OMP-based selection, and *dense routing* uses uniform weighting over all experts. Each variant uses the same dictionary construction and evaluation protocol.
