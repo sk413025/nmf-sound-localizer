@@ -21,6 +21,33 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
 
+### Nature Communications prose discipline
+
+These rules prevent recurring style errors when AI agents or collaborators draft or revise manuscript text. They are derived from comparative analysis of published Nature Communications articles and codified here to avoid repeated manual correction.
+
+**Mathematics presentation:**
+
+- Core equations in Results must use display math with numbered equations, not inline math only. If a formula defines the paper's central physical model or inference problem, it gets a display equation.
+- Every symbol must be defined with an inline "where" clause at its first appearance in Results. Do not assume the reader will read Methods first.
+
+**Sentence and punctuation discipline:**
+
+- Do not use bold emphasis in Introduction, Results, or Discussion body text. Bold is reserved for figure legend titles and Methods sub-section headings.
+- Discussion must not contain bold lead-in pseudo-subheadings. Nature Communications does not permit subheadings in the Discussion.
+- Limit parenthetical asides to short references or brief qualifiers. If the explanatory text inside parentheses exceeds roughly 10 words, rewrite it as a proper clause or a separate sentence.
+- Limit em dashes to at most one per paragraph. Prefer comma-delimited appositives or separate sentences over em-dash insertions.
+- Limit numerical values to at most 3 per sentence. Additional values should be directed to figure panels.
+
+**Verb and tone discipline:**
+
+- Vary the verbs in contribution statements. Do not use "We show" more than once in the same paragraph; alternate with demonstrate, establish, further show, reveal.
+- Avoid dramatic qualifiers in section titles and body text. Do not use catastrophically, strikingly, crucially, remarkably. Use notably, severely, or importantly as neutral alternatives when emphasis is needed.
+
+**Cross-section consistency:**
+
+- Every reference cited in the Discussion must have a corresponding mention or contextual anchor in the Introduction. Do not introduce new literature threads in the Discussion that lack any Introduction setup.
+- Do not include a standalone Road map paragraph. Integrate paper-organization cues into the contribution statement.
+
 ## Required outputs
 
 - manuscript text consistent with the branch writing style
