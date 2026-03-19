@@ -145,61 +145,62 @@ The central open frontier is whether invariances of the angle–frequency manifo
 
 ## Methods
 
-### Software and hardware
+### Experimental setup
 All processing and learning were implemented in Python (PyTorch) and trained on Apple Silicon (MPS). Unless otherwise stated, random seeds were fixed to 42 (NumPy and PyTorch).
 
-### Experimental setup
 Experiments were conducted in a controlled acoustic environment with a single loudspeaker source at a radius of {USER_TBD: source-to-object distance} m. We define \(\theta=0^\circ\) as {USER_TBD: 0° reference definition} and increase \(\theta\) in {USER_TBD: CW/CCW convention} direction. The source angle was varied on a 37-point grid covering 0–180° with step 5°. We measured out-of-plane surface velocity using a {USER_TBD: LDV model name} laser Doppler vibrometer (LDV). All downstream processing uses waveforms resampled to 16,000 Hz. The LDV spot location was {USER_TBD: physical spot location} and the object mounting/boundary condition was {USER_TBD: mounting method}. Each clip duration is ~3 s.
 
-We used two excitation regimes: (i) broadband white-noise playback for dictionary calibration and fingerprint repeatability diagnostics, and (ii) speech recordings for end-to-end DOA decoding and robustness experiments. The four frequency bands used in Fig. 1e (0.3–0.5, 0.5–1, 1–2, 2–3 kHz) tile the analysis band and correspond to physically distinct dispersive regimes (sub-wavelength bending, transition, and plate-wave dominated).
-
-**Object selection.** We selected five objects (acrylic plate, paper cup, wooden board, cardboard box, and a laptop shell) to span a range of Q-factors (damping) and structural complexity, testing the limits of the encoding mechanism.
+We used two excitation regimes: (i) broadband white-noise playback for dictionary calibration and fingerprint repeatability diagnostics, and (ii) speech recordings for end-to-end DOA decoding and robustness experiments. The four frequency bands used in Fig. 1e (0.3–0.5, 0.5–1, 1–2, 2–3 kHz) tile the analysis band and correspond to physically distinct dispersive regimes (sub-wavelength bending, transition, and plate-wave dominated). We selected five objects (acrylic plate, paper cup, wooden board, cardboard box, and a laptop shell) to span a range of Q-factors (damping) and structural complexity, testing the limits of the encoding mechanism.
 
 ### Signal processing pipeline
 
 **Notation.** We denote the out-of-plane displacement field by \(W(x,y,\omega)\) and the laser-measured velocity by \(V(x_L,y_L,\omega)=i\omega W(x_L,y_L,\omega)\). For incidence direction \(\theta\), the complex single-point response is \(Y(\omega;\theta)=V(x_L,y_L,\omega)\).
 
-**Feature extraction.** For a clip at direction \(\theta\), the LDV provides a velocity waveform \(v[n]\) (m/s). We compute an STFT (Hann window, 2,048 samples, hop 512) and form a time-averaged power spectrum \(\widehat S(\omega_k;\theta)=\frac{1}{T}\sum_t |V[k,t]|^2\), restricted to [300, 3,000] Hz (346 bins). Because the observed fingerprints are magnitude statistics, we summarize each clip by a log-power feature vector \(y[k]=\log_{10}(\widehat S+\epsilon)\) and standardize per frequency using white-noise calibration statistics to give \(\tilde y[k]\) (Supplementary Methods 1).
+**Feature extraction.** For a clip at direction \(\theta\), the LDV provides a velocity waveform \(v[n]\) (m/s). We compute a short-time Fourier transform (Hann window, 2,048 samples, hop 512) and form a time-averaged power spectrum:
 
-**Dictionary construction and SVD compression.** Per-angle prototypes are averaged across calibration trials to form columns \(h_e\), yielding the dictionary \(H=[h_1,\dots,h_{37}]\in\mathbb{R}^{F\times E}\). We compute \(H=U\Sigma V^\top\); the rank-\(r=3\) subspace captures 91.9% of singular-value energy (Fig. 2a). For projected inference, observations and dictionary are mapped into this subspace: \(z=U_r^\top \tilde y\) and \(A=U_r^\top H\).
+$$\widehat{S}(\omega_k;\theta)=\frac{1}{T}\sum_{t} |V[k,t]|^2, \qquad (3)$$
+
+restricted to [300, 3,000] Hz (\(F =\) 346 bins). Because the observed fingerprints are magnitude statistics, we summarize each clip by a log-power feature vector \(y[k]=\log_{10}(\widehat{S}+\epsilon)\) and standardize per frequency using white-noise calibration statistics to give \(\tilde{y}[k]\) (Supplementary Methods 1).
+
+**Dictionary construction and SVD compression.** Per-angle prototypes are averaged across calibration trials to form columns \(h_e\), yielding the dictionary \(H=[h_1,\dots,h_{37}]\in\mathbb{R}^{F\times E}\). We compute \(H=U\Sigma V^\top\); the rank-\(r=3\) subspace captures 91.9% of singular-value energy (Fig. 2a). For projected inference, observations and dictionary are mapped into this subspace: \(z=U_r^\top \tilde{y}\) and \(A=U_r^\top H\).
 
 ### Calibration protocol and data splits
-The angle dictionary \(H\) is constructed exclusively from white-noise calibration recordings. For each target, we acquire white-noise clips organized by angle and use all 3 clips per angle for calibration (no held-out white-noise evaluation subset). The transfer function \(H(\theta,f)\) was estimated as the geometric-mean magnitude ratio of the LDV response to the source signal in the STFT domain, averaged over calibration trials. Calibration clips are never used for training or evaluation of the DOA decoder.
+The angle dictionary \(H\) is constructed exclusively from white-noise calibration recordings. For each target, we acquire white-noise clips organized by angle and use all 3 clips per angle for calibration. The transfer function \(H(\theta,f)\) was estimated as the geometric-mean magnitude ratio of the LDV response to the source signal in the STFT domain, averaged over calibration trials. Calibration clips are never used for training or evaluation of the DOA decoder.
 
-For speech decoding (Figs. 4–5), we train the decoder on a speech dataset split into train/validation sets stratified by angle using clip index mod 5 = 0 for validation (7,696 / 1,924 clips; validation = test). All speech results use the fixed \(H\) estimated from white-noise calibration only.
+For speech decoding (Figs. 4–5), we train the decoder on a speech dataset split into train/validation sets stratified by angle, with every fifth clip reserved for validation (7,696 training / 1,924 validation clips). Because dataset size precludes a separate held-out test set, the validation set also serves as the evaluation set; this limitation is discussed in the main text. All speech results use the fixed \(H\) estimated from white-noise calibration only.
 
 For cross-material experiments (Fig. 6), we repeat the full pipeline per target: acquire object-specific white-noise calibration data, estimate that object’s \(H\), and retrain a separate model. Universality is assessed at the level of a shared physical mechanism and inference recipe, not by reusing weights across objects.
 
 ### Discriminability and dose-response analysis
-To quantify encoding quality independently of the solver (Fig. 3), we compare white-noise and speech stimuli using the same dictionary \(H\). For each stimulus type, we compute within-angle Pearson correlation (mean pairwise \(\rho\) among clips at the same angle) and between-angle correlation (mean pairwise \(\rho\) across different angles). The discriminability margin is defined as within \(\bar r\) − between \(\bar r\); a positive margin indicates that the encoding preserves directional information (Fig. 3c). Effect sizes are reported as Cohen’s \(d\) and significance via Mann–Whitney \(U\) test. Formal definitions are given in Supplementary Methods 5.
+To quantify encoding quality independently of the solver (Fig. 3), we compare white-noise and speech stimuli using the same dictionary \(H\). For each stimulus type, we compute within-angle Pearson correlation (mean pairwise \(\rho\) among clips at the same angle) and between-angle correlation (mean pairwise \(\rho\) across different angles). The discriminability margin is defined as within \(\bar{r}\) − between \(\bar{r}\); a positive margin indicates that the encoding preserves directional information (Fig. 3c). Effect sizes are reported as Cohen’s \(d\) and significance via Mann–Whitney \(U\) test. Formal definitions are given in Supplementary Methods 5.
 
 For the dose-response analysis (Fig. 3f), we sweep noise levels in two conditions: (i) white-noise signal with additive speech-spectrum noise, and (ii) speech signal with additive babble noise, each evaluated over 5 independent seeds (mean ± SEM).
 
 ### Inference algorithms
-Given the projected feature \(z\) and dictionary \(A\), DOA inference is posed as sparse recovery: \(z\approx Ax\) under \(\lVert x\rVert_0\le K\), with coefficient vector \(x\) and pursuit depth \(K\).
+Given the projected feature \(z\) and dictionary \(A\), DOA inference is posed as sparse recovery (Eq. 2). OMP iteratively selects the dictionary atom most correlated with the current residual, adds it to the support set, refits coefficients by least squares, and subtracts the explained signal. After \(K=2\) stages, the predicted direction is \(\hat\theta=\theta_{\arg\max_e |x[e]|}\). The full recursive definition is given in Supplementary Methods 2.
 
-**OMP baseline.** OMP iteratively selects the dictionary atom most correlated with the current residual, adds it to the support set, refits coefficients by least squares, and subtracts the explained signal. After \(K=2\) stages, the predicted direction is \(\hat\theta=\theta_{\arg\max_e |x[e]|}\). The full recursive definition is given in Supplementary Methods 2.
+The physics-guided solver unrolls \(K\) pursuit stages into a differentiable network, replacing the discrete selection rule with learnable attention-based routing while retaining residual-consistent updates (Fig. 4; Supplementary Methods 3). The routing weights can be inspected as mechanistic evidence (Fig. 5b,c). The sparse formulation relies on three assumptions: (1) over each analysis window the target behaves as a linear time-invariant system, so direction-dependent responses superpose in the frequency domain; (2) after the log-power transform, \(Hx\) is a sparse prototype approximation in standardized feature space, not a literal power-additivity law; (3) SVD projection preserves angle-indexed structure while suppressing noise. The Kirchhoff–Love plate operator and Green’s function derivation are given in Supplementary Methods 4.
 
-**Physics-guided unrolling.** We unroll \(K\) pursuit stages into a differentiable network, replacing the discrete selection rule with learnable attention-based routing while retaining residual-consistent updates (Fig. 4; Supplementary Methods 3). The routing weights can be inspected as mechanistic evidence (Fig. 5b,c).
+### Neural network architecture and training
+The unrolled network uses \(K=2\) pursuit stages with a transformer router (embedding dimension \(d_\mathrm{model}=128\), 2 attention heads, 1 encoder layer). At each stage, the residual is correlated with the dictionary to produce a physical match score:
 
-**Modeling assumptions.** The sparse formulation relies on three assumptions: (1) over each analysis window the target behaves as a linear time-invariant system, so direction-dependent responses superpose in the frequency domain; (2) after the log-power transform, \(Hx\) is a sparse prototype approximation in standardized feature space, not a literal power-additivity law; (3) SVD projection preserves angle-indexed structure while suppressing noise. The representative Kirchhoff–Love plate operator and Green’s function derivation are given in Supplementary Methods 4.
+$$g_t = A^\top r_t, \qquad (4)$$
 
-### Neural network architecture
-The unrolled network uses \(K=2\) pursuit stages with a transformer router (embedding dimension \(d_\mathrm{model}=128\), \(h=2\) attention heads, 1 encoder layer). At each stage, the residual is correlated with the dictionary (\(g_t=A^\top r_t\)), the router produces soft routing weights \(w_t\) via scaled dot-product attention, and the stage update uses residual-consistent subtraction \(r_{t+1}=r_t-A\Delta x_t\). Expert-level logits are obtained by L2 aggregation of atom-level scores, and the predicted direction is \(\hat\theta=\arg\max_e p[e]\). The attention routing equations are given in Supplementary Methods 3.
+where \(r_t\) is the current residual. The router produces soft routing weights \(w_t\) via scaled dot-product attention, and the stage update uses residual-consistent subtraction:
 
-### Training
-We optimized cross-entropy classification + reconstruction + monotonicity loss (\(\alpha=1.0\), \(\beta=0.2\), \(\gamma=0.5\)) with Adam (learning rate \(10^{-3}\), weight decay \(10^{-4}\)) for 20 epochs, batch size 32, random seed 42.
+$$r_{t+1} = r_t - A\,\Delta x_t. \qquad (5)$$
+
+Expert-level logits are obtained by L2 aggregation of atom-level scores, and the predicted direction is \(\hat\theta=\arg\max_e p[e]\). The attention routing equations are given in Supplementary Methods 3.
+
+The network is trained to minimize a composite loss combining cross-entropy classification, dictionary-consistent reconstruction, and a monotonicity regularizer (weights \(\alpha=1.0\), \(\beta=0.2\), \(\gamma=0.5\)). The classification term ensures correct direction assignment, the reconstruction term enforces consistency with the physical dictionary, and the monotonicity term encourages the sparse coefficients to concentrate on the selected direction. We use Adam optimization (learning rate \(10^{-3}\), weight decay \(10^{-4}\)) for 20 epochs with batch size 32.
 
 ### Ablations and noise robustness
-**Ablations (Fig. 5a).** Three ablations with all other components held fixed: **No-transformer** replaces the transformer router with identity bypass (encoder_identity=True). **Fixed heuristic** replaces learned routing with OMP-based routing (g_teacher). **Dense routing** uses uniform routing over all experts. Each ablation uses the same dictionary construction and evaluation protocol.
+We test three ablation variants, each with all other components held fixed: *no-transformer* replaces the transformer router with an identity bypass, *fixed heuristic* replaces learned routing with OMP-based selection, and *dense routing* uses uniform weighting over all experts. Each ablation uses the same dictionary construction and evaluation protocol.
 
-**Noise robustness.** We add zero-mean white noise at SNR levels ∞, 30, 20, 15, 10, 5, 0 dB in the time domain, using the same feature extraction and dictionary for each level.
+For noise robustness evaluation, we add zero-mean white noise at SNR levels ∞, 30, 20, 15, 10, 5, 0 dB in the time domain, using the same feature extraction and dictionary for each level.
 
-### Evaluation metrics
-We report top-1 accuracy on the discrete angle grid. Angular error is the minimal angular difference \(\Delta(\hat\theta,\theta)=\min_{k\in\mathbb{Z}}|\hat\theta-\theta+360k|\), and RMSE = \(\sqrt{\frac{1}{N}\sum_i \Delta(\hat\theta_i,\theta_i)^2}\).
-
-### Statistics
-We report mean ± s.d. over \(n=5\) independent replicates (independent random seeds). When statistical hypothesis tests are used, the test, sidedness, and multiple-comparison correction are stated alongside the corresponding figure/panel. Effect sizes are reported as Cohen’s \(d\); distribution comparisons use the two-sided Mann–Whitney \(U\) test.
+### Evaluation metrics and statistics
+We report top-1 accuracy on the discrete angle grid. Angular error is the minimal angular difference \(\Delta(\hat\theta,\theta)=\min_{k\in\mathbb{Z}}|\hat\theta-\theta+360k|\), and RMSE = \(\sqrt{\frac{1}{N}\sum_i \Delta(\hat\theta_i,\theta_i)^2}\). All results are reported as mean ± s.d. over \(n=5\) independent replicates with independent random seeds. When statistical hypothesis tests are used, the test, sidedness, and multiple-comparison correction are stated alongside the corresponding figure panel. Effect sizes are reported as Cohen’s \(d\); distribution comparisons use the two-sided Mann–Whitney \(U\) test.
 
 ## Data availability
 Data and processed features used in this study are available at {USER_TBD: data repository URL}.
