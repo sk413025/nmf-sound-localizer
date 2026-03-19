@@ -8,8 +8,8 @@ Canonical source: `paper/manuscript/manuscript.md`. This file must stay in sync 
 **Fig. 1 | Direction-dependent structural filtering revealed by single-point laser vibrometry.**
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)).
 b, Conceptual schematic: the structure acts as a direction-dependent spectral filter H(θ, f) — a flat broadband source is transformed into angle-specific spectral fingerprints.
-c, Input-to-output spectral shaping: the flat white-noise source spectrum (grey dashed) is reshaped differently at five representative angles (0°, 45°, 90°, 135°, 180°), directly demonstrating the filtering predicted in (b).
-d, Trial repeatability: mean spectra (±1 s.d. shading) from three independent white-noise recordings at each of five angles. The near-invisible error bands confirm that the spectral fingerprint is a stable structural property; the clear between-angle separation confirms direction-dependent encoding.
+c, Input-to-output spectral shaping: the flat white-noise source spectrum (grey dashed) is reshaped differently at five representative angles (0°, 45°, 90°, 135°, 180°).
+d, Trial repeatability: mean spectra (±1 s.d. shading) from three independent white-noise recordings at each of five angles.
 e, Frequency-dependent directivity: polar plot of normalized |H(θ, f)| across 0°–180° for four frequency bands (0.3–0.5, 0.5–1, 1–2, 2–3 kHz), showing that each band carries a distinct directional response pattern.
 
 ## Fig. 2 (6 panels)
@@ -28,7 +28,7 @@ f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of th
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11); speech margin is reduced but positive at all angles.
-d, OMP per-angle accuracy: white noise 83.8% versus speech 1.7%, revealing a catastrophic decoding gap despite preserved encoding.
+d, OMP per-angle accuracy: white noise 83.8% versus speech 1.7%.
 e, Split-triangle pairwise similarity matrix: lower-left = white noise (near-identity), upper-right = speech (diffuse but structured manifold).
 f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue) and speech signal with babble noise (orange, 5-seed mean ± SEM), both declining monotonically with increasing noise.
 
@@ -44,9 +44,9 @@ d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform perf
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
 a, SNR degradation curves for the physics-aware model, no-transformer ablation, and analytical OMP baseline, showing graceful degradation under additive noise.
-b, Correlation structure of the physical dictionary \(H\) (top) and the learned QK attention map (bottom), revealing that the router recovers the geometry of the angle manifold — the core interpretability finding.
+b, Correlation structure of the physical dictionary \(H\) (top) and the learned QK attention map (bottom).
 c, All-angle selection-probability heatmaps comparing OMP (diffuse off-diagonal mass, top) with the physics-aware model (sharply diagonal, bottom), demonstrating that structure-aligned routing concentrates selection on the correct direction.
-d, Confusion matrices for the baseline model (left) and no-transformer ablation (right), normalized to row-wise probabilities. The baseline exhibits a sharply diagonal pattern, confirming that the learned router assigns the correct direction for nearly all angles.
+d, Confusion matrices for the baseline model (left) and no-transformer ablation (right), normalized to row-wise probabilities.
 e, Angle-specific routing distributions at two representative directions (55° and 100°): the baseline concentrates mass on the correct atom and suppresses off-axis peaks, whereas the no-transformer ablation shows broader, less decisive distributions.
 f, Per-angle diagonal concentration: P(correct) for each of the 37 angles comparing the baseline with the no-transformer ablation, quantifying the fraction of angles that benefit from transformer routing. The shaded region highlights the per-angle improvement.
 
