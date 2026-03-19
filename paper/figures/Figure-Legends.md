@@ -24,7 +24,7 @@ f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of th
 
 ## Fig. 3 (6 panels)
 
-**Fig. 3 | Encoding is preserved under content variation but classical decoding fails catastrophically.**
+**Fig. 3 | Encoding survives content variation but classical decoding fails.**
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11); speech margin is reduced but positive at all angles.
