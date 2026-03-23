@@ -6,6 +6,8 @@ Canonical sources:
 
 - `paper/manuscript/manuscript.md`
 - `paper/figures/Figure-Legends.md`
+- `figures/conf/model_display_crosswalk.yaml` for generator-facing display labels in Figs. 4-6
+- `figures/conf/fig04_fig06_panel_name_provenance.md` for panel-level code, data, and commit backtraces in Figs. 4-6
 - `figures/conf/layout_spec.md` for intended panel sizes in mm
 - `figures/output/*.layout.json` for realized geometry checks
 
@@ -39,4 +41,6 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 - Use `analytical OMP baseline` when contrasting the learned method with the classical solver.
 - Use `full physics-aware solver` when a panel compares the full method with ablations.
 - Keep experiment-internal labels such as `G-fixed` and `G-teacher` inside ablation metadata only unless the manuscript explicitly needs them.
+- Treat `figures/conf/model_display_crosswalk.yaml` as the active display-label authority for Fig. 4-6 generators and panel manifests. It maps provenance keys or derived comparison roles to paper-facing labels without renaming upstream artifacts.
+- Do not globally rewrite `Fixed Heuristic` into `analytical OMP baseline`; that equivalence is panel-specific and must be bound explicitly in the crosswalk.
 - Treat `figures/conf/layout_spec.md` as the design authority for panel mm sizes; treat `figures/output/*.layout.json` as realized-geometry evidence, not as the naming authority.

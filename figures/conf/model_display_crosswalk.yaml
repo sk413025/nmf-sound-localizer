@@ -1,0 +1,140 @@
+roles:
+  full_solver:
+    canonical_term: physics-guided neural solver
+    display_full: full physics-aware solver
+    display_short: solver
+    legacy_display_variants:
+      - Physics-aware AI
+      - Baseline
+    notes: Use for the full learned method when contrasted with ablations or classical references.
+
+  no_transformer_ablation:
+    canonical_term: no-transformer ablation
+    display_full: no-transformer ablation
+    display_short: no-transformer
+    legacy_display_variants:
+      - No transformer
+      - No trans.
+    notes: Use for the ablation that removes transformer routing.
+
+  analytical_omp_baseline:
+    canonical_term: analytical OMP baseline
+    display_full: analytical OMP baseline
+    display_short: OMP
+    legacy_display_variants:
+      - OMP baseline
+    notes: Use only where the panel intentionally presents the classical OMP reference.
+
+  no_type_bias_ablation:
+    canonical_term: type-bias component
+    display_full: no-type-bias ablation
+    display_short: no type bias
+    legacy_display_variants:
+      - No type bias
+    notes: Figure-only label for the ablation that removes the type-bias component.
+
+  fixed_heuristic_ablation:
+    canonical_term: fixed-heuristic routing ablation
+    display_full: fixed-heuristic routing ablation
+    display_short: fixed heuristic
+    legacy_display_variants:
+      - Fixed heuristic
+    notes: Preserve as a routing ablation unless a panel explicitly binds it to the classical OMP role.
+
+  g_fixed_variant:
+    canonical_term: G-fixed routing variant
+    display_full: G-fixed routing variant
+    display_short: G-fixed
+    legacy_display_variants:
+      - G-fixed
+    notes: Keep as an experiment-facing figure label.
+
+  g_teacher_variant:
+    canonical_term: G-teacher routing variant
+    display_full: G-teacher routing variant
+    display_short: G-teacher
+    legacy_display_variants:
+      - G-teacher
+    notes: Keep as an experiment-facing figure label.
+
+  dense_routing_ablation:
+    canonical_term: dense-routing ablation
+    display_full: dense-routing ablation
+    display_short: dense routing
+    legacy_display_variants:
+      - Dense routing
+    notes: Figure-only label for the ablation that disables sparse routing.
+
+  h_physical_structure:
+    canonical_term: physical encoder
+    display_full: H physical structure
+    display_short: H structure
+    legacy_display_variants: []
+    notes: Use for the physical correlation matrix panel.
+
+  qk_learned_structure:
+    canonical_term: learned router
+    display_full: QK learned structure
+    display_short: QK structure
+    legacy_display_variants: []
+    notes: Use for the learned router correlation panel.
+
+  omp_selection_reference:
+    canonical_term: analytical OMP baseline
+    display_full: analytical OMP baseline
+    display_short: OMP
+    legacy_display_variants:
+      - OMP selection
+    notes: Derived OMP-like selection or routing reference used in figure panels.
+
+figures:
+  fig04:
+    panels:
+      c:
+        bindings:
+          Baseline: full_solver
+          No Type Bias: no_type_bias_ablation
+          No Transformer: no_transformer_ablation
+          Fixed Heuristic: fixed_heuristic_ablation
+          G-Fixed: g_fixed_variant
+          G-Teacher: g_teacher_variant
+          Dense Routing: dense_routing_ablation
+
+  fig05:
+    panels:
+      a:
+        bindings:
+          Baseline: full_solver
+          No Transformer: no_transformer_ablation
+          Fixed Heuristic: analytical_omp_baseline
+      b:
+        bindings:
+          physical_matrix: h_physical_structure
+          learned_matrix: qk_learned_structure
+      c:
+        bindings:
+          omp_side: omp_selection_reference
+          learned_side: full_solver
+      d:
+        bindings:
+          baseline_cm: full_solver
+          no_transformer_cm: no_transformer_ablation
+      e:
+        bindings:
+          baseline_dist: full_solver
+          no_transformer_dist: no_transformer_ablation
+      f:
+        bindings:
+          baseline_line: full_solver
+          no_transformer_line: no_transformer_ablation
+
+  fig06:
+    panels:
+      c:
+        bindings:
+          omp_boxplot: analytical_omp_baseline
+          solver_boxplot: full_solver
+      e:
+        bindings:
+          omp_bandwise: analytical_omp_baseline
+          learned_bandwise: full_solver

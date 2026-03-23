@@ -27,19 +27,20 @@ from figures.style import (
     DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
 )
+from figures.naming import get_bound_label
 
 
 # ---------------------------------------------------------------------------
 # Ablation variant styling
 # ---------------------------------------------------------------------------
 ABLATION_VARIANTS = [
-    ("Baseline",         SEMANTIC_PALETTE["learned"],   "Baseline"),
-    ("No Type Bias",     "#CC79A7",                     "No type bias"),
-    ("No Transformer",   SEMANTIC_PALETTE["highlight"], "No transformer"),
-    ("Fixed Heuristic",  SEMANTIC_PALETTE["ablation"],  "Fixed heuristic"),
-    ("G-Fixed",          "#56B4E9",                     "G-fixed"),
-    ("G-Teacher",        "#F0E442",                     "G-teacher"),
-    ("Dense Routing",    "#000000",                     "Dense routing"),
+    ("Baseline",         SEMANTIC_PALETTE["learned"]),
+    ("No Type Bias",     "#CC79A7"),
+    ("No Transformer",   SEMANTIC_PALETTE["highlight"]),
+    ("Fixed Heuristic",  SEMANTIC_PALETTE["ablation"]),
+    ("G-Fixed",          "#56B4E9"),
+    ("G-Teacher",        "#F0E442"),
+    ("Dense Routing",    "#000000"),
 ]
 
 
@@ -129,12 +130,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c = fig.add_subplot(gs[0, 1])
     y_positions = []
     y_labels = []
-    for i, (variant_key, color, display_name) in enumerate(ABLATION_VARIANTS):
+    for i, (variant_key, color) in enumerate(ABLATION_VARIANTS):
         seeds = ablation_data.get(variant_key, [])
         if not seeds:
             continue
         y_pos = len(y_positions)
         y_positions.append(y_pos)
+        display_name = get_bound_label("fig04", "c", variant_key, label_type="short")
         y_labels.append(display_name)
 
         seeds_arr = np.array(seeds)
@@ -208,12 +210,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax = fig_c.add_subplot(111)
     y_positions_s = []
     y_labels_s = []
-    for i, (variant_key, color, display_name) in enumerate(ABLATION_VARIANTS):
+    for i, (variant_key, color) in enumerate(ABLATION_VARIANTS):
         seeds = ablation_data.get(variant_key, [])
         if not seeds:
             continue
         y_pos = len(y_positions_s)
         y_positions_s.append(y_pos)
+        display_name = get_bound_label("fig04", "c", variant_key, label_type="short")
         y_labels_s.append(display_name)
         seeds_arr = np.array(seeds)
         ax.scatter(seeds_arr, [y_pos] * len(seeds_arr),
@@ -261,7 +264,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Clean-condition ablation",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Strip chart of 7-variant ablation at clean SNR with individual seeds and mean bars.",
+                "description": "Seven-variant clean-condition ablation including the full physics-aware solver and routing ablations.",
             },
             {
                 "panel_id": "d",

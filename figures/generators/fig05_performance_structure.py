@@ -1,11 +1,11 @@
 """Figure 5 — Performance + Structure Alignment + Interpretability (6 panels).
 
-Panel (a): 3-line SNR sweep (Baseline vs No Transformer vs Fixed Heuristic)
+Panel (a): 3-line SNR sweep (solver vs no-transformer vs OMP)
 Panel (b): Side-by-side H_corr vs QK_corr heatmaps (37x37, RdBu_r)
-Panel (c): Side-by-side OMP vs AI selection probability (37x37, viridis)
-Panel (d): Confusion matrices (baseline vs no-transformer) - promoted from Supp
+Panel (c): Side-by-side OMP vs solver selection probability (37x37, viridis)
+Panel (d): Confusion matrices (solver vs no-transformer) - promoted from Supp
 Panel (e): Angle-specific routing at 2 representative angles - promoted from Supp
-Panel (f): Per-angle diagonal concentration (baseline vs ablation)
+Panel (f): Per-angle diagonal concentration (solver vs ablation)
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.
 """
@@ -28,6 +28,7 @@ from figures.style import (
     DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
 )
+from figures.naming import get_bound_label
 
 
 # ---------------------------------------------------------------------------
@@ -37,10 +38,15 @@ SNR_ORDER = ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
 SNR_DISPLAY = ["0", "5", "10", "15", "20", "30", "\u221e"]
 
 SNR_VARIANTS = [
-    ("Baseline",        SEMANTIC_PALETTE["learned"],   "Physics-aware AI"),
-    ("No Transformer",  SEMANTIC_PALETTE["highlight"],  "No transformer"),
-    ("Fixed Heuristic", SEMANTIC_PALETTE["ablation"],  "OMP baseline"),
+    ("Baseline",        SEMANTIC_PALETTE["learned"],   get_bound_label("fig05", "a", "Baseline", label_type="short")),
+    ("No Transformer",  SEMANTIC_PALETTE["highlight"], get_bound_label("fig05", "a", "No Transformer", label_type="short")),
+    ("Fixed Heuristic", SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
 ]
+
+
+def _titlecase_short_label(label: str) -> str:
+    """Promote a compact label for title-like positions without mangling all-caps."""
+    return label if label.isupper() else label[:1].upper() + label[1:]
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +136,44 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
     """Generate Figure 5 — Performance + Structure + Interpretability (6 panels)."""
     set_nature_rcparams(base_fontsize=7)
+
+    selection_omp_short = get_bound_label("fig05", "c", "omp_side", label_type="short")
+    selection_solver_short = get_bound_label(
+        "fig05", "c", "learned_side", label_type="short"
+    )
+    selection_omp_full = get_bound_label("fig05", "c", "omp_side", label_type="full")
+    selection_solver_full = get_bound_label(
+        "fig05", "c", "learned_side", label_type="full"
+    )
+    cm_solver_short = get_bound_label("fig05", "d", "baseline_cm", label_type="short")
+    cm_no_transformer_short = get_bound_label(
+        "fig05", "d", "no_transformer_cm", label_type="short"
+    )
+    cm_solver_full = get_bound_label("fig05", "d", "baseline_cm", label_type="full")
+    cm_no_transformer_full = get_bound_label(
+        "fig05", "d", "no_transformer_cm", label_type="full"
+    )
+    routing_solver_short = get_bound_label(
+        "fig05", "e", "baseline_dist", label_type="short"
+    )
+    routing_no_transformer_short = get_bound_label(
+        "fig05", "e", "no_transformer_dist", label_type="short"
+    )
+    routing_solver_full = get_bound_label(
+        "fig05", "e", "baseline_dist", label_type="full"
+    )
+    routing_no_transformer_full = get_bound_label(
+        "fig05", "e", "no_transformer_dist", label_type="full"
+    )
+    diag_solver_short = get_bound_label("fig05", "f", "baseline_line", label_type="short")
+    diag_no_transformer_short = get_bound_label(
+        "fig05", "f", "no_transformer_line", label_type="short"
+    )
+    snr_solver_full = get_bound_label("fig05", "a", "Baseline", label_type="full")
+    snr_no_transformer_full = get_bound_label(
+        "fig05", "a", "No Transformer", label_type="full"
+    )
+    snr_omp_full = get_bound_label("fig05", "a", "Fixed Heuristic", label_type="full")
 
     paths_cfg = load_paths()
     run_dir = data_root / paths_cfg["primary_run"]
@@ -248,7 +292,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     im3 = ax_c1.imshow(physics_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c1.set_title("OMP selection", fontsize=5.8)
+    ax_c1.set_title(
+        f"{_titlecase_short_label(selection_omp_short)} selection", fontsize=5.8
+    )
     ax_c1.set_ylabel("True DOA", fontsize=5)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
@@ -261,7 +307,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     im4 = ax_c2.imshow(qk_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c2.set_title("Physics-aware AI", fontsize=5.8)
+    ax_c2.set_title(
+        f"{_titlecase_short_label(selection_solver_short)} selection", fontsize=5.8
+    )
     ax_c2.set_ylabel("True DOA", fontsize=5)
     ax_c2.set_xlabel("Expert", fontsize=5)
     ax_c2.set_xticks(tick_positions)
@@ -298,7 +346,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d1 = fig.add_subplot(gs_d[0, 0])
         ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
                      interpolation="nearest", vmin=0, vmax=1)
-        ax_d1.set_title("Baseline", fontsize=5.8)
+        ax_d1.set_title(_titlecase_short_label(cm_solver_short), fontsize=5.8)
         ax_d1.set_xticks(tick_positions)
         ax_d1.set_xticklabels([])
         ax_d1.set_yticks(tick_positions)
@@ -310,7 +358,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d2 = fig.add_subplot(gs_d[1, 0], sharex=ax_d1, sharey=ax_d1)
         im_d2 = ax_d2.imshow(no_trans_cm_norm, cmap="viridis", aspect="equal",
                               interpolation="nearest", vmin=0, vmax=1)
-        ax_d2.set_title("No transformer", fontsize=5.8)
+        ax_d2.set_title(_titlecase_short_label(cm_no_transformer_short), fontsize=5.8)
         ax_d2.set_xticks(tick_positions)
         ax_d2.set_xticklabels(tick_labels, fontsize=5)
         ax_d2.set_yticks(tick_positions)
@@ -354,9 +402,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
             x_pos = np.arange(len(angles))
             ax_e.bar(x_pos - 0.15, bl_probs, width=0.3, alpha=0.7,
-                     color=SEMANTIC_PALETTE["learned"], label="Baseline")
+                     color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
             ax_e.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
-                     color=SEMANTIC_PALETTE["ablation"], label="No trans.")
+                     color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
             ax_e.axvline(target_idx, color="lime", linewidth=0.8,
                          linestyle="--", alpha=0.8)
 
@@ -384,10 +432,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_f = fig.add_subplot(gs[1, 2])
         ax_f.plot(angles, baseline_per_angle, "-o", markersize=2,
                   linewidth=0.9, color=SEMANTIC_PALETTE["learned"],
-                  label="Baseline")
+                  label=diag_solver_short)
         ax_f.plot(angles, no_trans_per_angle, "-s", markersize=2,
                   linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
-                  label="No transformer")
+                  label=diag_no_transformer_short)
         ax_f.fill_between(angles, baseline_per_angle, no_trans_per_angle,
                           alpha=0.15, color=SEMANTIC_PALETTE["highlight"])
         ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
@@ -472,7 +520,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax2.imshow(qk_prob, cmap="viridis", aspect="equal",
                extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                interpolation="nearest")
-    ax2.set_title("Physics-aware AI", fontsize=7, fontweight="bold")
+    ax2.set_title(
+        f"{_titlecase_short_label(selection_solver_short)} selection",
+        fontsize=7,
+        fontweight="bold",
+    )
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=5)
     ax2.set_yticks(tick_positions)
@@ -486,8 +538,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         gs_ds = fig_d.add_gridspec(1, 2, wspace=0.25, left=0.08, right=0.95,
                                     bottom=0.15, top=0.85)
         for ax_idx, (cm, title) in enumerate([
-            (baseline_cm, "Baseline"),
-            (no_trans_cm, "No Transformer"),
+            (baseline_cm, _titlecase_short_label(cm_solver_short)),
+            (no_trans_cm, _titlecase_short_label(cm_no_transformer_short)),
         ]):
             ax = fig_d.add_subplot(gs_ds[ax_idx])
             cm_norm = cm.astype(float)
@@ -521,9 +573,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             nt_probs = nt_row / nt_row.sum() if nt_row.sum() > 0 else nt_row
             x_pos = np.arange(len(angles))
             ax.bar(x_pos - 0.15, bl_probs, width=0.3, alpha=0.7,
-                   color=SEMANTIC_PALETTE["learned"], label="Baseline")
+                   color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
             ax.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
-                   color=SEMANTIC_PALETTE["ablation"], label="No trans.")
+                   color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
             ax.axvline(target_idx, color="lime", linewidth=0.8, linestyle="--")
             ax.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0", fontsize=7)
             ax.set_xlabel("Expert index")
@@ -539,9 +591,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
         ax = fig_f.add_subplot(111)
         ax.plot(angles, baseline_per_angle, "-o", markersize=3, linewidth=1.0,
-                color=SEMANTIC_PALETTE["learned"], label="Baseline")
+                color=SEMANTIC_PALETTE["learned"], label=diag_solver_short)
         ax.plot(angles, no_trans_per_angle, "-s", markersize=3, linewidth=1.0,
-                color=SEMANTIC_PALETTE["ablation"], label="No transformer")
+                color=SEMANTIC_PALETTE["ablation"], label=diag_no_transformer_short)
         ax.fill_between(angles, baseline_per_angle, no_trans_per_angle,
                         alpha=0.15, color=SEMANTIC_PALETTE["highlight"])
         ax.set_xlabel("Angle (\u00b0)")
@@ -563,7 +615,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "SNR sweep",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_a_snr_sweep.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Three-curve SNR degradation (physics-aware AI vs no transformer vs OMP baseline).",
+                "description": f"Three-curve SNR degradation ({snr_solver_full} vs {snr_no_transformer_full} vs {snr_omp_full}).",
             },
             {
                 "panel_id": "b",
@@ -577,21 +629,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Selection probability",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_c_selection.pdf",
                 "provenance_mode": "data_backed",
-                "description": "OMP vs physics-aware AI selection probability heatmaps.",
+                "description": f"{selection_omp_full} vs {selection_solver_full} selection-probability heatmaps.",
             },
             {
                 "panel_id": "d",
                 "title": "Confusion matrices",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_d_confusion.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Baseline vs no-transformer confusion matrices showing diagonal sharpening.",
+                "description": f"{cm_solver_full} vs {cm_no_transformer_full} confusion matrices showing diagonal sharpening.",
             },
             {
                 "panel_id": "e",
                 "title": "Angle-specific routing",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Routing distributions at 55 and 100 degrees comparing baseline vs no-transformer.",
+                "description": f"Routing distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
             },
             {
                 "panel_id": "f",

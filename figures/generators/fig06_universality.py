@@ -29,6 +29,7 @@ from figures.style import (
     DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
 )
+from figures.naming import get_bound_label
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +151,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     if routing_path.exists() and dict_path.exists():
         routing_data = dict(np.load(routing_path, allow_pickle=True))
         dict_data = dict(np.load(dict_path, allow_pickle=True))
+        omp_label = get_bound_label("fig06", "e", "omp_bandwise", label_type="short")
+        learned_label = get_bound_label(
+            "fig06", "e", "learned_bandwise", label_type="short"
+        )
         D = dict_data["D"]
         labels = routing_data["labels"]
         Y_val = routing_data["Y_val"]
@@ -199,9 +204,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         x = np.arange(len(band_labels))
         width = 0.35
         ax_e.bar(x - width / 2, omp_diag, width, color=SEMANTIC_PALETTE["ablation"],
-                 alpha=0.7, label="OMP")
+                 alpha=0.7, label=omp_label)
         ax_e.bar(x + width / 2, qk_diag, width, color=SEMANTIC_PALETTE["learned"],
-                 alpha=0.7, label="Physics-aware AI")
+                 alpha=0.7, label=learned_label)
 
         ax_e.set_xticks(x)
         ax_e.set_xticklabels(band_labels, fontsize=5, rotation=30, ha="right")
@@ -257,9 +262,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax = fig_e.add_subplot(111)
         x = np.arange(len(band_labels))
         ax.bar(x - width / 2, omp_diag, width, color=SEMANTIC_PALETTE["ablation"],
-               alpha=0.7, label="OMP")
+               alpha=0.7, label=omp_label)
         ax.bar(x + width / 2, qk_diag, width, color=SEMANTIC_PALETTE["learned"],
-               alpha=0.7, label="Physics-aware AI")
+               alpha=0.7, label=learned_label)
         ax.set_xticks(x)
         ax.set_xticklabels(band_labels, fontsize=6, rotation=30, ha="right")
         ax.set_ylabel("Diagonal accuracy")
@@ -287,7 +292,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Band-resolved routing consistency",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Diagonal accuracy per band comparing OMP vs physics-aware AI routing.",
+                "description": "Diagonal accuracy per band comparing the analytical OMP baseline vs the full physics-aware solver.",
             },
         ],
     )
