@@ -2,7 +2,7 @@
 
 Single source of truth for intended panel-mm layout parameters for the active six main-paper figures.
 Generator hardcoded values **must** match this document.
-Use `figures/output/*.layout.json` as realized-geometry checks, not as the design authority.
+Use `paper/figures/*.layout.json` as realized-geometry checks, not as the design authority.
 
 ---
 

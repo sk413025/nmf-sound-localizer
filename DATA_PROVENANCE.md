@@ -1,67 +1,48 @@
 # Data Provenance — Active Six-Figure Summary
 
-This document summarizes the current provenance posture for the active six
-main-paper figures.
+This document is a human-readable summary of the current provenance posture for
+the active six main-paper figures. It is not the executable source of truth.
 
-Canonical machine-readable sources:
+Primary machine-readable authority:
+
+- `figures/conf/experiments.yaml`
+
+Derived evidence artifacts:
+
+- `figures/output/*_panel_manifest.json`
+- `paper/figures/*.layout.json`
+
+Workflow-only config:
 
 - `figures/conf/review_targets.yaml`
-- `figures/conf/experiments.yaml`
-- `figures/conf/panel_assets.yaml`
-- `figures/output/*_panel_manifest.json`
 
-Audit entrypoint:
+Audit entrypoints:
 
 - `python scripts/paper/verify_provenance.py`
+- `python scripts/paper/check_figure_regression.py --baseline-ref <git-ref>`
 
 ## Figure-Level Summary
 
-| Figure | Generator | Evidence backbone | Panel status | Current posture |
-|--------|-----------|-------------------|--------------|-----------------|
-| Fig. 1 | `figures/generators/fig01_paradigm_data.py` | `dictionary.npz` + `figures/conf/paths.yaml` | `a-b` manual support, `c-e` data-backed | Mixed but managed |
-| Fig. 2 | `figures/generators/fig02_svd_spectrum.py` | `h_matrix_normalized_original_to_box.pth` | all panels data-backed | Closed except historical branch-tip warning |
-| Fig. 3 | `figures/generators/fig03_fingerprint_discriminability.py` | `dictionary.npz` + `modal_routing_val.npz` + SNR sweep inputs | all panels data-backed | Closed, with some generator inputs resolved through `paths.yaml` |
-| Fig. 4 | `figures/generators/fig04_solver_dynamics.py` | `metrics.npz` + `results/figure4_data.json` | `a` manual support, `b-d` data-backed | Mixed but managed |
-| Fig. 5 | `figures/generators/fig05_performance_structure.py` | routing + dictionary + confusion metrics | all panels data-backed | Closed after harmonizing the baseline metrics source to `20251202_192153` |
-| Fig. 6 | `figures/generators/fig06_universality.py` | `h_matrix` + routing + dictionary | `a-c` provenance gap, `d-e` data-backed | Mixed with explicit partial gap |
+| Figure | Generator / composer | Evidence backbone | Current posture |
+|--------|----------------------|-------------------|-----------------|
+| Fig. 1 | `fig01_paradigm_data.py` + `compose_master_figure3_family.py` | `dictionary.npz` + `figures/conf/paths.yaml` | Mixed figure with explicit manual support panels `a-b` |
+| Fig. 2 | `fig02_svd_spectrum.py` | `h_matrix_normalized_original_to_box.pth` | Fully data-backed |
+| Fig. 3 | `fig03_fingerprint_discriminability.py` | `dictionary.npz` + `modal_routing_val.npz` + SNR sweep inputs | Fully data-backed, with some inputs resolved through `paths.yaml` |
+| Fig. 4 | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | `metrics.npz` + `results/figure4_data.json` | Mixed figure with explicit manual architecture panel `a` |
+| Fig. 5 | `fig05_performance_structure.py` | routing + dictionary + confusion metrics | Fully data-backed |
+| Fig. 6 | `fig06_universality.py` + `compose_master_figure3_family.py` | `h_matrix` + routing + dictionary | Mixed figure with explicit provenance-gap top panels `a-c` |
 
-## Panel-Level Status
+## Panel-Level Provenance Classes
 
 The active branch uses three panel-level provenance classes:
 
 - `data_backed`: panel is traced to committed run/data artifacts and a generator-backed output
-- `manual_support`: panel is a committed support asset, intentionally not tied to a plotting run
+- `manual_support`: panel is a committed support asset and intentionally not tied to a plotting run
 - `provenance_gap`: panel is tracked and managed, but the upstream machine-readable evidence contract is still incomplete
 
-Canonical status locations:
-
-- `figures/output/*_panel_manifest.json` for split-panel asset status
-- `figures/conf/experiments.yaml` for mixed-figure panel provenance notes
-
-### Mixed Figures
-
-#### Fig. 1
-
-- `a`: manual support asset
-- `b`: manual support asset
-- `c`: data-backed
-- `d`: data-backed
-- `e`: data-backed
-
-#### Fig. 4
-
-- `a`: manual support asset
-- `b`: data-backed
-- `c`: data-backed
-- `d`: data-backed
-
-#### Fig. 6
-
-- `a`: provenance gap
-- `b`: provenance gap
-- `c`: provenance gap
-- `d`: data-backed
-- `e`: data-backed
+These classes are defined and checked from `figures/conf/experiments.yaml`.
+Panel manifests are treated as derived evidence that should agree with that
+contract, not as peer-level authority.
 
 ## Current Non-Blocking Warnings
 
@@ -71,7 +52,7 @@ Canonical status locations:
 
 ## Interpretation Rule
 
-Do not treat “managed” as equivalent to “fully data-backed.”
+Do not treat "managed" as equivalent to "fully data-backed."
 
 - Figs. 2, 3, and 5 are intended to be fully data-backed.
 - Figs. 1 and 4 are mixed figures with explicit manual support panels.
