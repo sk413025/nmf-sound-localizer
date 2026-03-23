@@ -59,7 +59,7 @@ decisions, not to replace manuscript prose.
   - `a`: binds artifact keys `Baseline`, `No Transformer`, `Fixed Heuristic`
   - `b`: compares the physical matrix and learned QK structure, not separate run variants
   - `c`: compares derived OMP-like selection against learned selection, not separate run variants
-  - `d/e/f`: compare the full solver metrics run against the no-transformer ablation run
+  - `d/e/f`: compare the full solver metrics run against the router-bypass ablation run
 
 ## Fig. 6
 
@@ -75,6 +75,6 @@ decisions, not to replace manuscript prose.
     - code-state git head: `3785b1f`
 - Panel notes:
   - `a/b`: top cross-material support assets remain a partial provenance gap
-  - `c`: committed split-panel support asset without a tracked generator; the legend text is normalized directly at the PNG layer using the Fig. 6 crosswalk bindings (`OMP` / `solver`)
+  - `c`: committed split-panel support asset without a tracked generator; the legend text is normalized directly at the PNG layer using the Fig. 6 crosswalk bindings (`OMP baseline` / `guided solver`)
   - `d`: SVD spectra panel has no model-comparison labels
   - `e`: compares derived OMP-like bandwise routing against the full solver's learned routing

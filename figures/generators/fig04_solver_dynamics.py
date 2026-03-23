@@ -280,7 +280,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Clean-condition ablation",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Seven-variant clean-condition ablation including the full physics-aware solver and routing ablations.",
+                "description": "Seven-variant clean-condition ablation centered on the full physics-aware solver, the router-bypass ablation, and local routing variants.",
             },
             {
                 "panel_id": "d",

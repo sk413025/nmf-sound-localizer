@@ -1,11 +1,11 @@
 """Figure 5 — Performance + Structure Alignment + Interpretability (6 panels).
 
-Panel (a): 3-line SNR sweep (solver vs no-transformer vs OMP)
+Panel (a): 3-line SNR sweep (guided solver vs router-bypass vs OMP baseline)
 Panel (b): Side-by-side H_corr vs QK_corr heatmaps (37x37, RdBu_r)
-Panel (c): Side-by-side OMP vs solver selection probability (37x37, viridis)
-Panel (d): Confusion matrices (solver vs no-transformer) - promoted from Supp
+Panel (c): Side-by-side OMP-baseline vs guided-solver selection probability (37x37, viridis)
+Panel (d): Confusion matrices (guided solver vs router-bypass) - promoted from Supp
 Panel (e): Angle-specific routing at 2 representative angles - promoted from Supp
-Panel (f): Per-angle diagonal concentration (solver vs ablation)
+Panel (f): Per-angle diagonal concentration (guided solver vs router-bypass)
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.
 """
@@ -324,7 +324,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # --- Row 2 ---
 
-    # Panel (d): Confusion matrices (baseline vs no-transformer)
+    # Panel (d): Confusion matrices (guided solver vs router-bypass)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
             2, 2, subplot_spec=gs[1, 0],
@@ -510,7 +510,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax1.imshow(physics_prob, cmap="viridis", aspect="equal",
                extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                interpolation="nearest")
-    ax1.set_title("OMP selection", fontsize=7, fontweight="bold")
+    ax1.set_title(
+        f"{_titlecase_short_label(selection_omp_short)} selection",
+        fontsize=7,
+        fontweight="bold",
+    )
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=5)
     ax1.set_yticks(tick_positions)

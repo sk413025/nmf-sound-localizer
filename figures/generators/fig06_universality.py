@@ -309,7 +309,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Band-resolved routing consistency",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Diagonal accuracy per band comparing the analytical OMP baseline vs the full physics-aware solver.",
+                "description": "Diagonal accuracy per band comparing the analytical OMP baseline versus the full physics-aware solver.",
             },
         ],
     )

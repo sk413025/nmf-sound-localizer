@@ -2,28 +2,31 @@ roles:
   full_solver:
     canonical_term: physics-guided neural solver
     display_full: full physics-aware solver
-    display_short: solver
+    display_short: guided solver
     legacy_display_variants:
       - Physics-aware AI
       - Baseline
-    notes: Use for the full learned method when contrasted with ablations or classical references.
+      - solver
+    notes: Use for the full learned method when contrasted with ablations or classical references; the shared in-panel compact label is `guided solver`.
 
   no_transformer_ablation:
-    canonical_term: no-transformer ablation
-    display_full: no-transformer ablation
-    display_short: no-transformer
+    canonical_term: router-bypass ablation
+    display_full: router-bypass ablation
+    display_short: router-bypass
     legacy_display_variants:
       - No transformer
       - No trans.
-    notes: Use for the ablation that removes transformer routing.
+      - no-transformer
+    notes: Use for the ablation that removes transformer routing while keeping the experiment-facing `No Transformer` artifact key unchanged.
 
   analytical_omp_baseline:
     canonical_term: analytical OMP baseline
     display_full: analytical OMP baseline
-    display_short: OMP
+    display_short: OMP baseline
     legacy_display_variants:
+      - OMP
       - OMP baseline
-    notes: Use only where the panel intentionally presents the classical OMP reference.
+    notes: Use only where the panel intentionally presents the classical OMP reference; prefer `OMP baseline` over bare `OMP` on active Fig. 4-6 surfaces.
 
   no_type_bias_ablation:
     canonical_term: type-bias component
@@ -31,7 +34,7 @@ roles:
     display_short: no type bias
     legacy_display_variants:
       - No type bias
-    notes: Figure-only label for the ablation that removes the type-bias component.
+    notes: Figure-only label for the ablation that removes the type-bias component; keep local to Fig. 4 rather than promoting it to a paper-wide model family.
 
   fixed_heuristic_ablation:
     canonical_term: fixed-heuristic routing ablation
@@ -39,7 +42,7 @@ roles:
     display_short: fixed heuristic
     legacy_display_variants:
       - Fixed heuristic
-    notes: Preserve as a routing ablation unless a panel explicitly binds it to the classical OMP role.
+    notes: Preserve as a Fig. 4 routing ablation unless a panel explicitly binds the same artifact key to the classical OMP role.
 
   g_fixed_variant:
     canonical_term: G-fixed routing variant
@@ -47,7 +50,7 @@ roles:
     display_short: G-fixed
     legacy_display_variants:
       - G-fixed
-    notes: Keep as an experiment-facing figure label.
+    notes: Keep as a Fig. 4-only experiment-facing label, not a paper-wide model name.
 
   g_teacher_variant:
     canonical_term: G-teacher routing variant
@@ -55,7 +58,7 @@ roles:
     display_short: G-teacher
     legacy_display_variants:
       - G-teacher
-    notes: Keep as an experiment-facing figure label.
+    notes: Keep as a Fig. 4-only experiment-facing label, not a paper-wide model name.
 
   dense_routing_ablation:
     canonical_term: dense-routing ablation
@@ -63,29 +66,30 @@ roles:
     display_short: dense routing
     legacy_display_variants:
       - Dense routing
-    notes: Figure-only label for the ablation that disables sparse routing.
+    notes: Figure-only label for the Fig. 4 ablation that disables sparse routing.
 
   h_physical_structure:
     canonical_term: physical encoder
     display_full: H physical structure
     display_short: H structure
     legacy_display_variants: []
-    notes: Use for the physical correlation matrix panel.
+    notes: Use for the physical correlation matrix panel; this is a structure label, not a model name.
 
   qk_learned_structure:
     canonical_term: learned router
     display_full: QK learned structure
     display_short: QK structure
     legacy_display_variants: []
-    notes: Use for the learned router correlation panel.
+    notes: Use for the learned-router correlation panel; this is a structure label, not a model name.
 
   omp_selection_reference:
     canonical_term: analytical OMP baseline
     display_full: analytical OMP baseline
-    display_short: OMP
+    display_short: OMP baseline
     legacy_display_variants:
+      - OMP
       - OMP selection
-    notes: Derived OMP-like selection or routing reference used in figure panels.
+    notes: Derived OMP-like selection or routing reference used in figure panels; treat as a panel comparison role rather than a separate trained system.
 
 figures:
   fig04:
