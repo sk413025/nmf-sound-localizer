@@ -48,6 +48,8 @@ class ReviewTarget:
     evidence_sources: list[str]
     generator_outputs: list[str]
     provenance_note: str
+    generator_path: str | None
+    compose_path: str | None
 
 
 def _repo_root() -> Path:
@@ -58,36 +60,75 @@ def _width_mm_for_mode(width_mode: str) -> float:
     return float(SINGLE_COL_MM if width_mode == "single" else DOUBLE_COL_MM)
 
 
+def _load_experiment_contracts(repo_root: Path) -> dict[str, dict[str, Any]]:
+    cfg_path = repo_root / "figures/conf/experiments.yaml"
+    with open(cfg_path, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+
+    contracts: dict[str, dict[str, Any]] = {}
+    for raw in cfg.values():
+        if not isinstance(raw, dict):
+            continue
+        figure_id = raw.get("figure_id")
+        if figure_id:
+            contracts[figure_id] = raw
+    return contracts
+
+
+def _data_artifact_paths(contract: dict[str, Any]) -> list[str]:
+    paths: list[str] = []
+    for item in contract.get("data_artifacts", []):
+        if isinstance(item, dict) and item.get("path"):
+            paths.append(item["path"])
+    return paths
+
+
 def _load_targets(repo_root: Path) -> tuple[Path, Path, list[ReviewTarget]]:
     cfg_path = repo_root / "figures/conf/review_targets.yaml"
     with open(cfg_path, encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
+        cfg = yaml.safe_load(f) or {}
 
     review_dir = repo_root / cfg.get("review_dir", "figures/review_artifacts")
     canonical = repo_root / cfg["canonical_requirements"]
-    targets = [
-        ReviewTarget(
-            figure_id=item["figure_id"],
-            role=item["role"],
-            asset=item["asset"],
-            asset_layer=item.get("asset_layer", "manuscript_composite"),
-            provenance_mode=item.get("provenance_mode", "unspecified"),
-            width_mode=item.get("width_mode", "double"),
-            manuscript_section=item.get("manuscript_section", "Results"),
-            manuscript_path=item.get("manuscript_path", "paper/manuscript/manuscript.md"),
-            manuscript_anchor=item.get("manuscript_anchor", item.get("manuscript_section", "Results")),
-            legend_path=item.get("legend_path", "paper/figures/Figure-Legends.md"),
-            registry_path=item.get("registry_path", "figures/FIGURE_REGISTRY.md"),
-            claim=item["claim"],
-            panel_order=list(item.get("panel_order", [])),
-            panel_manifest=item.get("panel_manifest"),
-            legend_summary=item.get("legend_summary", ""),
-            evidence_sources=list(item.get("evidence_sources", [])),
-            generator_outputs=list(item.get("generator_outputs", [])),
-            provenance_note=item.get("provenance_note", ""),
+    defaults = cfg.get("defaults", {})
+    contracts = _load_experiment_contracts(repo_root)
+    targets: list[ReviewTarget] = []
+    for item in cfg["targets"]:
+        figure_id = item["figure_id"]
+        contract = contracts.get(figure_id)
+        if contract is None:
+            raise KeyError(f"review_targets.yaml references unknown figure_id {figure_id!r} in experiments.yaml")
+        if not contract.get("manuscript_asset"):
+            raise KeyError(f"experiments.yaml entry for {figure_id!r} is missing manuscript_asset")
+        if not contract.get("claim"):
+            raise KeyError(f"experiments.yaml entry for {figure_id!r} is missing claim")
+        targets.append(
+            ReviewTarget(
+                figure_id=figure_id,
+                role=item["role"],
+                asset=contract["manuscript_asset"],
+                asset_layer=contract.get("asset_layer", "manuscript_composite"),
+                provenance_mode=contract.get("provenance_mode", "unspecified"),
+                width_mode=contract.get("width_mode", "double"),
+                manuscript_section=item.get("manuscript_section", defaults.get("manuscript_section", "Results")),
+                manuscript_path=item.get("manuscript_path", defaults.get("manuscript_path", "paper/manuscript/manuscript.md")),
+                manuscript_anchor=contract.get(
+                    "manuscript_anchor",
+                    item.get("manuscript_anchor", defaults.get("manuscript_section", "Results")),
+                ),
+                legend_path=item.get("legend_path", defaults.get("legend_path", "paper/figures/Figure-Legends.md")),
+                registry_path=item.get("registry_path", defaults.get("registry_path", "figures/FIGURE_REGISTRY.md")),
+                claim=contract["claim"],
+                panel_order=list(contract.get("panel_order", [])),
+                panel_manifest=contract.get("panel_manifest"),
+                legend_summary=contract.get("legend_summary", ""),
+                evidence_sources=list(contract.get("evidence_sources", [])) or _data_artifact_paths(contract),
+                generator_outputs=list(contract.get("generator_outputs", [])),
+                provenance_note=contract.get("note", ""),
+                generator_path=contract.get("generator"),
+                compose_path=contract.get("compose_script"),
+            )
         )
-        for item in cfg["targets"]
-    ]
     return review_dir, canonical, targets
 
 
@@ -515,6 +556,8 @@ def prepare_all(repo_root: Path | None = None) -> list[Path]:
                 "page_preview_paths": asset_page_preview_paths,
             },
             "generator_trace_sources": {
+                "generator_path": target.generator_path,
+                "compose_path": target.compose_path,
                 "registry_path": target.registry_path,
                 "review_targets_path": "figures/conf/review_targets.yaml",
                 "experiments_path": "figures/conf/experiments.yaml",

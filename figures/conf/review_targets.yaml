@@ -1,149 +1,32 @@
 # Paper-facing figure assets that require Codex multimodal review.
-# Active scope: the current six main-paper figures only.
-# All paths are relative to the repository root.
+# This file is review-orchestration only. Figure identity, panel metadata,
+# evidence sources, and manuscript-facing claims live in
+# figures/conf/experiments.yaml.
 
 review_dir: figures/review_artifacts
 canonical_requirements: docs/nature-communications/nature-communications-submission-requirements.md
 
+defaults:
+  manuscript_section: Results
+  manuscript_path: paper/manuscript/manuscript.md
+  legend_path: paper/figures/Figure-Legends.md
+  registry_path: figures/FIGURE_REGISTRY.md
+
 targets:
   - figure_id: fig01
     role: main
-    asset: paper/figures/fig01_paradigm-shift.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: mixed_composite
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 1"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Single-point structural response produces direction-specific spectral fingerprints."
-    panel_order: ["a", "b", "c", "d", "e"]
-    legend_summary: "Setup photo, physical principle schematic, and generator-backed spectral evidence."
-    panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
-    evidence_sources:
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-      - figures/conf/paths.yaml
-    generator_outputs:
-      - figures/output/fig01_paradigm_data.pdf
-      - figures/output/fig01_paradigm_data.tiff
-    provenance_note: "Panels a-b are manual support assets; panels c-e are generator-backed evidence panels."
 
   - figure_id: fig02
     role: main
-    asset: paper/figures/fig02_svd-physical-dictionary.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: data_backed_composite
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 2"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
-    panel_order: ["a", "b", "c", "d", "e", "f"]
-    legend_summary: "Singular spectrum, modal decomposition, and the structured physical dictionary."
-    panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
-    evidence_sources:
-      - h_matrix_normalized_original_to_box.pth
-    generator_outputs:
-      - figures/output/fig02_svd_spectrum.pdf
-      - figures/output/fig02_svd_spectrum.tiff
-    provenance_note: "Review the manuscript composite against the upstream generator outputs and the H-matrix evidence source."
 
   - figure_id: fig03
     role: main
-    asset: paper/figures/fig03_fingerprint-discriminability.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: data_backed_composite
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 3"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "Directional encoding survives content variation even though analytical OMP decoding fails."
-    panel_order: ["a", "b", "c", "d", "e", "f"]
-    legend_summary: "Discriminability, OMP comparison, pairwise similarity, and dose response."
-    panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
-    evidence_sources:
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-      - results/speech_babble_omp_snr_sweep.json
-      - figures/conf/paths.yaml
-    generator_outputs:
-      - figures/output/fig03_fingerprint_discriminability.pdf
-      - figures/output/fig03_fingerprint_discriminability.tiff
-    provenance_note: "The figure is fully data-backed, but some upstream inputs are resolved indirectly through figures/conf/paths.yaml."
 
   - figure_id: fig04
     role: main
-    asset: paper/figures/fig04_solver-dynamics.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: mixed_composite
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 4"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "The physics-guided neural solver combines a manual architecture panel with generator-backed convergence, ablation, and per-angle evidence."
-    panel_order: ["a", "b", "c", "d"]
-    legend_summary: "Architecture, training convergence, clean-condition ablation, and per-angle accuracy."
-    panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
-    evidence_sources:
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
-      - results/figure4_data.json
-    generator_outputs:
-      - figures/output/fig04_solver_dynamics.pdf
-      - figures/output/fig04_solver_dynamics.tiff
-    provenance_note: "Panel a is a manual support asset. Panels b-d are generator-backed evidence panels, and panel-level status now lives in experiments.yaml[fig04_ablation.panel_provenance]."
 
   - figure_id: fig05
     role: main
-    asset: paper/figures/fig05_performance-structure.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: data_backed_composite
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 5"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
-    panel_order: ["a", "b", "c", "d", "e", "f"]
-    legend_summary: "Noise robustness, structure alignment, selection statistics, confusion, and routing diagnostics."
-    panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
-    evidence_sources:
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
-      - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
-    generator_outputs:
-      - figures/output/fig05_performance_structure.pdf
-      - figures/output/fig05_performance_structure.tiff
-    provenance_note: "The manuscript composite is fully data-backed; panels d-f use the confusion-matrix metrics resolved through paths.yaml[confusion_matrix]."
 
   - figure_id: fig06
     role: main
-    asset: paper/figures/fig06_universality.jpg
-    asset_layer: manuscript_composite
-    provenance_mode: mixed_composite_with_partial_gap
-    width_mode: double
-    manuscript_section: Results
-    manuscript_path: paper/manuscript/manuscript.md
-    manuscript_anchor: "Results / Fig. 6"
-    legend_path: paper/figures/Figure-Legends.md
-    registry_path: figures/FIGURE_REGISTRY.md
-    claim: "The physical encoding mechanism and inference recipe generalize across structurally distinct materials."
-    panel_order: ["a", "b", "c", "d", "e"]
-    legend_summary: "Cross-material exemplars and heatmaps plus per-band universality evidence."
-    panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
-    evidence_sources:
-      - h_matrix_normalized_original_to_box.pth
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-    generator_outputs:
-      - figures/output/fig06_universality.pdf
-      - figures/output/fig06_universality.tiff
-    provenance_note: "Panels d-e are generator-backed. Panels a-c remain explicit provenance-gap support assets, with panel-level gap status now recorded in experiments.yaml[fig06_universality.panel_provenance]."

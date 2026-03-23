@@ -1,15 +1,32 @@
-# Structured experiment metadata for active six-figure provenance auditing.
-# Each entry links an active manuscript figure to its generator, upstream runs,
-# and manuscript-facing evidence artifacts.
+# Primary machine-readable figure contract for the active six-figure manuscript.
+# Each figure entry owns the executable metadata needed to:
+# - resolve the manuscript-facing asset
+# - trace the generator or composition path
+# - define panel order and manifests
+# - track panel-level provenance where panels are mixed or partially manual
+# - support review and regression tooling without a parallel figure registry contract
 
 snr_levels: ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
 
 fig01_manual:
+  figure_id: fig01
   figure: "Fig 1"
   title: "Direction-Dependent Structural Filtering"
   type: mixed_composite
+  manuscript_asset: paper/figures/fig01_paradigm-shift.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: mixed_composite
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 1"
+  claim: "Single-point structural response produces direction-specific spectral fingerprints."
+  legend_summary: "Setup photo, physical principle schematic, and generator-backed spectral evidence."
+  panel_order: ["a", "b", "c", "d", "e"]
+  panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
   generator: figures/generators/fig01_paradigm_data.py
-  asset: paper/figures/fig01_paradigm-shift.jpg
+  compose_script: scripts/paper/compose_master_figure3_family.py
+  generator_outputs:
+    - figures/output/fig01_paradigm_data.pdf
+    - figures/output/fig01_paradigm_data.tiff
   data_artifacts:
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
@@ -19,26 +36,31 @@ fig01_manual:
       description: "Resolves the white-noise dataset and primary run used by the generator."
   panel_provenance:
     a:
+      title: "Experimental setup"
       provenance_mode: manual_support
       asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png
       note: "Committed setup support panel; no data generator or run artifact."
     b:
+      title: "Spectral fingerprint schematic"
       provenance_mode: manual_support
       asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png
       note: "Committed physical-mechanism schematic; no data generator or run artifact."
     c:
+      title: "Input-output spectral shaping"
       provenance_mode: data_backed
       asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
     d:
+      title: "Trial repeatability"
       provenance_mode: data_backed
       asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_repeatability.pdf
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
     e:
+      title: "Frequency-dependent directivity"
       provenance_mode: data_backed
       asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf
       evidence_sources:
@@ -47,9 +69,23 @@ fig01_manual:
   note: "Panels a-b are manual support assets; panels c-e are generator-backed."
 
 fig02_svd:
+  figure_id: fig02
   figure: "Fig 2"
   title: "Structured Physical Dictionary"
+  type: data_backed_composite
+  manuscript_asset: paper/figures/fig02_svd-physical-dictionary.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: data_backed_composite
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 2"
+  claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
+  legend_summary: "Singular spectrum, modal decomposition, and the structured physical dictionary."
+  panel_order: ["a", "b", "c", "d", "e", "f"]
+  panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
   generator: figures/generators/fig02_svd_spectrum.py
+  generator_outputs:
+    - figures/output/fig02_svd_spectrum.pdf
+    - figures/output/fig02_svd_spectrum.tiff
   branch: feature/omp-transformer-modal-viz
   branch_tip_commit: "15b2981"
   data_artifacts:
@@ -58,9 +94,23 @@ fig02_svd:
       description: "Normalized H matrix used for SVD and dictionary construction."
 
 fig03_discriminability:
+  figure_id: fig03
   figure: "Fig 3"
   title: "Discriminability And Classical OMP Failure"
+  type: data_backed_composite
+  manuscript_asset: paper/figures/fig03_fingerprint-discriminability.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: data_backed_composite
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 3"
+  claim: "Directional encoding survives content variation even though analytical OMP decoding fails."
+  legend_summary: "Discriminability, OMP comparison, pairwise similarity, and dose response."
+  panel_order: ["a", "b", "c", "d", "e", "f"]
+  panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
   generator: figures/generators/fig03_fingerprint_discriminability.py
+  generator_outputs:
+    - figures/output/fig03_fingerprint_discriminability.pdf
+    - figures/output/fig03_fingerprint_discriminability.tiff
   primary_run:
     dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
     code_state_git_head: "3785b1f"
@@ -79,9 +129,24 @@ fig03_discriminability:
       description: "Resolves the white-noise dataset and SNR sweep inputs."
 
 fig04_ablation:
+  figure_id: fig04
   figure: "Fig 4"
   title: "Solver Dynamics"
+  type: mixed_composite
+  manuscript_asset: paper/figures/fig04_solver-dynamics.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: mixed_composite
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 4"
+  claim: "The physics-guided neural solver combines a manual architecture panel with generator-backed convergence, ablation, and per-angle evidence."
+  legend_summary: "Architecture, training convergence, clean-condition ablation, and per-angle accuracy."
+  panel_order: ["a", "b", "c", "d"]
+  panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
+  compose_script: scripts/paper/compose_master_figure3_family.py
+  generator_outputs:
+    - figures/output/fig04_solver_dynamics.pdf
+    - figures/output/fig04_solver_dynamics.tiff
   display_crosswalk: figures/conf/model_display_crosswalk.yaml
   naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   branch: paper/nature-comm-figures
@@ -99,20 +164,24 @@ fig04_ablation:
       description: "Aggregated clean-condition ablation sweep."
   panel_provenance:
     a:
+      title: "Architecture diagram"
       provenance_mode: manual_support
       asset_path: paper/figures/fig04_unrolled-attention-omp.jpg
       note: "Committed architecture support panel; no run-generated evidence."
     b:
+      title: "Training convergence"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
     c:
+      title: "Clean-condition ablation"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf
       evidence_sources:
         - results/figure4_data.json
     d:
+      title: "Per-angle accuracy profile"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf
       evidence_sources:
@@ -131,9 +200,23 @@ fig04_ablation:
     seeds_per_condition: 5
 
 fig05_performance_structure:
+  figure_id: fig05
   figure: "Fig 5"
   title: "Performance And Structure"
+  type: data_backed_composite
+  manuscript_asset: paper/figures/fig05_performance-structure.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: data_backed_composite
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 5"
+  claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
+  legend_summary: "Noise robustness, structure alignment, selection statistics, confusion, and routing diagnostics."
+  panel_order: ["a", "b", "c", "d", "e", "f"]
+  panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
+  generator_outputs:
+    - figures/output/fig05_performance_structure.pdf
+    - figures/output/fig05_performance_structure.tiff
   display_crosswalk: figures/conf/model_display_crosswalk.yaml
   naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   primary_run:
@@ -163,9 +246,24 @@ fig05_performance_structure:
     device: mps
 
 fig06_universality:
+  figure_id: fig06
   figure: "Fig 6"
   title: "Universal Physical Encoding Across Diverse Materials"
+  type: mixed_composite_with_partial_gap
+  manuscript_asset: paper/figures/fig06_universality.jpg
+  asset_layer: manuscript_composite
+  provenance_mode: mixed_composite_with_partial_gap
+  width_mode: double
+  manuscript_anchor: "Results / Fig. 6"
+  claim: "The physical encoding mechanism and inference recipe generalize across structurally distinct materials."
+  legend_summary: "Cross-material exemplars and heatmaps plus per-band universality evidence."
+  panel_order: ["a", "b", "c", "d", "e"]
+  panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
+  compose_script: scripts/paper/compose_master_figure3_family.py
+  generator_outputs:
+    - figures/output/fig06_universality.pdf
+    - figures/output/fig06_universality.tiff
   display_crosswalk: figures/conf/model_display_crosswalk.yaml
   naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   data_artifacts:
@@ -189,23 +287,28 @@ fig06_universality:
       description: "Committed split-panel support asset for the cross-material RMSE panel."
   panel_provenance:
     a:
+      title: "Material exemplars"
       provenance_mode: provenance_gap
       asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
       note: "Committed support asset; upstream cross-material raw-source contract is not yet machine-readable."
     b:
+      title: "Representative dictionary heatmaps"
       provenance_mode: provenance_gap
       asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
       note: "Committed support asset; upstream cross-material heatmap selection lineage is not yet machine-readable."
     c:
+      title: "Cross-material RMSE comparison"
       provenance_mode: provenance_gap
       asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
       note: "Committed support asset with normalized display labels but no tracked generator-backed upstream lineage."
     d:
+      title: "Per-band SVD spectra"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf
       evidence_sources:
         - h_matrix_normalized_original_to_box.pth
     e:
+      title: "Band-resolved routing consistency"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf
       evidence_sources:

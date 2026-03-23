@@ -3,8 +3,8 @@
 
 Checks file existence, NPZ/PTH contents, git commit reachability,
 symlink integrity, code-state consistency, manuscript residuals,
-and cross-references with experiments.yaml, including mixed-figure
-panel-level provenance contracts.
+and cross-references with experiments.yaml, including panel-level
+provenance contracts and derived panel manifests.
 
 The machine-readable report is written under ``results/<run_name>/`` by
 default so audit artifacts do not pollute the repository root.
@@ -507,79 +507,125 @@ def check_panel_provenance(repo: Path, report: AuditReport) -> None:
                 report.add("ERROR", "panel_provenance", f"{entry_key}.{key} missing → {rel}")
 
 
-def check_panel_asset_contracts(repo: Path, report: AuditReport) -> None:
-    """Check 11: validate active panel manifests and inline panel-asset contracts."""
+def check_panel_manifest_contracts(repo: Path, report: AuditReport) -> None:
+    """Check 11: validate panel manifests against the active experiments contract."""
     try:
         import yaml
     except ImportError:
-        report.add("WARN", "panel_assets", "PyYAML not installed — skipping")
+        report.add("WARN", "panel_manifests", "PyYAML not installed — skipping")
         return
 
-    cfg = repo / "figures" / "conf" / "panel_assets.yaml"
+    cfg = repo / "figures" / "conf" / "experiments.yaml"
     if not cfg.exists():
-        report.add("WARN", "panel_assets", "figures/conf/panel_assets.yaml not found")
+        report.add("WARN", "panel_manifests", "figures/conf/experiments.yaml not found")
         return
 
     try:
         data = yaml.safe_load(cfg.read_text()) or {}
     except Exception as exc:
-        report.add("WARN", "panel_assets", f"Failed to parse panel_assets.yaml — {exc}")
+        report.add("WARN", "panel_manifests", f"Failed to parse experiments.yaml — {exc}")
         return
 
-    figures = data.get("figures")
-    if not isinstance(figures, dict):
-        report.add("ERROR", "panel_assets", "panel_assets.yaml missing top-level figures map")
-        return
-
-    for figure_id, entry in figures.items():
+    for entry_key, entry in data.items():
         if not isinstance(entry, dict):
-            report.add("ERROR", "panel_assets", f"{figure_id}: entry must be a mapping")
+            continue
+        figure_id = entry.get("figure_id")
+        if not figure_id:
             continue
 
         manifest_rel = entry.get("panel_manifest")
-        if manifest_rel:
-            manifest = repo / manifest_rel
-            if not manifest.exists():
-                report.add(
-                    "ERROR",
-                    "panel_assets",
-                    f"{figure_id}: panel manifest missing → {manifest_rel}",
-                )
-                continue
-            report.add("INFO", "panel_assets", f"OK  {figure_id} manifest → {manifest_rel}")
-            try:
-                manifest_data = json.loads(manifest.read_text())
-            except Exception as exc:
-                report.add(
-                    "ERROR",
-                    "panel_assets",
-                    f"{figure_id}: failed to parse manifest {manifest_rel} — {exc}",
-                )
-                continue
-            panel_list = manifest_data.get("panels", [])
-            source = manifest_rel
-        else:
-            panel_list = entry.get("panels", [])
-            source = "figures/conf/panel_assets.yaml"
-
-        if not isinstance(panel_list, list):
-            report.add("ERROR", "panel_assets", f"{figure_id}: panels must be a list in {source}")
+        if not manifest_rel:
             continue
 
+        manifest = repo / manifest_rel
+        if not manifest.exists():
+            report.add(
+                "ERROR",
+                "panel_manifests",
+                f"{figure_id}: panel manifest missing → {manifest_rel}",
+            )
+            continue
+        report.add("INFO", "panel_manifests", f"OK  {figure_id} manifest → {manifest_rel}")
+        try:
+            manifest_data = json.loads(manifest.read_text())
+        except Exception as exc:
+            report.add(
+                "ERROR",
+                "panel_manifests",
+                f"{figure_id}: failed to parse manifest {manifest_rel} — {exc}",
+            )
+            continue
+
+        expected_order = entry.get("panel_order", [])
+        actual_order = manifest_data.get("panel_order", [])
+        if expected_order and actual_order != expected_order:
+            report.add(
+                "ERROR",
+                "panel_manifests",
+                f"{figure_id}: panel_order mismatch — contract {expected_order}, manifest {actual_order}",
+            )
+        else:
+            report.add("INFO", "panel_manifests", f"OK  {figure_id} panel_order")
+
+        panel_list = manifest_data.get("panels", [])
+        if not isinstance(panel_list, list):
+            report.add("ERROR", "panel_manifests", f"{figure_id}: panels must be a list in {manifest_rel}")
+            continue
+
+        manifest_map: dict[str, dict[str, Any]] = {}
         for panel in panel_list:
             if not isinstance(panel, dict):
-                report.add("ERROR", "panel_assets", f"{figure_id}: panel entry must be a mapping")
+                report.add("ERROR", "panel_manifests", f"{figure_id}: panel entry must be a mapping")
                 continue
             panel_id = panel.get("panel_id", "?")
+            manifest_map[panel_id] = panel
             mode = panel.get("provenance_mode")
             if mode not in _ALLOWED_PANEL_PROVENANCE_MODES:
                 report.add(
                     "ERROR",
-                    "panel_assets",
-                    f"{figure_id}.{panel_id}: invalid provenance_mode {mode!r} in {source}",
+                    "panel_manifests",
+                    f"{figure_id}.{panel_id}: invalid provenance_mode {mode!r} in {manifest_rel}",
                 )
                 continue
-            report.add("INFO", "panel_assets", f"OK  {figure_id}.{panel_id} [{mode}] in {source}")
+            asset_rel = panel.get("asset_path")
+            if not asset_rel:
+                report.add("ERROR", "panel_manifests", f"{figure_id}.{panel_id}: missing asset_path in {manifest_rel}")
+                continue
+            asset = repo / asset_rel
+            if asset.exists():
+                report.add("INFO", "panel_manifests", f"OK  {figure_id}.{panel_id} [{mode}] asset → {asset_rel}")
+            else:
+                report.add("ERROR", "panel_manifests", f"{figure_id}.{panel_id}: asset missing → {asset_rel}")
+
+        expected_panel_map = entry.get("panel_provenance", {})
+        if not isinstance(expected_panel_map, dict):
+            continue
+        for panel_id, expected in expected_panel_map.items():
+            if not isinstance(expected, dict):
+                report.add("ERROR", "panel_manifests", f"{entry_key}.{panel_id}: expected panel payload must be a mapping")
+                continue
+            actual = manifest_map.get(panel_id)
+            if actual is None:
+                report.add("ERROR", "panel_manifests", f"{figure_id}.{panel_id}: missing from {manifest_rel}")
+                continue
+            if expected.get("title") and actual.get("title") != expected.get("title"):
+                report.add(
+                    "ERROR",
+                    "panel_manifests",
+                    f"{figure_id}.{panel_id}: title mismatch — contract {expected.get('title')!r}, manifest {actual.get('title')!r}",
+                )
+            if expected.get("provenance_mode") and actual.get("provenance_mode") != expected.get("provenance_mode"):
+                report.add(
+                    "ERROR",
+                    "panel_manifests",
+                    f"{figure_id}.{panel_id}: provenance mismatch — contract {expected.get('provenance_mode')!r}, manifest {actual.get('provenance_mode')!r}",
+                )
+            if expected.get("asset_path") and actual.get("asset_path") != expected.get("asset_path"):
+                report.add(
+                    "ERROR",
+                    "panel_manifests",
+                    f"{figure_id}.{panel_id}: asset_path mismatch — contract {expected.get('asset_path')!r}, manifest {actual.get('asset_path')!r}",
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -647,7 +693,7 @@ def main() -> int:
     check_manuscript_tbd(repo, report)
     check_experiments_yaml(repo, report)
     check_panel_provenance(repo, report)
-    check_panel_asset_contracts(repo, report)
+    check_panel_manifest_contracts(repo, report)
 
     # Print human-readable report
     report.print_report()
