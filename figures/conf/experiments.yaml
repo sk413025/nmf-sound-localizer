@@ -1,249 +1,135 @@
-# Structured experiment metadata for data provenance auditing.
-# Each entry links a manuscript figure to its experiment, branch, commit, and data artifacts.
+# Structured experiment metadata for active six-figure provenance auditing.
+# Each entry links an active manuscript figure to its generator, upstream runs,
+# and manuscript-facing evidence artifacts.
 
-# ─── Fig 2: SVD Spectrum + Modal Decomposition ──────────────────────────────
+snr_levels: ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
+
+fig01_manual:
+  figure: "Fig 1"
+  title: "Direction-Dependent Structural Filtering"
+  type: mixed_composite
+  generator: figures/generators/fig01_paradigm_data.py
+  asset: paper/figures/fig01_paradigm-shift.jpg
+  data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+      type: npz
+      description: "Dictionary used by the directivity and spectral-shaping evidence panels."
+    - path: figures/conf/paths.yaml
+      type: yaml
+      description: "Resolves the white-noise dataset and primary run used by the generator."
+  note: "Panels a-b are manual support assets; panels c-e are generator-backed."
 
 fig02_svd:
   figure: "Fig 2"
-  title: "SVD Spectrum + Modal Decomposition + Dictionary"
+  title: "Structured Physical Dictionary"
   generator: figures/generators/fig02_svd_spectrum.py
   branch: feature/omp-transformer-modal-viz
   branch_tip_commit: "15b2981"
   data_artifacts:
     - path: h_matrix_normalized_original_to_box.pth
       type: pth
-      description: "Normalized H matrix (346×17, 17 angles)"
-  pipeline:
-    stage0:
-      description: "WAV → NPY conversion"
-      commit: null
-      script: "/Users/sbplab/jiawei/datasets/white_noise_to_nmf_converter_no_edge.py"
-      date: "2025-08-15"
-    stage1:
-      description: "Synchronized VAD processing"
-      commit: "d9b11d1"
-      message: "Results: Synchronized X-Y VAD processing"
-      date: "2025-09-04"
-    stage2:
-      description: "Amplitude normalization + H matrix estimation"
-      commit: "c96860b"
-      message: "Fix: Configuration C data separation"
-      date: "2025-09-09"
-  stft_params:
-    fs: 16000
-    nperseg: 2048
-    noverlap: 1536
-    hop: 512
-    window: hann
-    freq_min_hz: 304.7
-    freq_max_hz: 3000.0
-    f_bins: 346
+      description: "Normalized H matrix used for SVD and dictionary construction."
 
-# ─── Fig 4: Noise Robustness + Component Ablation ───────────────────────────
+fig03_discriminability:
+  figure: "Fig 3"
+  title: "Discriminability And Classical OMP Failure"
+  generator: figures/generators/fig03_fingerprint_discriminability.py
+  primary_run:
+    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
+    code_state_git_head: "3785b1f"
+  data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+      type: npz
+      keys: [D, H, W_reduced, W_full, angles, idx2angle, atom_labels]
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+      type: npz
+      keys: [labels, angles_deg, scores_expert, scores_atoms, g_energy_expert, Y_val, selected_counts, selected_mask]
+    - path: results/speech_babble_omp_snr_sweep.json
+      type: json
+      description: "Speech-plus-babble OMP sweep used in the dose-response panel."
+    - path: figures/conf/paths.yaml
+      type: yaml
+      description: "Resolves the white-noise dataset and SNR sweep inputs."
 
 fig04_ablation:
   figure: "Fig 4"
-  title: "Noise Robustness + Component Ablation"
-  generator: figures/generators/fig04_snr_ablation.py
+  title: "Solver Dynamics"
+  generator: figures/generators/fig04_solver_dynamics.py
   branch: paper/nature-comm-figures
   experiment_commit: "14feb94"
   commit_message: "Results: Babble Speech260 full sweep (245/245, ep20)"
   worktree: exp-omp-ablation-snr-rerun-20260128
   data_artifacts:
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+      type: npz
+      description: "Primary-run convergence and per-angle metrics."
     - path: results/figure4_data.json
       type: json
       is_symlink: true
       symlink_target: "worktrees/exp-omp-ablation-snr-rerun-20260128/results/figure4_data.json"
-      description: "Aggregated ablation sweep (7 variants × 7 SNR × 5 seeds = 245 runs)"
+      description: "Aggregated clean-condition ablation sweep."
   sweep:
     noise_type: babble
-    n_runs: 245
     variants:
       - Baseline
       - No Transformer
-      - Fixed Heuristic
       - No Type Bias
+      - Fixed Heuristic
       - Dense Routing
       - G-Teacher
       - G-Fixed
     snr_levels: ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
     seeds_per_condition: 5
-    sweep_suffix: babble_speech260_full_20260209_011327
 
-# ─── Fig 5: Structure + Macro Selection Robustness ──────────────────────────
-
-fig05_structure_macro:
+fig05_performance_structure:
   figure: "Fig 5"
-  title: "Structure Alignment + Macro Selection Robustness"
-  generator: figures/generators/fig05_structure_alignment.py
-  branch: feature/master-figure-nature-comm
-  branch_tip_commit: "97942ac"
+  title: "Performance And Structure"
+  generator: figures/generators/fig05_performance_structure.py
   primary_run:
     dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
     code_state_git_head: "3785b1f"
     code_state_commit_message: "Results: OMP Transformer Speech260 16 kHz full training (QK + hard Gumbel)"
-    timestamp: "2025-11-15T15:13:23"
-    dataset_fingerprint: f563984848ae49b4443378c4ef720a51
   data_artifacts:
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       type: npz
-      is_symlink: true
-      symlink_target: "worktrees/development-workspace/results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz"
-      keys: [labels, angles_deg, scores_expert, scores_atoms, g_energy_expert, Y_val, selected_counts, selected_mask]
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
-      is_symlink: true
-      symlink_target: "worktrees/development-workspace/results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz"
-      keys: [D, H, W_reduced, W_full, angles, idx2angle, atom_labels]
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+      type: npz
+    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+      type: npz
   model_params:
     d_model: 128
     nhead: 2
     nlayers: 1
     steps: 2
-    n_atoms: 8
-    routing_mode: qk
-    use_hard_gumbel: true
     no_type_bias: true
     epochs: 20
     batch_size: 32
     lr: 0.001
     device: mps
-  validation_metrics:
-    top1_accuracy: 0.9459
-    mae_deg: 0.50
-    p95_error_deg: 5.00
-    n_val_clips: 1924
-    clips_per_angle: 52
-    n_angles: 37
 
-# ─── Fig 6: Angle-Specific Mechanism Diagnostics ────────────────────────────
-
-fig06_angle_specific:
+fig06_universality:
   figure: "Fig 6"
-  title: "Angle-Specific Routing Diagnostics"
-  generator: figures/generators/fig09_confusion_matrix.py
-  branch: exp/omp-ablation-20251209
-  branch_tip_commit: "88a8940"
+  title: "Universal Physical Encoding Across Diverse Materials"
+  generator: figures/generators/fig06_universality.py
   data_artifacts:
-    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
+    - path: h_matrix_normalized_original_to_box.pth
+      type: pth
+      description: "Primary H matrix used for the per-band SVD panel."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       type: npz
-      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
-      description: "Baseline transformer metrics used for angle-specific distribution panels"
-      best_accuracy: 0.9459
-    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+      description: "Primary routing run used for the band-resolved routing panel."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
-      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
-      description: "No-transformer metrics used for angle-specific distribution panels"
-      best_accuracy: 0.631
-  angle_specific_probabilities:
-    angle_55:
-      baseline_correct_probability: 0.5576923076923077
-      no_transformer_correct_probability: 0.40384615384615385
-    angle_100:
-      baseline_correct_probability: 0.6538461538461539
-      no_transformer_correct_probability: 0.5192307692307693
-
-# ─── Fig 7: Band-Wise Routing Diagnostics I ─────────────────────────────────
-
-fig07_bandwise_part1:
-  figure: "Fig 7"
-  title: "Band-Wise Routing Diagnostics I"
-  generator: scripts/fig5_b3_band_decomposition.py
-  branch: feature/master-figure-nature-comm
-  branch_tip_commit: "97942ac"
-  primary_run:
-    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
-    code_state_git_head: "3785b1f"
-  data_artifacts:
-    - path: results/fig5_b3_line5_20260202_224349/Fig5_B3_LINE_300_3000.pdf
-      type: pdf
-      description: "Smoothed full-band routing diagnostic"
-      source_commit: "afac0a13f4af3215a59cb15735488f5ff84df0b4"
-    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_3000.pdf
-      type: pdf
-      description: "Corrected no-smoothing full-band routing diagnostic"
-      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
-    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_300_500.pdf
-      type: pdf
-      description: "No-smoothing low-band routing diagnostic"
-      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
-  provenance_note: "The no-smoothing run was executed on a dirty tree atop afac0a13 and later committed canonically as 97942ac."
-
-# ─── Fig 8: Band-Wise Routing Diagnostics II ────────────────────────────────
-
-fig08_bandwise_part2:
-  figure: "Fig 8"
-  title: "Band-Wise Routing Diagnostics II"
-  generator: scripts/fig5_b3_band_decomposition.py
-  branch: feature/master-figure-nature-comm
-  branch_tip_commit: "97942ac"
-  primary_run:
-    dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
-    code_state_git_head: "3785b1f"
-  data_artifacts:
-    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_500_1000.pdf
-      type: pdf
-      description: "No-smoothing low-mid band routing diagnostic"
-      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
-    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_1000_2000.pdf
-      type: pdf
-      description: "No-smoothing mid band routing diagnostic"
-      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
-    - path: results/fig5_b3_line5_nosmooth_20260202_233434/Fig5_B3_LINE_2000_3000.pdf
-      type: pdf
-      description: "No-smoothing high band routing diagnostic"
-      source_commit: "97942acba336eff0b797840c14515f8dadbd3edc"
-  provenance_note: "These panels are the continuation of the same committed Fig5 B3 band-decomposition lineage as Fig. 7."
-
-# ─── Supp Fig 9: Confusion Matrix Diagnostics ───────────────────────────────
-
-fig09_confusion:
-  figure: "Supp Fig 9"
-  title: "Confusion Matrix Heatmaps and Angle-Specific Distributions"
-  generator: figures/generators/fig09_confusion_matrix.py
-  branch: exp/omp-ablation-20251209
-  branch_tip_commit: "88a8940"
-  data_artifacts:
-    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
-      type: npz
-      is_symlink: false
-      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
-      description: "Baseline transformer confusion matrix"
-      best_accuracy: 0.9459
-      code_state_git_head: "b2943040270c4e4bcd835f98e9df6f2b435b77c1"
-      code_state_timestamp: "2025-12-03T07:44:09"
-      code_state_status: "LFS pointer — content extracted via worktree agent"
-    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
-      type: npz
-      is_symlink: false
-      keys: [confusion_matrix, per_angle_accuracy, predictions, labels, angles, best_epoch, best_accuracy, train_history]
-      description: "No-transformer ablation confusion matrix"
-      best_accuracy: 0.631
-      code_state_git_head: "34403c7ea732ef23b77fc38b3afea2427086338e"
-  ablation_params:
-    no_transformer:
-      encoder_identity: true
-      d_model: 64
-      seed: 42
-
-# ─── Manual / Provenance-Gap Figures ────────────────────────────────────────
-
-fig01_manual:
-  figure: "Fig 1"
-  title: "Experimental Setup + Spectral Fingerprint"
-  type: manual
-  asset: paper/figures/fig01_paradigm-shift.jpg
-  note: "Current manuscript asset is a panel-first recomposition. Split panel PNGs under figures/output/fig01_paradigm_shift_panels/ are the canonical manual panel assets for review and submission support."
-
-fig03_manual:
-  figure: "Fig 3"
-  title: "Unrolled Network Architecture"
-  type: manual
-  asset: paper/figures/fig04_unrolled-attention-omp.jpg
-
-fig09_manual:
-  figure: "Fig 9"
-  title: "Cross-Material Universality"
-  type: provenance_gap
-  asset: paper/figures/fig09_cross-material-universality.jpg
-  note: "Current manuscript asset is a panel-first recomposition built from legacy split panels under figures/output/fig06_cross_material_universality_panels/, but the upstream data-backed generator/evidence layer is not yet registered in machine-readable form."
+      description: "Dictionary support for the band-resolved routing panel."
+    - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
+      type: png
+      description: "Committed split-panel support asset for material exemplars."
+    - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
+      type: png
+      description: "Committed split-panel support asset for representative heatmaps."
+    - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
+      type: png
+      description: "Committed split-panel support asset for the cross-material RMSE panel."
+  note: "Panels d-e are generator-backed. Panels a-c remain partially provenance-gapped top-panel support assets pending a stronger machine-readable cross-material contract."

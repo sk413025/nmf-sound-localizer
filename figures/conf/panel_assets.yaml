@@ -4,44 +4,63 @@ figures:
     panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
 
   fig02:
-    composite_asset: figures/output/fig02_svd_spectrum.pdf
+    composite_asset: paper/figures/fig02_svd-physical-dictionary.jpg
     panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
 
+  fig03:
+    composite_asset: paper/figures/fig03_fingerprint-discriminability.jpg
+    panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
+
   fig04:
-    composite_asset: figures/output/fig04_snr_ablation.pdf
-    panel_dir: figures/output/fig04_snr_ablation_panels
+    composite_asset: paper/figures/fig04_solver-dynamics.jpg
+    panel_dir: figures/output/fig04_solver_dynamics_manuscript_panels
     storage_mode: reference_existing_outputs
-    source_layer: generator_output
+    source_layer: mixed_panel_lineage
     panels:
       - panel_id: a
-        title: Ablation strip chart
-        provenance_mode: data_backed
-        asset_path: figures/output/fig04_snr_ablation_panels/fig04_panel_a_ablation_strip.pdf
+        title: Architecture diagram
+        provenance_mode: manual
+        asset_path: paper/figures/fig04_unrolled-attention-omp.jpg
       - panel_id: b
-        title: SNR robustness curves
+        title: Training convergence
         provenance_mode: data_backed
-        asset_path: figures/output/fig04_snr_ablation_panels/fig04_panel_b_snr_curves.pdf
+        asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf
+      - panel_id: c
+        title: Clean-condition ablation
+        provenance_mode: data_backed
+        asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf
+      - panel_id: d
+        title: Per-angle accuracy profile
+        provenance_mode: data_backed
+        asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf
 
   fig05:
-    composite_asset: paper/figures/fig05_structure-macro-selection.png
-    panel_manifest: figures/output/fig05_structure_macro_panels/fig05_panel_manifest.json
+    composite_asset: paper/figures/fig05_performance-structure.jpg
+    panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
 
   fig06:
-    composite_asset: paper/figures/fig06_angle-specific-mechanism.png
-    panel_manifest: figures/output/fig06_angle_specific_mechanism_panels/fig06_panel_manifest.json
-
-  fig07:
-    composite_asset: paper/figures/fig07_bandwise-routing-analysis-part1.png
-    panel_manifest: figures/output/fig07_bandwise_routing_part1_panels/fig07_panel_manifest.json
-
-  fig08:
-    composite_asset: paper/figures/fig08_bandwise-routing-analysis-part2.png
-    panel_manifest: figures/output/fig08_bandwise_routing_part2_panels/fig08_panel_manifest.json
-
-  fig09:
-    composite_asset: paper/figures/fig09_cross-material-universality.jpg
-    panel_manifest: figures/output/fig09_cross_material_universality_panels/fig09_panel_manifest.json
-
-  supp_fig09:
-    composite_asset: paper/figures/fig09_heatmaps.pdf
-    panel_manifest: figures/output/supp_fig09_confusion_panels/supp_fig09_panel_manifest.json
+    composite_asset: paper/figures/fig06_universality.jpg
+    panel_dir: figures/output/fig06_universality_manuscript_panels
+    storage_mode: reference_existing_outputs
+    source_layer: mixed_panel_lineage
+    panels:
+      - panel_id: a
+        title: Material exemplars
+        provenance_mode: provenance_gap
+        asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
+      - panel_id: b
+        title: Representative dictionary heatmaps
+        provenance_mode: provenance_gap
+        asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
+      - panel_id: c
+        title: Cross-material RMSE comparison
+        provenance_mode: provenance_gap
+        asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
+      - panel_id: d
+        title: Per-band SVD spectra
+        provenance_mode: data_backed
+        asset_path: figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf
+      - panel_id: e
+        title: Band-resolved routing consistency
+        provenance_mode: data_backed
+        asset_path: figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf

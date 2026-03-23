@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MANUSCRIPT = REPO_ROOT / "paper" / "manuscript" / "manuscript.md"
 REGISTRY = REPO_ROOT / "figures" / "FIGURE_REGISTRY.md"
 PAPER_FIGURES = REPO_ROOT / "paper" / "figures"
-MAIN_FIGURES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+MAIN_FIGURES = [1, 2, 3, 4, 5, 6]
 
 
 def _check_exists(path: Path, label: str) -> list[str]:
@@ -42,7 +42,7 @@ def main() -> int:
     for fig_num in MAIN_FIGURES:
         if not re.search(rf"\bFig\.\s*{fig_num}\b", manuscript_text):
             missing_refs.append(fig_num)
-        if f"### Fig {fig_num}" not in registry_text:
+        if f"### Fig {fig_num} " not in registry_text and f"### Fig {fig_num} —" not in registry_text:
             missing_registry.append(fig_num)
         if not any(PAPER_FIGURES.glob(f"fig{fig_num:02d}_*")):
             missing_assets.append(fig_num)
@@ -57,7 +57,7 @@ def main() -> int:
             print(f"- paper/figures missing assets for figures: {missing_assets}")
         return 1
 
-    print("OK: manuscript references, registry entries, and paper assets exist for Figs. 1-9.")
+    print("OK: manuscript references, registry entries, and paper assets exist for the active Figs. 1-6.")
     return 0
 
 
