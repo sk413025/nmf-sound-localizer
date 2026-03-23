@@ -2,6 +2,10 @@
 
 Date: 2026-03-12
 
+Archived note: this document describes a retired `Fig. 5–9` manuscript state
+that predates the current active six-figure contract. Asset paths below should
+be read as historical pre-quarantine locations unless explicitly updated.
+
 Purpose: disentangle which current figures, generator PDFs, results PDFs, and legacy assets actually descend from the original `Master Figure 3` after the manuscript was expanded from one mechanism composite into the current `Fig. 5–8` family.
 
 Canonical provenance remains in:

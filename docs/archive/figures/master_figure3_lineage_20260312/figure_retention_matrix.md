@@ -2,6 +2,10 @@
 
 Date: 2026-03-12
 
+Archived note: this document captures a retired `Fig. 1–9` decision surface
+from before the branch was consolidated around the current active six-figure
+manuscript. Asset paths below are historical unless explicitly updated.
+
 Purpose: provide a decision-ready inventory of current main figures, supplementary figures, and legacy predecessors so the final paper can keep only the assets that remain scientifically necessary and provenance-safe after the `Master Figure 3` family was expanded into `Figs. 5–8`.
 
 This note is a working decision aid, not a canonical registry. Canonical provenance remains in:

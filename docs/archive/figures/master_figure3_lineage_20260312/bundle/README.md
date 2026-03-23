@@ -2,13 +2,18 @@
 
 Date: 2026-03-12
 
+Archived note: this bundle preserves a retired lineage-analysis package from
+the earlier `Fig. 5–9` mechanism-family era. References below to active
+figures and asset paths describe the historical state at bundle creation time,
+not the current active six-figure manuscript.
+
 This bundle concentrates the original `Master Figure 3`, its current active descendants, panel-level support PDFs, and nearby figure families that are often confused with the same lineage.
 
 It is intended for side-by-side comparison and manuscript-facing provenance discussion. It is not the canonical source of truth. Canonical registry and workflow metadata remain in:
 
 - `figures/FIGURE_REGISTRY.md`
-- `docs/working-notes/master_figure3_lineage_crosswalk.md`
-- `docs/working-notes/figure_retention_matrix.md`
+- `docs/archive/figures/master_figure3_lineage_20260312/master_figure3_lineage_crosswalk.md`
+- `docs/archive/figures/master_figure3_lineage_20260312/figure_retention_matrix.md`
 
 ## What This Bundle Contains
 

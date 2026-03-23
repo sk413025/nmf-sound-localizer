@@ -14,7 +14,7 @@ ablation_sweep:
   sweep_suffix: babble_speech260_full_20260209_011327
   aggregated_json: results/figure4_data.json
 
-# Confusion-matrix metrics used by Fig. 6 and Supp Fig. 9
+# Confusion-matrix metrics used by the active Fig. 5 confusion panels and the retired supplementary confusion family
 confusion_matrix:
   baseline: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
   no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
