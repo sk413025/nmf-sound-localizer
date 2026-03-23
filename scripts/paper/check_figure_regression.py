@@ -15,6 +15,7 @@ from PIL import Image, ImageOps
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENTS = REPO_ROOT / "figures" / "conf" / "experiments.yaml"
+ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 
 
 def _git(*args: str, input_bytes: bytes | None = None) -> subprocess.CompletedProcess[bytes]:
@@ -68,13 +69,25 @@ def _images_are_pixel_identical(current_path: Path, baseline_bytes: bytes) -> bo
     return current_size == baseline_size and current_pixels == baseline_pixels
 
 
-def _load_contract_paths(scope: str) -> list[str]:
+def _normalize_figure_ids(raw: str | None) -> set[str] | None:
+    if not raw:
+        return None
+    requested = {item.strip().lower() for item in raw.split(",") if item.strip()}
+    invalid = sorted(requested.difference(ACTIVE_FIGURE_IDS))
+    if invalid:
+        raise ValueError(f"Unsupported figure id(s): {', '.join(invalid)}")
+    return requested
+
+
+def _load_contract_paths(scope: str, figure_ids: set[str] | None = None) -> list[str]:
     with open(EXPERIMENTS, encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
 
     paths: list[str] = []
     for entry in cfg.values():
         if not isinstance(entry, dict) or not entry.get("figure_id"):
+            continue
+        if figure_ids is not None and entry["figure_id"] not in figure_ids:
             continue
         asset = entry.get("manuscript_asset")
         if asset:
@@ -112,8 +125,13 @@ def main() -> int:
         default="all",
         help="Whether to compare all tracked active figure artifacts or only manuscript paper assets.",
     )
+    parser.add_argument(
+        "--figures",
+        help="Optional comma-separated active figure ids to compare (default: all active fig01-fig06).",
+    )
     args = parser.parse_args()
     paper_figures_dir = Path(args.paper_figures_dir).resolve() if args.paper_figures_dir else None
+    figure_ids = _normalize_figure_ids(args.figures)
 
     if not EXPERIMENTS.exists():
         print("ERROR: figures/conf/experiments.yaml not found", file=sys.stderr)
@@ -122,7 +140,7 @@ def main() -> int:
     compared = 0
     mismatches: list[str] = []
     missing_current: list[str] = []
-    for rel in _load_contract_paths(args.scope):
+    for rel in _load_contract_paths(args.scope, figure_ids=figure_ids):
         current_path = _resolve_current_path(rel, paper_figures_dir)
         if not current_path.exists():
             missing_current.append(rel)

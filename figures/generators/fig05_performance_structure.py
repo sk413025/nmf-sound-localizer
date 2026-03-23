@@ -29,6 +29,12 @@ from figures.style import (
     SEMANTIC_PALETTE,
 )
 from figures.naming import get_bound_label
+from figures.layout_contract import (
+    contract_version,
+    figure_section,
+    font_tokens,
+    source_layout_spec,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +48,12 @@ SNR_VARIANTS = [
     ("No Transformer",  SEMANTIC_PALETTE["highlight"], get_bound_label("fig05", "a", "No Transformer", label_type="short")),
     ("Fixed Heuristic", SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
 ]
+
+FIG05_GENERATOR = figure_section("fig05", "generator")
+FIG05_OUTER_GRID = dict(FIG05_GENERATOR["outer_grid"])
+FIG05_HEATMAP_STACK = dict(FIG05_GENERATOR["heatmap_stack"])
+FIG05_ROUTING_STACK = dict(FIG05_GENERATOR["routing_stack"])
+FIG05_STANDALONE = dict(FIG05_GENERATOR["standalone"])
 
 
 def _titlecase_short_label(label: str) -> str:
@@ -90,7 +102,15 @@ def _compute_selection_probability(
     return physics_prob, qk_prob
 
 
-def _plot_snr_panel(ax, snr_curves: dict, variants: list[tuple]) -> None:
+def _plot_snr_panel(
+    ax,
+    snr_curves: dict,
+    variants: list[tuple],
+    *,
+    axis_label_pt: float,
+    tick_label_pt: float,
+    legend_pt: float,
+) -> None:
     x_snr = np.arange(len(SNR_ORDER))
     for variant, color, label in variants:
         variant_levels = snr_curves.get(variant, {})
@@ -107,21 +127,29 @@ def _plot_snr_panel(ax, snr_curves: dict, variants: list[tuple]) -> None:
                         color=color, alpha=0.15, zorder=1)
     ax.set_xticks(x_snr)
     ax.set_xticklabels(SNR_DISPLAY)
-    ax.set_xlabel("SNR (dB)", fontsize=6)
-    ax.set_ylabel("Accuracy", fontsize=6)
+    ax.set_xlabel("SNR (dB)", fontsize=axis_label_pt)
+    ax.set_ylabel("Accuracy", fontsize=axis_label_pt)
     ax.set_ylim(0, 1.05)
+    ax.tick_params(axis="both", labelsize=tick_label_pt)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=6, frameon=False, loc="lower left")
+    ax.legend(fontsize=legend_pt, frameon=False, loc="lower left")
 
 
-def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
+def _save_panel_manifest(
+    panel_dir: Path,
+    panel_specs: list[dict],
+    typography: dict[str, float],
+) -> Path:
     manifest_path = panel_dir / "fig05_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig05",
         "composite_asset": "figures/output/fig05_performance_structure.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": typography,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -135,7 +163,15 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
     """Generate Figure 5 — Performance + Structure + Interpretability (6 panels)."""
-    set_nature_rcparams(base_fontsize=7)
+    typography = font_tokens()
+    set_nature_rcparams(base_fontsize=int(round(typography["title"])))
+    title_pt = typography["title"]
+    axis_label_pt = typography["axis_label"]
+    tick_label_pt = typography["tick_label"]
+    legend_pt = typography["legend"]
+    annotation_pt = typography["annotation"]
+    colorbar_tick_pt = typography["colorbar_tick"]
+    colorbar_label_pt = typography["colorbar_label"]
 
     selection_omp_short = get_bound_label("fig05", "c", "omp_side", label_type="short")
     selection_solver_short = get_bound_label(
@@ -227,64 +263,80 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (2 rows x 3 columns)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=170)
+    fig = make_figure(
+        width_mm=FIG05_GENERATOR["composite_width_mm"],
+        height_mm=FIG05_GENERATOR["composite_height_mm"],
+    )
     gs = gridspec.GridSpec(
         2, 3, figure=fig,
         height_ratios=[1.0, 1.0],
-        hspace=0.22, wspace=0.28,
-        left=0.06, right=0.98, bottom=0.06, top=0.97,
+        hspace=FIG05_OUTER_GRID["hspace"],
+        wspace=FIG05_OUTER_GRID["wspace"],
+        left=FIG05_OUTER_GRID["left"],
+        right=FIG05_OUTER_GRID["right"],
+        bottom=FIG05_OUTER_GRID["bottom"],
+        top=FIG05_OUTER_GRID["top"],
     )
 
     # --- Row 1 ---
 
     # Panel (a): SNR sweep
     ax_a = fig.add_subplot(gs[0, 0])
-    _plot_snr_panel(ax_a, snr_curves, SNR_VARIANTS)
-    ax_a.set_title("Noise robustness", fontsize=6.5)
+    _plot_snr_panel(
+        ax_a,
+        snr_curves,
+        SNR_VARIANTS,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        legend_pt=legend_pt,
+    )
+    ax_a.set_title("Noise robustness", fontsize=title_pt)
     add_panel_label(ax_a, "a", x=-0.15, y=1.06)
 
     # Panel (b): H_corr vs QK_corr
     gs_b = gridspec.GridSpecFromSubplotSpec(
         2, 2, subplot_spec=gs[0, 1],
-        width_ratios=[1.0, 0.05],
-        hspace=0.12, wspace=0.05,
+        width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
+        hspace=FIG05_HEATMAP_STACK["hspace"],
+        wspace=FIG05_HEATMAP_STACK["wspace"],
     )
 
     ax_b1 = fig.add_subplot(gs_b[0, 0])
     im1 = ax_b1.imshow(H_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b1.set_title("H physical structure", fontsize=5.8)
+    ax_b1.set_title("H physical structure", fontsize=title_pt)
     ax_b1.set_xticks(tick_positions)
     ax_b1.set_xticklabels([])
     ax_b1.set_yticks(tick_positions)
-    ax_b1.set_yticklabels(tick_labels, fontsize=5)
-    ax_b1.set_ylabel("Angle (\u00b0)", fontsize=5)
+    ax_b1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_b1.set_ylabel("Angle (\u00b0)", fontsize=axis_label_pt)
     ax_b1.tick_params(axis="both", length=2)
     add_panel_label(ax_b1, "b", x=-0.2, y=1.12)
 
     ax_b2 = fig.add_subplot(gs_b[1, 0], sharex=ax_b1, sharey=ax_b1)
     im2 = ax_b2.imshow(expert_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b2.set_title("QK learned structure", fontsize=5.8)
+    ax_b2.set_title("QK learned structure", fontsize=title_pt)
     ax_b2.set_xticks(tick_positions)
-    ax_b2.set_xticklabels(tick_labels, fontsize=5)
+    ax_b2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_b2.set_yticks(tick_positions)
-    ax_b2.set_yticklabels(tick_labels, fontsize=5)
-    ax_b2.set_xlabel("Angle (\u00b0)", fontsize=5)
-    ax_b2.set_ylabel("Angle (\u00b0)", fontsize=5)
+    ax_b2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_b2.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax_b2.set_ylabel("Angle (\u00b0)", fontsize=axis_label_pt)
     ax_b2.tick_params(axis="both", length=2)
     cax_b = fig.add_subplot(gs_b[:, 1])
     cbar = plt.colorbar(im2, cax=cax_b)
-    cbar.set_label("Corr", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("Corr", fontsize=colorbar_label_pt)
+    cbar.ax.tick_params(labelsize=colorbar_tick_pt)
     ax_b2.text(0.03, 0.05, f"r = {pearson_r:.3f}",
-               transform=ax_b2.transAxes, fontsize=5.3, style="italic")
+               transform=ax_b2.transAxes, fontsize=annotation_pt, style="italic")
 
     # Panel (c): Selection probability
     gs_c = gridspec.GridSpecFromSubplotSpec(
         2, 2, subplot_spec=gs[0, 2],
-        width_ratios=[1.0, 0.05],
-        hspace=0.12, wspace=0.05,
+        width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
+        hspace=FIG05_HEATMAP_STACK["hspace"],
+        wspace=FIG05_HEATMAP_STACK["wspace"],
     )
     vmax_unified = max(physics_prob.max(), qk_prob.max())
 
@@ -293,13 +345,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
     ax_c1.set_title(
-        f"{_titlecase_short_label(selection_omp_short)} selection", fontsize=5.8
+        f"{_titlecase_short_label(selection_omp_short)} selection", fontsize=title_pt
     )
-    ax_c1.set_ylabel("True DOA", fontsize=5)
+    ax_c1.set_ylabel("True DOA", fontsize=axis_label_pt)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
     ax_c1.set_yticks(tick_positions)
-    ax_c1.set_yticklabels(tick_labels, fontsize=5)
+    ax_c1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c1.tick_params(axis="both", length=2)
     add_panel_label(ax_c1, "c", x=-0.2, y=1.12)
 
@@ -308,19 +360,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
     ax_c2.set_title(
-        f"{_titlecase_short_label(selection_solver_short)} selection", fontsize=5.8
+        f"{_titlecase_short_label(selection_solver_short)} selection", fontsize=title_pt
     )
-    ax_c2.set_ylabel("True DOA", fontsize=5)
-    ax_c2.set_xlabel("Expert", fontsize=5)
+    ax_c2.set_ylabel("True DOA", fontsize=axis_label_pt)
+    ax_c2.set_xlabel("Expert", fontsize=axis_label_pt)
     ax_c2.set_xticks(tick_positions)
-    ax_c2.set_xticklabels(tick_labels, fontsize=5)
+    ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
-    ax_c2.set_yticklabels(tick_labels, fontsize=5)
+    ax_c2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.tick_params(axis="both", length=2)
     cax_c = fig.add_subplot(gs_c[:, 1])
     cbar = plt.colorbar(im4, cax=cax_c)
-    cbar.set_label("P(select)", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("P(select)", fontsize=colorbar_label_pt)
+    cbar.ax.tick_params(labelsize=colorbar_tick_pt)
 
     # --- Row 2 ---
 
@@ -328,8 +380,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
             2, 2, subplot_spec=gs[1, 0],
-            width_ratios=[1.0, 0.05],
-            hspace=0.12, wspace=0.05,
+            width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
+            hspace=FIG05_HEATMAP_STACK["hspace"],
+            wspace=FIG05_HEATMAP_STACK["wspace"],
         )
 
         # Normalize confusion matrices to row-probabilities
@@ -346,42 +399,42 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d1 = fig.add_subplot(gs_d[0, 0])
         ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
                      interpolation="nearest", vmin=0, vmax=1)
-        ax_d1.set_title(_titlecase_short_label(cm_solver_short), fontsize=5.8)
+        ax_d1.set_title(_titlecase_short_label(cm_solver_short), fontsize=title_pt)
         ax_d1.set_xticks(tick_positions)
         ax_d1.set_xticklabels([])
         ax_d1.set_yticks(tick_positions)
-        ax_d1.set_yticklabels(tick_labels, fontsize=5)
-        ax_d1.set_ylabel("True", fontsize=5)
+        ax_d1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+        ax_d1.set_ylabel("True", fontsize=axis_label_pt)
         ax_d1.tick_params(axis="both", length=2)
         add_panel_label(ax_d1, "d", x=-0.20, y=1.12)
 
         ax_d2 = fig.add_subplot(gs_d[1, 0], sharex=ax_d1, sharey=ax_d1)
         im_d2 = ax_d2.imshow(no_trans_cm_norm, cmap="viridis", aspect="equal",
                               interpolation="nearest", vmin=0, vmax=1)
-        ax_d2.set_title(_titlecase_short_label(cm_no_transformer_short), fontsize=5.8)
+        ax_d2.set_title(_titlecase_short_label(cm_no_transformer_short), fontsize=title_pt)
         ax_d2.set_xticks(tick_positions)
-        ax_d2.set_xticklabels(tick_labels, fontsize=5)
+        ax_d2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
         ax_d2.set_yticks(tick_positions)
-        ax_d2.set_yticklabels(tick_labels, fontsize=5)
-        ax_d2.set_xlabel("Predicted", fontsize=5)
-        ax_d2.set_ylabel("True", fontsize=5)
+        ax_d2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+        ax_d2.set_xlabel("Predicted", fontsize=axis_label_pt)
+        ax_d2.set_ylabel("True", fontsize=axis_label_pt)
         ax_d2.tick_params(axis="both", length=2)
         cax_d = fig.add_subplot(gs_d[:, 1])
         cbar = plt.colorbar(im_d2, cax=cax_d)
-        cbar.set_label("P(pred|true)", fontsize=5)
-        cbar.ax.tick_params(labelsize=5)
+        cbar.set_label("P(pred|true)", fontsize=colorbar_label_pt)
+        cbar.ax.tick_params(labelsize=colorbar_tick_pt)
     else:
         ax_d_placeholder = fig.add_subplot(gs[1, 0])
         ax_d_placeholder.text(0.5, 0.5, "Confusion matrix\ndata unavailable",
                               transform=ax_d_placeholder.transAxes,
-                              ha="center", va="center", fontsize=7)
+                              ha="center", va="center", fontsize=annotation_pt)
         ax_d_placeholder.set_axis_off()
         add_panel_label(ax_d_placeholder, "d", x=-0.1, y=1.06)
 
     # Panel (e): Angle-specific routing at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 1], hspace=0.22,
+            2, 1, subplot_spec=gs[1, 1], hspace=FIG05_ROUTING_STACK["hspace"],
         )
 
         representative_angles = [55.0, 100.0]
@@ -409,21 +462,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                          linestyle="--", alpha=0.8)
 
             ax_e.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0",
-                           fontsize=5.6)
+                           fontsize=title_pt)
             if row_idx == 1:
-                ax_e.set_xlabel("Expert index", fontsize=5)
-            ax_e.set_ylabel("P(predict)", fontsize=5)
+                ax_e.set_xlabel("Expert index", fontsize=axis_label_pt)
+            ax_e.set_ylabel("P(predict)", fontsize=axis_label_pt)
             ax_e.set_xticks(tick_positions)
-            ax_e.set_xticklabels(tick_labels, fontsize=5.5)
-            ax_e.tick_params(axis="y", labelsize=5.5)
+            ax_e.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+            ax_e.tick_params(axis="y", labelsize=tick_label_pt)
             if row_idx == 0:
-                ax_e.legend(fontsize=6, frameon=False, loc="upper right")
+                ax_e.legend(fontsize=legend_pt, frameon=False, loc="upper right")
                 add_panel_label(ax_e, "e", x=-0.20, y=1.12)
     else:
         ax_e_placeholder = fig.add_subplot(gs[1, 1])
         ax_e_placeholder.text(0.5, 0.5, "Angle routing\ndata unavailable",
                               transform=ax_e_placeholder.transAxes,
-                              ha="center", va="center", fontsize=7)
+                              ha="center", va="center", fontsize=annotation_pt)
         ax_e_placeholder.set_axis_off()
         add_panel_label(ax_e_placeholder, "e", x=-0.1, y=1.06)
 
@@ -438,29 +491,34 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                   label=diag_no_transformer_short)
         ax_f.fill_between(angles, baseline_per_angle, no_trans_per_angle,
                           alpha=0.15, color=SEMANTIC_PALETTE["highlight"])
-        ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
-        ax_f.set_ylabel("P(correct)", fontsize=6)
-        ax_f.set_title("Per-angle accuracy", fontsize=6.5)
+        ax_f.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+        ax_f.set_ylabel("P(correct)", fontsize=axis_label_pt)
+        ax_f.set_title("Per-angle accuracy", fontsize=title_pt)
         ax_f.set_ylim(0, 1.05)
-        ax_f.legend(fontsize=6, frameon=False, loc="lower left")
+        ax_f.legend(fontsize=legend_pt, frameon=False, loc="lower left")
+        ax_f.tick_params(axis="both", labelsize=tick_label_pt)
         ax_f.grid(axis="y", linestyle="--", alpha=0.3)
 
         # Annotate improvement count
         n_improved = np.sum(baseline_per_angle > no_trans_per_angle)
         ax_f.text(0.95, 0.05, f"{n_improved}/{len(angles)} improved",
                   transform=ax_f.transAxes, ha="right", va="bottom",
-                  fontsize=6, style="italic")
+                  fontsize=annotation_pt, style="italic")
         add_panel_label(ax_f, "f", x=-0.15, y=1.06)
     else:
         ax_f_placeholder = fig.add_subplot(gs[1, 2])
         ax_f_placeholder.text(0.5, 0.5, "Per-angle data\nunavailable",
                               transform=ax_f_placeholder.transAxes,
-                              ha="center", va="center", fontsize=7)
+                              ha="center", va="center", fontsize=annotation_pt)
         ax_f_placeholder.set_axis_off()
         add_panel_label(ax_f_placeholder, "f", x=-0.1, y=1.06)
 
     # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig05_performance_structure")
+    all_paths = save_outputs(
+        fig,
+        output_dir / "fig05_performance_structure",
+        typography=typography,
+    )
     plt.close(fig)
 
     # -----------------------------------------------------------------------
@@ -470,55 +528,101 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_dir.mkdir(parents=True, exist_ok=True)
 
     # Panel a standalone
-    fig_a = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    fig_a = make_figure(
+        width_mm=FIG05_STANDALONE["a"]["width_mm"],
+        height_mm=FIG05_STANDALONE["a"]["height_mm"],
+    )
     ax = fig_a.add_subplot(111)
-    _plot_snr_panel(ax, snr_curves, SNR_VARIANTS)
+    _plot_snr_panel(
+        ax,
+        snr_curves,
+        SNR_VARIANTS,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        legend_pt=legend_pt,
+    )
     add_panel_label(ax, "a")
-    fig_a.subplots_adjust(left=0.1, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_a, panel_dir / "fig05_panel_a_snr_sweep"))
+    fig_a.subplots_adjust(**FIG05_STANDALONE["a"]["subplots_adjust"])
+    all_paths.extend(
+        save_outputs(
+            fig_a,
+            panel_dir / "fig05_panel_a_snr_sweep",
+            typography=typography,
+        )
+    )
     plt.close(fig_a)
 
     # Panel b standalone
-    fig_b = make_figure(width_mm=DOUBLE_COL_MM, height_mm=120)
-    gs_bs = gridspec.GridSpec(2, 1, figure=fig_b, hspace=0.30,
-                              left=0.08, right=0.95, bottom=0.08, top=0.94)
+    fig_b = make_figure(
+        width_mm=FIG05_STANDALONE["b"]["width_mm"],
+        height_mm=FIG05_STANDALONE["b"]["height_mm"],
+    )
+    fig_b_grid = FIG05_STANDALONE["b"]["grid"]
+    gs_bs = gridspec.GridSpec(
+        2,
+        1,
+        figure=fig_b,
+        hspace=fig_b_grid["hspace"],
+        left=fig_b_grid["left"],
+        right=fig_b_grid["right"],
+        bottom=fig_b_grid["bottom"],
+        top=fig_b_grid["top"],
+    )
     ax1 = fig_b.add_subplot(gs_bs[0, 0])
     ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax1.set_title("H physical structure", fontsize=7, fontweight="bold")
+    ax1.set_title("H physical structure", fontsize=title_pt, fontweight="bold")
     ax1.set_xticks(tick_positions)
-    ax1.set_xticklabels(tick_labels, fontsize=5)
+    ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
-    ax1.set_yticklabels(tick_labels, fontsize=5)
+    ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     add_panel_label(ax1, "b")
     ax2 = fig_b.add_subplot(gs_bs[1, 0])
     ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax2.set_title("QK learned structure", fontsize=7, fontweight="bold")
+    ax2.set_title("QK learned structure", fontsize=title_pt, fontweight="bold")
     ax2.set_xticks(tick_positions)
-    ax2.set_xticklabels(tick_labels, fontsize=5)
+    ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
-    ax2.set_yticklabels(tick_labels, fontsize=5)
+    ax2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.text(0.5, -0.22, f"Pearson r = {pearson_r:.3f}",
-             transform=ax2.transAxes, fontsize=6, ha="center", style="italic")
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig05_panel_b_correlation"))
+             transform=ax2.transAxes, fontsize=annotation_pt, ha="center", style="italic")
+    all_paths.extend(
+        save_outputs(
+            fig_b,
+            panel_dir / "fig05_panel_b_correlation",
+            typography=typography,
+        )
+    )
     plt.close(fig_b)
 
     # Panel c standalone
-    fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=120)
-    gs_cs = gridspec.GridSpec(2, 1, figure=fig_c, hspace=0.30,
-                              left=0.08, right=0.95, bottom=0.08, top=0.94)
+    fig_c = make_figure(
+        width_mm=FIG05_STANDALONE["c"]["width_mm"],
+        height_mm=FIG05_STANDALONE["c"]["height_mm"],
+    )
+    fig_c_grid = FIG05_STANDALONE["c"]["grid"]
+    gs_cs = gridspec.GridSpec(
+        2,
+        1,
+        figure=fig_c,
+        hspace=fig_c_grid["hspace"],
+        left=fig_c_grid["left"],
+        right=fig_c_grid["right"],
+        bottom=fig_c_grid["bottom"],
+        top=fig_c_grid["top"],
+    )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
     ax1.imshow(physics_prob, cmap="viridis", aspect="equal",
                extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                interpolation="nearest")
     ax1.set_title(
         f"{_titlecase_short_label(selection_omp_short)} selection",
-        fontsize=7,
+        fontsize=title_pt,
         fontweight="bold",
     )
     ax1.set_xticks(tick_positions)
-    ax1.set_xticklabels(tick_labels, fontsize=5)
+    ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
-    ax1.set_yticklabels(tick_labels, fontsize=5)
+    ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
     ax2.imshow(qk_prob, cmap="viridis", aspect="equal",
@@ -526,21 +630,38 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                interpolation="nearest")
     ax2.set_title(
         f"{_titlecase_short_label(selection_solver_short)} selection",
-        fontsize=7,
+        fontsize=title_pt,
         fontweight="bold",
     )
     ax2.set_xticks(tick_positions)
-    ax2.set_xticklabels(tick_labels, fontsize=5)
+    ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
-    ax2.set_yticklabels(tick_labels, fontsize=5)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig05_panel_c_selection"))
+    ax2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    all_paths.extend(
+        save_outputs(
+            fig_c,
+            panel_dir / "fig05_panel_c_selection",
+            typography=typography,
+        )
+    )
     plt.close(fig_c)
 
     # Panel d standalone (confusion matrices)
     if baseline_cm is not None and no_trans_cm is not None:
-        fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
-        gs_ds = fig_d.add_gridspec(1, 2, wspace=0.25, left=0.08, right=0.95,
-                                    bottom=0.15, top=0.85)
+        fig_d = make_figure(
+            width_mm=FIG05_STANDALONE["d"]["width_mm"],
+            height_mm=FIG05_STANDALONE["d"]["height_mm"],
+        )
+        fig_d_grid = FIG05_STANDALONE["d"]["grid"]
+        gs_ds = fig_d.add_gridspec(
+            1,
+            2,
+            wspace=fig_d_grid["wspace"],
+            left=fig_d_grid["left"],
+            right=fig_d_grid["right"],
+            bottom=fig_d_grid["bottom"],
+            top=fig_d_grid["top"],
+        )
         for ax_idx, (cm, title) in enumerate([
             (baseline_cm, _titlecase_short_label(cm_solver_short)),
             (no_trans_cm, _titlecase_short_label(cm_no_transformer_short)),
@@ -551,23 +672,41 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             cm_norm = np.divide(cm_norm, rs, where=rs > 0)
             ax.imshow(cm_norm, cmap="viridis", aspect="equal",
                       interpolation="nearest", vmin=0, vmax=1)
-            ax.set_title(title, fontsize=7, fontweight="bold")
+            ax.set_title(title, fontsize=title_pt, fontweight="bold")
             ax.set_xticks(tick_positions)
-            ax.set_xticklabels(tick_labels, fontsize=5)
+            ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
             ax.set_yticks(tick_positions)
-            ax.set_yticklabels(tick_labels, fontsize=5)
-            ax.set_xlabel("Predicted", fontsize=6)
+            ax.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+            ax.set_xlabel("Predicted", fontsize=axis_label_pt)
             if ax_idx == 0:
-                ax.set_ylabel("True", fontsize=6)
+                ax.set_ylabel("True", fontsize=axis_label_pt)
         add_panel_label(fig_d.axes[0], "d")
-        all_paths.extend(save_outputs(fig_d, panel_dir / "fig05_panel_d_confusion"))
+        all_paths.extend(
+            save_outputs(
+                fig_d,
+                panel_dir / "fig05_panel_d_confusion",
+                typography=typography,
+            )
+        )
         plt.close(fig_d)
 
     # Panel e standalone (angle-specific routing)
     if baseline_cm is not None and no_trans_cm is not None:
-        fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=100)
-        gs_es = gridspec.GridSpec(2, 1, figure=fig_e, hspace=0.35,
-                                  left=0.08, right=0.95, bottom=0.10, top=0.92)
+        fig_e = make_figure(
+            width_mm=FIG05_STANDALONE["e"]["width_mm"],
+            height_mm=FIG05_STANDALONE["e"]["height_mm"],
+        )
+        fig_e_grid = FIG05_STANDALONE["e"]["grid"]
+        gs_es = gridspec.GridSpec(
+            2,
+            1,
+            figure=fig_e,
+            hspace=fig_e_grid["hspace"],
+            left=fig_e_grid["left"],
+            right=fig_e_grid["right"],
+            bottom=fig_e_grid["bottom"],
+            top=fig_e_grid["top"],
+        )
         for row_idx, target_angle in enumerate([55.0, 100.0]):
             target_idx = int(np.argmin(np.abs(angles - target_angle)))
             ax = fig_e.add_subplot(gs_es[row_idx, 0])
@@ -581,18 +720,28 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             ax.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
                    color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
             ax.axvline(target_idx, color="lime", linewidth=0.8, linestyle="--")
-            ax.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0", fontsize=7)
-            ax.set_xlabel("Expert index")
-            ax.set_ylabel("P(predict)")
+            ax.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0", fontsize=title_pt)
+            ax.set_xlabel("Expert index", fontsize=axis_label_pt)
+            ax.set_ylabel("P(predict)", fontsize=axis_label_pt)
+            ax.tick_params(axis="both", labelsize=tick_label_pt)
             if row_idx == 0:
-                ax.legend(fontsize=5, frameon=False)
+                ax.legend(fontsize=legend_pt, frameon=False)
         add_panel_label(fig_e.axes[0], "e")
-        all_paths.extend(save_outputs(fig_e, panel_dir / "fig05_panel_e_routing"))
+        all_paths.extend(
+            save_outputs(
+                fig_e,
+                panel_dir / "fig05_panel_e_routing",
+                typography=typography,
+            )
+        )
         plt.close(fig_e)
 
     # Panel f standalone (per-angle diagonal concentration)
     if baseline_per_angle is not None and no_trans_per_angle is not None:
-        fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+        fig_f = make_figure(
+            width_mm=FIG05_STANDALONE["f"]["width_mm"],
+            height_mm=FIG05_STANDALONE["f"]["height_mm"],
+        )
         ax = fig_f.add_subplot(111)
         ax.plot(angles, baseline_per_angle, "-o", markersize=3, linewidth=1.0,
                 color=SEMANTIC_PALETTE["learned"], label=diag_solver_short)
@@ -603,11 +752,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.set_xlabel("Angle (\u00b0)")
         ax.set_ylabel("P(correct)")
         ax.set_ylim(0, 1.05)
-        ax.legend(fontsize=5, frameon=False)
+        ax.legend(fontsize=legend_pt, frameon=False)
+        ax.tick_params(axis="both", labelsize=tick_label_pt)
         ax.grid(axis="y", linestyle="--", alpha=0.3)
         add_panel_label(ax, "f")
-        fig_f.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-        all_paths.extend(save_outputs(fig_f, panel_dir / "fig05_panel_f_diagonal"))
+        fig_f.subplots_adjust(**FIG05_STANDALONE["f"]["subplots_adjust"])
+        all_paths.extend(
+            save_outputs(
+                fig_f,
+                panel_dir / "fig05_panel_f_diagonal",
+                typography=typography,
+            )
+        )
         plt.close(fig_f)
 
     # Panel manifest
@@ -657,6 +813,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "description": "37-point P(correct) comparison showing transformer routing benefit per angle.",
             },
         ],
+        typography=typography,
     )
     all_paths.append(manifest)
 

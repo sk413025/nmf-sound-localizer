@@ -28,6 +28,12 @@ from figures.style import (
     SEMANTIC_PALETTE,
 )
 from figures.naming import get_bound_label
+from figures.layout_contract import (
+    contract_version,
+    figure_section,
+    font_tokens,
+    source_layout_spec,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -43,23 +49,29 @@ ABLATION_VARIANTS = [
     ("Dense Routing",    "#000000"),
 ]
 
-FIG04_BOTTOM_GAP_MM = 4.0
-FIG04_PANEL_SLOT_WIDTH_MM = (DOUBLE_COL_MM - 2 * FIG04_BOTTOM_GAP_MM) / 3
-FIG04_PANEL_SLOT_HEIGHT_MM = 36.0
-FIG04_LABEL_PT = 6.0
-FIG04_TICK_PT = 5.5
-FIG04_LEGEND_PT = 5.5
-FIG04_TITLE_PT = 6.5
+FIG04_GENERATOR = figure_section("fig04", "generator")
+FIG04_SPLIT = dict(FIG04_GENERATOR["split"])
+FIG04_GRID = dict(FIG04_GENERATOR["composite_grid"])
+FIG04_STANDALONE = dict(FIG04_SPLIT["standalone_subplots"])
+FIG04_PANEL_SLOT_WIDTH_MM = float(FIG04_SPLIT["panel_slot_width_mm"])
+FIG04_PANEL_SLOT_HEIGHT_MM = float(FIG04_SPLIT["panel_slot_height_mm"])
 
 
-def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
+def _save_panel_manifest(
+    panel_dir: Path,
+    panel_specs: list[dict],
+    typography: dict[str, float],
+) -> Path:
     manifest_path = panel_dir / "fig04_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig04",
         "composite_asset": "figures/output/fig04_solver_dynamics.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": typography,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -73,7 +85,12 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
     """Generate Figure 4 data panels (b, c, d)."""
-    set_nature_rcparams(base_fontsize=7)
+    typography = font_tokens()
+    set_nature_rcparams(base_fontsize=int(round(typography["title"])))
+    axis_label_pt = typography["axis_label"]
+    tick_label_pt = typography["tick_label"]
+    legend_pt = typography["legend"]
+    title_pt = typography["title"]
 
     paths_cfg = load_paths()
     run_dir = data_root / paths_cfg["primary_run"]
@@ -106,10 +123,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (3 panels in a row)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    fig = make_figure(
+        width_mm=FIG04_GENERATOR["composite_width_mm"],
+        height_mm=FIG04_GENERATOR["composite_height_mm"],
+    )
     gs = gridspec.GridSpec(
         1, 3, figure=fig, width_ratios=[1.0, 1.0, 1.0],
-        wspace=0.28, left=0.06, right=0.98, bottom=0.18, top=0.88,
+        wspace=FIG04_GRID["wspace"],
+        left=FIG04_GRID["left"],
+        right=FIG04_GRID["right"],
+        bottom=FIG04_GRID["bottom"],
+        top=FIG04_GRID["top"],
     )
 
     # --- Panel (b): Training convergence ---
@@ -120,19 +144,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
               color=SEMANTIC_PALETTE["ablation"], label="Class loss")
     ax_b.axvline(best_epoch, color="gray", linestyle="--", linewidth=0.6,
                  alpha=0.7, label=f"Best epoch ({best_epoch})")
-    ax_b.set_xlabel("Epoch", fontsize=FIG04_LABEL_PT)
-    ax_b.set_ylabel("Loss", fontsize=FIG04_LABEL_PT)
-    ax_b.set_title("Training convergence", fontsize=FIG04_TITLE_PT)
-    ax_b.legend(fontsize=FIG04_LEGEND_PT, frameon=False, loc="upper right")
-    ax_b.tick_params(axis="both", labelsize=FIG04_TICK_PT)
+    ax_b.set_xlabel("Epoch", fontsize=axis_label_pt)
+    ax_b.set_ylabel("Loss", fontsize=axis_label_pt)
+    ax_b.set_title("Training convergence", fontsize=title_pt)
+    ax_b.legend(fontsize=legend_pt, frameon=False, loc="upper right")
+    ax_b.tick_params(axis="both", labelsize=tick_label_pt)
     ax_b.grid(axis="y", linestyle="--", alpha=0.3)
 
     # Secondary axis for accuracy
     ax_b2 = ax_b.twinx()
     ax_b2.plot(epochs, teacher_acc, "-^", markersize=2, linewidth=0.9,
                color=SEMANTIC_PALETTE["physics"], alpha=0.7)
-    ax_b2.set_ylabel("Subset accuracy", fontsize=FIG04_LABEL_PT, color=SEMANTIC_PALETTE["physics"])
-    ax_b2.tick_params(axis="y", labelcolor=SEMANTIC_PALETTE["physics"], labelsize=FIG04_TICK_PT)
+    ax_b2.set_ylabel("Subset accuracy", fontsize=axis_label_pt, color=SEMANTIC_PALETTE["physics"])
+    ax_b2.tick_params(axis="y", labelcolor=SEMANTIC_PALETTE["physics"], labelsize=tick_label_pt)
     add_panel_label(ax_b, "b", x=-0.15, y=1.06)
 
     # --- Panel (c): Clean-condition ablation strip chart ---
@@ -159,11 +183,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                   color=color, linewidth=1.5, zorder=4)
 
     ax_c.set_yticks(y_positions)
-    ax_c.set_yticklabels(y_labels, fontsize=FIG04_TICK_PT)
-    ax_c.set_xlabel("Accuracy (clean)", fontsize=FIG04_LABEL_PT)
-    ax_c.set_title("Ablation comparison", fontsize=FIG04_TITLE_PT)
+    ax_c.set_yticklabels(y_labels, fontsize=tick_label_pt)
+    ax_c.set_xlabel("Accuracy (clean)", fontsize=axis_label_pt)
+    ax_c.set_title("Ablation comparison", fontsize=title_pt)
     ax_c.set_xlim(0, 1.05)
-    ax_c.tick_params(axis="x", labelsize=FIG04_TICK_PT)
+    ax_c.tick_params(axis="x", labelsize=tick_label_pt)
     ax_c.grid(axis="x", linestyle="--", alpha=0.3)
     ax_c.invert_yaxis()
     add_panel_label(ax_c, "c", x=-0.18, y=1.06)
@@ -181,17 +205,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
              edgecolor="none")
     ax_d.axhline(mean_acc, color="black", linestyle="--", linewidth=0.6,
                  alpha=0.7, label=f"Mean = {mean_acc:.2f}")
-    ax_d.set_xlabel("Angle (\u00b0)", fontsize=FIG04_LABEL_PT)
-    ax_d.set_ylabel("Accuracy", fontsize=FIG04_LABEL_PT)
-    ax_d.set_title("Per-angle accuracy", fontsize=FIG04_TITLE_PT)
+    ax_d.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax_d.set_ylabel("Accuracy", fontsize=axis_label_pt)
+    ax_d.set_title("Per-angle accuracy", fontsize=title_pt)
     ax_d.set_ylim(0, 1.05)
-    ax_d.legend(fontsize=FIG04_LEGEND_PT, frameon=False, loc="lower left")
-    ax_d.tick_params(axis="both", labelsize=FIG04_TICK_PT)
+    ax_d.legend(fontsize=legend_pt, frameon=False, loc="lower left")
+    ax_d.tick_params(axis="both", labelsize=tick_label_pt)
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 
     # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig04_solver_dynamics")
+    all_paths = save_outputs(
+        fig,
+        output_dir / "fig04_solver_dynamics",
+        typography=typography,
+    )
     plt.close(fig)
 
     # -----------------------------------------------------------------------
@@ -208,13 +236,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.plot(epochs, class_loss, "-s", markersize=3, linewidth=1.0,
             color=SEMANTIC_PALETTE["ablation"], label="Class loss")
     ax.axvline(best_epoch, color="gray", linestyle="--", linewidth=0.6, alpha=0.7)
-    ax.set_xlabel("Epoch", fontsize=FIG04_LABEL_PT)
-    ax.set_ylabel("Loss", fontsize=FIG04_LABEL_PT)
-    ax.tick_params(axis="both", labelsize=FIG04_TICK_PT)
-    ax.legend(fontsize=FIG04_LEGEND_PT, frameon=False, loc="upper right")
+    ax.set_xlabel("Epoch", fontsize=axis_label_pt)
+    ax.set_ylabel("Loss", fontsize=axis_label_pt)
+    ax.tick_params(axis="both", labelsize=tick_label_pt)
+    ax.legend(fontsize=legend_pt, frameon=False, loc="upper right")
     add_panel_label(ax, "b")
-    fig_b.subplots_adjust(left=0.18, right=0.96, bottom=0.24, top=0.90)
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig04_panel_b_convergence"))
+    fig_b.subplots_adjust(**FIG04_STANDALONE["b"])
+    all_paths.extend(
+        save_outputs(
+            fig_b,
+            panel_dir / "fig04_panel_b_convergence",
+            typography=typography,
+        )
+    )
     plt.close(fig_b)
 
     # Panel c standalone
@@ -236,16 +270,22 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.plot([np.mean(seeds_arr)] * 2, [y_pos - 0.3, y_pos + 0.3],
                 color=color, linewidth=1.5, zorder=4)
     ax.set_yticks(y_positions_s)
-    ax.set_yticklabels(y_labels_s, fontsize=FIG04_TICK_PT)
-    ax.set_xlabel("Accuracy (clean)", fontsize=FIG04_LABEL_PT)
+    ax.set_yticklabels(y_labels_s, fontsize=tick_label_pt)
+    ax.set_xlabel("Accuracy (clean)", fontsize=axis_label_pt)
     ax.set_xlim(0, 1.05)
     ax.set_xticks([0.0, 0.5, 1.0])
-    ax.tick_params(axis="x", labelsize=FIG04_TICK_PT)
+    ax.tick_params(axis="x", labelsize=tick_label_pt)
     ax.grid(axis="x", linestyle="--", alpha=0.3)
     ax.invert_yaxis()
     add_panel_label(ax, "c")
-    fig_c.subplots_adjust(left=0.28, right=0.97, bottom=0.24, top=0.90)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig04_panel_c_ablation"))
+    fig_c.subplots_adjust(**FIG04_STANDALONE["c"])
+    all_paths.extend(
+        save_outputs(
+            fig_c,
+            panel_dir / "fig04_panel_c_ablation",
+            typography=typography,
+        )
+    )
     plt.close(fig_c)
 
     # Panel d standalone
@@ -254,14 +294,20 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.bar(angles, per_angle_acc, width=4, color=SEMANTIC_PALETTE["learned"],
            alpha=0.8, edgecolor="none")
     ax.axhline(mean_acc, color="black", linestyle="--", linewidth=0.6, alpha=0.7)
-    ax.set_xlabel("Angle (\u00b0)", fontsize=FIG04_LABEL_PT)
-    ax.set_ylabel("Accuracy", fontsize=FIG04_LABEL_PT)
+    ax.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax.set_ylabel("Accuracy", fontsize=axis_label_pt)
     ax.set_ylim(0, 1.05)
     ax.set_xticks([0, 60, 120, 180])
-    ax.tick_params(axis="both", labelsize=FIG04_TICK_PT)
+    ax.tick_params(axis="both", labelsize=tick_label_pt)
     add_panel_label(ax, "d")
-    fig_d.subplots_adjust(left=0.16, right=0.96, bottom=0.24, top=0.90)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig04_panel_d_perangle"))
+    fig_d.subplots_adjust(**FIG04_STANDALONE["d"])
+    all_paths.extend(
+        save_outputs(
+            fig_d,
+            panel_dir / "fig04_panel_d_perangle",
+            typography=typography,
+        )
+    )
     plt.close(fig_d)
 
     # Panel manifest
@@ -290,6 +336,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "description": "37-point bar chart showing accuracy per angle; below-mean angles highlighted.",
             },
         ],
+        typography=typography,
     )
     all_paths.append(manifest)
 

@@ -27,7 +27,7 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _load_active_contracts(repo_root: Path | None = None) -> list[dict[str, Any]]:
+def _load_active_contracts(repo_root: Path | None = None, figure_ids: set[str] | None = None) -> list[dict[str, Any]]:
     repo_root = repo_root or _repo_root()
     cfg_path = repo_root / "figures" / "conf" / "experiments.yaml"
     with open(cfg_path, encoding="utf-8") as f:
@@ -45,6 +45,8 @@ def _load_active_contracts(repo_root: Path | None = None) -> list[dict[str, Any]
             continue
         number = int(figure_id[3:])
         if 1 <= number <= 6:
+            if figure_ids is not None and figure_id not in figure_ids:
+                continue
             contracts.append(raw)
     contracts.sort(key=lambda item: int(str(item["figure_id"])[3:]))
     return contracts
@@ -85,7 +87,7 @@ def _declared_generator_outputs(repo_root: Path, contracts: list[dict[str, Any]]
     return outputs
 
 
-def cmd_generate() -> list[Path]:
+def cmd_generate(figure_ids: set[str] | None = None) -> list[Path]:
     """Run the active six-figure generators declared in experiments.yaml."""
     from figures.style import load_paths
 
@@ -95,9 +97,10 @@ def cmd_generate() -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_outputs: list[Path] = []
-    contracts = _load_active_contracts(root)
+    contracts = _load_active_contracts(root, figure_ids=figure_ids)
     generators = _active_generators(contracts)
-    print(f"Running {len(generators)} active generators from experiments.yaml")
+    target_msg = "all active figures" if figure_ids is None else ", ".join(sorted(figure_ids))
+    print(f"Running {len(generators)} active generators from experiments.yaml for {target_msg}")
 
     for gen in generators:
         name = gen.__name__.split(".")[-1]
@@ -109,12 +112,12 @@ def cmd_generate() -> list[Path]:
     return all_outputs
 
 
-def cmd_validate() -> bool:
+def cmd_validate(figure_ids: set[str] | None = None) -> bool:
     """Validate active generator outputs declared in experiments.yaml."""
     from figures.validate import validate_file
 
     root = _repo_root()
-    contracts = _load_active_contracts(root)
+    contracts = _load_active_contracts(root, figure_ids=figure_ids)
     outputs = _declared_generator_outputs(root, contracts)
     all_paths = set(outputs)
 
@@ -149,7 +152,7 @@ def cmd_validate() -> bool:
     return True
 
 
-def cmd_deploy() -> None:
+def cmd_deploy(figure_ids: set[str] | None = None) -> None:
     """Copy active generator outputs to paper/figures and compose manuscript assets."""
     from figures.style import load_paths
 
@@ -157,7 +160,7 @@ def cmd_deploy() -> None:
     paths_cfg = load_paths()
     paper_dir = root / paths_cfg.get("paper_figures_dir", "paper/figures")
     paper_dir.mkdir(parents=True, exist_ok=True)
-    contracts = _load_active_contracts(root)
+    contracts = _load_active_contracts(root, figure_ids=figure_ids)
     outputs = _declared_generator_outputs(root, contracts)
 
     copied = 0

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -26,12 +27,26 @@ try:
 except ImportError as exc:  # pragma: no cover - runtime dependency
     raise RuntimeError("PyMuPDF is required for figure composition") from exc
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from figures.layout_contract import (
+    contract_version,
+    figure_section,
+    font_pt,
+    font_tokens,
+    pt_to_px,
+    source_layout_spec,
+)
+
+
 DEFAULT_PAPER_DIR = REPO_ROOT / "paper/figures"
 MM_PER_INCH = 25.4
 COMPOSE_DPI = 300
-PANEL_LABEL_PX = 38
+PANEL_LABEL_PT = font_pt("panel_label")
+TYPOGRAPHY_PT = font_tokens()
+ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 
 # --- Figure 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
@@ -60,14 +75,15 @@ FIG04_PANEL_A = (
 FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf"
 FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf"
 FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf"
-FIG04_WIDTH_MM = 183.0
-FIG04_HEIGHT_MM = 128.0
-FIG04_A_HEIGHT_MM = 88.0
-FIG04_ROW_GAP_MM = 4.0
-FIG04_BOTTOM_GAP_MM = 4.0
-FIG04_BOTTOM_B_WEIGHT = 1.0
-FIG04_BOTTOM_C_WEIGHT = 1.0
-FIG04_BOTTOM_D_WEIGHT = 1.0
+FIG04_COMPOSE = figure_section("fig04", "compose")
+FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
+FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
+FIG04_A_HEIGHT_MM = float(FIG04_COMPOSE["panel_a_height_mm"])
+FIG04_ROW_GAP_MM = float(FIG04_COMPOSE["row_gap_mm"])
+FIG04_BOTTOM_GAP_MM = float(FIG04_COMPOSE["bottom_gap_mm"])
+FIG04_BOTTOM_B_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["b"])
+FIG04_BOTTOM_C_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["c"])
+FIG04_BOTTOM_D_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["d"])
 FIG04_BOTTOM_ROW_HEIGHT_MM = FIG04_HEIGHT_MM - FIG04_A_HEIGHT_MM - FIG04_ROW_GAP_MM
 FIG04_BOTTOM_AVAILABLE_WIDTH_MM = FIG04_WIDTH_MM - 2 * FIG04_BOTTOM_GAP_MM
 FIG04_BOTTOM_UNIT_MM = FIG04_BOTTOM_AVAILABLE_WIDTH_MM / (
@@ -85,17 +101,18 @@ FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG06_PANELS_ABC_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
 FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf"
 FIG06_PANEL_E = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf"
-FIG06_WIDTH_MM = 183.0
-FIG06_HEIGHT_MM = 144.0
-FIG06_A_HEIGHT_MM = 24.0
-FIG06_B_HEIGHT_MM = 34.0
-FIG06_BOTTOM_HEIGHT_MM = 78.0
-FIG06_ROW_GAP_MM = 4.0
-FIG06_BOTTOM_GAP_MM = 5.0
-FIG06_C_WIDTH_MM = 66.0
-FIG06_RIGHT_WIDTH_MM = FIG06_WIDTH_MM - FIG06_C_WIDTH_MM - FIG06_BOTTOM_GAP_MM
-FIG06_DE_HEIGHT_MM = 37.0
-FIG06_DE_GAP_MM = 4.0
+FIG06_COMPOSE = figure_section("fig06", "compose")
+FIG06_WIDTH_MM = float(FIG06_COMPOSE["width_mm"])
+FIG06_HEIGHT_MM = float(FIG06_COMPOSE["height_mm"])
+FIG06_A_HEIGHT_MM = float(FIG06_COMPOSE["panel_a_height_mm"])
+FIG06_B_HEIGHT_MM = float(FIG06_COMPOSE["panel_b_height_mm"])
+FIG06_BOTTOM_HEIGHT_MM = float(FIG06_COMPOSE["bottom_height_mm"])
+FIG06_ROW_GAP_MM = float(FIG06_COMPOSE["row_gap_mm"])
+FIG06_BOTTOM_GAP_MM = float(FIG06_COMPOSE["bottom_gap_mm"])
+FIG06_C_WIDTH_MM = float(FIG06_COMPOSE["panel_c_width_mm"])
+FIG06_RIGHT_WIDTH_MM = float(FIG06_COMPOSE["right_width_mm"])
+FIG06_DE_HEIGHT_MM = float(FIG06_COMPOSE["de_height_mm"])
+FIG06_DE_GAP_MM = float(FIG06_COMPOSE["de_gap_mm"])
 FIG06_PANEL_A_CROP = (0.01, 0.36, 0.99, 0.87)
 FIG06_PANEL_B_CROP = (0.02, 0.27, 0.99, 0.73)
 FIG06_PANEL_C_CROP = (0.04, 0.10, 0.98, 0.99)
@@ -178,6 +195,23 @@ def _mm_to_px(mm: float) -> int:
     return int(round(mm / MM_PER_INCH * COMPOSE_DPI))
 
 
+def _normalize_figure_ids(raw: str | None) -> list[str]:
+    if not raw:
+        return list(ACTIVE_FIGURE_IDS)
+    requested = [item.strip().lower() for item in raw.split(",") if item.strip()]
+    invalid = [item for item in requested if item not in ACTIVE_FIGURE_IDS]
+    if invalid:
+        raise ValueError(f"Unsupported figure id(s): {', '.join(invalid)}")
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for figure_id in requested:
+        if figure_id in seen:
+            continue
+        seen.add(figure_id)
+        ordered.append(figure_id)
+    return ordered
+
+
 def _bbox_payload(x0_mm: float, y0_mm: float, width_mm: float, height_mm: float, figure_width_mm: float, figure_height_mm: float) -> dict[str, dict[str, float]]:
     return {
         "bbox_mm": {
@@ -201,14 +235,16 @@ def _write_layout_metadata(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _draw_panel_label(draw: ImageDraw.ImageDraw, label: str, x_px: int, y_px: int) -> None:
-    draw.text((x_px, y_px), label, fill="black", font=_load_font(PANEL_LABEL_PX))
+    panel_label_px = pt_to_px(PANEL_LABEL_PT, COMPOSE_DPI)
+    draw.text((x_px, y_px), label, fill="black", font=_load_font(panel_label_px))
 
 
 def _draw_boxed_panel_label(draw: ImageDraw.ImageDraw, label: str, x_px: int, y_px: int) -> None:
-    font = _load_font(PANEL_LABEL_PX)
+    panel_label_px = pt_to_px(PANEL_LABEL_PT, COMPOSE_DPI)
+    font = _load_font(panel_label_px)
     left, top, right, bottom = draw.textbbox((x_px, y_px), label, font=font)
-    pad_x = max(4, PANEL_LABEL_PX // 5)
-    pad_y = max(3, PANEL_LABEL_PX // 8)
+    pad_x = max(4, panel_label_px // 5)
+    pad_y = max(3, panel_label_px // 8)
     draw.rounded_rectangle(
         (left - pad_x, top - pad_y, right + pad_x, bottom + pad_y),
         radius=6,
@@ -331,12 +367,14 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     _write_layout_metadata(
         fig01_layout_asset,
         {
+            "contract_version": contract_version(),
             "figure_mm": {
                 "width": FIG01_WIDTH_MM,
                 "height": FIG01_HEIGHT_MM,
             },
             "axes": axes,
-            "source_layout_spec": "figures/conf/layout_spec.md",
+            "source_layout_spec": source_layout_spec(),
+            "typography_pt": TYPOGRAPHY_PT,
         },
     )
     return [fig01_asset, fig01_layout_asset]
@@ -424,6 +462,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     _write_layout_metadata(
         fig04_layout_asset,
         {
+            "contract_version": contract_version(),
             "figure_mm": {"width": FIG04_WIDTH_MM, "height": FIG04_HEIGHT_MM},
             "axes": [
                 {
@@ -474,7 +513,8 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
                     ),
                 },
             ],
-            "source_layout_spec": "figures/conf/layout_spec.md",
+            "source_layout_spec": source_layout_spec(),
+            "typography_pt": TYPOGRAPHY_PT,
         },
     )
     return [fig04_asset, fig04_layout_asset]
@@ -567,6 +607,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     _write_layout_metadata(
         fig06_layout_asset,
         {
+            "contract_version": contract_version(),
             "figure_mm": {"width": FIG06_WIDTH_MM, "height": FIG06_HEIGHT_MM},
             "axes": [
                 {
@@ -633,10 +674,21 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     ),
                 },
             ],
-            "source_layout_spec": "figures/conf/layout_spec.md",
+            "source_layout_spec": source_layout_spec(),
+            "typography_pt": TYPOGRAPHY_PT,
         },
     )
     return [fig06_asset, fig06_layout_asset]
+
+
+COMPOSERS = {
+    "fig01": compose_fig01,
+    "fig02": compose_fig02,
+    "fig03": compose_fig03,
+    "fig04": compose_fig04,
+    "fig05": compose_fig05,
+    "fig06": compose_fig06,
+}
 
 
 def main() -> None:
@@ -646,16 +698,17 @@ def main() -> None:
         default=str(DEFAULT_PAPER_DIR),
         help="Target directory for composed manuscript assets.",
     )
+    parser.add_argument(
+        "--figures",
+        help="Comma-separated active figure ids to compose (default: fig01,fig02,fig03,fig04,fig05,fig06).",
+    )
     args = parser.parse_args()
     paper_dir = Path(args.paper_dir)
+    selected_ids = _normalize_figure_ids(args.figures)
 
     created: list[Path] = []
-    created.extend(compose_fig01(paper_dir))
-    created.extend(compose_fig02(paper_dir))
-    created.extend(compose_fig03(paper_dir))
-    created.extend(compose_fig04(paper_dir))
-    created.extend(compose_fig05(paper_dir))
-    created.extend(compose_fig06(paper_dir))
+    for figure_id in selected_ids:
+        created.extend(COMPOSERS[figure_id](paper_dir))
     print("\n".join(str(path) for path in created))
 
 

@@ -23,21 +23,122 @@ Source: `docs/nature-communications/nature-communications-submission-requirement
 
 ---
 
+## Runtime Layout Contract
+
+<!-- runtime-layout-contract:start -->
+```yaml
+version: 1
+source_layout_spec: figures/conf/layout_spec.md
+fonts:
+  panel_label: 8.0
+  title: 7.0
+  axis_label: 6.5
+  tick_label: 6.0
+  legend: 6.5
+  annotation: 6.5
+  colorbar_tick: 5.5
+  colorbar_label: 5.5
+figures:
+  fig04:
+    compose:
+      width_mm: 183.0
+      height_mm: 128.0
+      panel_a_height_mm: 88.0
+      row_gap_mm: 4.0
+      bottom_gap_mm: 4.0
+      bottom_weights: {b: 1.0, c: 1.0, d: 1.0}
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 70.0
+      composite_grid: {left: 0.06, right: 0.98, bottom: 0.18, top: 0.88, wspace: 0.28}
+      split:
+        panel_slot_width_mm: 58.333
+        panel_slot_height_mm: 36.0
+        standalone_subplots:
+          b: {left: 0.18, right: 0.96, bottom: 0.24, top: 0.90}
+          c: {left: 0.28, right: 0.97, bottom: 0.24, top: 0.90}
+          d: {left: 0.18, right: 0.97, bottom: 0.24, top: 0.90}
+  fig05:
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 170.0
+      outer_grid: {left: 0.055, right: 0.985, bottom: 0.055, top: 0.965, hspace: 0.16, wspace: 0.20}
+      heatmap_stack: {hspace: 0.08, wspace: 0.06, colorbar_ratio: 0.08}
+      routing_stack: {hspace: 0.14}
+      standalone:
+        a:
+          width_mm: 183.0
+          height_mm: 70.0
+          subplots_adjust: {left: 0.10, right: 0.95, bottom: 0.15, top: 0.92}
+        b:
+          width_mm: 183.0
+          height_mm: 120.0
+          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.24}
+        c:
+          width_mm: 183.0
+          height_mm: 120.0
+          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.24}
+        d:
+          width_mm: 183.0
+          height_mm: 70.0
+          grid: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.86, wspace: 0.20}
+        e:
+          width_mm: 183.0
+          height_mm: 100.0
+          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.92, hspace: 0.26}
+        f:
+          width_mm: 183.0
+          height_mm: 70.0
+          subplots_adjust: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.92}
+  fig06:
+    compose:
+      width_mm: 183.0
+      height_mm: 144.0
+      panel_a_height_mm: 24.0
+      panel_b_height_mm: 34.0
+      bottom_height_mm: 78.0
+      row_gap_mm: 4.0
+      bottom_gap_mm: 5.0
+      panel_c_width_mm: 62.0
+      right_width_mm: 116.0
+      de_height_mm: 37.0
+      de_gap_mm: 4.0
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 72.0
+      composite_grid:
+        left: 0.065
+        right: 0.98
+        bottom: 0.18
+        top: 0.88
+        wspace: 0.30
+        width_ratios: [1.0, 1.28]
+      split:
+        panel_slot_width_mm: 116.0
+        panel_slot_height_mm: 37.0
+        standalone_subplots:
+          d: {left: 0.11, right: 0.985, bottom: 0.24, top: 0.90}
+          e: {left: 0.10, right: 0.985, bottom: 0.35, top: 0.90}
+```
+<!-- runtime-layout-contract:end -->
+
+---
+
 ## Unified Font Specification
 
 ```yaml
 fonts:
-  panel_label:    8pt bold      # a, b, c, ...
-  title:          6.5pt         # panel title
-  axis_label:     6pt           # xlabel, ylabel
-  tick_label:     5.5pt         # xtick, ytick
-  legend:         6pt           # min 5.5pt
-  annotation:     6pt           # stat text, d=1.95
-  colorbar_tick:  5pt           # colorbar numbers
-  colorbar_label: 5pt           # only if space permits
+  panel_label:    8.0pt bold    # a, b, c, ...
+  title:          7.0pt         # panel title
+  axis_label:     6.5pt         # xlabel, ylabel
+  tick_label:     6.0pt         # xtick, ytick
+  legend:         6.5pt         # main legend text
+  annotation:     6.5pt         # stat text, d=1.95
+  colorbar_tick:  5.5pt         # colorbar numbers
+  colorbar_label: 5.5pt         # only if space permits
 ```
 
-All font sizes **≥ 5pt** (Nature Comm minimum).
+All font sizes stay within Nature's `5–7 pt` non-panel band, but the branch default should not sit on the lower edge unless an explicit exception is justified here.
 
 ---
 
@@ -235,39 +336,39 @@ Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel 
                          183.0 mm
 ├──────────────────────────────────────────────────────┤
 ┌──────────────────────────────────────────────────────┐ ─┬─
-│  GridSpec 2×3, hspace=0.22, wspace=0.28              │  │
-│  Margins: L=0.06 R=0.98 B=0.06 T=0.97               │  │
-│  Usable: 168.4 × 154.7 mm                           │  │
-│  col_width = 168.4 / (3 + 2×0.28) = 47.3 mm         │  │
-│  row_height = 154.7 / (2 + 0.22) = 69.7 mm          │  │
+│  GridSpec 2×3, hspace=0.16, wspace=0.20              │  │
+│  Margins: L=0.055 R=0.985 B=0.055 T=0.965           │  │
+│  Usable: 170.2 × 154.7 mm                           │  │
+│  col_width = 170.2 / (3 + 2×0.20) = 50.0 mm         │  │
+│  row_height = 154.7 / (2 + 0.16) = 71.6 mm          │  │
 │                                                      │  │
-│  Row 1 — 69.7 mm                                     │  │
+│  Row 1 — 71.6 mm                                     │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
 │  │(a) SNR sweep │(b) H vs QK   │(c) Sel. prob │      │  │
-│  │47.3 × 69.7   │47.3 × 69.7   │47.3 × 69.7  │      │  │
+│  │50.0 × 71.6   │50.0 × 71.6   │50.0 × 71.6  │      │  │
 │  │              │ inner 2×2    │ inner 2×2   │      │  │
 │  │ single plot  │ width_ratios │ width_ratios│      │  │
-│  │ 47.3 × 69.7  │ [1.0, 0.05]  │ [1.0, 0.05] │      │  │
-│  │              │ h=0.12 w=0.05│ h=0.12 w=0.05│     │  │
-│  │              │ plot col ≈   │ plot col ≈  │      │  │ 69.7 mm
-│  │              │ 43.9 mm      │ 43.9 mm     │      │  │
-│  │              │ sub_h ≈ 32.9 │ sub_h ≈ 32.9│      │  │
-│  │              │ cbar ≈ 2.2mm │ cbar ≈ 2.2mm│      │  │
+│  │ 50.0 × 71.6  │ [1.0, 0.08]  │ [1.0, 0.08] │      │  │
+│  │              │ h=0.08 w=0.06│ h=0.08 w=0.06│     │  │
+│  │              │ plot col ≈   │ plot col ≈  │      │  │ 71.6 mm
+│  │              │ 45.0 mm      │ 45.0 mm     │      │  │
+│  │              │ sub_h ≈ 34.4 │ sub_h ≈ 34.4│      │  │
+│  │              │ cbar ≈ 3.6mm │ cbar ≈ 3.6mm│      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
-│  ├── 47.3 ──┤13.2├── 47.3 ──┤13.2├── 47.3 ──┤       │  │ 170.0 mm
+│  ├── 50.0 ──┤10.0├── 50.0 ──┤10.0├── 50.0 ──┤       │  │ 170.0 mm
 │                                                      │  │
-│        inter-row gap = 0.22 × 69.7 = 15.3 mm        │  │
+│        inter-row gap = 0.16 × 71.6 = 11.5 mm        │  │
 │                                                      │  │
-│  Row 2 — 69.7 mm                                     │  │
+│  Row 2 — 71.6 mm                                     │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
 │  │(d) Confus.   │(e) Routing   │(f) Per-angle │      │  │
-│  │47.3 × 69.7   │47.3 × 69.7   │47.3 × 69.7  │      │  │
+│  │50.0 × 71.6   │50.0 × 71.6   │50.0 × 71.6  │      │  │
 │  │ inner 2×2    │ inner 2×1    │              │      │  │
-│  │ w=[1.0,0.05] │ hspace=0.22  │ single plot  │      │  │
-│  │ h=0.12 w=0.05│ sub_h ≈ 31.4 │ 47.3 × 69.7  │      │  │ 69.7 mm
-│  │ plot col ≈   │ gap ≈ 6.9mm  │              │      │  │
-│  │ 43.9 mm      │              │              │      │  │
-│  │ sub_h ≈ 32.9 │              │              │      │  │
+│  │ w=[1.0,0.08] │ hspace=0.14  │ single plot  │      │  │
+│  │ h=0.08 w=0.06│ sub_h ≈ 33.6 │ 50.0 × 71.6  │      │  │ 71.6 mm
+│  │ plot col ≈   │ gap ≈ 4.7mm  │              │      │  │
+│  │ 45.0 mm      │              │              │      │  │
+│  │ sub_h ≈ 34.4 │              │              │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 └──────────────────────────────────────────────────────┘ ─┴─
 ```
@@ -276,22 +377,22 @@ Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel 
 |-----------------------|--------------------------------------|
 | width_mm              | 183                                  |
 | height_mm             | **170**                              |
-| GridSpec              | 2×3, hspace=0.22, wspace=0.28       |
-| Margins               | L=0.06, R=0.98, B=0.06, T=0.97      |
-| Usable                | 168.4 × 154.7 mm                     |
-| col_width             | **47.3 mm**                          |
-| row_height            | **69.7 mm**                          |
-| Inter-row gap         | 0.22 × 69.7 = **15.3 mm**           |
-| wspace gap            | 0.28 × 47.3 = **13.2 mm**           |
-| Panel (a)             | **47.3 × 69.7 mm** (single plot)    |
-| Panels (b/c/d) outer  | **47.3 × 69.7 mm** each              |
+| GridSpec              | 2×3, hspace=0.16, wspace=0.20       |
+| Margins               | L=0.055, R=0.985, B=0.055, T=0.965  |
+| Usable                | 170.2 × 154.7 mm                     |
+| col_width             | **50.0 mm**                          |
+| row_height            | **71.6 mm**                          |
+| Inter-row gap         | 0.16 × 71.6 = **11.5 mm**           |
+| wspace gap            | 0.20 × 50.0 = **10.0 mm**           |
+| Panel (a)             | **50.0 × 71.6 mm** (single plot)    |
+| Panels (b/c/d) outer  | **50.0 × 71.6 mm** each              |
 | Panels (b/c/d) inner  | 2×2 with shared colorbar column      |
-| Inner plot column     | **≈ 43.9 mm**                        |
-| Inner heatmap height  | **≈ 32.9 mm** each, gap ≈ 3.9 mm     |
-| Shared colorbar       | **≈ 2.2 mm** wide                    |
-| Panel (e) outer       | **47.3 × 69.7 mm**                   |
-| Panel (e) sub-panels  | **≈ 47.3 × 31.4 mm** each, gap 6.9mm |
-| Panel (f)             | **47.3 × 69.7 mm** (single plot)    |
+| Inner plot column     | **≈ 45.0 mm**                        |
+| Inner heatmap height  | **≈ 34.4 mm** each, gap ≈ 2.8 mm     |
+| Shared colorbar       | **≈ 3.6 mm** wide                    |
+| Panel (e) outer       | **50.0 × 71.6 mm**                   |
+| Panel (e) sub-panels  | **≈ 50.0 × 33.6 mm** each, gap 4.7mm |
+| Panel (f)             | **50.0 × 71.6 mm** (single plot)    |
 
 ---
 
@@ -299,7 +400,7 @@ Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel 
 
 Composed: panoramic manual strips `a/b` on top, then manual `c` + generated `d/e` diagnostic block below.
 Top manual panels are intentionally cropped to suppress slide-style internal titles and keep the explanatory narrative in the caption.
-Panels `d/e` must be generated at their final `112 × 37 mm` manuscript slot size; do not downscale `183 mm`-wide standalone diagnostics into the right-hand block.
+Panels `d/e` must be generated at their final `116 × 37 mm` manuscript slot size; do not downscale `183 mm`-wide standalone diagnostics into the right-hand block.
 
 ```
                          183.0 mm
@@ -312,12 +413,12 @@ Panels `d/e` must be generated at their final `112 × 37 mm` manuscript slot siz
 │ 183.0 × 34.0 mm                                      │  │
 ├──────────────────────┬───────────────────────────────┤ ─┼─ 4.0 mm
 │ (c) Cross-material   │ (d) Per-band SVD             │  │ 37.0 mm
-│ RMSE                 │ 112.0 × 37.0 mm              │  │
-│ 66.0 × 78.0 mm       ├───────────────────────────────┤ ─┼─ 4.0 mm
+│ RMSE                 │ 116.0 × 37.0 mm              │  │
+│ 62.0 × 78.0 mm       ├───────────────────────────────┤ ─┼─ 4.0 mm
 │ manual portrait      │ (e) Band-resolved routing    │  │ 37.0 mm
-│ panel                │ 112.0 × 37.0 mm              │  │
+│ panel                │ 116.0 × 37.0 mm              │  │
 └──────────────────────┴───────────────────────────────┘ ─┴─
-     66.0 mm            5.0 mm              112.0 mm
+     62.0 mm            5.0 mm              116.0 mm
 ```
 
 | Parameter    | Value                                    |
@@ -327,9 +428,9 @@ Panels `d/e` must be generated at their final `112 × 37 mm` manuscript slot siz
 | Panel (a)    | **183.0 × 24.0 mm**                      |
 | Panel (b)    | **183.0 × 34.0 mm**                      |
 | Row gaps     | **4.0 mm** between `a/b` and `b/bottom`  |
-| Panel (c)    | **66.0 × 78.0 mm**                       |
-| Right width  | **112.0 mm**                             |
+| Panel (c)    | **62.0 × 78.0 mm**                       |
+| Right width  | **116.0 mm**                             |
 | Bottom gap   | **5.0 mm** between `c` and `d/e` block   |
-| Panel (d)    | **112.0 × 37.0 mm**                      |
-| Panel (e)    | **112.0 × 37.0 mm**                      |
+| Panel (d)    | **116.0 × 37.0 mm**                      |
+| Panel (e)    | **116.0 × 37.0 mm**                      |
 | d/e gap      | **4.0 mm**                               |

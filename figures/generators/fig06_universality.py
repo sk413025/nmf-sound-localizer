@@ -30,6 +30,12 @@ from figures.style import (
     SEMANTIC_PALETTE,
 )
 from figures.naming import get_bound_label
+from figures.layout_contract import (
+    contract_version,
+    figure_section,
+    font_tokens,
+    source_layout_spec,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -43,12 +49,12 @@ BAND_CONFIGS = (
     {"min_hz": 2000, "max_hz": 3000, "label": "2k-3k",       "include_upper": True},
 )
 
-FIG06_PANEL_SLOT_WIDTH_MM = 112.0
-FIG06_PANEL_SLOT_HEIGHT_MM = 37.0
-FIG06_LABEL_PT = 6.0
-FIG06_TICK_PT = 5.5
-FIG06_LEGEND_PT = 5.5
-FIG06_TITLE_PT = 6.5
+FIG06_GENERATOR = figure_section("fig06", "generator")
+FIG06_SPLIT = dict(FIG06_GENERATOR["split"])
+FIG06_GRID = dict(FIG06_GENERATOR["composite_grid"])
+FIG06_STANDALONE = dict(FIG06_SPLIT["standalone_subplots"])
+FIG06_PANEL_SLOT_WIDTH_MM = float(FIG06_SPLIT["panel_slot_width_mm"])
+FIG06_PANEL_SLOT_HEIGHT_MM = float(FIG06_SPLIT["panel_slot_height_mm"])
 
 
 def _load_h_matrix(h_path: Path) -> tuple[np.ndarray, np.ndarray]:
@@ -70,14 +76,21 @@ def _band_mask(freqs: np.ndarray, cfg: dict) -> np.ndarray:
     return (freqs >= cfg["min_hz"]) & (freqs < cfg["max_hz"])
 
 
-def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
+def _save_panel_manifest(
+    panel_dir: Path,
+    panel_specs: list[dict],
+    typography: dict[str, float],
+) -> Path:
     manifest_path = panel_dir / "fig06_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig06",
         "composite_asset": "figures/output/fig06_universality.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": typography,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -91,7 +104,13 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
     """Generate Figure 6 universality panels (d, e)."""
-    set_nature_rcparams(base_fontsize=7)
+    typography = font_tokens()
+    set_nature_rcparams(base_fontsize=int(round(typography["title"])))
+    axis_label_pt = typography["axis_label"]
+    tick_label_pt = typography["tick_label"]
+    legend_pt = typography["legend"]
+    title_pt = typography["title"]
+    annotation_pt = typography["annotation"]
 
     paths_cfg = load_paths()
     h_path = data_root / paths_cfg["h_matrix"]
@@ -108,10 +127,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure (panels d and e side by side)
     # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    fig = make_figure(
+        width_mm=FIG06_GENERATOR["composite_width_mm"],
+        height_mm=FIG06_GENERATOR["composite_height_mm"],
+    )
+    width_ratios = FIG06_GRID["width_ratios"]
     gs = gridspec.GridSpec(
-        1, 2, figure=fig, width_ratios=[1.0, 1.2],
-        wspace=0.35, left=0.07, right=0.97, bottom=0.18, top=0.88,
+        1, 2, figure=fig, width_ratios=width_ratios,
+        wspace=FIG06_GRID["wspace"],
+        left=FIG06_GRID["left"],
+        right=FIG06_GRID["right"],
+        bottom=FIG06_GRID["bottom"],
+        top=FIG06_GRID["top"],
     )
 
     # --- Panel (d): SVD spectra per frequency band ---
@@ -140,11 +167,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                       markersize=2, linewidth=0.8, alpha=0.8,
                       label=band_cfg["label"].replace("\n", " "))
 
-    ax_d.set_xlabel("Mode index r", fontsize=FIG06_LABEL_PT)
-    ax_d.set_ylabel(r"$\sigma_r / \sigma_1$ (normalized)", fontsize=FIG06_LABEL_PT)
-    ax_d.set_title("SVD decay per band", fontsize=FIG06_TITLE_PT)
-    ax_d.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right", ncol=2)
-    ax_d.tick_params(axis="both", labelsize=FIG06_TICK_PT)
+    ax_d.set_xlabel("Mode index r", fontsize=axis_label_pt)
+    ax_d.set_ylabel(r"$\sigma_r / \sigma_1$ (normalized)", fontsize=axis_label_pt)
+    ax_d.set_title("SVD decay per band", fontsize=title_pt)
+    ax_d.legend(fontsize=legend_pt, frameon=False, loc="upper right", ncol=2)
+    ax_d.tick_params(axis="both", labelsize=tick_label_pt)
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.15, y=1.06)
 
@@ -217,22 +244,26 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                  alpha=0.7, label=learned_label)
 
         ax_e.set_xticks(x)
-        ax_e.set_xticklabels(band_labels, fontsize=FIG06_TICK_PT, rotation=30, ha="right")
-        ax_e.set_ylabel("Diagonal accuracy", fontsize=FIG06_LABEL_PT)
-        ax_e.set_title("Band-resolved routing", fontsize=FIG06_TITLE_PT)
+        ax_e.set_xticklabels(band_labels, fontsize=tick_label_pt, rotation=30, ha="right")
+        ax_e.set_ylabel("Diagonal accuracy", fontsize=axis_label_pt)
+        ax_e.set_title("Band-resolved routing", fontsize=title_pt)
         ax_e.set_ylim(0, 1.05)
-        ax_e.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right")
-        ax_e.tick_params(axis="y", labelsize=FIG06_TICK_PT)
+        ax_e.legend(fontsize=legend_pt, frameon=False, loc="upper right")
+        ax_e.tick_params(axis="y", labelsize=tick_label_pt)
         ax_e.grid(axis="y", linestyle="--", alpha=0.3)
     else:
         ax_e.text(0.5, 0.5, "Routing data\nunavailable",
-                  transform=ax_e.transAxes, ha="center", va="center", fontsize=7)
+                  transform=ax_e.transAxes, ha="center", va="center", fontsize=annotation_pt)
         ax_e.set_axis_off()
 
     add_panel_label(ax_e, "e", x=-0.12, y=1.06)
 
     # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig06_universality")
+    all_paths = save_outputs(
+        fig,
+        output_dir / "fig06_universality",
+        typography=typography,
+    )
     plt.close(fig)
 
     # -----------------------------------------------------------------------
@@ -260,13 +291,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.semilogy(np.arange(1, n_show + 1), S_norm[:n_show], "o-",
                     color=color, markersize=3, linewidth=0.9,
                     label=band_cfg["label"].replace("\n", " "))
-    ax.set_xlabel("Mode index r", fontsize=FIG06_LABEL_PT)
-    ax.set_ylabel(r"$\sigma_r / \sigma_1$", fontsize=FIG06_LABEL_PT)
-    ax.tick_params(axis="both", labelsize=FIG06_TICK_PT)
-    ax.legend(fontsize=FIG06_LEGEND_PT, frameon=False, ncol=2, loc="upper right")
+    ax.set_xlabel("Mode index r", fontsize=axis_label_pt)
+    ax.set_ylabel(r"$\sigma_r / \sigma_1$", fontsize=axis_label_pt)
+    ax.tick_params(axis="both", labelsize=tick_label_pt)
+    ax.legend(fontsize=legend_pt, frameon=False, ncol=2, loc="upper right")
     add_panel_label(ax, "d")
-    fig_d.subplots_adjust(left=0.11, right=0.98, bottom=0.23, top=0.90)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig06_panel_d_svd"))
+    fig_d.subplots_adjust(**FIG06_STANDALONE["d"])
+    all_paths.extend(
+        save_outputs(
+            fig_d,
+            panel_dir / "fig06_panel_d_svd",
+            typography=typography,
+        )
+    )
     plt.close(fig_d)
 
     # Panel e standalone
@@ -282,15 +319,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.bar(x + width / 2, qk_diag, width, color=SEMANTIC_PALETTE["learned"],
                alpha=0.7, label=learned_label)
         ax.set_xticks(x)
-        ax.set_xticklabels(band_labels, fontsize=FIG06_TICK_PT, rotation=30, ha="right")
-        ax.set_ylabel("Diagonal accuracy", fontsize=FIG06_LABEL_PT)
+        ax.set_xticklabels(band_labels, fontsize=tick_label_pt, rotation=30, ha="right")
+        ax.set_ylabel("Diagonal accuracy", fontsize=axis_label_pt)
         ax.set_ylim(0, 1.05)
-        ax.tick_params(axis="y", labelsize=FIG06_TICK_PT)
-        ax.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right")
+        ax.tick_params(axis="y", labelsize=tick_label_pt)
+        ax.legend(fontsize=legend_pt, frameon=False, loc="upper right")
         ax.grid(axis="y", linestyle="--", alpha=0.3)
         add_panel_label(ax, "e")
-        fig_e.subplots_adjust(left=0.10, right=0.98, bottom=0.33, top=0.90)
-        all_paths.extend(save_outputs(fig_e, panel_dir / "fig06_panel_e_band_routing"))
+        fig_e.subplots_adjust(**FIG06_STANDALONE["e"])
+        all_paths.extend(
+            save_outputs(
+                fig_e,
+                panel_dir / "fig06_panel_e_band_routing",
+                typography=typography,
+            )
+        )
         plt.close(fig_e)
 
     # Panel manifest
@@ -312,6 +355,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "description": "Diagonal accuracy per band comparing the analytical OMP baseline versus the full physics-aware solver.",
             },
         ],
+        typography=typography,
     )
     all_paths.append(manifest)
 

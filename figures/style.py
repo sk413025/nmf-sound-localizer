@@ -17,6 +17,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import yaml
 
+from figures.layout_contract import (
+    contract_version,
+    font_pt,
+    font_tokens,
+    source_layout_spec,
+)
+
 # ---------------------------------------------------------------------------
 # Nature Communications dimension constants (mm)
 # ---------------------------------------------------------------------------
@@ -134,7 +141,7 @@ def add_panel_label(
         y,
         label,
         transform=ax.transAxes,
-        fontsize=8,
+        fontsize=font_pt("panel_label"),
         fontweight="bold",
         va="bottom",
         ha="left",
@@ -148,6 +155,8 @@ def save_outputs(
     fig: plt.Figure,
     out_prefix: str | Path,
     dpi_tiff: int = 300,
+    *,
+    typography: dict[str, float] | None = None,
 ) -> list[Path]:
     """Save figure as PDF (vector) and TIFF (LZW-compressed raster).
 
@@ -168,11 +177,15 @@ def save_outputs(
         dpi=dpi_tiff,
         pil_kwargs={"compression": "tiff_lzw"},
     )
-    _write_layout_metadata(fig, out_prefix)
+    _write_layout_metadata(fig, out_prefix, typography=typography)
     return [pdf_path, tiff_path]
 
 
-def collect_layout_metadata(fig: plt.Figure) -> dict[str, Any]:
+def collect_layout_metadata(
+    fig: plt.Figure,
+    *,
+    typography: dict[str, float] | None = None,
+) -> dict[str, Any]:
     """Collect figure and axes geometry in mm for downstream review tooling."""
     width_in, height_in = fig.get_size_inches()
     width_mm = in_to_mm(width_in)
@@ -211,20 +224,29 @@ def collect_layout_metadata(fig: plt.Figure) -> dict[str, Any]:
             }
         )
 
-    return {
+    payload = {
+        "contract_version": contract_version(),
         "figure_mm": {
             "width": round(float(width_mm), 3),
             "height": round(float(height_mm), 3),
         },
         "axes": axes_payload,
+        "source_layout_spec": source_layout_spec(),
     }
+    payload["typography_pt"] = typography or font_tokens()
+    return payload
 
 
-def _write_layout_metadata(fig: plt.Figure, out_prefix: str | Path) -> Path:
+def _write_layout_metadata(
+    fig: plt.Figure,
+    out_prefix: str | Path,
+    *,
+    typography: dict[str, float] | None = None,
+) -> Path:
     """Persist a sidecar JSON file with figure/axes layout metadata."""
     out_prefix = Path(out_prefix)
     layout_path = out_prefix.with_suffix(".layout.json")
-    payload = collect_layout_metadata(fig)
+    payload = collect_layout_metadata(fig, typography=typography)
     with open(layout_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, sort_keys=True)
     return layout_path
