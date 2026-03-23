@@ -166,8 +166,8 @@ fig04_ablation:
     a:
       title: "Architecture diagram"
       provenance_mode: manual_support
-      asset_path: paper/figures/fig04_unrolled-attention-omp.jpg
-      note: "Committed architecture support panel; no run-generated evidence."
+      asset_path: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg
+      note: "Committed architecture support panel in the manuscript-panel layer; no run-generated evidence."
     b:
       title: "Training convergence"
       provenance_mode: data_backed

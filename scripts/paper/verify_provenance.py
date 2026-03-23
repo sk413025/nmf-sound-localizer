@@ -114,6 +114,23 @@ def _commit_exists(repo: Path, sha: str) -> bool:
 
 def check_file_existence(repo: Path, report: AuditReport) -> None:
     """Check 1: required data files exist."""
+    manuscript_assets: list[str] = []
+    try:
+        import yaml
+
+        exp_file = repo / "figures" / "conf" / "experiments.yaml"
+        if exp_file.exists():
+            cfg = yaml.safe_load(exp_file.read_text()) or {}
+            for entry in cfg.values():
+                if isinstance(entry, dict) and entry.get("manuscript_asset"):
+                    manuscript_assets.append(str(entry["manuscript_asset"]))
+        else:
+            report.add("WARN", "file_existence", "figures/conf/experiments.yaml not found — using only static required files")
+    except ImportError:
+        report.add("WARN", "file_existence", "PyYAML not installed — manuscript asset list not loaded from experiments.yaml")
+    except Exception as exc:
+        report.add("WARN", "file_existence", f"Failed to parse experiments.yaml for manuscript assets — {exc}")
+
     required = [
         "h_matrix_normalized_original_to_box.pth",
         "results/figure4_data.json",
@@ -121,14 +138,8 @@ def check_file_existence(repo: Path, report: AuditReport) -> None:
         "results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz",
         "results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz",
         "results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz",
-        "paper/figures/fig01_paradigm-shift.jpg",
-        "paper/figures/fig02_svd-physical-dictionary.jpg",
-        "paper/figures/fig03_fingerprint-discriminability.jpg",
-        "paper/figures/fig04_solver-dynamics.jpg",
-        "paper/figures/fig04_unrolled-attention-omp.jpg",
-        "paper/figures/fig05_performance-structure.jpg",
-        "paper/figures/fig06_universality.jpg",
     ]
+    required.extend(sorted(set(manuscript_assets)))
     for rel in required:
         p = repo / rel
         if p.exists():

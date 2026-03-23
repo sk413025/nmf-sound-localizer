@@ -5,7 +5,7 @@ This folder is a **Markdown-first** manuscript workspace intended for drafting a
 ## Layout
 - `paper/manuscript/`: Manuscript source (`manuscript.md`) + Pandoc metadata (`metadata.yaml`).
 - `paper/references/`: Bibliography (`references.bib`).
-- `paper/figures/`: Final, submission-ready figure assets (PDF/TIFF/PNG as needed).
+- `paper/figures/`: Final manuscript figure JPGs, figure legends, and tracked layout sidecars only.
 - `paper/templates/`: Pandoc `reference.docx` controlling DOCX styling.
 - `paper/csl/`: CSL file (`style.csl`) controlling citation style.
 - `paper/out/`: Build outputs (ignored by git).
@@ -53,6 +53,7 @@ If either file is missing, the build still succeeds using Pandoc defaults, and p
 
 ## Figures
 Keep figure generation runs under `results/<run_name>/` (existing figure scripts already follow this convention in this repo).
-When a figure is ready for manuscript submission, copy the final asset into `paper/figures/` with a stable name.
+When a figure is ready for manuscript submission, promote only the final manuscript asset into `paper/figures/` with a stable name.
+Keep manual support panels and generator-side intermediates under `figures/output/*_panels/` or `results/<run_name>/`, not in `paper/figures/`.
 Recommended convention: `fig01_<short-topic>.<ext>` (e.g., `fig02_svd-physical-dictionary.jpg`).
 The active six-figure naming contract is tracked in `paper/manuscript/FIGURE_NAMING_CONTRACT.md`, and intended panel sizes are tracked in `figures/conf/layout_spec.md`.

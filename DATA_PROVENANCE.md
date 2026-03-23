@@ -12,6 +12,11 @@ Derived evidence artifacts:
 - `figures/output/*_panel_manifest.json`
 - `paper/figures/*.layout.json`
 
+Manuscript surface rule:
+
+- `paper/figures/` contains only final manuscript assets, layout sidecars, and figure-facing docs
+- committed manual support panels live under `figures/output/*_panels/`
+
 Workflow-only config:
 
 - `figures/conf/review_targets.yaml`
@@ -28,7 +33,7 @@ Audit entrypoints:
 | Fig. 1 | `fig01_paradigm_data.py` + `compose_master_figure3_family.py` | `dictionary.npz` + `figures/conf/paths.yaml` | Mixed figure with explicit manual support panels `a-b` |
 | Fig. 2 | `fig02_svd_spectrum.py` | `h_matrix_normalized_original_to_box.pth` | Fully data-backed |
 | Fig. 3 | `fig03_fingerprint_discriminability.py` | `dictionary.npz` + `modal_routing_val.npz` + SNR sweep inputs | Fully data-backed, with some inputs resolved through `paths.yaml` |
-| Fig. 4 | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | `metrics.npz` + `results/figure4_data.json` | Mixed figure with explicit manual architecture panel `a` |
+| Fig. 4 | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | `metrics.npz` + `results/figure4_data.json` | Mixed figure with explicit manual architecture panel `a` under `figures/output/fig04_solver_dynamics_manuscript_panels/` |
 | Fig. 5 | `fig05_performance_structure.py` | routing + dictionary + confusion metrics | Fully data-backed |
 | Fig. 6 | `fig06_universality.py` + `compose_master_figure3_family.py` | `h_matrix` + routing + dictionary | Mixed figure with explicit provenance-gap top panels `a-c` |
 

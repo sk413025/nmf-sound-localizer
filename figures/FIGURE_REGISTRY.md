@@ -12,6 +12,9 @@ Primary authorities:
 - realized layout evidence: `paper/figures/*.layout.json`
 - review workflow configuration: `figures/conf/review_targets.yaml`
 
+`paper/figures/` is a final-assets-only manuscript surface. Mixed-figure support
+panels live under `figures/output/*_panels/`.
+
 Retired material:
 
 - the earlier nine-figure main-paper contract is historical only
@@ -55,6 +58,7 @@ Retired material:
 
 - Manuscript asset: `paper/figures/fig04_solver-dynamics.jpg`
 - Generator / composer: `figures/generators/fig04_solver_dynamics.py` + `scripts/paper/compose_master_figure3_family.py`
+- Manual support panel `a`: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg`
 - Active panel manifest: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig04_ablation`
 

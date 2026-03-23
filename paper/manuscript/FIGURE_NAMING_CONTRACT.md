@@ -12,6 +12,9 @@ Canonical sources:
 - `figures/conf/layout_spec.md` for intended panel sizes in mm
 - `paper/figures/*.layout.json` for realized geometry checks
 
+Treat `paper/figures/` as the final manuscript-facing figure surface only.
+Committed support panels belong under `figures/output/*_panels/`.
+
 The retired nine-figure main-paper contract is historical only. Do not use it as the naming authority for the current manuscript.
 
 ## Active Main-Paper Figures

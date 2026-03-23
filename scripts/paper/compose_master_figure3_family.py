@@ -52,8 +52,11 @@ FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Solver Dynamics (4 panels: a external + b,c,d generated) ---
-FIG04_PANEL_A = REPO_ROOT / "paper/figures/fig04_unrolled-attention-omp.jpg"
+# --- Figure 4: Solver Dynamics (4 panels: a manual support + b,c,d generated) ---
+FIG04_PANEL_A = (
+    REPO_ROOT
+    / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg"
+)
 FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf"
 FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf"
 FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf"
