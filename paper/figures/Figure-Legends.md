@@ -2,6 +2,7 @@
 
 This document provides concise manuscript-ready legends for the six main-paper figures.
 Canonical source: `paper/manuscript/manuscript.md`. This file must stay in sync with the inline legends in the manuscript.
+Naming contract: `paper/manuscript/FIGURE_NAMING_CONTRACT.md`.
 
 ## Fig. 1 (5 panels)
 
@@ -37,24 +38,24 @@ f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue) a
 **Fig. 4 | Physics-guided deep unrolled network with attention-based gating.**
 a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(A\). A transformer encoder generates routing weights that gate sparse updates \(\Delta x_t\), enforcing residual consistency \(r_{t+1}=r_t-A\Delta x_t\).
 b, Training convergence: total and classification loss decrease steadily over 20 epochs; the vertical dashed line marks the best validation epoch.
-c, Clean-condition ablation: strip chart comparing the full model against ablation variants (individual seeds shown as dots, horizontal bars indicate means), demonstrating that the transformer routing and type-bias components are essential for high accuracy.
+c, Clean-condition ablation: strip chart comparing the full physics-aware solver against ablation variants (individual seeds shown as dots, horizontal bars indicate means), demonstrating that transformer routing and the type-bias component are essential for high accuracy.
 d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform performance across the full angular grid (mean accuracy 0.946), with angles below the mean highlighted.
 
 ## Fig. 5 (6 panels)
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
-a, SNR degradation curves for the physics-aware model, no-transformer ablation, and analytical OMP baseline, showing graceful degradation under additive noise.
+a, SNR degradation curves for the physics-aware solver, no-transformer ablation, and analytical OMP baseline, showing graceful degradation under additive noise.
 b, Correlation structure of the physical dictionary \(H\) (top) and the learned QK attention map (bottom).
-c, All-angle selection-probability heatmaps comparing OMP (diffuse off-diagonal mass, top) with the physics-aware model (sharply diagonal, bottom), demonstrating that structure-aligned routing concentrates selection on the correct direction.
-d, Confusion matrices for the baseline model (left) and no-transformer ablation (right), normalized to row-wise probabilities.
-e, Angle-specific routing distributions at two representative directions (55° and 100°): the baseline concentrates mass on the correct atom and suppresses off-axis peaks, whereas the no-transformer ablation shows broader, less decisive distributions.
-f, Per-angle diagonal concentration: P(correct) for each of the 37 angles comparing the baseline with the no-transformer ablation, quantifying the fraction of angles that benefit from transformer routing. The shaded region highlights the per-angle improvement.
+c, All-angle selection-probability heatmaps comparing OMP (diffuse off-diagonal mass, top) with the physics-aware solver (sharply diagonal, bottom), demonstrating that structure-aligned routing concentrates selection on the correct direction.
+d, Confusion matrices for the full physics-aware solver (left) and the no-transformer ablation (right), normalized to row-wise probabilities.
+e, Angle-specific routing distributions at two representative directions (55° and 100°): the full physics-aware solver concentrates mass on the correct atom and suppresses off-axis peaks, whereas the no-transformer ablation shows broader, less decisive distributions.
+f, Per-angle diagonal concentration: P(correct) for each of the 37 angles comparing the full physics-aware solver with the no-transformer ablation, quantifying the fraction of angles that benefit from transformer routing. The shaded region highlights the per-angle improvement.
 
 ## Fig. 6 (5 panels)
 
 **Fig. 6 | Universal physical encoding across diverse materials.**
 a, The five target objects spanning a broad spectrum of material and geometric complexity (acrylic plate, paper cup, wooden board, cardboard box, and a laptop shell).
 b, Representative dictionary heatmaps for each material, showing shared dispersion-signature structure despite differing physical properties.
-c, Cross-material RMSE comparison: the physics-aware model maintains low DOA error across all materials, while analytical OMP degrades on complex targets.
+c, Cross-material RMSE comparison: the physics-aware solver maintains low DOA error across all materials, while analytical OMP degrades on complex targets.
 d, Per-band SVD spectra: normalized singular-value decay across five frequency bands (full band + four sub-bands), demonstrating consistent low-rank structure regardless of frequency range — a physics-level (not accuracy-level) indicator of universality.
-e, Band-resolved routing consistency: diagonal accuracy per band comparing OMP versus physics-aware AI, confirming that the encoding mechanism is frequency-distributed rather than tied to a single resonance artifact.
+e, Band-resolved routing consistency: diagonal accuracy per band comparing OMP versus the physics-aware solver, confirming that the encoding mechanism is frequency-distributed rather than tied to a single resonance artifact.

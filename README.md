@@ -17,8 +17,12 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `docs/nature-communications/nature-communications-submission-requirements.md`
 - Manuscript source:
   - `paper/manuscript/manuscript.md`
+- Figure naming contract:
+  - `paper/manuscript/FIGURE_NAMING_CONTRACT.md`
 - Figure registry:
   - `figures/FIGURE_REGISTRY.md`
+- Figure layout spec:
+  - `figures/conf/layout_spec.md`
 - Task routing:
   - `docs/agent-ops/TASK_PACKETS.md`
 - Asset classification:

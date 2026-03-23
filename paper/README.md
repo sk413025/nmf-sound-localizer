@@ -55,3 +55,4 @@ If either file is missing, the build still succeeds using Pandoc defaults, and p
 Keep figure generation runs under `results/<run_name>/` (existing figure scripts already follow this convention in this repo).
 When a figure is ready for manuscript submission, copy the final asset into `paper/figures/` with a stable name.
 Recommended convention: `fig01_<short-topic>.<ext>` (e.g., `fig02_svd-physical-dictionary.jpg`).
+The active six-figure naming contract is tracked in `paper/manuscript/FIGURE_NAMING_CONTRACT.md`, and intended panel sizes are tracked in `figures/conf/layout_spec.md`.
