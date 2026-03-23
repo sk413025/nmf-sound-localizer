@@ -14,7 +14,9 @@ from panel-level assets whenever possible:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
@@ -25,11 +27,19 @@ except ImportError as exc:  # pragma: no cover - runtime dependency
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+MM_PER_INCH = 25.4
+COMPOSE_DPI = 300
 
-# --- Figure 1: Paradigm Shift (5 panels: a,b external + c,d,e generated) ---
+# --- Figure 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
 FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png"
 FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
+FIG01_COMPOSITE_CDE_LAYOUT = REPO_ROOT / "figures/output/fig01_paradigm_data.layout.json"
+FIG01_WIDTH_MM = 183.0
+FIG01_TOP_PANEL_WIDTH_MM = 89.0
+FIG01_ROW_HEIGHT_MM = 65.0
+FIG01_ROW_GAP_MM = 5.0
+FIG01_HEIGHT_MM = FIG01_ROW_HEIGHT_MM * 2 + FIG01_ROW_GAP_MM
 
 # --- Figure 2: SVD Spectrum (7 panels: all generated as composite PDF) ---
 FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
@@ -93,54 +103,162 @@ def _resize_to_width(img: Image.Image, target_width: int) -> Image.Image:
     return img.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
 
+def _contain_in_box(img: Image.Image, box_width: int, box_height: int) -> Image.Image:
+    scale = min(box_width / max(img.width, 1), box_height / max(img.height, 1))
+    target_width = int(round(img.width * scale))
+    target_height = int(round(img.height * scale))
+    resized = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", (box_width, box_height), "white")
+    x = (box_width - target_width) // 2
+    y = (box_height - target_height) // 2
+    canvas.paste(resized, (x, y))
+    return canvas
+
+
+def _mm_to_px(mm: float) -> int:
+    return int(round(mm / MM_PER_INCH * COMPOSE_DPI))
+
+
+def _bbox_payload(x0_mm: float, y0_mm: float, width_mm: float, height_mm: float, figure_width_mm: float, figure_height_mm: float) -> dict[str, dict[str, float]]:
+    return {
+        "bbox_mm": {
+            "x0": round(float(x0_mm), 3),
+            "y0": round(float(y0_mm), 3),
+            "width": round(float(width_mm), 3),
+            "height": round(float(height_mm), 3),
+        },
+        "bbox_norm": {
+            "x0": round(float(x0_mm / figure_width_mm), 6),
+            "y0": round(float(y0_mm / figure_height_mm), 6),
+            "width": round(float(width_mm / figure_width_mm), 6),
+            "height": round(float(height_mm / figure_height_mm), 6),
+        },
+    }
+
+
+def _write_layout_metadata(path: Path, payload: dict[str, Any]) -> None:
+    _ensure_parent(path)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
 def _save_composite(img: Image.Image, path: Path) -> None:
     _ensure_parent(path)
     suffix = path.suffix.lower()
     if suffix in {".jpg", ".jpeg"}:
-        img.save(path, format="JPEG", quality=95, subsampling=0)
+        img.save(path, format="JPEG", quality=95, subsampling=0, dpi=(COMPOSE_DPI, COMPOSE_DPI))
     elif suffix == ".png":
-        img.save(path, format="PNG")
+        img.save(path, format="PNG", dpi=(COMPOSE_DPI, COMPOSE_DPI))
     else:
         raise ValueError(f"Unsupported composite suffix for {path}")
 
 
 def compose_fig01() -> list[Path]:
-    """Fig 1: a,b (external PNGs) on top + c,d,e (generated PDF) below."""
+    """Fig 1: mm-driven layout with fixed a,b panels and the generated c,d,e strip."""
     fig01_asset = REPO_ROOT / "paper/figures/fig01_paradigm-shift.jpg"
+    fig01_layout_asset = fig01_asset.with_suffix(".layout.json")
 
-    panel_a = _trim_white_border(Image.open(FIG01_PANEL_A).convert("RGB"), padding=0)
-    panel_b = _trim_white_border(Image.open(FIG01_PANEL_B).convert("RGB"), padding=0)
-    panel_cde = _trim_white_border(_render_pdf(FIG01_COMPOSITE_CDE), padding=4)
+    panel_a = ImageOps.exif_transpose(Image.open(FIG01_PANEL_A)).convert("RGB")
+    panel_b = ImageOps.exif_transpose(Image.open(FIG01_PANEL_B)).convert("RGB")
+    panel_cde = _render_pdf(FIG01_COMPOSITE_CDE, scale=4.0).convert("RGB")
 
-    target_width = 970
-    panel_a = _resize_to_width(panel_a, target_width)
-    panel_b = _resize_to_width(panel_b, target_width)
+    figure_width_px = _mm_to_px(FIG01_WIDTH_MM)
+    top_panel_width_px = _mm_to_px(FIG01_TOP_PANEL_WIDTH_MM)
+    top_gap_px = figure_width_px - 2 * top_panel_width_px
+    row_height_px = _mm_to_px(FIG01_ROW_HEIGHT_MM)
+    row_gap_px = _mm_to_px(FIG01_ROW_GAP_MM)
+    figure_height_px = row_height_px * 2 + row_gap_px
 
-    # Bottom row spans full width
-    full_width = target_width * 2 + 70  # gap=70
-    panel_cde = _resize_to_width(panel_cde, full_width)
+    panel_a = _contain_in_box(panel_a, top_panel_width_px, row_height_px)
+    panel_b = _contain_in_box(panel_b, top_panel_width_px, row_height_px)
+    panel_cde = _resize_to_width(panel_cde, figure_width_px)
 
-    label_font = _load_font(54)
-    margin = 70
-    gap = 70
-    canvas_w = margin * 2 + full_width
-    top_h = max(panel_a.height, panel_b.height)
-    canvas_h = margin * 2 + top_h + gap + panel_cde.height
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    draw = ImageDraw.Draw(canvas)
+    canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
+    canvas.paste(panel_a, (0, 0))
+    canvas.paste(panel_b, (top_panel_width_px + top_gap_px, 0))
 
-    # Top row: a, b
-    draw.text((margin, margin - 10), "a", fill="black", font=label_font)
-    canvas.paste(panel_a, (margin, margin + 50))
-    draw.text((margin + target_width + gap, margin - 10), "b", fill="black", font=label_font)
-    canvas.paste(panel_b, (margin + target_width + gap, margin + 50))
-
-    # Bottom row: c,d,e composite (labels already in PDF)
-    y_bottom = margin + top_h + gap + 50
-    canvas.paste(panel_cde, (margin, y_bottom))
+    bottom_row_y_px = row_height_px + row_gap_px
+    bottom_strip_y_px = bottom_row_y_px + max((row_height_px - panel_cde.height) // 2, 0)
+    canvas.paste(panel_cde, (0, bottom_strip_y_px))
 
     _save_composite(canvas, fig01_asset)
-    return [fig01_asset]
+
+    composite_layout = json.loads(FIG01_COMPOSITE_CDE_LAYOUT.read_text(encoding="utf-8"))
+    bottom_scale = FIG01_WIDTH_MM / composite_layout["figure_mm"]["width"]
+    bottom_strip_height_mm = composite_layout["figure_mm"]["height"] * bottom_scale
+    bottom_row_offset_mm = max((FIG01_ROW_HEIGHT_MM - bottom_strip_height_mm) / 2.0, 0.0)
+
+    axes = [
+        {
+            "index": 0,
+            "panel_id": "a",
+            "kind": "manual",
+            "has_data": False,
+            "title": "Experimental setup",
+            **_bbox_payload(
+                x0_mm=0.0,
+                y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
+                width_mm=FIG01_TOP_PANEL_WIDTH_MM,
+                height_mm=FIG01_ROW_HEIGHT_MM,
+                figure_width_mm=FIG01_WIDTH_MM,
+                figure_height_mm=FIG01_HEIGHT_MM,
+            ),
+        },
+        {
+            "index": 1,
+            "panel_id": "b",
+            "kind": "manual",
+            "has_data": False,
+            "title": "Physical mechanism schematic",
+            **_bbox_payload(
+                x0_mm=FIG01_WIDTH_MM - FIG01_TOP_PANEL_WIDTH_MM,
+                y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
+                width_mm=FIG01_TOP_PANEL_WIDTH_MM,
+                height_mm=FIG01_ROW_HEIGHT_MM,
+                figure_width_mm=FIG01_WIDTH_MM,
+                figure_height_mm=FIG01_HEIGHT_MM,
+            ),
+        },
+    ]
+
+    panel_ids = ("c", "d", "e")
+    for ax_meta, panel_id in zip(composite_layout.get("axes", []), panel_ids, strict=True):
+        bbox = ax_meta["bbox_mm"]
+        x0_mm = bbox["x0"] * bottom_scale
+        y0_mm = bbox["y0"] * bottom_scale + bottom_row_offset_mm
+        width_mm = bbox["width"] * bottom_scale
+        height_mm = bbox["height"] * bottom_scale
+        axes.append(
+            {
+                "index": len(axes),
+                "panel_id": panel_id,
+                "kind": ax_meta.get("kind"),
+                "has_data": ax_meta.get("has_data", True),
+                "title": ax_meta.get("title"),
+                "xlabel": ax_meta.get("xlabel"),
+                "ylabel": ax_meta.get("ylabel"),
+                **_bbox_payload(
+                    x0_mm=x0_mm,
+                    y0_mm=y0_mm,
+                    width_mm=width_mm,
+                    height_mm=height_mm,
+                    figure_width_mm=FIG01_WIDTH_MM,
+                    figure_height_mm=FIG01_HEIGHT_MM,
+                ),
+            }
+        )
+
+    _write_layout_metadata(
+        fig01_layout_asset,
+        {
+            "figure_mm": {
+                "width": FIG01_WIDTH_MM,
+                "height": FIG01_HEIGHT_MM,
+            },
+            "axes": axes,
+            "source_layout_spec": "figures/conf/layout_spec.md",
+        },
+    )
+    return [fig01_asset, fig01_layout_asset]
 
 
 def compose_fig02() -> list[Path]:
