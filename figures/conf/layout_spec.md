@@ -191,37 +191,39 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 
 ## Figure 4 — Solver Dynamics (4 panels)
 
-Composed: manual architecture panel `a` on the left + generated diagnostic stack `b/c/d` on the right.
-This replaced the old top-strip layout because the architecture artwork needed more width and less caption-like clutter.
+Composed: full-width manual architecture panel `a` on top + generated `b/c/d` diagnostics across the bottom row.
+The previous left-right layout left excessive blank space because the architecture artwork is too wide for a `112 × 90 mm` portrait-ish container.
+Bottom-row panels must be generated at final slot size; do not downscale `183 mm`-wide standalone panels into manuscript slots.
 
 ```
                          183.0 mm
 ├──────────────────────────────────────────────────────┤
-┌──────────────────────────────┬──────────────────────┐ ─┬─
-│                              │                      │  │
-│ (a) Architecture diagram     │ (b) Convergence     │  │ 26.0 mm
-│ 112.0 × 90.0 mm              │ 66.0 × 26.0 mm      │  │
-│ manual, cropped to remove    ├──────────────────────┤ ─┼─ 3.0 mm
-│ embedded footer/caption      │ (c) Ablation        │  │ 32.0 mm
-│                              │ 66.0 × 32.0 mm      │  │
-│                              ├──────────────────────┤ ─┼─ 3.0 mm
-│                              │ (d) Per-angle acc.  │  │ 26.0 mm
-│                              │ 66.0 × 26.0 mm      │  │
-└──────────────────────────────┴──────────────────────┘ ─┴─
-            112.0 mm              5.0 mm      66.0 mm
+┌──────────────────────────────────────────────────────┐ ─┬─
+│ (a) Architecture diagram                             │  │ 88.0 mm
+│ 183.0 × 88.0 mm                                      │  │
+│ manual, cropped to remove embedded footer/caption    │  │
+├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
+│ ┌──────────────┬──────────────┬──────────────┐       │  │
+│ │(b) Converg.  │ (c) Ablation │ (d) Per-angle│       │  │
+│ │58.3 × 36.0   │ 58.3 × 36.0  │ 58.3 × 36.0  │       │  │ 36.0 mm
+│ └──────────────┴──────────────┴──────────────┘       │  │
+│    4.0 mm gap         4.0 mm gap                     │  │
+└──────────────────────────────────────────────────────┘ ─┴─
+                                          total = 128.0 mm
 ```
 
 | Parameter      | Value                                  |
 |----------------|----------------------------------------|
 | width_mm       | 183                                    |
-| height_mm      | **90**                                 |
-| Left panel     | **112.0 × 90.0 mm**                    |
-| Right width    | **66.0 mm**                            |
-| Horizontal gap | **5.0 mm**                             |
-| Panel (b)      | **66.0 × 26.0 mm**                     |
-| Panel (c)      | **66.0 × 32.0 mm**                     |
-| Panel (d)      | **66.0 × 26.0 mm**                     |
-| Vertical gap   | **3.0 mm** between `b/c` and `c/d`     |
+| height_mm      | **128**                                |
+| Panel (a)      | **183.0 × 88.0 mm**                    |
+| Row gap        | **4.0 mm**                             |
+| Bottom row     | **36.0 mm** tall                       |
+| Bottom panels  | **strict equal width**                 |
+| Panel (b)      | **58.3 × 36.0 mm**                     |
+| Panel (c)      | **58.3 × 36.0 mm**                     |
+| Panel (d)      | **58.3 × 36.0 mm**                     |
+| Column gaps    | **4.0 mm** between `b/c` and `c/d`     |
 
 ---
 
@@ -297,6 +299,7 @@ Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel 
 
 Composed: panoramic manual strips `a/b` on top, then manual `c` + generated `d/e` diagnostic block below.
 Top manual panels are intentionally cropped to suppress slide-style internal titles and keep the explanatory narrative in the caption.
+Panels `d/e` must be generated at their final `112 × 37 mm` manuscript slot size; do not downscale `183 mm`-wide standalone diagnostics into the right-hand block.
 
 ```
                          183.0 mm

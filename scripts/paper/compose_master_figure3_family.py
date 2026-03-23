@@ -56,14 +56,21 @@ FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_p
 FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf"
 FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf"
 FIG04_WIDTH_MM = 183.0
-FIG04_HEIGHT_MM = 90.0
-FIG04_LEFT_WIDTH_MM = 112.0
-FIG04_RIGHT_WIDTH_MM = FIG04_WIDTH_MM - FIG04_LEFT_WIDTH_MM - 5.0
-FIG04_GAP_MM = 5.0
-FIG04_B_HEIGHT_MM = 26.0
-FIG04_C_HEIGHT_MM = 32.0
-FIG04_D_HEIGHT_MM = 26.0
-FIG04_V_GAP_MM = 3.0
+FIG04_HEIGHT_MM = 128.0
+FIG04_A_HEIGHT_MM = 88.0
+FIG04_ROW_GAP_MM = 4.0
+FIG04_BOTTOM_GAP_MM = 4.0
+FIG04_BOTTOM_B_WEIGHT = 1.0
+FIG04_BOTTOM_C_WEIGHT = 1.0
+FIG04_BOTTOM_D_WEIGHT = 1.0
+FIG04_BOTTOM_ROW_HEIGHT_MM = FIG04_HEIGHT_MM - FIG04_A_HEIGHT_MM - FIG04_ROW_GAP_MM
+FIG04_BOTTOM_AVAILABLE_WIDTH_MM = FIG04_WIDTH_MM - 2 * FIG04_BOTTOM_GAP_MM
+FIG04_BOTTOM_UNIT_MM = FIG04_BOTTOM_AVAILABLE_WIDTH_MM / (
+    FIG04_BOTTOM_B_WEIGHT + FIG04_BOTTOM_C_WEIGHT + FIG04_BOTTOM_D_WEIGHT
+)
+FIG04_B_WIDTH_MM = FIG04_BOTTOM_B_WEIGHT * FIG04_BOTTOM_UNIT_MM
+FIG04_C_WIDTH_MM = FIG04_BOTTOM_C_WEIGHT * FIG04_BOTTOM_UNIT_MM
+FIG04_D_WIDTH_MM = FIG04_BOTTOM_D_WEIGHT * FIG04_BOTTOM_UNIT_MM
 FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 0.88)
 
 # --- Figure 5: Performance + Structure (6 panels: all generated) ---
@@ -367,7 +374,7 @@ def compose_fig03() -> list[Path]:
 
 
 def compose_fig04() -> list[Path]:
-    """Fig 4: large architecture panel at left + three data strips stacked at right."""
+    """Fig 4: full-width architecture on top + b/c/d diagnostics across the bottom row."""
     fig04_asset = REPO_ROOT / "paper/figures/fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
@@ -379,31 +386,34 @@ def compose_fig04() -> list[Path]:
 
     figure_width_px = _mm_to_px(FIG04_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG04_HEIGHT_MM)
-    left_width_px = _mm_to_px(FIG04_LEFT_WIDTH_MM)
-    right_width_px = _mm_to_px(FIG04_RIGHT_WIDTH_MM)
-    gap_px = _mm_to_px(FIG04_GAP_MM)
-    b_height_px = _mm_to_px(FIG04_B_HEIGHT_MM)
-    c_height_px = _mm_to_px(FIG04_C_HEIGHT_MM)
-    d_height_px = _mm_to_px(FIG04_D_HEIGHT_MM)
-    v_gap_px = _mm_to_px(FIG04_V_GAP_MM)
+    a_height_px = _mm_to_px(FIG04_A_HEIGHT_MM)
+    row_gap_px = _mm_to_px(FIG04_ROW_GAP_MM)
+    bottom_gap_px = _mm_to_px(FIG04_BOTTOM_GAP_MM)
+    bottom_row_height_px = _mm_to_px(FIG04_BOTTOM_ROW_HEIGHT_MM)
+    b_width_px = _mm_to_px(FIG04_B_WIDTH_MM)
+    c_width_px = _mm_to_px(FIG04_C_WIDTH_MM)
+    d_width_px = figure_width_px - b_width_px - c_width_px - 2 * bottom_gap_px
 
-    panel_a = _contain_in_box(panel_a, left_width_px, figure_height_px)
-    panel_b = _contain_in_box(panel_b, right_width_px, b_height_px)
-    panel_c = _contain_in_box(panel_c, right_width_px, c_height_px)
-    panel_d = _contain_in_box(panel_d, right_width_px, d_height_px)
+    panel_a = _contain_in_box(panel_a, figure_width_px, a_height_px)
+    panel_b = _contain_in_box(panel_b, b_width_px, bottom_row_height_px)
+    panel_c = _contain_in_box(panel_c, c_width_px, bottom_row_height_px)
+    panel_d = _contain_in_box(panel_d, d_width_px, bottom_row_height_px)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
     canvas.paste(panel_a, (0, 0))
-    right_x = left_width_px + gap_px
-    canvas.paste(panel_b, (right_x, 0))
-    canvas.paste(panel_c, (right_x, b_height_px + v_gap_px))
-    canvas.paste(panel_d, (right_x, b_height_px + v_gap_px + c_height_px + v_gap_px))
+    bottom_y = a_height_px + row_gap_px
+    b_x = 0
+    c_x = b_width_px + bottom_gap_px
+    d_x = c_x + c_width_px + bottom_gap_px
+    canvas.paste(panel_b, (b_x, bottom_y))
+    canvas.paste(panel_c, (c_x, bottom_y))
+    canvas.paste(panel_d, (d_x, bottom_y))
 
     _draw_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(2.0))
-    _draw_panel_label(draw, "b", right_x + _mm_to_px(2.0), _mm_to_px(1.5))
-    _draw_panel_label(draw, "c", right_x + _mm_to_px(2.0), b_height_px + v_gap_px + _mm_to_px(1.5))
-    _draw_panel_label(draw, "d", right_x + _mm_to_px(2.0), b_height_px + v_gap_px + c_height_px + v_gap_px + _mm_to_px(1.5))
+    _draw_panel_label(draw, "b", _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
+    _draw_panel_label(draw, "c", c_x + _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
+    _draw_panel_label(draw, "d", d_x + _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
 
     _save_composite(canvas, fig04_asset)
     _write_layout_metadata(
@@ -418,7 +428,8 @@ def compose_fig04() -> list[Path]:
                     "has_data": False,
                     "title": "Architecture diagram",
                     **_bbox_payload(
-                        0.0, 0.0, FIG04_LEFT_WIDTH_MM, FIG04_HEIGHT_MM,
+                        0.0, FIG04_BOTTOM_ROW_HEIGHT_MM + FIG04_ROW_GAP_MM,
+                        FIG04_WIDTH_MM, FIG04_A_HEIGHT_MM,
                         FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
                     ),
                 },
@@ -429,9 +440,7 @@ def compose_fig04() -> list[Path]:
                     "has_data": True,
                     "title": "Training convergence",
                     **_bbox_payload(
-                        FIG04_LEFT_WIDTH_MM + FIG04_GAP_MM,
-                        FIG04_C_HEIGHT_MM + FIG04_D_HEIGHT_MM + 2 * FIG04_V_GAP_MM,
-                        FIG04_RIGHT_WIDTH_MM, FIG04_B_HEIGHT_MM,
+                        0.0, 0.0, FIG04_B_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
                         FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
                     ),
                 },
@@ -442,9 +451,8 @@ def compose_fig04() -> list[Path]:
                     "has_data": True,
                     "title": "Ablation comparison",
                     **_bbox_payload(
-                        FIG04_LEFT_WIDTH_MM + FIG04_GAP_MM,
-                        FIG04_D_HEIGHT_MM + FIG04_V_GAP_MM,
-                        FIG04_RIGHT_WIDTH_MM, FIG04_C_HEIGHT_MM,
+                        FIG04_B_WIDTH_MM + FIG04_BOTTOM_GAP_MM,
+                        0.0, FIG04_C_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
                         FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
                     ),
                 },
@@ -455,9 +463,8 @@ def compose_fig04() -> list[Path]:
                     "has_data": True,
                     "title": "Per-angle accuracy",
                     **_bbox_payload(
-                        FIG04_LEFT_WIDTH_MM + FIG04_GAP_MM,
-                        0.0,
-                        FIG04_RIGHT_WIDTH_MM, FIG04_D_HEIGHT_MM,
+                        FIG04_B_WIDTH_MM + FIG04_C_WIDTH_MM + 2 * FIG04_BOTTOM_GAP_MM,
+                        0.0, FIG04_D_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
                         FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
                     ),
                 },

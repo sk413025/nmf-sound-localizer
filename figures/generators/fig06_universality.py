@@ -43,6 +43,13 @@ BAND_CONFIGS = (
     {"min_hz": 2000, "max_hz": 3000, "label": "2k-3k",       "include_upper": True},
 )
 
+FIG06_PANEL_SLOT_WIDTH_MM = 112.0
+FIG06_PANEL_SLOT_HEIGHT_MM = 37.0
+FIG06_LABEL_PT = 6.0
+FIG06_TICK_PT = 5.5
+FIG06_LEGEND_PT = 5.5
+FIG06_TITLE_PT = 6.5
+
 
 def _load_h_matrix(h_path: Path) -> tuple[np.ndarray, np.ndarray]:
     import torch
@@ -133,10 +140,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                       markersize=2, linewidth=0.8, alpha=0.8,
                       label=band_cfg["label"].replace("\n", " "))
 
-    ax_d.set_xlabel("Mode index r", fontsize=6)
-    ax_d.set_ylabel(r"$\sigma_r / \sigma_1$ (normalized)", fontsize=6)
-    ax_d.set_title("SVD decay per band", fontsize=6.5)
-    ax_d.legend(fontsize=6, frameon=False, loc="upper right", ncol=2)
+    ax_d.set_xlabel("Mode index r", fontsize=FIG06_LABEL_PT)
+    ax_d.set_ylabel(r"$\sigma_r / \sigma_1$ (normalized)", fontsize=FIG06_LABEL_PT)
+    ax_d.set_title("SVD decay per band", fontsize=FIG06_TITLE_PT)
+    ax_d.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right", ncol=2)
+    ax_d.tick_params(axis="both", labelsize=FIG06_TICK_PT)
     ax_d.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_d, "d", x=-0.15, y=1.06)
 
@@ -209,11 +217,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                  alpha=0.7, label=learned_label)
 
         ax_e.set_xticks(x)
-        ax_e.set_xticklabels(band_labels, fontsize=5, rotation=30, ha="right")
-        ax_e.set_ylabel("Diagonal accuracy", fontsize=6)
-        ax_e.set_title("Band-resolved routing", fontsize=6.5)
+        ax_e.set_xticklabels(band_labels, fontsize=FIG06_TICK_PT, rotation=30, ha="right")
+        ax_e.set_ylabel("Diagonal accuracy", fontsize=FIG06_LABEL_PT)
+        ax_e.set_title("Band-resolved routing", fontsize=FIG06_TITLE_PT)
         ax_e.set_ylim(0, 1.05)
-        ax_e.legend(fontsize=6, frameon=False, loc="upper right")
+        ax_e.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right")
+        ax_e.tick_params(axis="y", labelsize=FIG06_TICK_PT)
         ax_e.grid(axis="y", linestyle="--", alpha=0.3)
     else:
         ax_e.text(0.5, 0.5, "Routing data\nunavailable",
@@ -233,7 +242,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_dir.mkdir(parents=True, exist_ok=True)
 
     # Panel d standalone
-    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+    fig_d = make_figure(
+        width_mm=FIG06_PANEL_SLOT_WIDTH_MM,
+        height_mm=FIG06_PANEL_SLOT_HEIGHT_MM,
+    )
     ax = fig_d.add_subplot(111)
     for band_idx, (band_cfg, color) in enumerate(zip(BAND_CONFIGS, band_colors)):
         mask = _band_mask(freqs, band_cfg)
@@ -248,17 +260,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.semilogy(np.arange(1, n_show + 1), S_norm[:n_show], "o-",
                     color=color, markersize=3, linewidth=0.9,
                     label=band_cfg["label"].replace("\n", " "))
-    ax.set_xlabel("Mode index r")
-    ax.set_ylabel(r"$\sigma_r / \sigma_1$")
-    ax.legend(fontsize=5, frameon=False, ncol=2)
+    ax.set_xlabel("Mode index r", fontsize=FIG06_LABEL_PT)
+    ax.set_ylabel(r"$\sigma_r / \sigma_1$", fontsize=FIG06_LABEL_PT)
+    ax.tick_params(axis="both", labelsize=FIG06_TICK_PT)
+    ax.legend(fontsize=FIG06_LEGEND_PT, frameon=False, ncol=2, loc="upper right")
     add_panel_label(ax, "d")
-    fig_d.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    fig_d.subplots_adjust(left=0.11, right=0.98, bottom=0.23, top=0.90)
     all_paths.extend(save_outputs(fig_d, panel_dir / "fig06_panel_d_svd"))
     plt.close(fig_d)
 
     # Panel e standalone
     if routing_path.exists() and dict_path.exists():
-        fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
+        fig_e = make_figure(
+            width_mm=FIG06_PANEL_SLOT_WIDTH_MM,
+            height_mm=FIG06_PANEL_SLOT_HEIGHT_MM,
+        )
         ax = fig_e.add_subplot(111)
         x = np.arange(len(band_labels))
         ax.bar(x - width / 2, omp_diag, width, color=SEMANTIC_PALETTE["ablation"],
@@ -266,13 +282,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.bar(x + width / 2, qk_diag, width, color=SEMANTIC_PALETTE["learned"],
                alpha=0.7, label=learned_label)
         ax.set_xticks(x)
-        ax.set_xticklabels(band_labels, fontsize=6, rotation=30, ha="right")
-        ax.set_ylabel("Diagonal accuracy")
+        ax.set_xticklabels(band_labels, fontsize=FIG06_TICK_PT, rotation=30, ha="right")
+        ax.set_ylabel("Diagonal accuracy", fontsize=FIG06_LABEL_PT)
         ax.set_ylim(0, 1.05)
-        ax.legend(fontsize=5, frameon=False)
+        ax.tick_params(axis="y", labelsize=FIG06_TICK_PT)
+        ax.legend(fontsize=FIG06_LEGEND_PT, frameon=False, loc="upper right")
         ax.grid(axis="y", linestyle="--", alpha=0.3)
         add_panel_label(ax, "e")
-        fig_e.subplots_adjust(left=0.08, right=0.95, bottom=0.20, top=0.92)
+        fig_e.subplots_adjust(left=0.10, right=0.98, bottom=0.33, top=0.90)
         all_paths.extend(save_outputs(fig_e, panel_dir / "fig06_panel_e_band_routing"))
         plt.close(fig_e)
 
