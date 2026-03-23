@@ -18,28 +18,76 @@ import subprocess
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
+
+import yaml
 
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _discover_generators() -> list:
-    """Dynamically discover all generator modules in figures/generators/."""
-    generators_dir = Path(__file__).resolve().parent.parent / "generators"
+def _load_active_contracts(repo_root: Path | None = None) -> list[dict[str, Any]]:
+    repo_root = repo_root or _repo_root()
+    cfg_path = repo_root / "figures" / "conf" / "experiments.yaml"
+    with open(cfg_path, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+
+    contracts: list[dict[str, Any]] = []
+    for raw in cfg.values():
+        if not isinstance(raw, dict):
+            continue
+        figure_id = raw.get("figure_id")
+        generator = raw.get("generator")
+        if not figure_id or not generator:
+            continue
+        if not figure_id.startswith("fig"):
+            continue
+        number = int(figure_id[3:])
+        if 1 <= number <= 6:
+            contracts.append(raw)
+    contracts.sort(key=lambda item: int(str(item["figure_id"])[3:]))
+    return contracts
+
+
+def _import_generator(generator_path: str):
+    module_name = generator_path.replace("/", ".")
+    if module_name.endswith(".py"):
+        module_name = module_name[:-3]
+    module = importlib.import_module(module_name)
+    if not hasattr(module, "generate"):
+        raise AttributeError(f"{generator_path} has no generate() entrypoint")
+    return module
+
+
+def _active_generators(contracts: list[dict[str, Any]]) -> list:
     modules = []
-    for py_file in sorted(generators_dir.glob("fig*.py")):
-        module_name = f"figures.generators.{py_file.stem}"
-        mod = importlib.import_module(module_name)
-        if hasattr(mod, "generate"):
-            modules.append(mod)
+    seen: set[str] = set()
+    for contract in contracts:
+        generator_path = contract["generator"]
+        if generator_path in seen:
+            continue
+        seen.add(generator_path)
+        modules.append(_import_generator(generator_path))
     return modules
 
 
+def _declared_generator_outputs(repo_root: Path, contracts: list[dict[str, Any]]) -> list[Path]:
+    outputs: list[Path] = []
+    seen: set[Path] = set()
+    for contract in contracts:
+        for rel in contract.get("generator_outputs", []):
+            path = repo_root / rel
+            if path in seen:
+                continue
+            seen.add(path)
+            outputs.append(path)
+    return outputs
+
+
 def cmd_generate() -> list[Path]:
-    """Run all generators. Returns list of output paths."""
+    """Run the active six-figure generators declared in experiments.yaml."""
     from figures.style import load_paths
-    from figures.panel_assets import prepare_all as prepare_panel_assets
 
     root = _repo_root()
     paths_cfg = load_paths()
@@ -47,54 +95,75 @@ def cmd_generate() -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_outputs: list[Path] = []
-    generators = _discover_generators()
-    print(f"Discovered {len(generators)} generators")
+    contracts = _load_active_contracts(root)
+    generators = _active_generators(contracts)
+    print(f"Running {len(generators)} active generators from experiments.yaml")
 
     for gen in generators:
         name = gen.__name__.split(".")[-1]
         print(f"\n--- {name} ---")
-        try:
-            outputs = gen.generate(data_root=root, output_dir=output_dir)
-            all_outputs.extend(outputs)
-        except Exception as e:
-            print(f"[{name}] ERROR: {e}")
+        outputs = gen.generate(data_root=root, output_dir=output_dir)
+        all_outputs.extend(outputs)
 
-    all_outputs.extend(prepare_panel_assets(root))
     print(f"\nGeneration complete: {len(all_outputs)} files")
     return all_outputs
 
 
 def cmd_validate() -> bool:
-    """Validate all outputs. Returns True if all pass."""
-    from figures.style import load_paths
-    from figures.validate import validate_all
+    """Validate active generator outputs declared in experiments.yaml."""
+    from figures.validate import validate_file
 
     root = _repo_root()
-    paths_cfg = load_paths()
-    output_dir = root / paths_cfg.get("output_dir", "figures/output")
+    contracts = _load_active_contracts(root)
+    outputs = _declared_generator_outputs(root, contracts)
+    all_paths = set(outputs)
 
-    if not output_dir.exists() or not list(output_dir.glob("*.pdf")):
-        print(f"No outputs to validate in {output_dir}")
+    if not outputs:
+        print("No declared generator outputs to validate")
         return True
 
-    return validate_all(output_dir)
+    missing = [path for path in outputs if not path.exists()]
+    if missing:
+        print("ERROR: declared generator outputs are missing:")
+        for path in missing:
+            print(f"- {path}")
+        return False
+
+    reports = [validate_file(path, all_paths) for path in outputs]
+    failures = 0
+    for report in reports:
+        if not report.issues:
+            continue
+        status = "PASS" if report.passed else "FAIL"
+        if not report.passed:
+            failures += 1
+        print(f"\n{status}  {report.path.relative_to(root)}")
+        for issue in report.issues:
+            print(f"  [{issue.severity.value}] {issue.check}: {issue.message}")
+
+    if failures:
+        print(f"\n{failures} active figure artifact(s) failed validation. Deployment blocked.")
+        return False
+
+    print(f"\nAll {len(outputs)} active generator artifact(s) passed validation.")
+    return True
 
 
 def cmd_deploy() -> None:
-    """Copy validated outputs to paper/figures/."""
+    """Copy active generator outputs to paper/figures and compose manuscript assets."""
     from figures.style import load_paths
 
     root = _repo_root()
     paths_cfg = load_paths()
-    output_dir = root / paths_cfg.get("output_dir", "figures/output")
     paper_dir = root / paths_cfg.get("paper_figures_dir", "paper/figures")
     paper_dir.mkdir(parents=True, exist_ok=True)
-
-    pdf_files = sorted(output_dir.glob("*.pdf"))
-    tiff_files = sorted(output_dir.glob("*.tiff"))
+    contracts = _load_active_contracts(root)
+    outputs = _declared_generator_outputs(root, contracts)
 
     copied = 0
-    for f in pdf_files + tiff_files:
+    for f in outputs:
+        if not f.exists():
+            raise FileNotFoundError(f"Declared generator output missing: {f}")
         dest = paper_dir / f.name
         shutil.copy2(f, dest)
         copied += 1

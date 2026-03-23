@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from PIL import Image, ImageOps
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -51,7 +52,23 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _load_contract_paths() -> list[str]:
+def _images_are_pixel_identical(current_path: Path, baseline_bytes: bytes) -> bool:
+    with Image.open(current_path) as current_img:
+        current_img = ImageOps.exif_transpose(current_img).convert("RGB")
+        current_size = current_img.size
+        current_pixels = current_img.tobytes()
+
+    from io import BytesIO
+
+    with Image.open(BytesIO(baseline_bytes)) as baseline_img:
+        baseline_img = ImageOps.exif_transpose(baseline_img).convert("RGB")
+        baseline_size = baseline_img.size
+        baseline_pixels = baseline_img.tobytes()
+
+    return current_size == baseline_size and current_pixels == baseline_pixels
+
+
+def _load_contract_paths(scope: str) -> list[str]:
     with open(EXPERIMENTS, encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
 
@@ -65,6 +82,8 @@ def _load_contract_paths() -> list[str]:
             layout_rel = str(Path(asset).with_suffix(".layout.json"))
             if _is_tracked(layout_rel):
                 paths.append(layout_rel)
+        if scope == "paper":
+            continue
         manifest = entry.get("panel_manifest")
         if manifest and _is_tracked(manifest):
             paths.append(manifest)
@@ -74,10 +93,27 @@ def _load_contract_paths() -> list[str]:
     return sorted(dict.fromkeys(paths))
 
 
+def _resolve_current_path(rel: str, paper_figures_dir: Path | None) -> Path:
+    if paper_figures_dir is not None and rel.startswith("paper/figures/"):
+        return paper_figures_dir / Path(rel).name
+    return REPO_ROOT / rel
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Compare active tracked figure artifacts against a baseline git ref.")
     parser.add_argument("--baseline-ref", required=True, help="Git ref used as the regression baseline.")
+    parser.add_argument(
+        "--paper-figures-dir",
+        help="Optional alternate directory containing staged paper/figures assets to compare against the baseline.",
+    )
+    parser.add_argument(
+        "--scope",
+        choices=("all", "paper"),
+        default="all",
+        help="Whether to compare all tracked active figure artifacts or only manuscript paper assets.",
+    )
     args = parser.parse_args()
+    paper_figures_dir = Path(args.paper_figures_dir).resolve() if args.paper_figures_dir else None
 
     if not EXPERIMENTS.exists():
         print("ERROR: figures/conf/experiments.yaml not found", file=sys.stderr)
@@ -86,8 +122,8 @@ def main() -> int:
     compared = 0
     mismatches: list[str] = []
     missing_current: list[str] = []
-    for rel in _load_contract_paths():
-        current_path = REPO_ROOT / rel
+    for rel in _load_contract_paths(args.scope):
+        current_path = _resolve_current_path(rel, paper_figures_dir)
         if not current_path.exists():
             missing_current.append(rel)
             continue
@@ -99,6 +135,9 @@ def main() -> int:
             continue
         compared += 1
         if current_bytes != baseline_bytes:
+            if args.scope == "paper" and current_path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
+                if _images_are_pixel_identical(current_path, baseline_bytes):
+                    continue
             mismatches.append(
                 f"{rel}: current {_sha256(current_bytes)[:12]} != {args.baseline_ref} {_sha256(baseline_bytes)[:12]}"
             )
@@ -115,7 +154,7 @@ def main() -> int:
             print(f"- {line}")
         return 1
 
-    print(f"OK: {compared} active tracked figure artifact(s) match {args.baseline_ref}")
+    print(f"OK: {compared} active tracked {args.scope} figure artifact(s) match {args.baseline_ref}")
     return 0
 
 

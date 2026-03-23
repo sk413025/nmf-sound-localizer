@@ -14,6 +14,7 @@ from panel-level assets whenever possible:
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,7 @@ except ImportError as exc:  # pragma: no cover - runtime dependency
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_PAPER_DIR = REPO_ROOT / "paper/figures"
 MM_PER_INCH = 25.4
 COMPOSE_DPI = 300
 PANEL_LABEL_PX = 38
@@ -223,9 +225,9 @@ def _save_composite(img: Image.Image, path: Path) -> None:
         raise ValueError(f"Unsupported composite suffix for {path}")
 
 
-def compose_fig01() -> list[Path]:
+def compose_fig01(paper_dir: Path) -> list[Path]:
     """Fig 1: mm-driven layout with fixed a,b panels and the generated c,d,e strip."""
-    fig01_asset = REPO_ROOT / "paper/figures/fig01_paradigm-shift.jpg"
+    fig01_asset = paper_dir / "fig01_paradigm-shift.jpg"
     fig01_layout_asset = fig01_asset.with_suffix(".layout.json")
 
     panel_a = ImageOps.exif_transpose(Image.open(FIG01_PANEL_A)).convert("RGB")
@@ -337,9 +339,9 @@ def compose_fig01() -> list[Path]:
     return [fig01_asset, fig01_layout_asset]
 
 
-def compose_fig02() -> list[Path]:
+def compose_fig02(paper_dir: Path) -> list[Path]:
     """Fig 2: All 7 panels from composite PDF (a-g)."""
-    fig02_asset = REPO_ROOT / "paper/figures/fig02_svd-physical-dictionary.jpg"
+    fig02_asset = paper_dir / "fig02_svd-physical-dictionary.jpg"
 
     composite = _trim_white_border(_render_pdf(FIG02_COMPOSITE, scale=4.0), padding=4)
     target_width = 2200
@@ -355,9 +357,9 @@ def compose_fig02() -> list[Path]:
     return [fig02_asset]
 
 
-def compose_fig03() -> list[Path]:
+def compose_fig03(paper_dir: Path) -> list[Path]:
     """Fig 3: All 5 panels from composite PDF (a-e)."""
-    fig03_asset = REPO_ROOT / "paper/figures/fig03_fingerprint-discriminability.jpg"
+    fig03_asset = paper_dir / "fig03_fingerprint-discriminability.jpg"
 
     composite = _trim_white_border(_render_pdf(FIG03_COMPOSITE, scale=4.0), padding=4)
     target_width = 2200
@@ -373,9 +375,9 @@ def compose_fig03() -> list[Path]:
     return [fig03_asset]
 
 
-def compose_fig04() -> list[Path]:
+def compose_fig04(paper_dir: Path) -> list[Path]:
     """Fig 4: full-width architecture on top + b/c/d diagnostics across the bottom row."""
-    fig04_asset = REPO_ROOT / "paper/figures/fig04_solver-dynamics.jpg"
+    fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
     panel_a = _trim_white_border(Image.open(FIG04_PANEL_A).convert("RGB"), padding=0)
@@ -475,9 +477,9 @@ def compose_fig04() -> list[Path]:
     return [fig04_asset, fig04_layout_asset]
 
 
-def compose_fig05() -> list[Path]:
+def compose_fig05(paper_dir: Path) -> list[Path]:
     """Fig 5: All 6 panels from composite PDF (a-f)."""
-    fig05_asset = REPO_ROOT / "paper/figures/fig05_performance-structure.jpg"
+    fig05_asset = paper_dir / "fig05_performance-structure.jpg"
 
     composite = _trim_white_border(_render_pdf(FIG05_COMPOSITE, scale=4.0), padding=4)
     target_width = 2200
@@ -493,9 +495,9 @@ def compose_fig05() -> list[Path]:
     return [fig05_asset]
 
 
-def compose_fig06() -> list[Path]:
+def compose_fig06(paper_dir: Path) -> list[Path]:
     """Fig 6: panoramic exemplar strips on top + c / d / e diagnostic block below."""
-    fig06_asset = REPO_ROOT / "paper/figures/fig06_universality.jpg"
+    fig06_asset = paper_dir / "fig06_universality.jpg"
     fig06_layout_asset = fig06_asset.with_suffix(".layout.json")
 
     # Load external panels a,b,c
@@ -635,13 +637,22 @@ def compose_fig06() -> list[Path]:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Compose active manuscript figures from panel and generator assets.")
+    parser.add_argument(
+        "--paper-dir",
+        default=str(DEFAULT_PAPER_DIR),
+        help="Target directory for composed manuscript assets.",
+    )
+    args = parser.parse_args()
+    paper_dir = Path(args.paper_dir)
+
     created: list[Path] = []
-    created.extend(compose_fig01())
-    created.extend(compose_fig02())
-    created.extend(compose_fig03())
-    created.extend(compose_fig04())
-    created.extend(compose_fig05())
-    created.extend(compose_fig06())
+    created.extend(compose_fig01(paper_dir))
+    created.extend(compose_fig02(paper_dir))
+    created.extend(compose_fig03(paper_dir))
+    created.extend(compose_fig04(paper_dir))
+    created.extend(compose_fig05(paper_dir))
+    created.extend(compose_fig06(paper_dir))
     print("\n".join(str(path) for path in created))
 
 
