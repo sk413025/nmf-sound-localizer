@@ -187,8 +187,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     gs = gridspec.GridSpec(
         2, 3, figure=fig,
         height_ratios=[1.0, 1.0],
-        hspace=0.30, wspace=0.42,
-        left=0.07, right=0.96, bottom=0.05, top=0.96,
+        hspace=0.22, wspace=0.28,
+        left=0.06, right=0.98, bottom=0.06, top=0.97,
     )
 
     # --- Row 1 ---
@@ -201,44 +201,46 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Panel (b): H_corr vs QK_corr
     gs_b = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=gs[0, 1], hspace=0.20,
+        2, 2, subplot_spec=gs[0, 1],
+        width_ratios=[1.0, 0.05],
+        hspace=0.12, wspace=0.05,
     )
 
     ax_b1 = fig.add_subplot(gs_b[0, 0])
     im1 = ax_b1.imshow(H_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b1.set_title("H physical structure", fontsize=6, fontweight="bold")
+    ax_b1.set_title("H physical structure", fontsize=5.8)
     ax_b1.set_xticks(tick_positions)
-    ax_b1.set_xticklabels(tick_labels, fontsize=5)
+    ax_b1.set_xticklabels([])
     ax_b1.set_yticks(tick_positions)
     ax_b1.set_yticklabels(tick_labels, fontsize=5)
-    ax_b1.set_xlabel("Angle (\u00b0)", fontsize=5)
     ax_b1.set_ylabel("Angle (\u00b0)", fontsize=5)
-    cbar = plt.colorbar(im1, ax=ax_b1, fraction=0.046, pad=0.04)
-    cbar.set_label("Corr", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    ax_b1.tick_params(axis="both", length=2)
     add_panel_label(ax_b1, "b", x=-0.2, y=1.12)
 
-    ax_b2 = fig.add_subplot(gs_b[1, 0])
+    ax_b2 = fig.add_subplot(gs_b[1, 0], sharex=ax_b1, sharey=ax_b1)
     im2 = ax_b2.imshow(expert_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b2.set_title("QK learned structure", fontsize=6, fontweight="bold")
+    ax_b2.set_title("QK learned structure", fontsize=5.8)
     ax_b2.set_xticks(tick_positions)
     ax_b2.set_xticklabels(tick_labels, fontsize=5)
     ax_b2.set_yticks(tick_positions)
     ax_b2.set_yticklabels(tick_labels, fontsize=5)
     ax_b2.set_xlabel("Angle (\u00b0)", fontsize=5)
     ax_b2.set_ylabel("Angle (\u00b0)", fontsize=5)
-    cbar = plt.colorbar(im2, ax=ax_b2, fraction=0.046, pad=0.04)
+    ax_b2.tick_params(axis="both", length=2)
+    cax_b = fig.add_subplot(gs_b[:, 1])
+    cbar = plt.colorbar(im2, cax=cax_b)
     cbar.set_label("Corr", fontsize=5)
     cbar.ax.tick_params(labelsize=5)
-    ax_b2.text(0.5, -0.35, f"Pearson r = {pearson_r:.3f}",
-               transform=ax_b2.transAxes, fontsize=5.5, ha="center",
-               style="italic")
+    ax_b2.text(0.03, 0.05, f"r = {pearson_r:.3f}",
+               transform=ax_b2.transAxes, fontsize=5.3, style="italic")
 
     # Panel (c): Selection probability
     gs_c = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=gs[0, 2], hspace=0.20,
+        2, 2, subplot_spec=gs[0, 2],
+        width_ratios=[1.0, 0.05],
+        hspace=0.12, wspace=0.05,
     )
     vmax_unified = max(physics_prob.max(), qk_prob.max())
 
@@ -246,30 +248,29 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     im3 = ax_c1.imshow(physics_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c1.set_title("OMP selection", fontsize=6, fontweight="bold")
+    ax_c1.set_title("OMP selection", fontsize=5.8)
     ax_c1.set_ylabel("True DOA", fontsize=5)
-    ax_c1.set_xlabel("Expert", fontsize=5)
     ax_c1.set_xticks(tick_positions)
-    ax_c1.set_xticklabels(tick_labels, fontsize=5)
+    ax_c1.set_xticklabels([])
     ax_c1.set_yticks(tick_positions)
     ax_c1.set_yticklabels(tick_labels, fontsize=5)
-    cbar = plt.colorbar(im3, ax=ax_c1, fraction=0.046, pad=0.04)
-    cbar.set_label("P(select)", fontsize=5)
-    cbar.ax.tick_params(labelsize=5)
+    ax_c1.tick_params(axis="both", length=2)
     add_panel_label(ax_c1, "c", x=-0.2, y=1.12)
 
-    ax_c2 = fig.add_subplot(gs_c[1, 0])
+    ax_c2 = fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1)
     im4 = ax_c2.imshow(qk_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c2.set_title("Physics-aware AI", fontsize=6, fontweight="bold")
+    ax_c2.set_title("Physics-aware AI", fontsize=5.8)
     ax_c2.set_ylabel("True DOA", fontsize=5)
     ax_c2.set_xlabel("Expert", fontsize=5)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=5)
     ax_c2.set_yticks(tick_positions)
     ax_c2.set_yticklabels(tick_labels, fontsize=5)
-    cbar = plt.colorbar(im4, ax=ax_c2, fraction=0.046, pad=0.04)
+    ax_c2.tick_params(axis="both", length=2)
+    cax_c = fig.add_subplot(gs_c[:, 1])
+    cbar = plt.colorbar(im4, cax=cax_c)
     cbar.set_label("P(select)", fontsize=5)
     cbar.ax.tick_params(labelsize=5)
 
@@ -278,7 +279,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (d): Confusion matrices (baseline vs no-transformer)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 0], hspace=0.20,
+            2, 2, subplot_spec=gs[1, 0],
+            width_ratios=[1.0, 0.05],
+            hspace=0.12, wspace=0.05,
         )
 
         # Normalize confusion matrices to row-probabilities
@@ -295,26 +298,28 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d1 = fig.add_subplot(gs_d[0, 0])
         ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
                      interpolation="nearest", vmin=0, vmax=1)
-        ax_d1.set_title("Baseline", fontsize=5.5, fontweight="bold")
+        ax_d1.set_title("Baseline", fontsize=5.8)
         ax_d1.set_xticks(tick_positions)
-        ax_d1.set_xticklabels(tick_labels, fontsize=5)
+        ax_d1.set_xticklabels([])
         ax_d1.set_yticks(tick_positions)
         ax_d1.set_yticklabels(tick_labels, fontsize=5)
-        ax_d1.set_xlabel("Predicted", fontsize=5)
         ax_d1.set_ylabel("True", fontsize=5)
+        ax_d1.tick_params(axis="both", length=2)
         add_panel_label(ax_d1, "d", x=-0.20, y=1.12)
 
-        ax_d2 = fig.add_subplot(gs_d[1, 0])
+        ax_d2 = fig.add_subplot(gs_d[1, 0], sharex=ax_d1, sharey=ax_d1)
         im_d2 = ax_d2.imshow(no_trans_cm_norm, cmap="viridis", aspect="equal",
                               interpolation="nearest", vmin=0, vmax=1)
-        ax_d2.set_title("No transformer", fontsize=5.5, fontweight="bold")
+        ax_d2.set_title("No transformer", fontsize=5.8)
         ax_d2.set_xticks(tick_positions)
         ax_d2.set_xticklabels(tick_labels, fontsize=5)
         ax_d2.set_yticks(tick_positions)
         ax_d2.set_yticklabels(tick_labels, fontsize=5)
         ax_d2.set_xlabel("Predicted", fontsize=5)
         ax_d2.set_ylabel("True", fontsize=5)
-        cbar = plt.colorbar(im_d2, ax=ax_d2, fraction=0.046, pad=0.04)
+        ax_d2.tick_params(axis="both", length=2)
+        cax_d = fig.add_subplot(gs_d[:, 1])
+        cbar = plt.colorbar(im_d2, cax=cax_d)
         cbar.set_label("P(pred|true)", fontsize=5)
         cbar.ax.tick_params(labelsize=5)
     else:
@@ -328,7 +333,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (e): Angle-specific routing at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 1], hspace=0.35,
+            2, 1, subplot_spec=gs[1, 1], hspace=0.22,
         )
 
         representative_angles = [55.0, 100.0]
@@ -356,8 +361,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                          linestyle="--", alpha=0.8)
 
             ax_e.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0",
-                           fontsize=5.5, fontweight="bold")
-            ax_e.set_xlabel("Expert index", fontsize=5)
+                           fontsize=5.6)
+            if row_idx == 1:
+                ax_e.set_xlabel("Expert index", fontsize=5)
             ax_e.set_ylabel("P(predict)", fontsize=5)
             ax_e.set_xticks(tick_positions)
             ax_e.set_xticklabels(tick_labels, fontsize=5.5)
