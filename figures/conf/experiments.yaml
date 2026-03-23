@@ -17,6 +17,33 @@ fig01_manual:
     - path: figures/conf/paths.yaml
       type: yaml
       description: "Resolves the white-noise dataset and primary run used by the generator."
+  panel_provenance:
+    a:
+      provenance_mode: manual_support
+      asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png
+      note: "Committed setup support panel; no data generator or run artifact."
+    b:
+      provenance_mode: manual_support
+      asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png
+      note: "Committed physical-mechanism schematic; no data generator or run artifact."
+    c:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+        - figures/conf/paths.yaml
+    d:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_repeatability.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+        - figures/conf/paths.yaml
+    e:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+        - figures/conf/paths.yaml
   note: "Panels a-b are manual support assets; panels c-e are generator-backed."
 
 fig02_svd:
@@ -55,6 +82,8 @@ fig04_ablation:
   figure: "Fig 4"
   title: "Solver Dynamics"
   generator: figures/generators/fig04_solver_dynamics.py
+  display_crosswalk: figures/conf/model_display_crosswalk.yaml
+  naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   branch: paper/nature-comm-figures
   experiment_commit: "14feb94"
   commit_message: "Results: Babble Speech260 full sweep (245/245, ep20)"
@@ -68,6 +97,26 @@ fig04_ablation:
       is_symlink: true
       symlink_target: "worktrees/exp-omp-ablation-snr-rerun-20260128/results/figure4_data.json"
       description: "Aggregated clean-condition ablation sweep."
+  panel_provenance:
+    a:
+      provenance_mode: manual_support
+      asset_path: paper/figures/fig04_unrolled-attention-omp.jpg
+      note: "Committed architecture support panel; no run-generated evidence."
+    b:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+    c:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf
+      evidence_sources:
+        - results/figure4_data.json
+    d:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
   sweep:
     noise_type: babble
     variants:
@@ -85,6 +134,8 @@ fig05_performance_structure:
   figure: "Fig 5"
   title: "Performance And Structure"
   generator: figures/generators/fig05_performance_structure.py
+  display_crosswalk: figures/conf/model_display_crosswalk.yaml
+  naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   primary_run:
     dir: results/omp_transformer_speech260_trainval_split_full_20251115_082341
     code_state_git_head: "3785b1f"
@@ -94,10 +145,12 @@ fig05_performance_structure:
       type: npz
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
-    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
+      description: "Baseline confusion/per-angle metrics used by panels d-f through paths.yaml[confusion_matrix.baseline]."
     - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
       type: npz
+      description: "No-transformer confusion/per-angle metrics used by panels d-f."
   model_params:
     d_model: 128
     nhead: 2
@@ -113,6 +166,8 @@ fig06_universality:
   figure: "Fig 6"
   title: "Universal Physical Encoding Across Diverse Materials"
   generator: figures/generators/fig06_universality.py
+  display_crosswalk: figures/conf/model_display_crosswalk.yaml
+  naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   data_artifacts:
     - path: h_matrix_normalized_original_to_box.pth
       type: pth
@@ -132,4 +187,28 @@ fig06_universality:
     - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
       type: png
       description: "Committed split-panel support asset for the cross-material RMSE panel."
+  panel_provenance:
+    a:
+      provenance_mode: provenance_gap
+      asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
+      note: "Committed support asset; upstream cross-material raw-source contract is not yet machine-readable."
+    b:
+      provenance_mode: provenance_gap
+      asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
+      note: "Committed support asset; upstream cross-material heatmap selection lineage is not yet machine-readable."
+    c:
+      provenance_mode: provenance_gap
+      asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
+      note: "Committed support asset with normalized display labels but no tracked generator-backed upstream lineage."
+    d:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf
+      evidence_sources:
+        - h_matrix_normalized_original_to_box.pth
+    e:
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
   note: "Panels d-e are generator-backed. Panels a-c remain partially provenance-gapped top-panel support assets pending a stronger machine-readable cross-material contract."

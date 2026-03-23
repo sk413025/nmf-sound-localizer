@@ -19,7 +19,7 @@ figures:
     panels:
       - panel_id: a
         title: Architecture diagram
-        provenance_mode: manual
+        provenance_mode: manual_support
         asset_path: paper/figures/fig04_unrolled-attention-omp.jpg
       - panel_id: b
         title: Training convergence

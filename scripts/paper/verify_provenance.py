@@ -3,7 +3,8 @@
 
 Checks file existence, NPZ/PTH contents, git commit reachability,
 symlink integrity, code-state consistency, manuscript residuals,
-and cross-references with experiments.yaml.
+and cross-references with experiments.yaml, including mixed-figure
+panel-level provenance contracts.
 
 The machine-readable report is written under ``results/<run_name>/`` by
 default so audit artifacts do not pollute the repository root.
@@ -26,6 +27,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 _LEVELS = {"INFO": 0, "WARN": 1, "ERROR": 2}
+_ALLOWED_PANEL_PROVENANCE_MODES = {"data_backed", "manual_support", "provenance_gap"}
 
 
 class Finding:
@@ -405,6 +407,181 @@ def check_experiments_yaml(repo: Path, report: AuditReport) -> None:
             report.add("WARN", "experiments_yaml", f"commit {sha} not reachable from this repo")
 
 
+def check_panel_provenance(repo: Path, report: AuditReport) -> None:
+    """Check 10: validate mixed-figure panel provenance contracts."""
+    try:
+        import yaml
+    except ImportError:
+        report.add("WARN", "panel_provenance", "PyYAML not installed — skipping")
+        return
+
+    exp_file = repo / "figures" / "conf" / "experiments.yaml"
+    if not exp_file.exists():
+        report.add("WARN", "panel_provenance", "figures/conf/experiments.yaml not found")
+        return
+
+    try:
+        data = yaml.safe_load(exp_file.read_text()) or {}
+    except Exception as exc:
+        report.add("WARN", "panel_provenance", f"Failed to parse experiments.yaml — {exc}")
+        return
+
+    for entry_key, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        figure = entry.get("figure")
+        panel_map = entry.get("panel_provenance")
+        if not figure or not isinstance(panel_map, dict):
+            continue
+
+        for panel_id, panel in panel_map.items():
+            if not isinstance(panel, dict):
+                report.add(
+                    "ERROR",
+                    "panel_provenance",
+                    f"{entry_key}.{panel_id}: panel payload must be a mapping",
+                )
+                continue
+
+            mode = panel.get("provenance_mode")
+            if mode not in _ALLOWED_PANEL_PROVENANCE_MODES:
+                report.add(
+                    "ERROR",
+                    "panel_provenance",
+                    f"{entry_key}.{panel_id}: invalid provenance_mode {mode!r}",
+                )
+                continue
+
+            asset_path = panel.get("asset_path")
+            if not asset_path:
+                report.add(
+                    "ERROR",
+                    "panel_provenance",
+                    f"{entry_key}.{panel_id}: missing asset_path",
+                )
+            else:
+                asset = repo / asset_path
+                if asset.exists():
+                    report.add(
+                        "INFO",
+                        "panel_provenance",
+                        f"OK  {entry_key}.{panel_id} [{mode}] asset → {asset_path}",
+                    )
+                else:
+                    report.add(
+                        "ERROR",
+                        "panel_provenance",
+                        f"{entry_key}.{panel_id}: asset missing → {asset_path}",
+                    )
+
+            for idx, rel in enumerate(panel.get("evidence_sources", []), start=1):
+                src = repo / rel
+                if src.exists():
+                    report.add(
+                        "INFO",
+                        "panel_provenance",
+                        f"OK  {entry_key}.{panel_id} evidence[{idx}] → {rel}",
+                    )
+                else:
+                    report.add(
+                        "ERROR",
+                        "panel_provenance",
+                        f"{entry_key}.{panel_id}: evidence missing → {rel}",
+                    )
+
+            if mode == "provenance_gap" and not panel.get("note"):
+                report.add(
+                    "WARN",
+                    "panel_provenance",
+                    f"{entry_key}.{panel_id}: provenance_gap should include a note",
+                )
+
+        for key in ("display_crosswalk", "naming_provenance_note"):
+            rel = entry.get(key)
+            if not rel:
+                continue
+            p = repo / rel
+            if p.exists():
+                report.add("INFO", "panel_provenance", f"OK  {entry_key}.{key} → {rel}")
+            else:
+                report.add("ERROR", "panel_provenance", f"{entry_key}.{key} missing → {rel}")
+
+
+def check_panel_asset_contracts(repo: Path, report: AuditReport) -> None:
+    """Check 11: validate active panel manifests and inline panel-asset contracts."""
+    try:
+        import yaml
+    except ImportError:
+        report.add("WARN", "panel_assets", "PyYAML not installed — skipping")
+        return
+
+    cfg = repo / "figures" / "conf" / "panel_assets.yaml"
+    if not cfg.exists():
+        report.add("WARN", "panel_assets", "figures/conf/panel_assets.yaml not found")
+        return
+
+    try:
+        data = yaml.safe_load(cfg.read_text()) or {}
+    except Exception as exc:
+        report.add("WARN", "panel_assets", f"Failed to parse panel_assets.yaml — {exc}")
+        return
+
+    figures = data.get("figures")
+    if not isinstance(figures, dict):
+        report.add("ERROR", "panel_assets", "panel_assets.yaml missing top-level figures map")
+        return
+
+    for figure_id, entry in figures.items():
+        if not isinstance(entry, dict):
+            report.add("ERROR", "panel_assets", f"{figure_id}: entry must be a mapping")
+            continue
+
+        manifest_rel = entry.get("panel_manifest")
+        if manifest_rel:
+            manifest = repo / manifest_rel
+            if not manifest.exists():
+                report.add(
+                    "ERROR",
+                    "panel_assets",
+                    f"{figure_id}: panel manifest missing → {manifest_rel}",
+                )
+                continue
+            report.add("INFO", "panel_assets", f"OK  {figure_id} manifest → {manifest_rel}")
+            try:
+                manifest_data = json.loads(manifest.read_text())
+            except Exception as exc:
+                report.add(
+                    "ERROR",
+                    "panel_assets",
+                    f"{figure_id}: failed to parse manifest {manifest_rel} — {exc}",
+                )
+                continue
+            panel_list = manifest_data.get("panels", [])
+            source = manifest_rel
+        else:
+            panel_list = entry.get("panels", [])
+            source = "figures/conf/panel_assets.yaml"
+
+        if not isinstance(panel_list, list):
+            report.add("ERROR", "panel_assets", f"{figure_id}: panels must be a list in {source}")
+            continue
+
+        for panel in panel_list:
+            if not isinstance(panel, dict):
+                report.add("ERROR", "panel_assets", f"{figure_id}: panel entry must be a mapping")
+                continue
+            panel_id = panel.get("panel_id", "?")
+            mode = panel.get("provenance_mode")
+            if mode not in _ALLOWED_PANEL_PROVENANCE_MODES:
+                report.add(
+                    "ERROR",
+                    "panel_assets",
+                    f"{figure_id}.{panel_id}: invalid provenance_mode {mode!r} in {source}",
+                )
+                continue
+            report.add("INFO", "panel_assets", f"OK  {figure_id}.{panel_id} [{mode}] in {source}")
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -469,6 +646,8 @@ def main() -> int:
     check_generator_paths(repo, report)
     check_manuscript_tbd(repo, report)
     check_experiments_yaml(repo, report)
+    check_panel_provenance(repo, report)
+    check_panel_asset_contracts(repo, report)
 
     # Print human-readable report
     report.print_report()

@@ -40,7 +40,8 @@ Realized geometry checks: `figures/output/*.layout.json`
 - Evidence sources:
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
   - `figures/conf/paths.yaml`
-- Provenance note: panels a-b are manual support assets; panels c-e are generator-backed evidence panels.
+- Panel status: `a-b` manual support, `c-e` data-backed
+- Provenance note: panels a-b are manual support assets; panels c-e are generator-backed evidence panels. Machine-readable panel status lives in `figures/conf/experiments.yaml`.
 
 ### Fig 2 — Structured Physical Dictionary
 
@@ -66,6 +67,7 @@ Realized geometry checks: `figures/output/*.layout.json`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz`
   - `results/speech_babble_omp_snr_sweep.json`
   - `figures/conf/paths.yaml`
+- Provenance note: fully data-backed figure; some upstream generator inputs are resolved indirectly through `figures/conf/paths.yaml`.
 
 ### Fig 4 — Solver Dynamics
 
@@ -79,7 +81,8 @@ Realized geometry checks: `figures/output/*.layout.json`
 - Evidence sources:
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz`
   - `results/figure4_data.json`
-- Provenance note: panel a is a manual architecture asset; panels b-d are generator-backed evidence panels.
+- Panel status: `a` manual support, `b-d` data-backed
+- Provenance note: panel a is a manual architecture asset; panels b-d are generator-backed evidence panels. Machine-readable panel status lives in `figures/conf/experiments.yaml`.
 
 ### Fig 5 — Performance And Structure
 
@@ -94,6 +97,7 @@ Realized geometry checks: `figures/output/*.layout.json`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
   - `results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz`
   - `results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz`
+- Provenance note: fully data-backed figure; panels d-f use the confusion-matrix metrics resolved through `figures/conf/paths.yaml`.
 
 ### Fig 6 — Universality
 
@@ -107,4 +111,5 @@ Realized geometry checks: `figures/output/*.layout.json`
   - `h_matrix_normalized_original_to_box.pth`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
-- Provenance note: panels d-e are generator-backed; top panels a-c are currently supported by committed split-panel assets, but their upstream machine-readable cross-material evidence contract still needs strengthening.
+- Panel status: `a-c` provenance gap, `d-e` data-backed
+- Provenance note: panels d-e are generator-backed; top panels a-c are committed split-panel support assets whose upstream machine-readable cross-material evidence contract still needs strengthening.

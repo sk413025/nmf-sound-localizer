@@ -97,8 +97,7 @@ targets:
     generator_outputs:
       - figures/output/fig04_solver_dynamics.pdf
       - figures/output/fig04_solver_dynamics.tiff
-      - paper/figures/fig04_unrolled-attention-omp.jpg
-    provenance_note: "Panel a is a manual support asset; panels b-d are generator-backed evidence panels."
+    provenance_note: "Panel a is a manual support asset. Panels b-d are generator-backed evidence panels, and panel-level status now lives in experiments.yaml[fig04_ablation.panel_provenance]."
 
   - figure_id: fig05
     role: main
@@ -118,12 +117,12 @@ targets:
     evidence_sources:
       - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-      - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+      - results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       - results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
     generator_outputs:
       - figures/output/fig05_performance_structure.pdf
       - figures/output/fig05_performance_structure.tiff
-    provenance_note: "The manuscript composite should remain faithful to the generator-backed structure, confusion, and routing panels."
+    provenance_note: "The manuscript composite is fully data-backed; panels d-f use the confusion-matrix metrics resolved through paths.yaml[confusion_matrix]."
 
   - figure_id: fig06
     role: main
@@ -147,7 +146,4 @@ targets:
     generator_outputs:
       - figures/output/fig06_universality.pdf
       - figures/output/fig06_universality.tiff
-      - figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
-      - figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
-      - figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
-    provenance_note: "Panels d-e are generator-backed; panels a-c are committed split-panel assets that still require a stronger machine-readable cross-material provenance contract."
+    provenance_note: "Panels d-e are generator-backed. Panels a-c remain explicit provenance-gap support assets, with panel-level gap status now recorded in experiments.yaml[fig06_universality.panel_provenance]."
