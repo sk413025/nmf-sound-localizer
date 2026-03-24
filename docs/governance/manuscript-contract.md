@@ -20,6 +20,7 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 - Any manuscript change that depends on figure meaning, panel mapping, or figure lineage must be grounded in actual visual inspection of the figure asset.
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
+- If a multi-panel figure changes comparator family, evidence role, or panel-block purpose across panels, the Results prose and figure legend must state that panel logic explicitly rather than relying on the reader to infer it.
 
 ### Nature Communications prose discipline
 
@@ -60,6 +61,7 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - required manuscript sections are present
 - figure references are consistent with the manuscript and figure registry
 - figure-dependent claim edits are grounded in visual inspection plus generator and provenance backtrace when applicable
+- figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
 - unresolved placeholders are explicitly tracked or resolved
 - paper-facing checks under `make paper-check` pass
 

@@ -9,12 +9,31 @@ These assets directly support the current Nature Communications manuscript workf
 Examples:
 
 - `paper/`
+- `paper/figures/*.layout.json`
 - `figures/`
 - `scripts/paper/`
 - `docs/governance/`
 - `docs/agent-ops/`
 - `.codex/skills/`
 - paper-facing provenance inputs and outputs under `results/`
+
+Gate-facing figure review records that are used by the paper review workflow
+also belong to this class, including final `review.json` records and summary
+gate outputs consumed by paper-facing checks.
+
+## Derived review artifacts
+
+These assets support visual review, debugging, and audit workflows, but they do
+not become canonical source of truth by default. They may be regenerated,
+gitignored, or promoted only when a contract explicitly requires them.
+
+Examples:
+
+- `figures/review_artifacts/<figure_id>/preview.png`
+- `figures/review_artifacts/<figure_id>/preview_overlay.png`
+- `figures/review_artifacts/<figure_id>/reviews/*.template.json`
+- transient reviewer notes or intermediate role outputs
+- derived layout-audit reports such as clearance summaries
 
 ## Active runtime substrate
 

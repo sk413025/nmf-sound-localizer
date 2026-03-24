@@ -10,6 +10,7 @@ Reviewer involvement is mandatory for:
 - movement of assets between main paper and supplementary
 - governance or role changes
 - large rewrites of Results, Discussion, or Abstract
+- paper-figure layout/readability disputes that require paper-asset-review or geometry-audit confirmation
 
 ## Red-team requirements
 
@@ -41,3 +42,7 @@ Escalate to the human approver at these boundaries:
 - scientific claim changes with interpretation risk
 - submission packaging choices with paper-level consequences
 - final approval for a coordinated multi-agent change set
+
+When figure risk is primarily layout/readability rather than claim validity,
+route first through paper-asset-review plus any required geometry audit before
+escalating toward manuscript rewrite.

@@ -55,31 +55,35 @@ The final accepted artifact is:
 
 - `review.json`
 
-`context.json` is expected to distinguish four asset layers when applicable:
+`context.json` is expected to distinguish five asset layers when applicable:
 
 - `evidence source`: results/data files that support the claim
 - `generator output`: clean code-produced figure asset
 - `split panel assets`: top-level manuscript panels (`a/b/c/...`) stored as internal recomposition assets
 - `manuscript asset`: final paper-facing composite that is actually reviewed
+- `manuscript layout sidecar`: realized manuscript geometry such as `paper/figures/*.layout.json` used for overlay and clearance audits
 
 For single-panel manual figures, only the manuscript asset may exist. For data-backed figures,
 the manuscript asset must remain traceable to the upstream evidence and generator outputs.
 For multi-panel figures in this branch, split top-level panel assets are required internal assets even though the journal-facing release target remains the final composite.
+When a manuscript layout sidecar exists, it is part of the review context rather than an optional debugging extra.
 
 Review must follow this inspection order:
 
 1. Inspect the manuscript asset visually.
-2. If the manuscript asset or any reviewed upstream figure asset is a `pdf`, inspect PNG page previews for every page before interpreting the asset.
-3. Inspect split panel assets or upstream figure assets listed in `context.json`.
-4. Inspect the generator or composition code that produced the figure.
-5. Inspect the evidence or provenance sources that the figure claims to summarize.
-6. Only then decide manuscript fit, lineage, and Nature suitability.
+2. If a manuscript layout sidecar exists, inspect it before deciding whether spacing and geometry are acceptable.
+3. If the manuscript asset or any reviewed upstream figure asset is a `pdf`, inspect PNG page previews for every page before interpreting the asset.
+4. Inspect split panel assets or upstream figure assets listed in `context.json`.
+5. Inspect the generator or composition code that produced the figure.
+6. Inspect the evidence or provenance sources that the figure claims to summarize.
+7. Only then decide manuscript fit, lineage, and Nature suitability.
 
 ## Acceptance rules
 
 A paper-facing figure is not releasable unless:
 
 - geometry checks pass
+- any required layout-sidecar-backed clearance audit passes
 - `review.json` exists
 - `review.json` declares `skill_used = paper-asset-review`
 - all three reviewer roles are recorded
@@ -97,7 +101,9 @@ Every `visual-reviewer` pass must explicitly judge:
 - whether semantic colors are consistent with the paper-wide visual grammar
 - whether the figure uses internal headers or narration that should live in the caption instead
 - whether the panel layout minimizes white space and makes the main claim visually dominant
+- whether any spacing or crowding risk requires layout-sidecar-backed clearance review
 - whether any weakness is intrinsic to a split panel or introduced only by the final recomposition
+- whether the spacing judgment agrees with manuscript layout metadata when such metadata exists
 - whether the reviewer inspected the actual asset rather than inferring content from filenames or manuscript text
 - whether any PDF assets were reviewed through page-by-page PNG previews
 - whether the visual story agrees with the generator or composition code and the listed evidence sources

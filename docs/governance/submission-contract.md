@@ -25,6 +25,10 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - Multi-panel layouts should minimize white space and size panels by claim importance rather than force equal-size symmetry when the content does not warrant it.
 - Every multi-panel figure must preserve one final paper-facing composite plus a set of split top-level panel assets and a panel manifest under `figures/output/`.
 - Split panel assets are internal reproducibility and review artifacts; the Nature-facing submission asset remains the final composite figure.
+- `paper/figures/` is a canonical manuscript-facing surface. Only declared manuscript assets and governed paper-facing sidecars such as `paper/figures/*.layout.json` belong there.
+- Generator intermediates belong under `figures/output/` unless a contract explicitly declares them as manuscript-facing assets.
+- For recomposed or geometry-sensitive paper figures, preserve a matching realized-layout sidecar under `paper/figures/*.layout.json`.
+- Figures with stacked, densely packed, or crowding-prone layouts require both visual review and a passing quantitative clearance check. Thresholds belong in executable checks or figure-specific layout contracts, not in this file.
 - Every paper-facing figure judgment must begin with visual inspection of the actual asset.
 - `jpg` and `png` assets must be reviewed directly; `pdf` assets must first be converted page-by-page into PNG previews for visual inspection.
 - Generated or data-backed figures are not submission-ready unless the visual asset has been reconciled against both its generator or composition code and its upstream evidence or provenance sources.
@@ -32,6 +36,7 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 ## Required outputs
 
 - submission-ready manuscript assets under `paper/`
+- realized manuscript-layout sidecars where the figure workflow requires them
 - validated figure outputs and review artifacts
 - split panel assets and panel manifests for every multi-panel figure
 - required submission sections and metadata
@@ -42,10 +47,13 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - paper asset review workflow has been run when applicable
 - manuscript includes the required branch-level submission sections
 - figure files and references are consistent with branch policy
+- `paper/figures/` contains only declared manuscript assets and governed sidecars
 - canonical Nature requirements remain reachable from main entrypoints
 - main-paper figures do not rely on oversized internal headers or presentation-board narration
 - typography and semantic colors are consistent with the branch visual grammar
 - every multi-panel figure has a matching panel manifest whose panel order agrees with the composite
+- realized layout sidecars exist where the figure workflow requires them
+- geometry and clearance checks pass where the figure workflow requires them
 - figure acceptance does not rely on filenames, registry prose, or manuscript text alone when visual inspection or provenance backtrace would change the interpretation
 
 ## Executable gates
@@ -54,4 +62,5 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - `make paper-review-gate`
 - `make -C figures validate`
 - `python scripts/paper/check_figure_references.py`
+- `python scripts/paper/check_figure_layout_clearance.py <paper/figures/*.layout.json>` when the figure workflow declares a clearance audit
 - `python scripts/paper/check_governance_links.py`
