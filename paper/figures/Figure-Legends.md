@@ -20,7 +20,7 @@ a, Singular-value spectrum showing rapid decay, indicating that the measured str
 b, Frequency-selective spectra \(|u_r(f)|\) for modes 1–3 (overlaid), showing distinct spectral peaks for each dominant channel.
 c, Direction-selective polar patterns \(v_r(\theta)\) for modes 1–3 (overlaid), forming virtual directional sensing channels.
 d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
-e, Rank-\(r\) reconstruction quality: original versus reconstructed fingerprint at a representative angle for ranks 3, 5, and 10, quantifying the information retained by low-rank compression.
+e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle fingerprint RMSE for ranks 3, 5, and 10, showing that low-rank compression preserves directional fingerprints across the calibrated angle manifold.
 f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of the physical angle manifold — nearby angles share similar spectral fingerprints, providing the geometric foundation exploited by the learned router (Fig. 5b).
 
 ## Fig. 3 (6 panels)

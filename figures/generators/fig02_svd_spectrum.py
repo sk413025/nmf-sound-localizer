@@ -5,7 +5,7 @@ Double-column width (183 mm), 6 panels in a 2×3 grid:
          (b) Mode 1-3 frequency profiles (overlaid)
          (c) Mode 1-3 polar patterns (overlaid)
   Row 2: (d) Full dictionary H heatmap (angle x freq)
-         (e) Rank-r reconstruction quality (original vs reconstructed)
+         (e) All-angle reconstruction fidelity under rank-r truncation
          (f) Inter-angle correlation matrix of H
 """
 
@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator
 
 from figures.style import (
     set_nature_rcparams,
@@ -114,6 +114,49 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
     )
     return manifest_path
+
+
+def _reconstruction_rmse_by_angle(
+    h_log_centered: np.ndarray,
+    u: np.ndarray,
+    s: np.ndarray,
+    vt: np.ndarray,
+    rank: int,
+) -> np.ndarray:
+    """Return per-angle RMSE after rank-r reconstruction in the centered log domain."""
+    reconstructed = u[:, :rank] @ np.diag(s[:rank]) @ vt[:rank, :]
+    return np.sqrt(np.mean((h_log_centered - reconstructed) ** 2, axis=0))
+
+
+def _smooth_angle_series(
+    angles_deg: np.ndarray,
+    values: np.ndarray,
+    avg_window: int = 5,
+    n_interp: int = 181,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Average first, then interpolate a smoother display curve through the averaged samples."""
+    if len(values) < 2:
+        clipped = np.clip(values, 0, None)
+        return clipped, angles_deg, clipped
+
+    clipped = np.clip(values, 0, None)
+    avg_window = min(avg_window, len(clipped))
+    if avg_window % 2 == 0:
+        avg_window -= 1
+    avg_window = max(avg_window, 1)
+
+    if avg_window == 1:
+        averaged = clipped
+    else:
+        pad = avg_window // 2
+        padded = np.pad(clipped, pad_width=pad, mode="edge")
+        kernel = np.ones(avg_window, dtype=float) / float(avg_window)
+        averaged = np.convolve(padded, kernel, mode="valid")
+
+    spline = PchipInterpolator(angles_deg, averaged)
+    angles_interp = np.linspace(float(angles_deg[0]), float(angles_deg[-1]), n_interp)
+    values_interp = np.clip(spline(angles_interp), 0, None)
+    return averaged, angles_interp, values_interp
 
 
 # ---------------------------------------------------------------------------
@@ -227,29 +270,40 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_d.set_title("Full dictionary H", fontsize=6.5)
     cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.035, pad=0.02)
-    cbar.set_label("Amplitude", fontsize=6)
     cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_d, "d", x=-0.15)
 
-    # --- Panel (e): Rank-r reconstruction quality ---
+    # --- Panel (e): All-angle reconstruction fidelity ---
     ax_e = fig.add_subplot(gs[1, 1])
-    rep_angle_idx = int(np.argmin(np.abs(angles_deg - 90)))
-    original = H_log_centered[:, rep_angle_idx]
-
-    for rank, ls, alpha_val in [(3, "--", 0.7), (5, "-.", 0.5), (10, ":", 0.4)]:
-        H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
-        reconstructed = H_reconstructed[:, rep_angle_idx]
-        residual = np.sqrt(np.mean((original - reconstructed) ** 2))
-        ax_e.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
-                  alpha=alpha_val, label=f"r={rank} (RMSE={residual:.2f})")
-
-    ax_e.plot(freqs / 1000, original, "-", linewidth=1.0,
-              color="black", alpha=0.9, label="Original")
-    ax_e.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_e.set_ylabel("Log amplitude (centered)", fontsize=6)
-    ax_e.set_title(f"Reconstruction @ {angles_deg[rep_angle_idx]:.0f}\u00b0", fontsize=6.5)
+    rank_styles = [
+        (3, "o", "#1f77b4"),
+        (5, "s", "#ff7f0e"),
+        (10, "^", "#2ca02c"),
+    ]
+    for rank, marker, color in rank_styles:
+        rmse_by_angle = _reconstruction_rmse_by_angle(H_log_centered, U, S, Vt, rank)
+        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
+        ax_e.plot(
+            angles_interp,
+            rmse_interp,
+            linewidth=1.0,
+            color=color,
+            label=f"r={rank} (mean={rmse_by_angle.mean():.2f})",
+        )
+        ax_e.plot(
+            angles_deg,
+            rmse_avg,
+            marker=marker,
+            markersize=2.5,
+            linestyle="None",
+            color=color,
+        )
+    ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
+    ax_e.set_ylabel("RMSE", fontsize=6, labelpad=1)
+    ax_e.set_title("All-angle reconstruction fidelity", fontsize=6.5)
+    ax_e.set_xticks([angles_deg[0], 60, 90, 120, angles_deg[-1]])
     ax_e.legend(fontsize=5, frameon=False, loc="upper right")
-    ax_e.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
     add_panel_label(ax_e, "e", x=-0.15)
 
     # --- Panel (f): Inter-angle correlation matrix ---
@@ -289,7 +343,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Angle (\u00b0)")
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Amplitude", fontsize=6)
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label(r"$|H|$", fontsize=6)
     add_panel_label(ax, "d")
     fig_d_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_d_s, panel_dir / "fig02_panel_d_full_H"))
@@ -298,15 +352,27 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel e standalone
     fig_e_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_e_s.add_subplot(111)
-    ax.plot(freqs / 1000, original, "-", linewidth=1.0, color="black", label="Original")
-    for rank, ls, alpha_val in [(3, "--", 0.7), (5, "-.", 0.5), (10, ":", 0.4)]:
-        H_reconstructed = U[:, :rank] @ np.diag(S[:rank]) @ Vt[:rank, :]
-        reconstructed = H_reconstructed[:, rep_angle_idx]
-        residual = np.sqrt(np.mean((original - reconstructed) ** 2))
-        ax.plot(freqs / 1000, reconstructed, ls, linewidth=0.8,
-                alpha=alpha_val, label=f"r={rank} (RMSE={residual:.2f})")
-    ax.set_xlabel("Frequency (kHz)")
-    ax.set_ylabel("Log amplitude (centered)")
+    for rank, marker, color in rank_styles:
+        rmse_by_angle = _reconstruction_rmse_by_angle(H_log_centered, U, S, Vt, rank)
+        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
+        ax.plot(
+            angles_interp,
+            rmse_interp,
+            linewidth=1.0,
+            color=color,
+            label=f"r={rank} (mean={rmse_by_angle.mean():.2f})",
+        )
+        ax.plot(
+            angles_deg,
+            rmse_avg,
+            marker=marker,
+            markersize=2.5,
+            linestyle="None",
+            color=color,
+        )
+    ax.set_xlabel("Angle (\u00b0)")
+    ax.set_ylabel("RMSE")
+    ax.set_xticks([angles_deg[0], 60, 90, 120, angles_deg[-1]])
     ax.legend(fontsize=5, frameon=False)
     add_panel_label(ax, "e")
     fig_e_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
@@ -363,10 +429,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "e",
-                "title": "Rank-r reconstruction quality",
+                "title": "All-angle reconstruction fidelity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_reconstruction.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Original vs reconstructed fingerprint at 90 deg for rank 3, 5, 10.",
+                "description": "Per-angle fingerprint RMSE under rank-3, rank-5, and rank-10 truncation across all 37 angles.",
             },
             {
                 "panel_id": "f",

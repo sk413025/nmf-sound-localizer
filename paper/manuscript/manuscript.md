@@ -31,7 +31,7 @@ d, Trial repeatability: mean spectra (±1 s.d. shading) from three independent w
 e, Frequency-dependent directivity: polar plot of normalized \(|H(\theta, f)|\) across 0°-180° for four frequency bands (0.3-0.5, 0.5-1, 1-2, 2-3 kHz), showing that each band carries a distinct directional response pattern.
 
 ### Spectral fingerprints arise from a low-dimensional physical manifold (Fig. 2)
-The measured angle-frequency response exhibits a pronounced low-dimensional structure: the singular spectrum decays rapidly, indicating that only a small number of dominant spectral-spatial channels account for most direction-dependent variability (Fig. 2a-c). The continuous transfer function \(H(\theta, f)\) introduced in Fig. 1 can be sampled on the \(F\) analysis frequencies and \(E = 37\) calibration angles to form an angle-indexed response matrix \(H\in\mathbb{R}^{F\times E}\). The effective rank is \(r = 3\) (Fig. 2a), capturing 91.9% of the singular-value energy. The full angle-frequency structure of \(H\) (Fig. 2d) and the rank-\(r\) reconstruction quality (Fig. 2e) confirm that low-rank compression retains the essential directional information.
+The measured angle-frequency response exhibits a pronounced low-dimensional structure: the singular spectrum decays rapidly, indicating that only a small number of dominant spectral-spatial channels account for most direction-dependent variability (Fig. 2a-c). The continuous transfer function \(H(\theta, f)\) introduced in Fig. 1 can be sampled on the \(F\) analysis frequencies and \(E = 37\) calibration angles to form an angle-indexed response matrix \(H\in\mathbb{R}^{F\times E}\). The effective rank is \(r = 3\) (Fig. 2a), capturing 91.9% of the singular-value energy. The full angle-frequency structure of \(H\) (Fig. 2d) and the all-angle reconstruction fidelity of its rank-\(r\) approximations (Fig. 2e) confirm that low-rank compression retains the essential directional information across the calibrated angle set.
 
 This low-rank structure has a physical origin. Under small-amplitude dynamics, an everyday object acts as a linear system whose single-point velocity response can be expressed as a superposition of dispersive structural modes, each with its own spectral signature \(s_m(\omega)\) and direction-dependent coupling strength \(\alpha_m(\theta)\):
 
@@ -52,7 +52,7 @@ a, Singular-value spectrum showing rapid decay, indicating that the measured str
 b, Frequency-selective spectra \(|u_r(f)|\) for modes 1-3 (overlaid), showing distinct spectral peaks for each dominant channel.
 c, Direction-selective polar patterns \(v_r(\theta)\) for modes 1-3 (overlaid), forming virtual directional sensing channels.
 d, Full angle-frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
-e, Rank-\(r\) reconstruction quality: original versus reconstructed fingerprint at a representative angle for ranks 3, 5, and 10, quantifying the information retained by low-rank compression.
+e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle fingerprint RMSE for ranks 3, 5, and 10, showing that low-rank compression preserves directional fingerprints across the calibrated angle manifold.
 f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of the physical angle manifold. Nearby angles share similar spectral fingerprints, providing the geometric foundation exploited by the learned router (Fig. 5b).
 
 ### Encoding survives content variation but classical decoding fails (Fig. 3)
