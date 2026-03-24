@@ -49,7 +49,7 @@ a, SNR degradation curves for the physics-aware solver, router-bypass ablation, 
 b, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
 c, All-angle selection heatmaps contrasting the analytical OMP baseline reference (diffuse off-diagonal mass, top) with the physics-aware solver (sharply diagonal, bottom), providing the classical decoding context for the ablation panels.
 d, Confusion matrices for the full physics-aware solver (top) and the router-bypass ablation (bottom), normalized to row-wise probabilities.
-e, Angle-specific routing distributions at two representative directions (55° and 100°): the full physics-aware solver concentrates mass on the correct atom and suppresses off-axis peaks, whereas the router-bypass ablation shows broader, less decisive distributions.
+e, Angle-specific conditional output distributions at two representative directions (55° and 100°): the full physics-aware solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas the router-bypass ablation shows broader off-axis leakage.
 f, Per-angle routing gain: P(correct) for each of the 37 angles comparing the full physics-aware solver with the router-bypass ablation, quantifying the fraction of angles that benefit from learned routing. The shaded region highlights the per-angle improvement.
 
 ## Fig. 6 (5 panels)

@@ -449,45 +449,64 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d_placeholder.set_axis_off()
         add_panel_label(ax_d_placeholder, "d", x=-0.1, y=1.06)
 
-    # Panel (e): Angle-specific routing at 2 representative angles
+    # Panel (e): Conditional output profiles at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
             2, 1, subplot_spec=gs_bottom[0, 1], hspace=FIG05_ROUTING_STACK["hspace"],
         )
 
         representative_angles = [55.0, 100.0]
-        for row_idx, target_angle in enumerate(representative_angles):
+        profile_ymax = 0.0
+        profile_rows = []
+        for target_angle in representative_angles:
             target_idx = int(np.argmin(np.abs(angles - target_angle)))
+            bl_row = baseline_cm[target_idx].astype(float)
+            nt_row = no_trans_cm[target_idx].astype(float)
+            bl_probs = bl_row / bl_row.sum() if bl_row.sum() > 0 else bl_row
+            nt_probs = nt_row / nt_row.sum() if nt_row.sum() > 0 else nt_row
+            profile_ymax = max(profile_ymax, float(bl_probs.max()), float(nt_probs.max()))
+            profile_rows.append((target_idx, bl_probs, nt_probs))
+        profile_ymax = min(1.0, profile_ymax * 1.10)
+
+        for row_idx, (target_idx, bl_probs, nt_probs) in enumerate(profile_rows):
 
             panel_gid = "fig05.panel_e.top" if row_idx == 0 else "fig05.panel_e.bottom"
             ax_e = _set_gid(fig.add_subplot(gs_e[row_idx, 0]), panel_gid)
 
-            # Baseline distribution
-            bl_row = baseline_cm[target_idx].astype(float)
-            bl_total = bl_row.sum()
-            bl_probs = bl_row / bl_total if bl_total > 0 else bl_row
-
-            # No-transformer distribution
-            nt_row = no_trans_cm[target_idx].astype(float)
-            nt_total = nt_row.sum()
-            nt_probs = nt_row / nt_total if nt_total > 0 else nt_row
-
-            x_pos = np.arange(len(angles))
-            ax_e.bar(x_pos - 0.15, bl_probs, width=0.3, alpha=0.7,
-                     color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
-            ax_e.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
-                     color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
-            ax_e.axvline(target_idx, color=SEMANTIC_PALETTE["physics"], linewidth=0.8,
+            ax_e.plot(
+                angles,
+                bl_probs,
+                "-o",
+                markersize=2.5,
+                linewidth=0.9,
+                color=SEMANTIC_PALETTE["learned"],
+                label=routing_solver_short,
+                zorder=3,
+            )
+            ax_e.plot(
+                angles,
+                nt_probs,
+                "--s",
+                markersize=2.3,
+                linewidth=0.9,
+                color=SEMANTIC_PALETTE["ablation"],
+                label=routing_no_transformer_short,
+                zorder=2,
+            )
+            ax_e.axvline(float(angles[target_idx]), color=SEMANTIC_PALETTE["physics"], linewidth=0.8,
                          linestyle="--", alpha=0.8)
 
-            ax_e.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0",
+            ax_e.set_title(f"Conditional output @ {angles[target_idx]:.0f}\u00b0",
                            fontsize=title_pt)
             if row_idx == 1:
-                ax_e.set_xlabel("Expert index", fontsize=axis_label_pt)
-            ax_e.set_ylabel("P(predict)", fontsize=axis_label_pt)
-            ax_e.set_xticks(tick_positions)
+                ax_e.set_xlabel("Predicted angle (\u00b0)", fontsize=axis_label_pt)
+            ax_e.set_ylabel("P(pred|true)", fontsize=axis_label_pt)
+            ax_e.set_xticks(angles[tick_positions])
             ax_e.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-            ax_e.tick_params(axis="y", labelsize=tick_label_pt)
+            ax_e.set_xlim(float(angles[0]), float(angles[-1]))
+            ax_e.set_ylim(0, profile_ymax)
+            ax_e.tick_params(axis="both", labelsize=tick_label_pt)
+            ax_e.grid(axis="y", linestyle="--", alpha=0.25)
             if row_idx == 0:
                 ax_e.legend(fontsize=legend_pt, frameon=False, loc="upper right")
                 add_panel_label(ax_e, "e", x=-0.20, y=1.12)
@@ -701,7 +720,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         )
         plt.close(fig_d)
 
-    # Panel e standalone (angle-specific routing)
+    # Panel e standalone (conditional output profiles)
     if baseline_cm is not None and no_trans_cm is not None:
         fig_e = make_figure(
             width_mm=FIG05_STANDALONE["e"]["width_mm"],
@@ -718,23 +737,49 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             bottom=fig_e_grid["bottom"],
             top=fig_e_grid["top"],
         )
-        for row_idx, target_angle in enumerate([55.0, 100.0]):
+        representative_angles = [55.0, 100.0]
+        profile_ymax = 0.0
+        profile_rows = []
+        for target_angle in representative_angles:
             target_idx = int(np.argmin(np.abs(angles - target_angle)))
-            ax = fig_e.add_subplot(gs_es[row_idx, 0])
             bl_row = baseline_cm[target_idx].astype(float)
-            bl_probs = bl_row / bl_row.sum() if bl_row.sum() > 0 else bl_row
             nt_row = no_trans_cm[target_idx].astype(float)
+            bl_probs = bl_row / bl_row.sum() if bl_row.sum() > 0 else bl_row
             nt_probs = nt_row / nt_row.sum() if nt_row.sum() > 0 else nt_row
-            x_pos = np.arange(len(angles))
-            ax.bar(x_pos - 0.15, bl_probs, width=0.3, alpha=0.7,
-                   color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
-            ax.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
-                   color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
-            ax.axvline(target_idx, color=SEMANTIC_PALETTE["physics"], linewidth=0.8, linestyle="--")
-            ax.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0", fontsize=title_pt)
-            ax.set_xlabel("Expert index", fontsize=axis_label_pt)
-            ax.set_ylabel("P(predict)", fontsize=axis_label_pt)
+            profile_ymax = max(profile_ymax, float(bl_probs.max()), float(nt_probs.max()))
+            profile_rows.append((target_idx, bl_probs, nt_probs))
+        profile_ymax = min(1.0, profile_ymax * 1.10)
+
+        for row_idx, (target_idx, bl_probs, nt_probs) in enumerate(profile_rows):
+            ax = fig_e.add_subplot(gs_es[row_idx, 0])
+            ax.plot(
+                angles,
+                bl_probs,
+                "-o",
+                markersize=2.8,
+                linewidth=0.95,
+                color=SEMANTIC_PALETTE["learned"],
+                label=routing_solver_short,
+            )
+            ax.plot(
+                angles,
+                nt_probs,
+                "--s",
+                markersize=2.5,
+                linewidth=0.95,
+                color=SEMANTIC_PALETTE["ablation"],
+                label=routing_no_transformer_short,
+            )
+            ax.axvline(float(angles[target_idx]), color=SEMANTIC_PALETTE["physics"], linewidth=0.8, linestyle="--")
+            ax.set_title(f"Conditional output @ {angles[target_idx]:.0f}\u00b0", fontsize=title_pt)
+            ax.set_xlabel("Predicted angle (\u00b0)", fontsize=axis_label_pt)
+            ax.set_ylabel("P(pred|true)", fontsize=axis_label_pt)
+            ax.set_xticks(angles[tick_positions])
+            ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+            ax.set_xlim(float(angles[0]), float(angles[-1]))
+            ax.set_ylim(0, profile_ymax)
             ax.tick_params(axis="both", labelsize=tick_label_pt)
+            ax.grid(axis="y", linestyle="--", alpha=0.25)
             if row_idx == 0:
                 ax.legend(fontsize=legend_pt, frameon=False)
         add_panel_label(fig_e.axes[0], "e")
@@ -812,10 +857,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "e",
-                "title": "Representative-angle routing",
+                "title": "Representative-angle conditional outputs",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Matched-ablation routing distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
+                "description": f"Matched-ablation conditional output distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
             },
             {
                 "panel_id": "f",
