@@ -21,7 +21,7 @@ b, Frequency-selective spectra \(|u_r(f)|\) for modes 1–3 (overlaid), showing 
 c, Direction-selective polar patterns \(v_r(\theta)\) for modes 1–3 (overlaid), forming virtual directional sensing channels.
 d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
 e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle fingerprint RMSE for ranks 3, 5, and 10, showing that low-rank compression preserves directional fingerprints across the calibrated angle manifold.
-f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of the physical angle manifold — nearby angles share similar spectral fingerprints, providing the geometric foundation exploited by the learned router (Fig. 5b).
+f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band indicates that neighboring angles share similar spectral fingerprints, revealing the smooth physical angle manifold later exploited by the learned router (Fig. 5b).
 
 ## Fig. 3 (6 panels)
 
@@ -29,8 +29,8 @@ f, Inter-angle correlation matrix of \(H\), revealing the smooth structure of th
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11); speech margin is reduced but positive at all angles.
-d, OMP per-angle accuracy: white noise 83.8% versus speech 1.7%.
-e, Split-triangle pairwise similarity matrix: lower-left = white noise (near-identity), upper-right = speech (diffuse but structured manifold).
+d, Stacked angle-resolved OMP traces for white noise and speech, showing high white-noise performance across most calibrated angles but near-chance speech performance across the grid (white noise 83.8% versus speech 1.7%).
+e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (diffuse but structured manifold), with the diagonal masked to separate the two regimes.
 f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue) and speech signal with babble noise (orange, 5-seed mean ± SEM), both declining monotonically with increasing noise.
 
 ## Fig. 4 (4 panels)

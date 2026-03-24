@@ -3,7 +3,7 @@
 Panel (a): White noise within vs between Pearson r (violin + stats).
 Panel (b): Speech within vs between Pearson r (violin + stats).
 Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech.
-Panel (d): OMP per-angle accuracy comparison (WN vs Speech grouped bars).
+Panel (d): Angle-resolved OMP accuracy traces (stacked WN and Speech).
 Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
 Panel (f): OMP accuracy dose-response curve across SNR levels.
 
@@ -237,6 +237,108 @@ def _p_to_stars(p: float) -> str:
     if p < 0.05:
         return "*"
     return "n.s."
+
+
+def _draw_omp_trace_axis(
+    ax,
+    angles: np.ndarray,
+    acc: np.ndarray,
+    *,
+    color: str,
+    marker: str,
+    label: str,
+    show_xlabel: bool = False,
+) -> None:
+    """Draw one condition-specific angle-resolved OMP trace."""
+    ax.plot(
+        angles,
+        acc,
+        f"-{marker}",
+        color=color,
+        linewidth=0.9,
+        markersize=2.6,
+        markeredgewidth=0.0,
+    )
+    ax.set_ylim(-0.05, 1.05)
+    ax.set_yticks([0.0, 1.0])
+    ax.set_yticklabels(["0", "1"], fontsize=5)
+    ax.grid(axis="y", linestyle="--", alpha=0.25)
+    ax.text(
+        0.98,
+        0.80,
+        label,
+        transform=ax.transAxes,
+        ha="right",
+        va="center",
+        fontsize=5.3,
+        color=color,
+    )
+    ax.tick_params(axis="x", labelsize=5)
+    if show_xlabel:
+        ax.set_xlabel("Angle (\u00b0)", fontsize=6)
+        ax.set_xticks([0, 45, 90, 135, 180])
+    else:
+        ax.set_xticks([0, 45, 90, 135, 180])
+        ax.tick_params(axis="x", which="both", labelbottom=False)
+
+
+def _draw_stacked_omp_panel(
+    fig: plt.Figure,
+    subplot_spec,
+    *,
+    angles: np.ndarray,
+    omp_acc_wn: np.ndarray,
+    omp_acc_sp: np.ndarray,
+    omp_mean_wn: float,
+    omp_mean_sp: float,
+    panel_label: str,
+):
+    """Draw panel d as stacked angle-resolved traces."""
+    subgs = subplot_spec.subgridspec(2, 1, hspace=0.08, height_ratios=[1.0, 1.0])
+    ax_top = fig.add_subplot(subgs[0, 0])
+    ax_bot = fig.add_subplot(subgs[1, 0], sharex=ax_top)
+
+    _draw_omp_trace_axis(
+        ax_top,
+        angles,
+        omp_acc_wn,
+        color=SEMANTIC_PALETTE["physics"],
+        marker="o",
+        label=f"White noise ({omp_mean_wn:.1%})",
+        show_xlabel=False,
+    )
+    _draw_omp_trace_axis(
+        ax_bot,
+        angles,
+        omp_acc_sp,
+        color=SEMANTIC_PALETTE["ablation"],
+        marker="s",
+        label=f"Speech ({omp_mean_sp:.1%})",
+        show_xlabel=True,
+    )
+
+    ax_top.set_ylabel("OMP\naccuracy", fontsize=5.5)
+    ax_bot.set_ylabel("")
+    ax_top.set_title("Classical OMP baseline", fontsize=6.5)
+    ax_top.set_xlim(float(angles[0]), float(angles[-1]))
+    add_panel_label(ax_top, panel_label, x=-0.18, y=1.12)
+    return ax_top, ax_bot
+
+
+def _build_split_similarity_matrix(sim_matrix_wn: np.ndarray, sim_matrix_sp: np.ndarray) -> np.ndarray:
+    """Build split-triangle similarity matrix with masked diagonal separator."""
+    split_matrix = np.full(sim_matrix_wn.shape, np.nan)
+    lower = np.tril_indices_from(split_matrix, k=-1)
+    upper = np.triu_indices_from(split_matrix, k=1)
+    split_matrix[lower] = sim_matrix_wn[lower]
+    split_matrix[upper] = sim_matrix_sp[upper]
+    return split_matrix
+
+
+def _positive_similarity_cmap():
+    cmap = plt.get_cmap("viridis").copy()
+    cmap.set_bad(color="white")
+    return cmap
 
 
 def _draw_violin_panel(
@@ -475,38 +577,27 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.legend(fontsize=5.5, frameon=False, loc="upper right")
     add_panel_label(ax_c, "c", x=-0.12, y=1.06)
 
-    # --- Panel (d): OMP per-angle accuracy comparison ---
-    ax_d = fig.add_subplot(gs[1, 0])
-    bar_width = 2.2
-    ax_d.bar(angles - bar_width / 2, omp_acc_wn, width=bar_width,
-             color=SEMANTIC_PALETTE["physics"], alpha=0.85, label=f"WN ({omp_mean_wn:.1%})")
-    ax_d.bar(angles + bar_width / 2, omp_acc_sp, width=bar_width,
-             color=SEMANTIC_PALETTE["ablation"], alpha=0.85, label=f"Speech ({omp_mean_sp:.1%})")
-    ax_d.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_d.set_ylabel("OMP accuracy", fontsize=6)
-    ax_d.set_title("Classical OMP baseline", fontsize=6.5)
-    ax_d.set_ylim(0, 1.12)
-    ax_d.legend(fontsize=5.5, frameon=False, loc="upper right",
-                bbox_to_anchor=(1.0, 0.55))
-    ax_d.grid(axis="y", linestyle="--", alpha=0.3)
-    add_panel_label(ax_d, "d", x=-0.15, y=1.06)
+    # --- Panel (d): Angle-resolved OMP traces (stacked) ---
+    _draw_stacked_omp_panel(
+        fig,
+        gs[1, 0],
+        angles=angles,
+        omp_acc_wn=omp_acc_wn,
+        omp_acc_sp=omp_acc_sp,
+        omp_mean_wn=omp_mean_wn,
+        omp_mean_sp=omp_mean_sp,
+        panel_label="d",
+    )
 
     # --- Panel (e): Split-triangle pairwise matrix (WN lower-left, Speech upper-right) ---
     ax_e = fig.add_subplot(gs[1, 1])
     # Build composite matrix: lower-left = WN, upper-right = Speech
-    split_matrix = np.full((n_angles, n_angles), np.nan)
-    for i in range(n_angles):
-        for j in range(n_angles):
-            if i > j:
-                split_matrix[i, j] = sim_matrix_wn[i, j]  # lower-left = WN
-            elif i < j:
-                split_matrix[i, j] = sim_matrix_sp[i, j]  # upper-right = Speech
-            else:
-                # Diagonal: average of both for visual continuity
-                split_matrix[i, j] = (sim_matrix_wn[i, j] + sim_matrix_sp[i, j]) / 2
+    split_matrix = _build_split_similarity_matrix(sim_matrix_wn, sim_matrix_sp)
+    sim_vmin = float(min(np.nanmin(sim_matrix_wn), np.nanmin(sim_matrix_sp)))
+    sim_cmap = _positive_similarity_cmap()
 
-    im_e = ax_e.imshow(split_matrix, cmap="RdBu_r", aspect="auto",
-                        vmin=-0.2, vmax=1.0)
+    im_e = ax_e.imshow(split_matrix, cmap=sim_cmap, aspect="auto",
+                        vmin=sim_vmin, vmax=1.0)
     # Draw diagonal line to separate the two halves
     ax_e.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
               color="black", linewidth=0.8, alpha=0.7)
@@ -518,9 +609,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.set_yticklabels(tick_labels_e, fontsize=5)
     ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_title("Pairwise similarity", fontsize=6.5)
+    ax_e.set_title("Pairwise fingerprint similarity", fontsize=6.5)
     cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.02)
     cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("Pearson r", fontsize=5.5)
     # Labels for the two halves
     ax_e.text(n_angles * 0.75, n_angles * 0.25, "Speech",
               ha="center", va="center", fontsize=5.5, fontstyle="italic",
@@ -605,26 +697,28 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     plt.close(fig_c)
 
     # Panel d standalone
-    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
-    ax = fig_d.add_subplot(111)
-    ax.bar(angles - bar_width / 2, omp_acc_wn, width=bar_width,
-           color=SEMANTIC_PALETTE["physics"], alpha=0.85, label=f"WN ({omp_mean_wn:.1%})")
-    ax.bar(angles + bar_width / 2, omp_acc_sp, width=bar_width,
-           color=SEMANTIC_PALETTE["ablation"], alpha=0.85, label=f"Speech ({omp_mean_sp:.1%})")
-    ax.set_xlabel("Angle (\u00b0)")
-    ax.set_ylabel("OMP accuracy")
-    ax.set_ylim(0, 1.12)
-    ax.legend(fontsize=5, frameon=False, loc="upper right",
-              bbox_to_anchor=(1.0, 0.55))
-    add_panel_label(ax, "d")
-    fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
+    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=90)
+    outer = gridspec.GridSpec(
+        1, 1, figure=fig_d,
+        left=0.10, right=0.96, bottom=0.14, top=0.92,
+    )
+    _draw_stacked_omp_panel(
+        fig_d,
+        outer[0, 0],
+        angles=angles,
+        omp_acc_wn=omp_acc_wn,
+        omp_acc_sp=omp_acc_sp,
+        omp_mean_wn=omp_mean_wn,
+        omp_mean_sp=omp_mean_sp,
+        panel_label="d",
+    )
     all_paths.extend(save_outputs(fig_d, panel_dir / "fig03_panel_d_omp_comparison"))
     plt.close(fig_d)
 
     # Panel e standalone
     fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_e.add_subplot(111)
-    im = ax.imshow(split_matrix, cmap="RdBu_r", aspect="auto", vmin=-0.2, vmax=1.0)
+    im = ax.imshow(split_matrix, cmap=sim_cmap, aspect="auto", vmin=sim_vmin, vmax=1.0)
     ax.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
             color="black", linewidth=0.8, alpha=0.7)
     ax.set_xticks(tick_positions)
@@ -633,7 +727,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_yticklabels(tick_labels_e)
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Mean Pearson r", fontsize=6)
+    ax.set_title("Pairwise fingerprint similarity", fontsize=6.5)
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=6)
     ax.text(n_angles * 0.75, n_angles * 0.25, "Speech",
             ha="center", va="center", fontsize=6, fontstyle="italic", alpha=0.7)
     ax.text(n_angles * 0.25, n_angles * 0.75, "WN",
@@ -693,17 +788,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "OMP accuracy comparison",
+                "title": "Angle-resolved OMP traces",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_omp_comparison.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Side-by-side OMP per-angle accuracy: WN vs Speech.",
+                "description": "Stacked white-noise and speech OMP accuracy traces over the calibrated angle grid.",
             },
             {
                 "panel_id": "e",
-                "title": "Split-triangle pairwise similarity (WN vs Speech)",
+                "title": "Pairwise fingerprint similarity",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_split_pairwise.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 split-triangle matrix: lower-left=WN, upper-right=Speech.",
+                "description": "37x37 split-triangle fingerprint-similarity map with lower-left=WN, upper-right=Speech, and a masked diagonal separator.",
             },
             {
                 "panel_id": "f",

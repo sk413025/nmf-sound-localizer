@@ -306,11 +306,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
     add_panel_label(ax_e, "e", x=-0.15)
 
-    # --- Panel (f): Inter-angle correlation matrix ---
+    # --- Panel (f): Inter-angle fingerprint similarity ---
     ax_f = fig.add_subplot(gs[1, 2])
     H_corr = np.corrcoef(np.abs(H_np).T)  # E x E correlation
-    im_f = ax_f.imshow(H_corr, cmap="RdBu_r", aspect="auto",
-                        vmin=-1.0, vmax=1.0)
+    # Positive-only similarity matrix: use a sequential colormap rather than a zero-centered diverging map.
+    im_f = ax_f.imshow(H_corr, cmap="viridis", aspect="auto",
+                        vmin=float(H_corr.min()), vmax=1.0)
     tick_pos = [0, 9, 18, 27, 36]
     tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos if i < len(angles_deg)]
     ax_f.set_xticks(tick_pos[:len(tick_lab)])
@@ -319,7 +320,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_f.set_yticklabels(tick_lab, fontsize=5)
     ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_f.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_f.set_title("Inter-angle correlation", fontsize=6.5)
+    ax_f.set_title("Inter-angle fingerprint similarity", fontsize=6.5)
     cbar = plt.colorbar(im_f, ax=ax_f, fraction=0.046, pad=0.04)
     cbar.set_label("Pearson r", fontsize=6)
     cbar.ax.tick_params(labelsize=6)
@@ -382,7 +383,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel f standalone
     fig_f_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_f_s.add_subplot(111)
-    im = ax.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
+    im = ax.imshow(H_corr, cmap="viridis", aspect="equal",
+                   vmin=float(H_corr.min()), vmax=1.0)
     ax.set_xticks(tick_pos[:len(tick_lab)])
     ax.set_xticklabels(tick_lab, fontsize=6)
     ax.set_yticks(tick_pos[:len(tick_lab)])
@@ -436,10 +438,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "f",
-                "title": "Inter-angle correlation matrix",
+                "title": "Inter-angle fingerprint similarity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_correlation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 Pearson correlation matrix showing smooth angle-manifold structure.",
+                "description": "37x37 fingerprint-similarity matrix whose near-diagonal band shows smooth angle-manifold structure.",
             },
         ],
     )
