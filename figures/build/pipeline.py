@@ -153,7 +153,7 @@ def cmd_validate(figure_ids: set[str] | None = None) -> bool:
 
 
 def cmd_deploy(figure_ids: set[str] | None = None) -> None:
-    """Copy active generator outputs to paper/figures and compose manuscript assets."""
+    """Refresh manuscript assets without copying generator intermediates onto the paper surface."""
     from figures.style import load_paths
 
     root = _repo_root()
@@ -163,23 +163,33 @@ def cmd_deploy(figure_ids: set[str] | None = None) -> None:
     contracts = _load_active_contracts(root, figure_ids=figure_ids)
     outputs = _declared_generator_outputs(root, contracts)
 
-    copied = 0
     for f in outputs:
         if not f.exists():
             raise FileNotFoundError(f"Declared generator output missing: {f}")
-        dest = paper_dir / f.name
-        shutil.copy2(f, dest)
-        copied += 1
+
+    removed = 0
+    for f in outputs:
+        stale_dest = paper_dir / f.name
+        if stale_dest.exists():
+            stale_dest.unlink()
+            removed += 1
 
     compose_script = root / "scripts" / "paper" / "compose_master_figure3_family.py"
-    if compose_script.exists():
-        subprocess.run(
-            [sys.executable, str(compose_script)],
-            check=True,
-            cwd=str(root),
-        )
+    if not compose_script.exists():
+        raise FileNotFoundError(f"Missing manuscript compose script: {compose_script}")
 
-    print(f"Deployed {copied} files to {paper_dir}")
+    compose_cmd = [sys.executable, str(compose_script)]
+    if figure_ids is not None:
+        compose_cmd.extend(["--figures", ",".join(sorted(figure_ids))])
+    subprocess.run(
+        compose_cmd,
+        check=True,
+        cwd=str(root),
+    )
+
+    print(
+        f"Refreshed manuscript assets in {paper_dir}; removed {removed} stale generator artifact(s) from the paper surface."
+    )
 
 
 def cmd_review_prepare() -> list[Path]:

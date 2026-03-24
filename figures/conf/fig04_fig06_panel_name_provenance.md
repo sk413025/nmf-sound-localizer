@@ -57,9 +57,9 @@ decisions, not to replace manuscript prose.
   - `15b2981` modal visualization family
 - Panel notes:
   - `a`: binds artifact keys `Baseline`, `No Transformer`, `Fixed Heuristic`
-  - `b`: compares the physical matrix and learned QK structure, not separate run variants
-  - `c`: compares derived OMP-like selection against learned selection, not separate run variants
-  - `d/e/f`: compare the full solver metrics run against the router-bypass ablation run
+  - `b`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
+  - `c`: compares derived OMP-like selection against learned selection as a classical-reference context panel
+  - `d/e/f`: form a matched ablation block comparing the full solver metrics run against the router-bypass ablation run
 
 ## Fig. 6
 

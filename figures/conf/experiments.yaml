@@ -210,7 +210,7 @@ fig05_performance_structure:
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
   claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
-  legend_summary: "Noise robustness, structure alignment, selection statistics, confusion, and routing diagnostics."
+  legend_summary: "Noise robustness benchmark, physical/classical context, and matched-ablation routing diagnostics."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py

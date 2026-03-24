@@ -44,12 +44,13 @@ d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform perf
 ## Fig. 5 (6 panels)
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
+Panel logic: a benchmarks task robustness against both the analytical OMP baseline and the router-bypass ablation; b-c provide physical and classical reference context; d-f form a matched-ablation block that isolates learned routing.
 a, SNR degradation curves for the physics-aware solver, router-bypass ablation, and analytical OMP baseline, showing graceful degradation under additive noise.
-b, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom).
-c, All-angle selection-probability heatmaps comparing the analytical OMP baseline (diffuse off-diagonal mass, top) with the physics-aware solver (sharply diagonal, bottom), demonstrating that structure-aligned routing concentrates selection on the correct direction.
-d, Confusion matrices for the full physics-aware solver (left) and the router-bypass ablation (right), normalized to row-wise probabilities.
+b, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
+c, All-angle selection heatmaps contrasting the analytical OMP baseline reference (diffuse off-diagonal mass, top) with the physics-aware solver (sharply diagonal, bottom), providing the classical decoding context for the ablation panels.
+d, Confusion matrices for the full physics-aware solver (top) and the router-bypass ablation (bottom), normalized to row-wise probabilities.
 e, Angle-specific routing distributions at two representative directions (55° and 100°): the full physics-aware solver concentrates mass on the correct atom and suppresses off-axis peaks, whereas the router-bypass ablation shows broader, less decisive distributions.
-f, Per-angle diagonal concentration: P(correct) for each of the 37 angles comparing the full physics-aware solver with the router-bypass ablation, quantifying the fraction of angles that benefit from transformer routing. The shaded region highlights the per-angle improvement.
+f, Per-angle routing gain: P(correct) for each of the 37 angles comparing the full physics-aware solver with the router-bypass ablation, quantifying the fraction of angles that benefit from learned routing. The shaded region highlights the per-angle improvement.
 
 ## Fig. 6 (5 panels)
 
