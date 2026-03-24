@@ -4,7 +4,7 @@ Panel (a): 3-line SNR sweep benchmark (guided solver vs router-bypass vs OMP bas
 Panel (b): Physical-vs-learned correlation structure (H vs QK)
 Panel (c): Classical-reference selection diagnostic (OMP-like reference vs guided solver)
 Panel (d): Confusion matrices (guided solver vs router-bypass)
-Panel (e): Representative-angle routing distributions (guided solver vs router-bypass)
+Panel (e): Representative-angle conditional output distributions (guided solver vs router-bypass)
 Panel (f): Per-angle routing gain summary (guided solver vs router-bypass)
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.

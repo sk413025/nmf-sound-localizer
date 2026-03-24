@@ -37,7 +37,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | router-bypass ablation | router-bypass ablation | router-bypass | the ablation that bypasses the transformer router | no-transformer, identity model |
 | type-bias component | type bias | no type bias | the bias term in the full solver | type-bias model |
 | learned router | learned router | QK learned structure | the routing submodule inside the full solver | solver, model, attention router as a peer-method name |
-| angle-specific routing distributions | routing distributions | routing distributions | Fig. 5e style mechanistic panels | mechanism figure, angle-specific mechanism as a whole-figure name |
+| angle-specific conditional output distributions | conditional output distributions | conditional outputs | Fig. 5e style mechanistic panels | routing distributions, mechanism figure, angle-specific mechanism as a whole-figure name |
 
 ## Naming Rules
 
