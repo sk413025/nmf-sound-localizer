@@ -15,6 +15,7 @@ from typing import Any
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.transforms import Bbox
 import yaml
 
 from figures.layout_contract import (
@@ -62,6 +63,7 @@ SEMANTIC_PALETTE = {
     "learned": "#009E73",    # green — learned/AI quantities
     "ablation": "#D55E00",   # vermilion — ablation/baseline comparisons
     "highlight": "#E69F00",  # orange — highlighted ablation variant
+    "classical": "#E69F00",  # orange — classical analytical references (OMP)
 }
 
 
@@ -190,37 +192,121 @@ def collect_layout_metadata(
     width_in, height_in = fig.get_size_inches()
     width_mm = in_to_mm(width_in)
     height_mm = in_to_mm(height_in)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    def _figure_norm_payload(bbox: Bbox | None) -> dict[str, Any] | None:
+        if bbox is None:
+            return None
+        x0 = float(bbox.x0)
+        y0 = float(bbox.y0)
+        w = float(bbox.width)
+        h = float(bbox.height)
+        return {
+            "bbox_norm": {
+                "x0": round(x0, 6),
+                "y0": round(y0, 6),
+                "width": round(w, 6),
+                "height": round(h, 6),
+            },
+            "bbox_mm": {
+                "x0": round(x0 * width_mm, 3),
+                "y0": round(y0 * height_mm, 3),
+                "width": round(w * width_mm, 3),
+                "height": round(h * height_mm, 3),
+            },
+        }
+
+    def _display_payload(bbox: Bbox | None) -> dict[str, Any] | None:
+        if bbox is None:
+            return None
+        bbox_fig = bbox.transformed(fig.transFigure.inverted())
+        x0 = float(bbox_fig.x0)
+        y0 = float(bbox_fig.y0)
+        w = float(bbox_fig.width)
+        h = float(bbox_fig.height)
+        return {
+            "bbox_norm": {
+                "x0": round(x0, 6),
+                "y0": round(y0, 6),
+                "width": round(w, 6),
+                "height": round(h, 6),
+            },
+            "bbox_mm": {
+                "x0": round(x0 * width_mm, 3),
+                "y0": round(y0 * height_mm, 3),
+                "width": round(w * width_mm, 3),
+                "height": round(h * height_mm, 3),
+            },
+        }
+
+    def _artist_bbox_payload(artist: Any) -> dict[str, Any] | None:
+        if artist is None:
+            return None
+        visible = getattr(artist, "get_visible", lambda: True)()
+        if not visible:
+            return None
+        text = getattr(artist, "get_text", lambda: "")()
+        if isinstance(text, str) and not text.strip():
+            return None
+        bbox = artist.get_window_extent(renderer)
+        return _display_payload(bbox)
+
+    def _union_payload(artists: list[Any]) -> dict[str, Any] | None:
+        boxes: list[Bbox] = []
+        for artist in artists:
+            if artist is None:
+                continue
+            visible = getattr(artist, "get_visible", lambda: True)()
+            if not visible:
+                continue
+            text = getattr(artist, "get_text", lambda: "")()
+            if isinstance(text, str) and not text.strip():
+                continue
+            boxes.append(artist.get_window_extent(renderer))
+        if not boxes:
+            return None
+        return _display_payload(Bbox.union(boxes))
 
     axes_payload: list[dict[str, Any]] = []
     for idx, ax in enumerate(fig.axes):
         bbox = ax.get_position()
-        x_mm = bbox.x0 * width_mm
-        y_mm = bbox.y0 * height_mm
-        w_mm = bbox.width * width_mm
-        h_mm = bbox.height * height_mm
         title = ax.get_title()
         xlabel = ax.get_xlabel()
         ylabel = ax.get_ylabel()
+        raw_payload = _figure_norm_payload(Bbox.from_bounds(bbox.x0, bbox.y0, bbox.width, bbox.height))
+        decorated_payload = _display_payload(ax.get_tightbbox(renderer))
+        title_payload = _artist_bbox_payload(ax.title)
+        xlabel_payload = _artist_bbox_payload(ax.xaxis.label)
+        ylabel_payload = _artist_bbox_payload(ax.yaxis.label)
+        xticks_payload = _union_payload(list(ax.get_xticklabels()))
+        yticks_payload = _union_payload(list(ax.get_yticklabels()))
+        legend = ax.get_legend()
+        legend_payload = _display_payload(legend.get_window_extent(renderer)) if legend is not None else None
         axes_payload.append(
             {
                 "index": idx,
                 "kind": getattr(ax, "name", "axes"),
+                "gid": ax.get_gid(),
                 "has_data": bool(ax.has_data()),
                 "title": title or None,
                 "xlabel": xlabel or None,
                 "ylabel": ylabel or None,
-                "bbox_norm": {
-                    "x0": round(float(bbox.x0), 6),
-                    "y0": round(float(bbox.y0), 6),
-                    "width": round(float(bbox.width), 6),
-                    "height": round(float(bbox.height), 6),
-                },
-                "bbox_mm": {
-                    "x0": round(float(x_mm), 3),
-                    "y0": round(float(y_mm), 3),
-                    "width": round(float(w_mm), 3),
-                    "height": round(float(h_mm), 3),
-                },
+                **(raw_payload or {}),
+                "decorated_bbox_norm": None if decorated_payload is None else decorated_payload["bbox_norm"],
+                "decorated_bbox_mm": None if decorated_payload is None else decorated_payload["bbox_mm"],
+                "title_bbox_norm": None if title_payload is None else title_payload["bbox_norm"],
+                "title_bbox_mm": None if title_payload is None else title_payload["bbox_mm"],
+                "xlabel_bbox_norm": None if xlabel_payload is None else xlabel_payload["bbox_norm"],
+                "xlabel_bbox_mm": None if xlabel_payload is None else xlabel_payload["bbox_mm"],
+                "ylabel_bbox_norm": None if ylabel_payload is None else ylabel_payload["bbox_norm"],
+                "ylabel_bbox_mm": None if ylabel_payload is None else ylabel_payload["bbox_mm"],
+                "xticklabels_bbox_norm": None if xticks_payload is None else xticks_payload["bbox_norm"],
+                "xticklabels_bbox_mm": None if xticks_payload is None else xticks_payload["bbox_mm"],
+                "yticklabels_bbox_norm": None if yticks_payload is None else yticks_payload["bbox_norm"],
+                "yticklabels_bbox_mm": None if yticks_payload is None else yticks_payload["bbox_mm"],
+                "legend_bbox_norm": None if legend_payload is None else legend_payload["bbox_norm"],
+                "legend_bbox_mm": None if legend_payload is None else legend_payload["bbox_mm"],
             }
         )
 

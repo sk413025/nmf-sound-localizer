@@ -1,11 +1,11 @@
-"""Figure 5 — Performance + Structure Alignment + Interpretability (6 panels).
+"""Figure 5 — Performance + Structure Alignment + Routing Attribution (6 panels).
 
-Panel (a): 3-line SNR sweep (guided solver vs router-bypass vs OMP baseline)
-Panel (b): Side-by-side H_corr vs QK_corr heatmaps (37x37, RdBu_r)
-Panel (c): Side-by-side OMP-baseline vs guided-solver selection probability (37x37, viridis)
-Panel (d): Confusion matrices (guided solver vs router-bypass) - promoted from Supp
-Panel (e): Angle-specific routing at 2 representative angles - promoted from Supp
-Panel (f): Per-angle diagonal concentration (guided solver vs router-bypass)
+Panel (a): 3-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline)
+Panel (b): Physical-vs-learned correlation structure (H vs QK)
+Panel (c): Classical-reference selection diagnostic (OMP-like reference vs guided solver)
+Panel (d): Confusion matrices (guided solver vs router-bypass)
+Panel (e): Representative-angle routing distributions (guided solver vs router-bypass)
+Panel (f): Per-angle routing gain summary (guided solver vs router-bypass)
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.
 """
@@ -25,7 +25,6 @@ from figures.style import (
     save_outputs,
     add_panel_label,
     load_paths,
-    DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
 )
 from figures.naming import get_bound_label
@@ -45,12 +44,14 @@ SNR_DISPLAY = ["0", "5", "10", "15", "20", "30", "\u221e"]
 
 SNR_VARIANTS = [
     ("Baseline",        SEMANTIC_PALETTE["learned"],   get_bound_label("fig05", "a", "Baseline", label_type="short")),
-    ("No Transformer",  SEMANTIC_PALETTE["highlight"], get_bound_label("fig05", "a", "No Transformer", label_type="short")),
-    ("Fixed Heuristic", SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
+    ("No Transformer",  SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "No Transformer", label_type="short")),
+    ("Fixed Heuristic", SEMANTIC_PALETTE["classical"], get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
 ]
 
 FIG05_GENERATOR = figure_section("fig05", "generator")
 FIG05_OUTER_GRID = dict(FIG05_GENERATOR["outer_grid"])
+FIG05_TOP_ROW = dict(FIG05_GENERATOR["top_row"])
+FIG05_BOTTOM_ROW = dict(FIG05_GENERATOR["bottom_row"])
 FIG05_HEATMAP_STACK = dict(FIG05_GENERATOR["heatmap_stack"])
 FIG05_ROUTING_STACK = dict(FIG05_GENERATOR["routing_stack"])
 FIG05_STANDALONE = dict(FIG05_GENERATOR["standalone"])
@@ -59,6 +60,12 @@ FIG05_STANDALONE = dict(FIG05_GENERATOR["standalone"])
 def _titlecase_short_label(label: str) -> str:
     """Promote a compact label for title-like positions without mangling all-caps."""
     return label if label.isupper() else label[:1].upper() + label[1:]
+
+
+def _set_gid(ax, gid: str):
+    """Assign a stable layout/audit identifier to an axes and return it."""
+    ax.set_gid(gid)
+    return ax
 
 
 # ---------------------------------------------------------------------------
@@ -79,27 +86,28 @@ def _compute_global_correlation(
 def _compute_selection_probability(
     routing_data: dict,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Return a classical OMP-like selection reference and learned routing selection."""
     scores_expert = routing_data["scores_expert"]
     g_energy_expert = routing_data["g_energy_expert"]
     labels = routing_data["labels"]
     n_angles = 37
 
-    physics_prob = np.zeros((n_angles, n_angles))
-    qk_prob = np.zeros((n_angles, n_angles))
+    omp_reference_prob = np.zeros((n_angles, n_angles))
+    guided_selection_prob = np.zeros((n_angles, n_angles))
 
     for true_angle in range(n_angles):
         mask = labels == true_angle
         if mask.sum() == 0:
             continue
         for expert_idx in range(n_angles):
-            physics_prob[true_angle, expert_idx] = (
+            omp_reference_prob[true_angle, expert_idx] = (
                 np.argmax(g_energy_expert[mask], axis=1) == expert_idx
             ).mean()
-            qk_prob[true_angle, expert_idx] = (
+            guided_selection_prob[true_angle, expert_idx] = (
                 np.argmax(scores_expert[mask], axis=1) == expert_idx
             ).mean()
 
-    return physics_prob, qk_prob
+    return omp_reference_prob, guided_selection_prob
 
 
 def _plot_snr_panel(
@@ -162,7 +170,7 @@ def _save_panel_manifest(
 # ---------------------------------------------------------------------------
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 5 — Performance + Structure + Interpretability (6 panels)."""
+    """Generate Figure 5 — Performance + Structure + Routing Attribution (6 panels)."""
     typography = font_tokens()
     set_nature_rcparams(base_fontsize=int(round(typography["title"])))
     title_pt = typography["title"]
@@ -173,10 +181,6 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     colorbar_tick_pt = typography["colorbar_tick"]
     colorbar_label_pt = typography["colorbar_label"]
 
-    selection_omp_short = get_bound_label("fig05", "c", "omp_side", label_type="short")
-    selection_solver_short = get_bound_label(
-        "fig05", "c", "learned_side", label_type="short"
-    )
     selection_omp_full = get_bound_label("fig05", "c", "omp_side", label_type="full")
     selection_solver_full = get_bound_label(
         "fig05", "c", "learned_side", label_type="full"
@@ -235,7 +239,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     expert_corr, H_corr, pearson_r = _compute_global_correlation(
         routing_data, dict_data
     )
-    physics_prob, qk_prob = _compute_selection_probability(routing_data)
+    omp_reference_prob, guided_selection_prob = _compute_selection_probability(
+        routing_data
+    )
 
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels = [f"{int(angles[i])}" for i in tick_positions]
@@ -261,27 +267,43 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         no_trans_per_angle = ntdata["per_angle_accuracy"]
 
     # -----------------------------------------------------------------------
-    # Build composite figure (2 rows x 3 columns)
+    # Build composite figure as two narrative rows:
+    # top row = benchmark + context, bottom row = matched ablation block.
     # -----------------------------------------------------------------------
     fig = make_figure(
         width_mm=FIG05_GENERATOR["composite_width_mm"],
         height_mm=FIG05_GENERATOR["composite_height_mm"],
     )
     gs = gridspec.GridSpec(
-        2, 3, figure=fig,
-        height_ratios=[1.0, 1.0],
+        2,
+        1,
+        figure=fig,
+        height_ratios=FIG05_OUTER_GRID["height_ratios"],
         hspace=FIG05_OUTER_GRID["hspace"],
-        wspace=FIG05_OUTER_GRID["wspace"],
         left=FIG05_OUTER_GRID["left"],
         right=FIG05_OUTER_GRID["right"],
         bottom=FIG05_OUTER_GRID["bottom"],
         top=FIG05_OUTER_GRID["top"],
     )
+    gs_top = gridspec.GridSpecFromSubplotSpec(
+        1,
+        3,
+        subplot_spec=gs[0, 0],
+        width_ratios=FIG05_TOP_ROW["width_ratios"],
+        wspace=FIG05_TOP_ROW["wspace"],
+    )
+    gs_bottom = gridspec.GridSpecFromSubplotSpec(
+        1,
+        3,
+        subplot_spec=gs[1, 0],
+        width_ratios=FIG05_BOTTOM_ROW["width_ratios"],
+        wspace=FIG05_BOTTOM_ROW["wspace"],
+    )
 
     # --- Row 1 ---
 
     # Panel (a): SNR sweep
-    ax_a = fig.add_subplot(gs[0, 0])
+    ax_a = _set_gid(fig.add_subplot(gs_top[0, 0]), "fig05.panel_a.main")
     _plot_snr_panel(
         ax_a,
         snr_curves,
@@ -290,21 +312,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         tick_label_pt=tick_label_pt,
         legend_pt=legend_pt,
     )
-    ax_a.set_title("Noise robustness", fontsize=title_pt)
+    ax_a.set_title("Noise robustness benchmark", fontsize=title_pt)
     add_panel_label(ax_a, "a", x=-0.15, y=1.06)
 
     # Panel (b): H_corr vs QK_corr
     gs_b = gridspec.GridSpecFromSubplotSpec(
-        2, 2, subplot_spec=gs[0, 1],
+        2, 2, subplot_spec=gs_top[0, 1],
         width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
         hspace=FIG05_HEATMAP_STACK["hspace"],
         wspace=FIG05_HEATMAP_STACK["wspace"],
     )
 
-    ax_b1 = fig.add_subplot(gs_b[0, 0])
+    ax_b1 = _set_gid(fig.add_subplot(gs_b[0, 0]), "fig05.panel_b.top")
     im1 = ax_b1.imshow(H_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b1.set_title("H physical structure", fontsize=title_pt)
+    ax_b1.set_title("Physical structure (H)", fontsize=title_pt)
     ax_b1.set_xticks(tick_positions)
     ax_b1.set_xticklabels([])
     ax_b1.set_yticks(tick_positions)
@@ -313,10 +335,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b1.tick_params(axis="both", length=2)
     add_panel_label(ax_b1, "b", x=-0.2, y=1.12)
 
-    ax_b2 = fig.add_subplot(gs_b[1, 0], sharex=ax_b1, sharey=ax_b1)
+    ax_b2 = _set_gid(fig.add_subplot(gs_b[1, 0], sharex=ax_b1, sharey=ax_b1), "fig05.panel_b.bottom")
     im2 = ax_b2.imshow(expert_corr, cmap="RdBu_r", aspect="equal",
                         vmin=-1.0, vmax=1.0)
-    ax_b2.set_title("QK learned structure", fontsize=title_pt)
+    ax_b2.set_title("Learned routing (QK)", fontsize=title_pt)
     ax_b2.set_xticks(tick_positions)
     ax_b2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_b2.set_yticks(tick_positions)
@@ -324,7 +346,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b2.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
     ax_b2.set_ylabel("Angle (\u00b0)", fontsize=axis_label_pt)
     ax_b2.tick_params(axis="both", length=2)
-    cax_b = fig.add_subplot(gs_b[:, 1])
+    cax_b = _set_gid(fig.add_subplot(gs_b[:, 1]), "fig05.panel_b.colorbar")
     cbar = plt.colorbar(im2, cax=cax_b)
     cbar.set_label("Corr", fontsize=colorbar_label_pt)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt)
@@ -333,20 +355,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Panel (c): Selection probability
     gs_c = gridspec.GridSpecFromSubplotSpec(
-        2, 2, subplot_spec=gs[0, 2],
+        2, 2, subplot_spec=gs_top[0, 2],
         width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
         hspace=FIG05_HEATMAP_STACK["hspace"],
         wspace=FIG05_HEATMAP_STACK["wspace"],
     )
-    vmax_unified = max(physics_prob.max(), qk_prob.max())
+    vmax_unified = max(omp_reference_prob.max(), guided_selection_prob.max())
 
-    ax_c1 = fig.add_subplot(gs_c[0, 0])
-    im3 = ax_c1.imshow(physics_prob, cmap="viridis", aspect="equal",
+    ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
+    im3 = ax_c1.imshow(omp_reference_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c1.set_title(
-        f"{_titlecase_short_label(selection_omp_short)} selection", fontsize=title_pt
-    )
+    ax_c1.set_title("OMP baseline reference", fontsize=title_pt)
     ax_c1.set_ylabel("True DOA", fontsize=axis_label_pt)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
@@ -355,21 +375,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c1.tick_params(axis="both", length=2)
     add_panel_label(ax_c1, "c", x=-0.2, y=1.12)
 
-    ax_c2 = fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1)
-    im4 = ax_c2.imshow(qk_prob, cmap="viridis", aspect="equal",
+    ax_c2 = _set_gid(fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1), "fig05.panel_c.bottom")
+    im4 = ax_c2.imshow(guided_selection_prob, cmap="viridis", aspect="equal",
                         extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                         interpolation="nearest")
-    ax_c2.set_title(
-        f"{_titlecase_short_label(selection_solver_short)} selection", fontsize=title_pt
-    )
+    ax_c2.set_title("Guided solver selection", fontsize=title_pt)
     ax_c2.set_ylabel("True DOA", fontsize=axis_label_pt)
-    ax_c2.set_xlabel("Expert", fontsize=axis_label_pt)
+    ax_c2.set_xlabel("Expert index", fontsize=axis_label_pt)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
     ax_c2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.tick_params(axis="both", length=2)
-    cax_c = fig.add_subplot(gs_c[:, 1])
+    cax_c = _set_gid(fig.add_subplot(gs_c[:, 1]), "fig05.panel_c.colorbar")
     cbar = plt.colorbar(im4, cax=cax_c)
     cbar.set_label("P(select)", fontsize=colorbar_label_pt)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt)
@@ -379,7 +397,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (d): Confusion matrices (guided solver vs router-bypass)
     if baseline_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
-            2, 2, subplot_spec=gs[1, 0],
+            2, 2, subplot_spec=gs_bottom[0, 0],
             width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
             hspace=FIG05_HEATMAP_STACK["hspace"],
             wspace=FIG05_HEATMAP_STACK["wspace"],
@@ -396,7 +414,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         no_trans_cm_norm = np.divide(no_trans_cm_norm, row_sums_nt,
                                       where=row_sums_nt > 0)
 
-        ax_d1 = fig.add_subplot(gs_d[0, 0])
+        ax_d1 = _set_gid(fig.add_subplot(gs_d[0, 0]), "fig05.panel_d.top")
         ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
                      interpolation="nearest", vmin=0, vmax=1)
         ax_d1.set_title(_titlecase_short_label(cm_solver_short), fontsize=title_pt)
@@ -408,7 +426,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d1.tick_params(axis="both", length=2)
         add_panel_label(ax_d1, "d", x=-0.20, y=1.12)
 
-        ax_d2 = fig.add_subplot(gs_d[1, 0], sharex=ax_d1, sharey=ax_d1)
+        ax_d2 = _set_gid(fig.add_subplot(gs_d[1, 0], sharex=ax_d1, sharey=ax_d1), "fig05.panel_d.bottom")
         im_d2 = ax_d2.imshow(no_trans_cm_norm, cmap="viridis", aspect="equal",
                               interpolation="nearest", vmin=0, vmax=1)
         ax_d2.set_title(_titlecase_short_label(cm_no_transformer_short), fontsize=title_pt)
@@ -419,7 +437,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d2.set_xlabel("Predicted", fontsize=axis_label_pt)
         ax_d2.set_ylabel("True", fontsize=axis_label_pt)
         ax_d2.tick_params(axis="both", length=2)
-        cax_d = fig.add_subplot(gs_d[:, 1])
+        cax_d = _set_gid(fig.add_subplot(gs_d[:, 1]), "fig05.panel_d.colorbar")
         cbar = plt.colorbar(im_d2, cax=cax_d)
         cbar.set_label("P(pred|true)", fontsize=colorbar_label_pt)
         cbar.ax.tick_params(labelsize=colorbar_tick_pt)
@@ -434,14 +452,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel (e): Angle-specific routing at 2 representative angles
     if baseline_cm is not None and no_trans_cm is not None:
         gs_e = gridspec.GridSpecFromSubplotSpec(
-            2, 1, subplot_spec=gs[1, 1], hspace=FIG05_ROUTING_STACK["hspace"],
+            2, 1, subplot_spec=gs_bottom[0, 1], hspace=FIG05_ROUTING_STACK["hspace"],
         )
 
         representative_angles = [55.0, 100.0]
         for row_idx, target_angle in enumerate(representative_angles):
             target_idx = int(np.argmin(np.abs(angles - target_angle)))
 
-            ax_e = fig.add_subplot(gs_e[row_idx, 0])
+            panel_gid = "fig05.panel_e.top" if row_idx == 0 else "fig05.panel_e.bottom"
+            ax_e = _set_gid(fig.add_subplot(gs_e[row_idx, 0]), panel_gid)
 
             # Baseline distribution
             bl_row = baseline_cm[target_idx].astype(float)
@@ -458,7 +477,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                      color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
             ax_e.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
                      color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
-            ax_e.axvline(target_idx, color="lime", linewidth=0.8,
+            ax_e.axvline(target_idx, color=SEMANTIC_PALETTE["physics"], linewidth=0.8,
                          linestyle="--", alpha=0.8)
 
             ax_e.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0",
@@ -482,7 +501,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Panel (f): Per-angle diagonal concentration (baseline vs ablation)
     if baseline_per_angle is not None and no_trans_per_angle is not None:
-        ax_f = fig.add_subplot(gs[1, 2])
+        ax_f = _set_gid(fig.add_subplot(gs_bottom[0, 2]), "fig05.panel_f.main")
         ax_f.plot(angles, baseline_per_angle, "-o", markersize=2,
                   linewidth=0.9, color=SEMANTIC_PALETTE["learned"],
                   label=diag_solver_short)
@@ -490,10 +509,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                   linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
                   label=diag_no_transformer_short)
         ax_f.fill_between(angles, baseline_per_angle, no_trans_per_angle,
-                          alpha=0.15, color=SEMANTIC_PALETTE["highlight"])
+                          alpha=0.12, color=SEMANTIC_PALETTE["learned"])
         ax_f.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
         ax_f.set_ylabel("P(correct)", fontsize=axis_label_pt)
-        ax_f.set_title("Per-angle accuracy", fontsize=title_pt)
+        ax_f.set_title("Per-angle routing gain", fontsize=title_pt)
         ax_f.set_ylim(0, 1.05)
         ax_f.legend(fontsize=legend_pt, frameon=False, loc="lower left")
         ax_f.tick_params(axis="both", labelsize=tick_label_pt)
@@ -570,7 +589,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax1 = fig_b.add_subplot(gs_bs[0, 0])
     ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax1.set_title("H physical structure", fontsize=title_pt, fontweight="bold")
+    ax1.set_title("Physical structure (H)", fontsize=title_pt, fontweight="bold")
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
@@ -578,7 +597,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax1, "b")
     ax2 = fig_b.add_subplot(gs_bs[1, 0])
     ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax2.set_title("QK learned structure", fontsize=title_pt, fontweight="bold")
+    ax2.set_title("Learned routing (QK)", fontsize=title_pt, fontweight="bold")
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
@@ -611,28 +630,20 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         top=fig_c_grid["top"],
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
-    ax1.imshow(physics_prob, cmap="viridis", aspect="equal",
+    ax1.imshow(omp_reference_prob, cmap="viridis", aspect="equal",
                extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                interpolation="nearest")
-    ax1.set_title(
-        f"{_titlecase_short_label(selection_omp_short)} selection",
-        fontsize=title_pt,
-        fontweight="bold",
-    )
+    ax1.set_title("OMP baseline reference", fontsize=title_pt, fontweight="bold")
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
     ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
-    ax2.imshow(qk_prob, cmap="viridis", aspect="equal",
+    ax2.imshow(guided_selection_prob, cmap="viridis", aspect="equal",
                extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
                interpolation="nearest")
-    ax2.set_title(
-        f"{_titlecase_short_label(selection_solver_short)} selection",
-        fontsize=title_pt,
-        fontweight="bold",
-    )
+    ax2.set_title("Guided solver selection", fontsize=title_pt, fontweight="bold")
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
@@ -719,7 +730,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                    color=SEMANTIC_PALETTE["learned"], label=routing_solver_short)
             ax.bar(x_pos + 0.15, nt_probs, width=0.3, alpha=0.7,
                    color=SEMANTIC_PALETTE["ablation"], label=routing_no_transformer_short)
-            ax.axvline(target_idx, color="lime", linewidth=0.8, linestyle="--")
+            ax.axvline(target_idx, color=SEMANTIC_PALETTE["physics"], linewidth=0.8, linestyle="--")
             ax.set_title(f"Routing @ {angles[target_idx]:.0f}\u00b0", fontsize=title_pt)
             ax.set_xlabel("Expert index", fontsize=axis_label_pt)
             ax.set_ylabel("P(predict)", fontsize=axis_label_pt)
@@ -748,9 +759,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax.plot(angles, no_trans_per_angle, "-s", markersize=3, linewidth=1.0,
                 color=SEMANTIC_PALETTE["ablation"], label=diag_no_transformer_short)
         ax.fill_between(angles, baseline_per_angle, no_trans_per_angle,
-                        alpha=0.15, color=SEMANTIC_PALETTE["highlight"])
+                        alpha=0.12, color=SEMANTIC_PALETTE["learned"])
         ax.set_xlabel("Angle (\u00b0)")
         ax.set_ylabel("P(correct)")
+        ax.set_title("Per-angle routing gain", fontsize=title_pt, fontweight="bold")
         ax.set_ylim(0, 1.05)
         ax.legend(fontsize=legend_pt, frameon=False)
         ax.tick_params(axis="both", labelsize=tick_label_pt)
@@ -782,35 +794,35 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Structure alignment",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_b_correlation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "H-matrix physical vs QK learned correlation heatmaps.",
+                "description": "Physical-dictionary and learned-router correlation heatmaps providing the physical interpretability anchor.",
             },
             {
                 "panel_id": "c",
-                "title": "Selection probability",
+                "title": "Classical selection reference",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_c_selection.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"{selection_omp_full} vs {selection_solver_full} selection-probability heatmaps.",
+                "description": f"{selection_omp_full} reference versus {selection_solver_full} selection heatmaps, framed as classical context rather than matched ablation.",
             },
             {
                 "panel_id": "d",
-                "title": "Confusion matrices",
+                "title": "Routing ablation confusion",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_d_confusion.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"{cm_solver_full} vs {cm_no_transformer_full} confusion matrices showing diagonal sharpening.",
+                "description": f"Matched-ablation confusion matrices comparing {cm_solver_full} against {cm_no_transformer_full}.",
             },
             {
                 "panel_id": "e",
-                "title": "Angle-specific routing",
+                "title": "Representative-angle routing",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Routing distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
+                "description": f"Matched-ablation routing distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
             },
             {
                 "panel_id": "f",
-                "title": "Per-angle diagonal concentration",
+                "title": "Per-angle routing gain",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_f_diagonal.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37-point P(correct) comparison showing transformer routing benefit per angle.",
+                "description": "Per-angle P(correct) comparison summarizing the routing gain of the full solver over the router-bypass ablation.",
             },
         ],
         typography=typography,

@@ -21,6 +21,7 @@ ACTIVE_CODE_PATHS = [
     REPO_ROOT / "scripts/paper/compose_master_figure3_family.py",
 ]
 ACTIVE_METADATA_PATHS = [
+    REPO_ROOT / "paper/figures/fig05_performance-structure.layout.json",
     REPO_ROOT / "paper/figures/fig04_solver-dynamics.layout.json",
     REPO_ROOT / "paper/figures/fig06_universality.layout.json",
     REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_manifest.json",

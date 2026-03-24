@@ -62,9 +62,21 @@ figures:
     generator:
       composite_width_mm: 183.0
       composite_height_mm: 170.0
-      outer_grid: {left: 0.055, right: 0.985, bottom: 0.055, top: 0.965, hspace: 0.16, wspace: 0.20}
-      heatmap_stack: {hspace: 0.08, wspace: 0.06, colorbar_ratio: 0.08}
-      routing_stack: {hspace: 0.14}
+      outer_grid:
+        left: 0.055
+        right: 0.985
+        bottom: 0.055
+        top: 0.965
+        hspace: 0.20
+        height_ratios: [0.94, 1.06]
+      top_row:
+        wspace: 0.36
+        width_ratios: [1.15, 0.925, 0.925]
+      bottom_row:
+        wspace: 0.42
+        width_ratios: [1.0, 1.0, 1.0]
+      heatmap_stack: {hspace: 0.35, wspace: 0.06, colorbar_ratio: 0.08}
+      routing_stack: {hspace: 0.32}
       standalone:
         a:
           width_mm: 183.0
@@ -85,7 +97,7 @@ figures:
         e:
           width_mm: 183.0
           height_mm: 100.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.92, hspace: 0.26}
+          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.92, hspace: 0.36}
         f:
           width_mm: 183.0
           height_mm: 70.0
@@ -330,45 +342,54 @@ Bottom-row panels must be generated at final slot size; do not downscale `183 mm
 
 ## Figure 5 — Performance + Structure (6 panels)
 
-Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel `e` remains a two-row routing stack.
+Full generated figure. The layout is intentionally split into two row-level
+story blocks rather than one continuous comparison stream:
+
+- Top row `a-b-c`: benchmark + physical/classical context
+- Bottom row `d-e-f`: matched ablation diagnostics isolating learned routing
+
+Panels `b/c/d` use shared-colorbar two-row stacks; panel `e` remains a two-row routing stack.
 
 ```
                          183.0 mm
 ├──────────────────────────────────────────────────────┤
 ┌──────────────────────────────────────────────────────┐ ─┬─
-│  GridSpec 2×3, hspace=0.16, wspace=0.20              │  │
+│  Nested 2-row layout, outer hspace=0.20              │  │
 │  Margins: L=0.055 R=0.985 B=0.055 T=0.965           │  │
 │  Usable: 170.2 × 154.7 mm                           │  │
-│  col_width = 170.2 / (3 + 2×0.20) = 50.0 mm         │  │
-│  row_height = 154.7 / (2 + 0.16) = 71.6 mm          │  │
+│  Top row width ratios: [1.15, 0.925, 0.925]         │  │
+│  Bottom row width ratios: [1.0, 1.0, 1.0]           │  │
+│  Top row carries benchmark + reference context      │  │
+│  Bottom row carries matched-ablation diagnostics    │  │
 │                                                      │  │
-│  Row 1 — 71.6 mm                                     │  │
+│  Top row — context block                             │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(a) SNR sweep │(b) H vs QK   │(c) Sel. prob │      │  │
-│  │50.0 × 71.6   │50.0 × 71.6   │50.0 × 71.6  │      │  │
+│  │(a) Benchmark │(b) H vs QK   │(c) Classical│      │  │
+│  │wider slot    │structure     │reference    │      │  │
 │  │              │ inner 2×2    │ inner 2×2   │      │  │
 │  │ single plot  │ width_ratios │ width_ratios│      │  │
 │  │ 50.0 × 71.6  │ [1.0, 0.08]  │ [1.0, 0.08] │      │  │
-│  │              │ h=0.08 w=0.06│ h=0.08 w=0.06│     │  │
+│  │              │ h=0.35 w=0.06│ h=0.35 w=0.06│     │  │
 │  │              │ plot col ≈   │ plot col ≈  │      │  │ 71.6 mm
-│  │              │ 45.0 mm      │ 45.0 mm     │      │  │
-│  │              │ sub_h ≈ 34.4 │ sub_h ≈ 34.4│      │  │
+│  │              │ 41–42 mm     │ 41–42 mm    │      │  │
+│  │              │ stack gap ≈  │ stack gap ≈ │      │  │
+│  │              │ 9–10 mm      │ 9–10 mm     │      │  │
 │  │              │ cbar ≈ 3.6mm │ cbar ≈ 3.6mm│      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
-│  ├── 50.0 ──┤10.0├── 50.0 ──┤10.0├── 50.0 ──┤       │  │ 170.0 mm
+│  ├─ wider ─┤gap├─ context ─┤gap├─ context ─┤       │  │ 170.0 mm
 │                                                      │  │
-│        inter-row gap = 0.16 × 71.6 = 11.5 mm        │  │
+│          enlarged row gap visually splits blocks    │  │
 │                                                      │  │
-│  Row 2 — 71.6 mm                                     │  │
+│  Bottom row — matched ablation block                 │  │
 │  ┌──────────────┬──────────────┬──────────────┐      │  │
 │  │(d) Confus.   │(e) Routing   │(f) Per-angle │      │  │
-│  │50.0 × 71.6   │50.0 × 71.6   │50.0 × 71.6  │      │  │
+│  │solver vs     │solver vs     │solver vs    │      │  │
+│  │router-bypass │router-bypass │router-bypass│      │  │
 │  │ inner 2×2    │ inner 2×1    │              │      │  │
-│  │ w=[1.0,0.08] │ hspace=0.14  │ single plot  │      │  │
-│  │ h=0.08 w=0.06│ sub_h ≈ 33.6 │ 50.0 × 71.6  │      │  │ 71.6 mm
-│  │ plot col ≈   │ gap ≈ 4.7mm  │              │      │  │
-│  │ 45.0 mm      │              │              │      │  │
-│  │ sub_h ≈ 34.4 │              │              │      │  │
+│  │ w=[1.0,0.08] │ hspace=0.32  │ single plot  │      │  │
+│  │ h=0.35 w=0.06│ sub_h ≈ 31–32│ 44–45 × 71.6 │      │  │ 71.6 mm
+│  │ plot col ≈   │ gap ≈ 10 mm  │              │      │  │
+│  │ 41–42 mm     │              │              │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 └──────────────────────────────────────────────────────┘ ─┴─
 ```
@@ -377,22 +398,18 @@ Full generated figure. Panels `b/c/d` use shared-colorbar two-row stacks; panel 
 |-----------------------|--------------------------------------|
 | width_mm              | 183                                  |
 | height_mm             | **170**                              |
-| GridSpec              | 2×3, hspace=0.16, wspace=0.20       |
+| Outer rows            | 2×1, hspace=0.20, height ratios 0.94 / 1.06 |
+| Top row               | 1×3, width ratios 1.15 / 0.925 / 0.925 |
+| Bottom row            | 1×3, equal-width matched-ablation panels |
 | Margins               | L=0.055, R=0.985, B=0.055, T=0.965  |
 | Usable                | 170.2 × 154.7 mm                     |
-| col_width             | **50.0 mm**                          |
-| row_height            | **71.6 mm**                          |
-| Inter-row gap         | 0.16 × 71.6 = **11.5 mm**           |
-| wspace gap            | 0.20 × 50.0 = **10.0 mm**           |
-| Panel (a)             | **50.0 × 71.6 mm** (single plot)    |
-| Panels (b/c/d) outer  | **50.0 × 71.6 mm** each              |
-| Panels (b/c/d) inner  | 2×2 with shared colorbar column      |
-| Inner plot column     | **≈ 45.0 mm**                        |
-| Inner heatmap height  | **≈ 34.4 mm** each, gap ≈ 2.8 mm     |
-| Shared colorbar       | **≈ 3.6 mm** wide                    |
-| Panel (e) outer       | **50.0 × 71.6 mm**                   |
-| Panel (e) sub-panels  | **≈ 50.0 × 33.6 mm** each, gap 4.7mm |
-| Panel (f)             | **50.0 × 71.6 mm** (single plot)    |
+| Panel (a)             | widest slot in the figure            |
+| Panels (b/c) outer    | smaller context/reference slots      |
+| Panels (b/c/d) inner  | 2×2 with shared colorbar column and increased stack clearance |
+| Inner plot column     | shared-colorbar heatmap stacks       |
+| Shared colorbar       | retained for panels b/c/d            |
+| Panel (e) outer       | equal-width routing stack with increased row spacing |
+| Panel (f)             | equal-width summary line plot        |
 
 ---
 

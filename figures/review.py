@@ -231,6 +231,11 @@ def _geometry_findings(target: ReviewTarget, geometry: dict[str, Any], layout_me
         findings.append(f"Main figure height {height_mm:.1f} mm exceeds the 170 mm project limit.")
     if layout_meta is not None:
         for ax in layout_meta.get("axes", []):
+            gid = str(ax.get("gid") or "")
+            if gid.endswith(".colorbar"):
+                continue
+            if ax.get("kind") == "colorbar":
+                continue
             bbox = ax.get("bbox_mm", {})
             if bbox.get("width", 999.0) < 25.0 or bbox.get("height", 999.0) < 22.0:
                 findings.append(

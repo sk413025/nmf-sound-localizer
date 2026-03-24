@@ -91,6 +91,9 @@ def main() -> int:
     for fig_num in sorted(contracts):
         asset_name = Path(contracts[fig_num]["manuscript_asset"]).name
         expected_files.add(asset_name)
+        layout_name = Path(asset_name).with_suffix(".layout.json").name
+        if (PAPER_FIGURES / layout_name).exists():
+            expected_files.add(layout_name)
         if not re.search(rf"\bFig\.\s*{fig_num}\b", manuscript_text):
             missing_refs.append(fig_num)
         if f"### Fig {fig_num} " not in registry_text and f"### Fig {fig_num} —" not in registry_text:

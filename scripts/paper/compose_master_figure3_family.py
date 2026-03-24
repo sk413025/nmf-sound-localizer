@@ -96,6 +96,8 @@ FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 0.88)
 
 # --- Figure 5: Performance + Structure (6 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
+FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
+FIG05_WIDTH_MM = 183.0
 
 # --- Figure 6: Universality (5 panels: a,b,c external + d,e generated) ---
 FIG06_PANELS_ABC_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
@@ -136,17 +138,22 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
 
 
 def _trim_white_border(img: Image.Image, padding: int = 8) -> Image.Image:
+    trimmed, _bbox = _trim_white_border_with_bbox(img, padding=padding)
+    return trimmed
+
+
+def _trim_white_border_with_bbox(img: Image.Image, padding: int = 8) -> tuple[Image.Image, tuple[int, int, int, int]]:
     rgb = ImageOps.exif_transpose(img).convert("RGB")
     bg = Image.new("RGB", rgb.size, "white")
     diff = ImageChops.difference(rgb, bg)
     bbox = diff.getbbox()
     if bbox is None:
-        return rgb
+        return rgb, (0, 0, rgb.width, rgb.height)
     left = max(bbox[0] - padding, 0)
     top = max(bbox[1] - padding, 0)
     right = min(bbox[2] + padding, rgb.width)
     bottom = min(bbox[3] + padding, rgb.height)
-    return rgb.crop((left, top, right, bottom))
+    return rgb.crop((left, top, right, bottom)), (left, top, right, bottom)
 
 
 def _render_pdf(pdf_path: Path, scale: float = 3.0) -> Image.Image:
@@ -232,6 +239,116 @@ def _bbox_payload(x0_mm: float, y0_mm: float, width_mm: float, height_mm: float,
 def _write_layout_metadata(path: Path, payload: dict[str, Any]) -> None:
     _ensure_parent(path)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _transform_bbox_norm_for_manuscript(
+    bbox_norm: dict[str, float] | None,
+    *,
+    source_width_px: int,
+    source_height_px: int,
+    crop_box: tuple[int, int, int, int],
+    scale: float,
+    offset_x_px: int,
+    offset_y_px: int,
+    canvas_width_px: int,
+    canvas_height_px: int,
+    figure_width_mm: float,
+    figure_height_mm: float,
+) -> tuple[dict[str, float], dict[str, float]] | tuple[None, None]:
+    if bbox_norm is None:
+        return None, None
+
+    crop_left, crop_top, _crop_right, _crop_bottom = crop_box
+    left_px = float(bbox_norm["x0"]) * source_width_px
+    width_px = float(bbox_norm["width"]) * source_width_px
+    right_px = left_px + width_px
+
+    bottom_from_bottom_px = float(bbox_norm["y0"]) * source_height_px
+    height_px = float(bbox_norm["height"]) * source_height_px
+    top_px = source_height_px - (bottom_from_bottom_px + height_px)
+    bottom_px = top_px + height_px
+
+    left_canvas_px = (left_px - crop_left) * scale + offset_x_px
+    right_canvas_px = (right_px - crop_left) * scale + offset_x_px
+    top_canvas_px = (top_px - crop_top) * scale + offset_y_px
+    bottom_canvas_px = (bottom_px - crop_top) * scale + offset_y_px
+
+    width_canvas_px = right_canvas_px - left_canvas_px
+    height_canvas_px = bottom_canvas_px - top_canvas_px
+    y0_bottom_canvas_px = canvas_height_px - bottom_canvas_px
+
+    norm = {
+        "x0": round(left_canvas_px / canvas_width_px, 6),
+        "y0": round(y0_bottom_canvas_px / canvas_height_px, 6),
+        "width": round(width_canvas_px / canvas_width_px, 6),
+        "height": round(height_canvas_px / canvas_height_px, 6),
+    }
+    mm = {
+        "x0": round(norm["x0"] * figure_width_mm, 3),
+        "y0": round(norm["y0"] * figure_height_mm, 3),
+        "width": round(norm["width"] * figure_width_mm, 3),
+        "height": round(norm["height"] * figure_height_mm, 3),
+    }
+    return norm, mm
+
+
+def _transform_layout_payload_for_manuscript(
+    payload: dict[str, Any],
+    *,
+    source_width_px: int,
+    source_height_px: int,
+    crop_box: tuple[int, int, int, int],
+    resized_width_px: int,
+    offset_x_px: int,
+    offset_y_px: int,
+    canvas_width_px: int,
+    canvas_height_px: int,
+    figure_width_mm: float,
+) -> dict[str, Any]:
+    figure_height_mm = round(figure_width_mm * canvas_height_px / canvas_width_px, 3)
+    cropped_width_px = max(crop_box[2] - crop_box[0], 1)
+    scale = resized_width_px / cropped_width_px
+    bbox_keys = (
+        "bbox",
+        "decorated_bbox",
+        "title_bbox",
+        "xlabel_bbox",
+        "ylabel_bbox",
+        "xticklabels_bbox",
+        "yticklabels_bbox",
+        "legend_bbox",
+    )
+
+    axes_payload: list[dict[str, Any]] = []
+    for axis in payload.get("axes", []):
+        entry = dict(axis)
+        for key in bbox_keys:
+            norm_key = f"{key}_norm"
+            mm_key = f"{key}_mm"
+            norm, mm = _transform_bbox_norm_for_manuscript(
+                axis.get(norm_key),
+                source_width_px=source_width_px,
+                source_height_px=source_height_px,
+                crop_box=crop_box,
+                scale=scale,
+                offset_x_px=offset_x_px,
+                offset_y_px=offset_y_px,
+                canvas_width_px=canvas_width_px,
+                canvas_height_px=canvas_height_px,
+                figure_width_mm=figure_width_mm,
+                figure_height_mm=figure_height_mm,
+            )
+            entry[norm_key] = norm
+            entry[mm_key] = mm
+        axes_payload.append(entry)
+
+    return {
+        "contract_version": payload.get("contract_version", contract_version()),
+        "figure_mm": {"width": figure_width_mm, "height": figure_height_mm},
+        "axes": axes_payload,
+        "source_layout_spec": payload.get("source_layout_spec", source_layout_spec()),
+        "typography_pt": payload.get("typography_pt", TYPOGRAPHY_PT),
+    }
 
 
 def _draw_panel_label(draw: ImageDraw.ImageDraw, label: str, x_px: int, y_px: int) -> None:
@@ -523,18 +640,39 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
 def compose_fig05(paper_dir: Path) -> list[Path]:
     """Fig 5: All 6 panels from composite PDF (a-f)."""
     fig05_asset = paper_dir / "fig05_performance-structure.jpg"
+    fig05_layout_asset = fig05_asset.with_suffix(".layout.json")
 
-    composite = _trim_white_border(_render_pdf(FIG05_COMPOSITE, scale=4.0), padding=4)
+    rendered = _render_pdf(FIG05_COMPOSITE, scale=4.0)
+    composite, crop_box = _trim_white_border_with_bbox(rendered, padding=4)
     target_width = 2200
     composite = _resize_to_width(composite, target_width)
 
-    margin = 40
-    canvas_w = margin * 2 + composite.width
-    canvas_h = margin * 2 + composite.height
+    # Keep the same left/right breathing room while trimming the vertical collar
+    # slightly so the final manuscript asset stays under the 170 mm main-figure cap.
+    margin_x = 40
+    margin_y = 36
+    canvas_w = margin_x * 2 + composite.width
+    canvas_h = margin_y * 2 + composite.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(composite, (margin, margin))
+    canvas.paste(composite, (margin_x, margin_y))
 
     _save_composite(canvas, fig05_asset)
+    if FIG05_COMPOSITE_LAYOUT.exists():
+        composite_layout = json.loads(FIG05_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
+        manuscript_layout = _transform_layout_payload_for_manuscript(
+            composite_layout,
+            source_width_px=rendered.width,
+            source_height_px=rendered.height,
+            crop_box=crop_box,
+            resized_width_px=composite.width,
+            offset_x_px=margin_x,
+            offset_y_px=margin_y,
+            canvas_width_px=canvas_w,
+            canvas_height_px=canvas_h,
+            figure_width_mm=FIG05_WIDTH_MM,
+        )
+        _write_layout_metadata(fig05_layout_asset, manuscript_layout)
+        return [fig05_asset, fig05_layout_asset]
     return [fig05_asset]
 
 
