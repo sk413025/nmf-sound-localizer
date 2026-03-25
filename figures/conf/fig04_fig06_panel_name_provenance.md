@@ -67,18 +67,17 @@ decisions, not to replace manuscript prose.
   - `15b2981` modal visualization family
 - Panel notes:
   - `a`: binds artifact keys `No Type Bias`, `No Transformer`, `Fixed Heuristic`, `Dense Routing` to the four active paper-facing decoder families
-  - `b`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
-  - `c`: compares the clean seed42 `g_routing` confusion matrix against the guided-solver confusion matrix as the classical-reference context panel; the guided representative artifact already has `no_type_bias=true`
-  - `d`: compares the representative clean dense-routing confusion matrix against the router-bypass ablation confusion matrix
-  - `e`: retains the guided-vs-router-bypass conditional-output profiles as the local routing-sharpening exemplar
-  - `f`: compares five-seed clean mean per-angle accuracy across the guided solver, router-bypass, OMP baseline, and dense routing; the guided curve now comes from the `No Type Bias` sweep family rather than the retired `Baseline` sweep key
+  - `b`: merges the four decoder confusion maps into one unified family block: clean seed42 `g_routing` (OMP baseline), guided solver, representative clean dense routing, and router-bypass
+  - `c`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
+  - `d`: retains the guided-vs-router-bypass conditional-output profiles as the local routing-sharpening exemplar
+  - `e`: compares five-seed clean mean per-angle accuracy across the guided solver, router-bypass, OMP baseline, and dense routing; the guided curve now comes from the `No Type Bias` sweep family rather than the retired `Baseline` sweep key
 - Guided-family alignment note:
-  - `panel c` bottom and the guided traces in `panel e` both resolve through `paths.yaml[confusion_matrix.baseline]`.
+  - The guided maps inside `panel b` and the guided traces in `panel d` both resolve through `paths.yaml[confusion_matrix.baseline]`.
   - That path currently points to `results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz`.
-  - The `20251202` metrics file is byte-identical to `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz` (`sha256=12085706b58eaa346f2d6de9681d986f6e8e02eefb429cc30299abe578db5d5b`), so `panel c/e` already use the same representative guided-solver outputs as the active primary run.
+  - The `20251202` metrics file is byte-identical to `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz` (`sha256=12085706b58eaa346f2d6de9681d986f6e8e02eefb429cc30299abe578db5d5b`), so `panel b/d` already use the same representative guided-solver outputs as the active primary run.
   - The practical consequence is that the Fig. 5 guided-family unification only required source-family changes in the aggregate benchmark panels:
-    `panel a` switched from the retired `Baseline` sweep key to `No Type Bias`, and `panel f` switched from the old clean-summary bundle to `results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz`.
-  - No separate confusion-artifact swap was needed for `panel c` or `panel e`; those panels were already on the intended `no_type_bias=true` guided family.
+    `panel a` switched from the retired `Baseline` sweep key to `No Type Bias`, and `panel e` switched from the old clean-summary bundle to `results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz`.
+  - No separate confusion-artifact swap was needed for the guided entries in `panel b` or `panel d`; those panels were already on the intended `no_type_bias=true` guided family.
 
 ## Fig. 6
 

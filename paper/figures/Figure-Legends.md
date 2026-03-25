@@ -21,7 +21,7 @@ b, Frequency-selective spectra \(|u_r(f)|\) for modes 1–3 (overlaid), showing 
 c, Direction-selective polar patterns \(v_r(\theta)\) for modes 1–3 (overlaid), forming virtual directional sensing channels.
 d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
 e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle fingerprint RMSE for ranks 3, 5, and 10, showing that low-rank compression preserves directional fingerprints across the calibrated angle manifold.
-f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band indicates that neighboring angles share similar spectral fingerprints, revealing the smooth physical angle manifold later exploited by the learned router (Fig. 5b).
+f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band indicates that neighboring angles share similar spectral fingerprints, revealing the smooth physical angle manifold later exploited by the learned router (Fig. 5c).
 
 ## Fig. 3 (6 panels)
 
@@ -41,16 +41,15 @@ b, Training convergence: total and classification loss decrease steadily over 20
 c, Clean decoder comparison: strip chart comparing the guided solver, router-bypass, OMP baseline, and dense routing across the same five-seed clean sweep (individual seeds shown as dots, horizontal bars indicate means).
 d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform performance across the full angular grid (mean accuracy 0.946), with angles below the mean highlighted.
 
-## Fig. 5 (6 panels)
+## Fig. 5 (5 panels)
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
-Panel logic: a benchmarks four decoder families under noise; b-c provide physical and classical reference context; d contrasts dense routing with router-bypass at the confusion level; e retains the guided-versus-router-bypass local conditional-output exemplar; f summarizes the five-seed clean mean per-angle ranking across the same four decoders using a 3-angle centered moving-average display.
+Panel logic: a benchmarks four decoder families under noise; b gathers the four decoder confusion structures into one unified family block; c anchors the learned router to the physical manifold; d retains the guided-versus-router-bypass local conditional-output exemplar; e summarizes the five-seed clean mean per-angle ranking across the same four decoders using a 3-angle centered moving-average display with light +/-1 s.e.m. shading.
 a, SNR degradation curves for the guided solver, router-bypass, OMP baseline, and dense routing, showing graceful degradation under additive noise.
-b, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
-c, Row-normalized confusion maps contrasting the OMP baseline (broader, fragmented structure; top) with the guided solver (sharply diagonal; bottom), providing the classical decoding context for the lower-row routing comparisons.
-d, Row-normalized confusion maps for dense routing (top) and the router-bypass ablation (bottom). Dense routing collapses toward a single preferred output mode, whereas router-bypass retains limited local structure but broader off-axis leakage.
-e, Angle-specific conditional output distributions at two representative directions (55° and 100°): the guided solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas router-bypass shows broader off-axis leakage.
-f, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
+b, Unified row-normalized confusion-family block across the four decoders. The OMP baseline shows broader fragmented off-axis spillover, the guided solver remains sharply diagonal, dense routing collapses toward a single preferred output mode, and router-bypass retains limited local structure with broader leakage.
+c, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
+d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas router-bypass shows broader off-axis leakage.
+e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (4 panels)
 

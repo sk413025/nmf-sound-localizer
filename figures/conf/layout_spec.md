@@ -61,22 +61,22 @@ figures:
   fig05:
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 170.0
-      outer_grid:
-        left: 0.055
-        right: 0.985
-        bottom: 0.055
-        top: 0.965
-        hspace: 0.20
-        height_ratios: [0.94, 1.06]
+      composite_height_mm: 156.0
+      composite_grid:
+        left: 0.038
+        right: 0.962
+        bottom: 0.045
+        top: 0.955
+        hspace: 0.254
+        height_ratios: [62.0, 64.0]
       top_row:
-        wspace: 0.36
-        width_ratios: [1.15, 0.925, 0.925]
+        wspace: 0.110
+        width_ratios: [48.0, 73.0, 40.0]
       bottom_row:
-        wspace: 0.42
-        width_ratios: [1.0, 1.0, 1.0]
-      heatmap_stack: {hspace: 0.35, wspace: 0.06, colorbar_ratio: 0.08}
-      routing_stack: {hspace: 0.32}
+        wspace: 0.086
+        width_ratios: [90.0, 72.0]
+      heatmap_stack: {hspace: 0.50, wspace: 0.06, colorbar_ratio: 0.08}
+      routing_stack: {hspace: 0.42, wspace: 0.18}
       standalone:
         a:
           width_mm: 183.0
@@ -85,20 +85,16 @@ figures:
         b:
           width_mm: 183.0
           height_mm: 120.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.24}
+          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.93, hspace: 0.30, wspace: 0.08, colorbar_ratio: 0.06}
         c:
           width_mm: 183.0
           height_mm: 120.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.24}
+          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.30, wspace: 0.06, colorbar_ratio: 0.08}
         d:
           width_mm: 183.0
-          height_mm: 70.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.86, wspace: 0.20}
+          height_mm: 118.0
+          grid: {left: 0.08, right: 0.96, bottom: 0.12, top: 0.91, hspace: 0.40, wspace: 0.18}
         e:
-          width_mm: 183.0
-          height_mm: 100.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.92, hspace: 0.36}
-        f:
           width_mm: 183.0
           height_mm: 70.0
           subplots_adjust: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.92}
@@ -348,76 +344,61 @@ Bottom-row panels must be generated at final slot size; do not downscale `183 mm
 
 ---
 
-## Figure 5 — Performance + Structure (6 panels)
+## Figure 5 — Performance + Structure (5 panels)
 
-Full generated figure. The layout is intentionally split into two row-level
-story blocks rather than one continuous comparison stream:
+Full generated figure rebuilt as a compact two-row journal layout with
+decorated-bbox budgeting, not raw-slot-only packing:
 
-- Top row `a-b-c`: benchmark + physical/classical context
-- Bottom row `d-e-f`: matched ablation diagnostics isolating learned routing
+- Top row `a-b-c`: benchmark + unified confusion family + structure anchor
+- Bottom row `d-e`: four-angle conditional outputs + per-angle benchmark
 
-Panels `b/c/d` use shared-colorbar two-row stacks; panel `e` remains a two-row routing stack.
+Panel `b` remains the dominant confusion-family block. `c` keeps its own
+composite colorbar and shared axis labels. The larger inter-row gap is
+intentional and exists to prevent decorated text from colliding across rows.
 
 ```
                          183.0 mm
 ├──────────────────────────────────────────────────────┤
 ┌──────────────────────────────────────────────────────┐ ─┬─
-│  Nested 2-row layout, outer hspace=0.20              │  │
-│  Margins: L=0.055 R=0.985 B=0.055 T=0.965           │  │
-│  Usable: 170.2 × 154.7 mm                           │  │
-│  Top row width ratios: [1.15, 0.925, 0.925]         │  │
-│  Bottom row width ratios: [1.0, 1.0, 1.0]           │  │
-│  Top row carries benchmark + reference context      │  │
-│  Bottom row carries matched-ablation diagnostics    │  │
+│  Two-row layout                                       │  │
+│  Margins: L=7 R=7 B=7 T=7 mm                         │  │
+│  Usable: 169 × 142 mm                               │  │
+│  Row heights: 62 mm / 64 mm                         │  │
+│  Row gap: 16 mm                                     │  │
 │                                                      │  │
-│  Top row — context block                             │  │
-│  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(a) Benchmark │(b) H vs QK   │(c) Classical│      │  │
-│  │wider slot    │structure     │reference    │      │  │
-│  │              │ inner 2×2    │ inner 2×2   │      │  │
-│  │ single plot  │ width_ratios │ width_ratios│      │  │
-│  │ 50.0 × 71.6  │ [1.0, 0.08]  │ [1.0, 0.08] │      │  │
-│  │              │ h=0.35 w=0.06│ h=0.35 w=0.06│     │  │
-│  │              │ plot col ≈   │ plot col ≈  │      │  │ 71.6 mm
-│  │              │ 41–42 mm     │ 41–42 mm    │      │  │
-│  │              │ stack gap ≈  │ stack gap ≈ │      │  │
-│  │              │ 9–10 mm      │ 9–10 mm     │      │  │
-│  │              │ cbar ≈ 3.6mm │ cbar ≈ 3.6mm│      │  │
-│  └──────────────┴──────────────┴──────────────┘      │  │
-│  ├─ wider ─┤gap├─ context ─┤gap├─ context ─┤       │  │ 170.0 mm
+│  Top row                                             │  │
+│  ┌──────────────┬────────────────────────┬───────┐   │  │
+│  │ (a)          │ (b) unified confusion  │ (c)   │   │  │
+│  │ benchmark    │ family block           │ H/QK  │   │  │ 62 mm
+│  │ 48 × 62 mm   │ 73 × 62 mm             │ 40×62 │   │  │
+│  └──────────────┴────────────────────────┴───────┘   │  │
+│      4 mm gap              4 mm gap                  │  │
 │                                                      │  │
-│          enlarged row gap visually splits blocks    │  │
-│                                                      │  │
-│  Bottom row — matched ablation block                 │  │
-│  ┌──────────────┬──────────────┬──────────────┐      │  │
-│  │(d) Confus.   │(e) Routing   │(f) Per-angle │      │  │
-│  │solver vs     │solver vs     │solver vs    │      │  │
-│  │router-bypass │router-bypass │router-bypass│      │  │
-│  │ inner 2×2    │ inner 2×1    │              │      │  │
-│  │ w=[1.0,0.08] │ hspace=0.32  │ single plot  │      │  │
-│  │ h=0.35 w=0.06│ sub_h ≈ 31–32│ 44–45 × 71.6 │      │  │ 71.6 mm
-│  │ plot col ≈   │ gap ≈ 10 mm  │              │      │  │
-│  │ 41–42 mm     │              │              │      │  │
-│  └──────────────┴──────────────┴──────────────┘      │  │
+│  Bottom row                                          │  │
+│  ┌─────────────────────────────┬─────────────────┐   │  │
+│  │ (d) conditional outputs     │ (e) per-angle   │   │  │
+│  │ 2x2 angles: 55 / 70 / 95 /  │ benchmark       │   │  │ 64 mm
+│  │ 100, 90 × 64 mm             │ 72 × 64 mm      │   │  │
+│  └─────────────────────────────┴─────────────────┘   │  │
+│                 7 mm gap                             │  │
 └──────────────────────────────────────────────────────┘ ─┴─
+                                          total = 156.0 mm
 ```
 
-| Parameter             | Value                                |
-|-----------------------|--------------------------------------|
-| width_mm              | 183                                  |
-| height_mm             | **170**                              |
-| Outer rows            | 2×1, hspace=0.20, height ratios 0.94 / 1.06 |
-| Top row               | 1×3, width ratios 1.15 / 0.925 / 0.925 |
-| Bottom row            | 1×3, equal-width matched-ablation panels |
-| Margins               | L=0.055, R=0.985, B=0.055, T=0.965  |
-| Usable                | 170.2 × 154.7 mm                     |
-| Panel (a)             | widest slot in the figure            |
-| Panels (b/c) outer    | smaller context/reference slots      |
-| Panels (b/c/d) inner  | 2×2 with shared colorbar column and increased stack clearance |
-| Inner plot column     | shared-colorbar heatmap stacks       |
-| Shared colorbar       | retained for panels b/c/d            |
-| Panel (e) outer       | equal-width routing stack with increased row spacing |
-| Panel (f)             | equal-width summary line plot        |
+| Parameter             | Value                                      |
+|-----------------------|--------------------------------------------|
+| width_mm              | 183                                        |
+| height_mm             | **156**                                    |
+| Outer rows            | 2×1, height ratios 62 / 64                 |
+| Top row               | 1×3, width ratios 48 / 73 / 40             |
+| Bottom row            | 1×2, width ratios 90 / 72                  |
+| Margins               | 7 mm on all sides                          |
+| Row gap               | 16 mm                                      |
+| Panel (a)             | 48 × 62 mm                                 |
+| Panel (b)             | 73 × 62 mm                                 |
+| Panel (c)             | 40 × 62 mm                                 |
+| Panel (d)             | 90 × 64 mm                                 |
+| Panel (e)             | 72 × 64 mm                                 |
 
 ---
 

@@ -85,7 +85,7 @@ def _stack_clearances(payload: dict[str, Any], threshold_mm: float) -> list[dict
     panel_groups: dict[str, list[dict[str, Any]]] = {}
     for axis in payload.get("axes", []):
         panel_id, role = _panel_and_role(axis)
-        if panel_id is None or role == "colorbar":
+        if panel_id is None or role in {"colorbar", "block"}:
             continue
         box = _bbox(axis)
         if box is None:
@@ -175,11 +175,63 @@ def _panel_clearances(payload: dict[str, Any], threshold_mm: float) -> list[dict
     return unique_rows
 
 
+def _inter_row_clearances(payload: dict[str, Any], threshold_mm: float) -> list[dict[str, Any]]:
+    panel_boxes: dict[str, dict[str, float]] = {}
+    grouped_boxes: dict[str, list[dict[str, float]]] = {}
+    for axis in payload.get("axes", []):
+        panel_id, _role = _panel_and_role(axis)
+        box = _bbox(axis)
+        if panel_id is None or box is None:
+            continue
+        grouped_boxes.setdefault(panel_id, []).append(box)
+    for panel_id, boxes in grouped_boxes.items():
+        panel_boxes[panel_id] = _union_bbox(boxes)
+
+    rows: list[dict[str, Any]] = []
+    panels = sorted(panel_boxes.items(), key=lambda item: (item[1]["y0"], item[1]["x0"]), reverse=True)
+    for idx, (panel_a_id, panel_a_box) in enumerate(panels):
+        for panel_b_id, panel_b_box in panels[idx + 1:]:
+            if _x_overlap(panel_a_box, panel_b_box) <= 0:
+                continue
+            same_row = abs(_center_y(panel_a_box) - _center_y(panel_b_box)) <= 0.5 * min(
+                float(panel_a_box["height"]),
+                float(panel_b_box["height"]),
+            )
+            if same_row:
+                continue
+            if float(panel_a_box["y0"]) >= float(panel_b_box["y0"]):
+                upper_id, upper_box = panel_a_id, panel_a_box
+                lower_id, lower_box = panel_b_id, panel_b_box
+            else:
+                upper_id, upper_box = panel_b_id, panel_b_box
+                lower_id, lower_box = panel_a_id, panel_a_box
+            clearance = _vertical_clearance(upper_box, lower_box)
+            rows.append(
+                {
+                    "upper_panel": upper_id,
+                    "lower_panel": lower_id,
+                    "clearance_mm": round(clearance, 3),
+                    "threshold_mm": threshold_mm,
+                    "passed": clearance >= threshold_mm,
+                }
+            )
+    unique_rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        key = (row["upper_panel"], row["lower_panel"])
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_rows.append(row)
+    return unique_rows
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check layout clearances from layout metadata.")
     parser.add_argument("layout_json", help="Path to the layout metadata JSON file.")
     parser.add_argument("--stack-threshold-mm", type=float, default=1.5)
     parser.add_argument("--panel-threshold-mm", type=float, default=1.0)
+    parser.add_argument("--inter-row-threshold-mm", type=float, default=2.0)
     parser.add_argument("--report", help="Optional JSON report output path.")
     args = parser.parse_args()
 
@@ -188,7 +240,8 @@ def main() -> int:
 
     stack_rows = _stack_clearances(payload, args.stack_threshold_mm)
     panel_rows = _panel_clearances(payload, args.panel_threshold_mm)
-    all_rows = stack_rows + panel_rows
+    inter_row_rows = _inter_row_clearances(payload, args.inter_row_threshold_mm)
+    all_rows = stack_rows + panel_rows + inter_row_rows
     overall_pass = all(row["passed"] for row in all_rows)
 
     report = {
@@ -196,11 +249,14 @@ def main() -> int:
         "figure_mm": payload.get("figure_mm"),
         "stack_threshold_mm": args.stack_threshold_mm,
         "panel_threshold_mm": args.panel_threshold_mm,
+        "inter_row_threshold_mm": args.inter_row_threshold_mm,
         "stack_clearances": stack_rows,
         "panel_clearances": panel_rows,
+        "inter_row_clearances": inter_row_rows,
         "overall_pass": overall_pass,
         "min_stack_clearance_mm": None if not stack_rows else min(row["clearance_mm"] for row in stack_rows),
         "min_panel_clearance_mm": None if not panel_rows else min(row["clearance_mm"] for row in panel_rows),
+        "min_inter_row_clearance_mm": None if not inter_row_rows else min(row["clearance_mm"] for row in inter_row_rows),
     }
 
     if args.report:
