@@ -210,7 +210,7 @@ fig05_performance_structure:
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
   claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
-  legend_summary: "Noise robustness benchmark, physical/classical context, and matched-ablation routing diagnostics."
+  legend_summary: "Noise robustness benchmark, physical/classical context, routing-failure diagnostics, and a five-seed clean per-angle benchmark."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
@@ -231,12 +231,18 @@ fig05_performance_structure:
     - path: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
       type: npz
       description: "Clean seed42 g-routing confusion metrics used by panel c as the manuscript-facing OMP baseline."
+    - path: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
+      type: npz
+      description: "Representative clean dense-routing confusion metrics used by panel d."
+    - path: results/fig05_panel_f_clean_seed_means/summary.npz
+      type: npz
+      description: "Five-seed clean mean/std per-angle accuracy summary used by panel f."
     - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
-      description: "Baseline confusion/per-angle metrics used by panels d-f through paths.yaml[confusion_matrix.baseline]."
+      description: "Baseline confusion metrics used by panels c-e through paths.yaml[confusion_matrix.baseline]."
     - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
       type: npz
-      description: "No-transformer confusion/per-angle metrics used by panels d-f."
+      description: "No-transformer confusion metrics used by panels d-e."
   model_params:
     d_model: 128
     nhead: 2
@@ -251,70 +257,78 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Universal Physical Encoding Across Diverse Materials"
-  type: mixed_composite_with_partial_gap
+  title: "Physical Encoding Reproduces Across Materials, But Object Quality Must Be Screened"
+  type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
-  provenance_mode: mixed_composite_with_partial_gap
+  provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "The physical encoding mechanism and inference recipe generalize across structurally distinct materials."
-  legend_summary: "Cross-material exemplars and heatmaps plus per-band universality evidence."
-  panel_order: ["a", "b", "c", "d", "e"]
+  claim: "Distinct everyday objects all exhibit structured direction-frequency encoding, but material quality is unequal and must be screened jointly in physical and task space."
+  legend_summary: "Material exemplars plus cross-material H matrices, downstream screening metrics, and physics-versus-task decoupling."
+  panel_order: ["a", "b", "c", "d"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
   compose_script: scripts/paper/compose_master_figure3_family.py
   generator_outputs:
     - figures/output/fig06_universality.pdf
     - figures/output/fig06_universality.tiff
-  display_crosswalk: figures/conf/model_display_crosswalk.yaml
   naming_provenance_note: figures/conf/fig04_fig06_panel_name_provenance.md
   data_artifacts:
-    - path: h_matrix_normalized_original_to_box.pth
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/reproduction_report.json
+      type: json
+      description: "Cross-material Original->Material H reproduction summary."
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
       type: pth
-      description: "Primary H matrix used for the per-band SVD panel."
-    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-      type: npz
-      description: "Primary routing run used for the band-resolved routing panel."
-    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-      type: npz
-      description: "Dictionary support for the band-resolved routing panel."
+      description: "Original->Acrylic transfer functions used in the H-matrix strip."
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+      type: pth
+      description: "Original->Paper-cup transfer functions used in the H-matrix strip."
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+      type: pth
+      description: "Original->Wood-board transfer functions used in the H-matrix strip."
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+      type: pth
+      description: "Original->Cardboard-box transfer functions used in the H-matrix strip."
+    - path: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
+      type: pth
+      description: "Original->Laptop-shell transfer functions used in the H-matrix strip."
+    - path: ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
+      type: json
+      description: "Cross-material downstream screening report with H-level and task-level metrics."
+    - path: ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
+      type: json
+      description: "Primary/backup material selection summary."
     - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
       type: png
-      description: "Committed split-panel support asset for material exemplars."
-    - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
-      type: png
-      description: "Committed split-panel support asset for representative heatmaps."
-    - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
-      type: png
-      description: "Committed split-panel support asset for the cross-material RMSE panel."
+      description: "Committed support asset for the material exemplars strip."
   panel_provenance:
     a:
       title: "Material exemplars"
-      provenance_mode: provenance_gap
+      provenance_mode: manual_support
       asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
-      note: "Committed support asset; upstream cross-material raw-source contract is not yet machine-readable."
+      note: "Committed support asset retained as the manuscript-facing exemplar strip."
     b:
-      title: "Representative dictionary heatmaps"
-      provenance_mode: provenance_gap
-      asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_b_heatmaps.png
-      note: "Committed support asset; upstream cross-material heatmap selection lineage is not yet machine-readable."
+      title: "Cross-material H matrices"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_b_h_matrices.pdf
+      evidence_sources:
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
     c:
-      title: "Cross-material RMSE comparison"
-      provenance_mode: provenance_gap
-      asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_c_rmse_comparison.png
-      note: "Committed support asset with normalized display labels but no tracked generator-backed upstream lineage."
+      title: "Material screening metrics"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_c_material_screening.pdf
+      evidence_sources:
+        - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
+        - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
     d:
-      title: "Per-band SVD spectra"
+      title: "Physical quality versus task accuracy"
       provenance_mode: data_backed
-      asset_path: figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_d_physics_vs_task.pdf
       evidence_sources:
-        - h_matrix_normalized_original_to_box.pth
-    e:
-      title: "Band-resolved routing consistency"
-      provenance_mode: data_backed
-      asset_path: figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf
-      evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-  note: "Panels d-e are generator-backed. Panels a-c remain partially provenance-gapped top-panel support assets pending a stronger machine-readable cross-material contract."
+        - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
+  note: "Panel a remains a manual support asset. Panels b-d are generator-backed against the committed cross-material H-reproduction and material-selection bundles."

@@ -111,6 +111,7 @@ figures:
           Baseline: full_solver
           No Transformer: no_transformer_ablation
           Fixed Heuristic: analytical_omp_baseline
+          Dense Routing: dense_routing_ablation
       b:
         bindings:
           physical_matrix: h_physical_structure
@@ -121,7 +122,7 @@ figures:
           learned_side: full_solver
       d:
         bindings:
-          baseline_cm: full_solver
+          dense_cm: dense_routing_ablation
           no_transformer_cm: no_transformer_ablation
       e:
         bindings:
@@ -131,6 +132,8 @@ figures:
         bindings:
           baseline_line: full_solver
           no_transformer_line: no_transformer_ablation
+          omp_line: analytical_omp_baseline
+          dense_line: dense_routing_ablation
 
   fig06:
     panels:

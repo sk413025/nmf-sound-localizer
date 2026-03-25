@@ -1,11 +1,11 @@
 """Figure 5 — Performance + Structure Alignment + Routing Attribution (6 panels).
 
-Panel (a): 3-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline)
+Panel (a): 4-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
 Panel (b): Physical-vs-learned correlation structure (H vs QK)
 Panel (c): Classical-reference confusion diagnostic (OMP baseline vs guided solver)
-Panel (d): Confusion matrices (guided solver vs router-bypass)
+Panel (d): Confusion matrices (dense routing vs router-bypass)
 Panel (e): Representative-angle conditional output distributions (guided solver vs router-bypass)
-Panel (f): Per-angle routing gain summary (guided solver vs router-bypass)
+Panel (f): Per-angle decoder accuracy benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.
 """
@@ -41,11 +41,13 @@ from figures.layout_contract import (
 # ---------------------------------------------------------------------------
 SNR_ORDER = ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
 SNR_DISPLAY = ["0", "5", "10", "15", "20", "30", "\u221e"]
+DENSE_COLOR = "#4A4A4A"
 
 SNR_VARIANTS = [
     ("Baseline",        SEMANTIC_PALETTE["learned"],   get_bound_label("fig05", "a", "Baseline", label_type="short")),
     ("No Transformer",  SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "No Transformer", label_type="short")),
     ("Fixed Heuristic", SEMANTIC_PALETTE["classical"], get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
+    ("Dense Routing",   DENSE_COLOR,                   get_bound_label("fig05", "a", "Dense Routing", label_type="short")),
 ]
 
 FIG05_GENERATOR = figure_section("fig05", "generator")
@@ -89,6 +91,23 @@ def _row_normalize_matrix(matrix: np.ndarray) -> np.ndarray:
     return np.divide(matrix, row_sums, out=np.zeros_like(matrix), where=row_sums > 0)
 
 
+def _centered_moving_average(series: np.ndarray, window: int = 3) -> np.ndarray:
+    """Display-only centered moving average without circular wraparound."""
+    series = np.asarray(series, dtype=float)
+    if window <= 1:
+        return series.copy()
+    if window % 2 == 0:
+        raise ValueError("window must be odd for centered moving average")
+
+    half = window // 2
+    smoothed = np.empty_like(series, dtype=float)
+    for idx in range(series.size):
+        lo = max(0, idx - half)
+        hi = min(series.size, idx + half + 1)
+        smoothed[idx] = float(series[lo:hi].mean())
+    return smoothed
+
+
 def _plot_snr_panel(
     ax,
     snr_curves: dict,
@@ -119,7 +138,15 @@ def _plot_snr_panel(
     ax.set_ylim(0, 1.05)
     ax.tick_params(axis="both", labelsize=tick_label_pt)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=legend_pt, frameon=False, loc="lower left")
+    legend_ncol = 2 if len(variants) > 3 else 1
+    ax.legend(
+        fontsize=legend_pt,
+        frameon=False,
+        loc="lower left",
+        ncol=legend_ncol,
+        columnspacing=0.8,
+        handletextpad=0.4,
+    )
 
 
 def _save_panel_manifest(
@@ -164,11 +191,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_c_solver_full = get_bound_label(
         "fig05", "c", "learned_side", label_type="full"
     )
-    cm_solver_short = get_bound_label("fig05", "d", "baseline_cm", label_type="short")
+    cm_dense_short = get_bound_label("fig05", "d", "dense_cm", label_type="short")
     cm_no_transformer_short = get_bound_label(
         "fig05", "d", "no_transformer_cm", label_type="short"
     )
-    cm_solver_full = get_bound_label("fig05", "d", "baseline_cm", label_type="full")
+    cm_dense_full = get_bound_label("fig05", "d", "dense_cm", label_type="full")
     cm_no_transformer_full = get_bound_label(
         "fig05", "d", "no_transformer_cm", label_type="full"
     )
@@ -188,11 +215,20 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     diag_no_transformer_short = get_bound_label(
         "fig05", "f", "no_transformer_line", label_type="short"
     )
+    diag_omp_short = get_bound_label("fig05", "f", "omp_line", label_type="short")
+    diag_dense_short = get_bound_label("fig05", "f", "dense_line", label_type="short")
+    diag_solver_full = get_bound_label("fig05", "f", "baseline_line", label_type="full")
+    diag_no_transformer_full = get_bound_label(
+        "fig05", "f", "no_transformer_line", label_type="full"
+    )
+    diag_omp_full = get_bound_label("fig05", "f", "omp_line", label_type="full")
+    diag_dense_full = get_bound_label("fig05", "f", "dense_line", label_type="full")
     snr_solver_full = get_bound_label("fig05", "a", "Baseline", label_type="full")
     snr_no_transformer_full = get_bound_label(
         "fig05", "a", "No Transformer", label_type="full"
     )
     snr_omp_full = get_bound_label("fig05", "a", "Fixed Heuristic", label_type="full")
+    snr_dense_full = get_bound_label("fig05", "a", "Dense Routing", label_type="full")
 
     paths_cfg = load_paths()
     run_dir = data_root / paths_cfg["primary_run"]
@@ -221,17 +257,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     tick_labels = [f"{int(angles[i])}" for i in tick_positions]
     snr_curves = snr_data.get("snr", {})
 
-    # Load confusion matrix data (panels d-f)
+    # Load confusion matrix data (panels c-e)
     cm_cfg = paths_cfg.get("confusion_matrix", {})
     omp_baseline_cm_path = data_root / cm_cfg.get("omp_baseline", "")
     baseline_cm_path = data_root / cm_cfg.get("baseline", "")
     no_trans_cm_path = data_root / cm_cfg.get("no_transformer", "")
+    dense_cm_path = data_root / cm_cfg.get("dense_routing", "")
+    panel_f_summary_path = data_root / paths_cfg["fig05_panel_f_summary"]
 
     omp_baseline_cm = None
     baseline_cm = None
     no_trans_cm = None
-    baseline_per_angle = None
-    no_trans_per_angle = None
+    dense_cm = None
+    panel_f_summary = None
 
     if omp_baseline_cm_path.exists():
         odata = dict(np.load(omp_baseline_cm_path, allow_pickle=True))
@@ -239,11 +277,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     if baseline_cm_path.exists():
         bdata = dict(np.load(baseline_cm_path, allow_pickle=True))
         baseline_cm = bdata["confusion_matrix"]
-        baseline_per_angle = bdata["per_angle_accuracy"]
     if no_trans_cm_path.exists():
         ntdata = dict(np.load(no_trans_cm_path, allow_pickle=True))
         no_trans_cm = ntdata["confusion_matrix"]
-        no_trans_per_angle = ntdata["per_angle_accuracy"]
+    if dense_cm_path.exists():
+        ddata = dict(np.load(dense_cm_path, allow_pickle=True))
+        dense_cm = ddata["confusion_matrix"]
+    if not panel_f_summary_path.exists():
+        raise FileNotFoundError(
+            f"Required Fig. 5f summary artifact not found: {panel_f_summary_path}"
+        )
+    panel_f_summary = dict(np.load(panel_f_summary_path, allow_pickle=True))
 
     # -----------------------------------------------------------------------
     # Build composite figure as two narrative rows:
@@ -379,8 +423,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # --- Row 2 ---
 
-    # Panel (d): Confusion matrices (guided solver vs router-bypass)
-    if baseline_cm is not None and no_trans_cm is not None:
+    # Panel (d): Confusion matrices (dense routing vs router-bypass)
+    if dense_cm is not None and no_trans_cm is not None:
         gs_d = gridspec.GridSpecFromSubplotSpec(
             2, 2, subplot_spec=gs_bottom[0, 0],
             width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
@@ -388,18 +432,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             wspace=FIG05_HEATMAP_STACK["wspace"],
         )
 
-        baseline_cm_norm = _row_normalize_matrix(baseline_cm)
+        dense_cm_norm = _row_normalize_matrix(dense_cm)
         no_trans_cm_norm = _row_normalize_matrix(no_trans_cm)
 
         ax_d1 = _set_gid(fig.add_subplot(gs_d[0, 0]), "fig05.panel_d.top")
-        ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
+        ax_d1.imshow(dense_cm_norm, cmap="viridis", aspect="equal",
                      interpolation="nearest", vmin=0, vmax=1)
-        ax_d1.set_title(_titlecase_short_label(cm_solver_short), fontsize=title_pt)
+        ax_d1.set_title(_titlecase_short_label(cm_dense_short), fontsize=title_pt)
         ax_d1.set_xticks(tick_positions)
         ax_d1.set_xticklabels([])
         ax_d1.set_yticks(tick_positions)
         ax_d1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
-        ax_d1.set_ylabel("True", fontsize=axis_label_pt)
+        ax_d1.set_ylabel("True DOA", fontsize=axis_label_pt)
         ax_d1.tick_params(axis="both", length=2)
         add_panel_label(ax_d1, "d", x=-0.20, y=1.12)
 
@@ -411,8 +455,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_d2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
         ax_d2.set_yticks(tick_positions)
         ax_d2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
-        ax_d2.set_xlabel("Predicted", fontsize=axis_label_pt)
-        ax_d2.set_ylabel("True", fontsize=axis_label_pt)
+        ax_d2.set_xlabel("Predicted DOA", fontsize=axis_label_pt)
+        ax_d2.set_ylabel("True DOA", fontsize=axis_label_pt)
         ax_d2.tick_params(axis="both", length=2)
         cax_d = _set_gid(fig.add_subplot(gs_d[:, 1]), "fig05.panel_d.colorbar")
         cbar = plt.colorbar(im_d2, cax=cax_d)
@@ -495,30 +539,74 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_e_placeholder.set_axis_off()
         add_panel_label(ax_e_placeholder, "e", x=-0.1, y=1.06)
 
-    # Panel (f): Per-angle diagonal concentration (baseline vs ablation)
-    if baseline_per_angle is not None and no_trans_per_angle is not None:
+    # Panel (f): Per-angle decoder accuracy benchmark
+    if panel_f_summary is not None:
+        f_angles = np.asarray(panel_f_summary["angles"], dtype=float)
+        if not np.array_equal(np.asarray(angles, dtype=float), f_angles):
+            raise ValueError("Fig. 5f summary angle grid does not match the figure angle grid")
+        guided_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["guided_mean"], dtype=float), window=3
+        )
+        router_bypass_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["router_bypass_mean"], dtype=float), window=3
+        )
+        omp_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["omp_mean"], dtype=float), window=3
+        )
+        dense_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["dense_mean"], dtype=float), window=3
+        )
         ax_f = _set_gid(fig.add_subplot(gs_bottom[0, 2]), "fig05.panel_f.main")
-        ax_f.plot(angles, baseline_per_angle, "-o", markersize=2,
-                  linewidth=0.9, color=SEMANTIC_PALETTE["learned"],
-                  label=diag_solver_short)
-        ax_f.plot(angles, no_trans_per_angle, "-s", markersize=2,
-                  linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
-                  label=diag_no_transformer_short)
-        ax_f.fill_between(angles, baseline_per_angle, no_trans_per_angle,
-                          alpha=0.12, color=SEMANTIC_PALETTE["learned"])
+        ax_f.plot(
+            angles,
+            guided_mean,
+            "-",
+            linewidth=1.15,
+            color=SEMANTIC_PALETTE["learned"],
+            label=diag_solver_short,
+            zorder=4,
+        )
+        ax_f.plot(
+            angles,
+            router_bypass_mean,
+            "-",
+            linewidth=1.05,
+            color=SEMANTIC_PALETTE["ablation"],
+            label=diag_no_transformer_short,
+            zorder=3,
+        )
+        ax_f.plot(
+            angles,
+            omp_mean,
+            "-",
+            linewidth=1.05,
+            color=SEMANTIC_PALETTE["classical"],
+            label=diag_omp_short,
+            zorder=2,
+        )
+        ax_f.plot(
+            angles,
+            dense_mean,
+            ":",
+            linewidth=1.05,
+            color=DENSE_COLOR,
+            label=diag_dense_short,
+            zorder=1,
+        )
         ax_f.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
-        ax_f.set_ylabel("P(correct)", fontsize=axis_label_pt)
-        ax_f.set_title("Per-angle routing gain", fontsize=title_pt)
+        ax_f.set_ylabel("Mean P(correct)", fontsize=axis_label_pt)
+        ax_f.set_title("Per-angle decoder accuracy", fontsize=title_pt)
         ax_f.set_ylim(0, 1.05)
-        ax_f.legend(fontsize=legend_pt, frameon=False, loc="lower left")
+        ax_f.legend(
+            fontsize=legend_pt,
+            frameon=False,
+            loc="lower left",
+            ncol=2,
+            columnspacing=0.8,
+            handletextpad=0.4,
+        )
         ax_f.tick_params(axis="both", labelsize=tick_label_pt)
         ax_f.grid(axis="y", linestyle="--", alpha=0.3)
-
-        # Annotate improvement count
-        n_improved = np.sum(baseline_per_angle > no_trans_per_angle)
-        ax_f.text(0.95, 0.05, f"{n_improved}/{len(angles)} improved",
-                  transform=ax_f.transAxes, ha="right", va="bottom",
-                  fontsize=annotation_pt, style="italic")
         add_panel_label(ax_f, "f", x=-0.15, y=1.06)
     else:
         ax_f_placeholder = fig.add_subplot(gs[1, 2])
@@ -654,7 +742,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     plt.close(fig_c)
 
     # Panel d standalone (confusion matrices)
-    if baseline_cm is not None and no_trans_cm is not None:
+    if dense_cm is not None and no_trans_cm is not None:
         fig_d = make_figure(
             width_mm=FIG05_STANDALONE["d"]["width_mm"],
             height_mm=FIG05_STANDALONE["d"]["height_mm"],
@@ -670,7 +758,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             top=fig_d_grid["top"],
         )
         for ax_idx, (cm, title) in enumerate([
-            (baseline_cm, _titlecase_short_label(cm_solver_short)),
+            (dense_cm, _titlecase_short_label(cm_dense_short)),
             (no_trans_cm, _titlecase_short_label(cm_no_transformer_short)),
         ]):
             ax = fig_d.add_subplot(gs_ds[ax_idx])
@@ -684,9 +772,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
             ax.set_yticks(tick_positions)
             ax.set_yticklabels(tick_labels, fontsize=tick_label_pt)
-            ax.set_xlabel("Predicted", fontsize=axis_label_pt)
+            ax.set_xlabel("Predicted DOA", fontsize=axis_label_pt)
             if ax_idx == 0:
-                ax.set_ylabel("True", fontsize=axis_label_pt)
+                ax.set_ylabel("True DOA", fontsize=axis_label_pt)
         add_panel_label(fig_d.axes[0], "d")
         all_paths.extend(
             save_outputs(
@@ -769,24 +857,39 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         )
         plt.close(fig_e)
 
-    # Panel f standalone (per-angle diagonal concentration)
-    if baseline_per_angle is not None and no_trans_per_angle is not None:
+    # Panel f standalone (per-angle decoder benchmark)
+    if panel_f_summary is not None:
+        f_angles = np.asarray(panel_f_summary["angles"], dtype=float)
+        guided_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["guided_mean"], dtype=float), window=3
+        )
+        router_bypass_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["router_bypass_mean"], dtype=float), window=3
+        )
+        omp_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["omp_mean"], dtype=float), window=3
+        )
+        dense_mean = _centered_moving_average(
+            np.asarray(panel_f_summary["dense_mean"], dtype=float), window=3
+        )
         fig_f = make_figure(
             width_mm=FIG05_STANDALONE["f"]["width_mm"],
             height_mm=FIG05_STANDALONE["f"]["height_mm"],
         )
         ax = fig_f.add_subplot(111)
-        ax.plot(angles, baseline_per_angle, "-o", markersize=3, linewidth=1.0,
-                color=SEMANTIC_PALETTE["learned"], label=diag_solver_short)
-        ax.plot(angles, no_trans_per_angle, "-s", markersize=3, linewidth=1.0,
-                color=SEMANTIC_PALETTE["ablation"], label=diag_no_transformer_short)
-        ax.fill_between(angles, baseline_per_angle, no_trans_per_angle,
-                        alpha=0.12, color=SEMANTIC_PALETTE["learned"])
+        ax.plot(f_angles, guided_mean, "-", linewidth=1.2,
+                color=SEMANTIC_PALETTE["learned"], label=diag_solver_short, zorder=4)
+        ax.plot(f_angles, router_bypass_mean, "-", linewidth=1.1,
+                color=SEMANTIC_PALETTE["ablation"], label=diag_no_transformer_short, zorder=3)
+        ax.plot(f_angles, omp_mean, "-", linewidth=1.1,
+                color=SEMANTIC_PALETTE["classical"], label=diag_omp_short, zorder=2)
+        ax.plot(f_angles, dense_mean, ":", linewidth=1.1,
+                color=DENSE_COLOR, label=diag_dense_short, zorder=1)
         ax.set_xlabel("Angle (\u00b0)")
-        ax.set_ylabel("P(correct)")
-        ax.set_title("Per-angle routing gain", fontsize=title_pt, fontweight="bold")
+        ax.set_ylabel("Mean P(correct)")
+        ax.set_title("Per-angle decoder accuracy", fontsize=title_pt, fontweight="bold")
         ax.set_ylim(0, 1.05)
-        ax.legend(fontsize=legend_pt, frameon=False)
+        ax.legend(fontsize=legend_pt, frameon=False, loc="lower left", ncol=2, columnspacing=0.8, handletextpad=0.4)
         ax.tick_params(axis="both", labelsize=tick_label_pt)
         ax.grid(axis="y", linestyle="--", alpha=0.3)
         add_panel_label(ax, "f")
@@ -809,7 +912,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "SNR sweep",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_a_snr_sweep.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Three-curve SNR degradation ({snr_solver_full} vs {snr_no_transformer_full} vs {snr_omp_full}).",
+                "description": f"Four-curve SNR degradation ({snr_solver_full} vs {snr_no_transformer_full} vs {snr_omp_full} vs {snr_dense_full}).",
             },
             {
                 "panel_id": "b",
@@ -827,24 +930,24 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Routing ablation confusion",
+                "title": "Dense-vs-bypass confusion",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_d_confusion.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Matched-ablation confusion matrices comparing {cm_solver_full} against {cm_no_transformer_full}.",
+                "description": f"Row-normalized confusion matrices comparing {cm_dense_full} against {cm_no_transformer_full}.",
             },
             {
                 "panel_id": "e",
                 "title": "Representative-angle conditional outputs",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_routing.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Matched-ablation conditional output distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
+                "description": f"Representative conditional output distributions at 55 and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
             },
             {
                 "panel_id": "f",
-                "title": "Per-angle routing gain",
+                "title": "Per-angle decoder accuracy",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_f_diagonal.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Per-angle P(correct) comparison summarizing the routing gain of the full solver over the router-bypass ablation.",
+                "description": f"Five-seed clean mean P(correct) comparison across {diag_solver_full}, {diag_no_transformer_full}, {diag_omp_full}, and {diag_dense_full}, shown as a 3-angle centered moving-average display.",
             },
         ],
         typography=typography,

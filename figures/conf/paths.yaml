@@ -8,6 +8,10 @@ primary_run: results/omp_transformer_speech260_trainval_split_full_20251115_0823
 # H matrix for SVD / modal decomposition (Fig 2)
 h_matrix: h_matrix_normalized_original_to_box.pth
 
+# Fig 6 cross-material screening bundles
+fig06_cross_material_h_run: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841
+fig06_cross_material_selection_run: ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916
+
 # Ablation sweep data (Fig 4)
 ablation_sweep:
   results_dir: results
@@ -19,6 +23,10 @@ confusion_matrix:
   omp_baseline: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
   baseline: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
   no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
+  dense_routing: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
+
+# Aggregated clean 5-seed per-angle summary used by Fig. 5f
+fig05_panel_f_summary: results/fig05_panel_f_clean_seed_means/summary.npz
 
 # White noise dataset (Fig 3 WN vs Speech comparison)
 white_noise_dataset: /Users/sbplab/LDV-data-experiments/snr-synthetic-2025-12/processed-48k/white_noise_box_snrInf_sync_vad_normalized

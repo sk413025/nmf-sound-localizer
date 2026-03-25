@@ -50,6 +50,10 @@ decisions, not to replace manuscript prose.
     - code-state git head: `3785b1f`
   - `results/fig05_panel_c_g_routing_seed42_clean/metrics.npz`
     - external sweep lineage: `14feb94` (`ablate_speech260_g_routing_snrInf_seed42_ep20_lr1e-3_babble_speech260_full_20260209_011327`)
+  - `results/fig05_dense_routing_repro34403c7_clean/metrics.npz`
+    - external sweep lineage: `34403c7` (`snrInf_dense_routing_repro34403c7_20260119_080918`)
+  - `results/fig05_panel_f_clean_seed_means/summary.npz`
+    - derived from the clean 5-seed sweep families behind `results/figure4_data.json`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz`
     - code-state git head: `3785b1f`
   - `results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz`
@@ -58,10 +62,12 @@ decisions, not to replace manuscript prose.
   - `88a8940` confusion/ablation analysis family
   - `15b2981` modal visualization family
 - Panel notes:
-  - `a`: binds artifact keys `Baseline`, `No Transformer`, `Fixed Heuristic`
+  - `a`: binds artifact keys `Baseline`, `No Transformer`, `Fixed Heuristic`, `Dense Routing`
   - `b`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
   - `c`: compares the clean seed42 `g_routing` confusion matrix against the guided-solver confusion matrix as the classical-reference context panel
-  - `d/e/f`: form a matched ablation block comparing the full solver metrics run against the router-bypass ablation run
+  - `d`: compares the representative clean dense-routing confusion matrix against the router-bypass ablation confusion matrix
+  - `e`: retains the guided-vs-router-bypass conditional-output profiles as the local routing-sharpening exemplar
+  - `f`: compares five-seed clean mean per-angle accuracy across the full solver, router-bypass, OMP baseline, and dense routing
 
 ## Fig. 6
 
@@ -70,13 +76,12 @@ decisions, not to replace manuscript prose.
   - `6c9b8fe` `figures: enrich generators to 32 panels across 6 figures`
   - `64d832c` `figures: fix visual quality across all generators`
 - Upstream artifacts:
-  - `h_matrix_normalized_original_to_box.pth`
-  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz`
-    - code-state git head: `3785b1f`
-  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
-    - code-state git head: `3785b1f`
+  - `../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/reproduction_report.json`
+  - `../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_{a,p,w,b,m}.pth`
+  - `../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json`
+  - `../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json`
 - Panel notes:
-  - `a/b`: top cross-material support assets remain a partial provenance gap
-  - `c`: committed split-panel support asset without a tracked generator; the legend text is normalized directly at the PNG layer using the Fig. 6 crosswalk bindings (`OMP baseline` / `guided solver`)
-  - `d`: SVD spectra panel has no model-comparison labels
-  - `e`: compares derived OMP-like bandwise routing against the full solver's learned routing
+  - `a`: retained manual support exemplar strip cropped from the committed legacy support image
+  - `b`: plots the five `Original -> Material` H matrices as a shared-normalization strip
+  - `c`: ranks materials by downstream screening metrics from the committed selection bundle
+  - `d`: compares H-level mean coherence against task-level top-1 accuracy to show that the strongest physical proxy is not automatically the best downstream object
