@@ -2,8 +2,8 @@
 
 Double-column width (183 mm), 6 panels in a 2×3 grid:
   Row 1: (a) SVD singular-value spectrum + cumulative energy
-         (b) Mode 1-3 frequency profiles (overlaid)
-         (c) Mode 1-3 half-plane polar patterns (overlaid)
+         (b) Representative mode frequency profiles (overlaid)
+         (c) Representative mode half-plane polar patterns (overlaid)
   Row 2: (d) Full dictionary H heatmap (angle x freq)
          (e) All-angle reconstruction fidelity under rank-r truncation
          (f) Inter-angle correlation matrix of H
@@ -188,15 +188,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     full_stop = len(S)
     panel_a_stop = min(full_stop, 10)
 
-    n_modes = 3
+    selected_mode_indices = [0, 1, 5]
+    n_modes = len(selected_mode_indices)
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-    mode_labels = ["Mode 1", "Mode 2", "Mode 3"]
+    mode_labels = ["Mode 1", "Mode 2", "Mode 6"]
 
     # Process modes
     modes_data = []
-    for r in range(n_modes):
-        u_smooth, freqs_smooth = _process_frequency_mode(U[:, r], freqs, smooth=True, n_interp=len(freqs) * 2)
-        v_norm, angles_smooth = _process_angular_mode(V[:, r], angles_deg)
+    for mode_idx in selected_mode_indices:
+        u_smooth, freqs_smooth = _process_frequency_mode(
+            U[:, mode_idx], freqs, smooth=True, n_interp=len(freqs) * 2
+        )
+        v_norm, angles_smooth = _process_angular_mode(V[:, mode_idx], angles_deg)
         modes_data.append((u_smooth, freqs_smooth, v_norm, angles_smooth))
 
     # -----------------------------------------------------------------------
@@ -486,17 +489,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "b",
-                "title": "Overlaid frequency profiles (modes 1-3)",
+                "title": "Overlaid frequency profiles (Modes 1, 2, 6)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Frequency-selective spectra |u_r(f)| for modes 1-3 overlaid.",
+                "description": "Frequency-selective spectra |u_r(f)| for representative Modes 1, 2, and 6 overlaid.",
             },
             {
                 "panel_id": "c",
-                "title": "Overlaid polar patterns (modes 1-3)",
+                "title": "Overlaid polar patterns (Modes 1, 2, 6)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Direction-selective half-plane polar patterns v_r(theta) for modes 1-3 overlaid across 0-180 degrees.",
+                "description": "Direction-selective half-plane polar patterns v_r(theta) for representative Modes 1, 2, and 6 overlaid across 0-180 degrees.",
             },
             {
                 "panel_id": "d",
