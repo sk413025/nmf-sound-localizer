@@ -143,58 +143,62 @@ def _load_category_b() -> dict[str, dict]:
     cat = "B_data_dimensions"
     entries: dict[str, dict] = {}
 
-    # --- H matrix metadata ---
-    h_src = str(H_MATRIX_PATH.relative_to(REPO_ROOT))
-    h_data = _load_torch(H_MATRIX_PATH)
-    if h_data is not None:
-        H_tensor = h_data.get("H")
-        f_bins = int(H_tensor.shape[0]) if H_tensor is not None else 346
-        entries["TBD_F_BINS"] = _entry(f_bins, h_src, cat)
-    else:
-        entries["TBD_F_BINS"] = _entry(346, f"{h_src} (fallback)", cat)
-
     # --- Dictionary angles ---
     dict_src = f"{PRIMARY_RUN.relative_to(REPO_ROOT)}/dictionary.npz"
     dict_data = _load_npz(PRIMARY_RUN / "dictionary.npz")
+    dict_H = None
     if dict_data is not None:
         angles = dict_data.get("angles")
         n_angles = int(len(angles)) if angles is not None else 37
+        dict_H = dict_data.get("H")
         entries["TBD_N_ANGLES"] = _entry(n_angles, dict_src, cat)
     else:
         entries["TBD_N_ANGLES"] = _entry(37, f"{dict_src} (fallback)", cat)
 
-    # --- SVD rank analysis (compute from H matrix) ---
-    svd_src = f"{h_src} → SVD of preprocessing H"
+    # --- H matrix metadata ---
+    h_src = str(H_MATRIX_PATH.relative_to(REPO_ROOT))
+    h_data = _load_torch(H_MATRIX_PATH)
+    if dict_H is not None:
+        entries["TBD_F_BINS"] = _entry(int(dict_H.shape[0]), dict_src, cat)
+    elif h_data is not None:
+        H_tensor = h_data.get("H")
+        f_bins = int(H_tensor.shape[0]) if H_tensor is not None else 346
+        entries["TBD_F_BINS"] = _entry(f_bins, h_src, cat)
+    else:
+        entries["TBD_F_BINS"] = _entry(346, f"{dict_src} (fallback)", cat)
+
+    # --- SVD rank analysis (compute from canonical Fig. 2 basis) ---
+    svd_src = f"{dict_src} → centered-|H| SVD used by Fig. 2 panel a"
     try:
-        import torch
+        import numpy as np
 
         prep = _load_torch(PRIMARY_RUN / "preprocessing.pth")
-        if prep is not None:
-            H_prep = prep.get("H")
+        if dict_H is not None:
+            H_basis = np.asarray(dict_H)
+        elif prep is not None:
+            H_basis = prep.get("H")
         elif h_data is not None:
-            H_prep = h_data.get("H")
+            H_basis = h_data.get("H")
         else:
-            H_prep = None
+            H_basis = None
 
-        if H_prep is not None:
-            # Centering (same as pipeline: |H| + centering = Method 4)
-            H_abs = H_prep.abs() if hasattr(H_prep, "abs") else torch.tensor(H_prep).abs()
-            H_centered = H_abs - H_abs.mean(dim=1, keepdim=True)
-            U, S, _ = torch.linalg.svd(H_centered, full_matrices=False)
-            energy = (S ** 2).cumsum(0) / (S ** 2).sum()
-            # Find rank for 90% energy
-            r90 = int((energy >= 0.90).nonzero(as_tuple=True)[0][0].item()) + 1
-            pct90 = float(energy[r90 - 1].item()) * 100
-            entries["TBD_SVD_R"] = _entry(r90, svd_src, cat)
+        if H_basis is not None:
+            H_abs = np.abs(H_basis)
+            H_centered = H_abs - H_abs.mean(axis=1, keepdims=True)
+            S = np.linalg.svd(H_centered, compute_uv=False, full_matrices=False)
+            energy = np.cumsum(S ** 2) / np.sum(S ** 2)
+            r80 = int(np.argmax(energy >= 0.80) + 1)
+            pct80 = float(energy[r80 - 1]) * 100.0
+            entries["TBD_SVD_R"] = _entry(r80, svd_src, cat)
             entries["TBD_SVD_ENERGY_PCT"] = _entry(
-                round(pct90, 1), svd_src, cat
+                round(pct80, 1), svd_src, cat
             )
         else:
             raise RuntimeError("No H tensor available")
     except Exception as exc:
         print(f"  [warn] SVD computation failed ({exc}); using fallback", file=sys.stderr)
-        entries["TBD_SVD_R"] = _entry(11, f"{svd_src} (fallback)", cat)
-        entries["TBD_SVD_ENERGY_PCT"] = _entry(90.1, f"{svd_src} (fallback)", cat)
+        entries["TBD_SVD_R"] = _entry(6, f"{svd_src} (fallback)", cat)
+        entries["TBD_SVD_ENERGY_PCT"] = _entry(80.3, f"{svd_src} (fallback)", cat)
 
     return entries
 

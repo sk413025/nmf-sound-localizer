@@ -16,7 +16,7 @@ e, Frequency-dependent directivity: polar plot of normalized |H(θ, f)| across 0
 ## Fig. 2 (6 panels)
 
 **Fig. 2 | Physical encoding via spectral–spatial modes and construction of a structured dictionary.**
-a, Singular-value spectrum showing a concentrated but not ultra-low-rank modal structure across the full 37-angle grid; cumulative energy and DOA capacity curves quantify how rapidly the centered-magnitude dictionary energy accumulates with rank.
+a, Singular-value spectrum across the full 37-mode basis. Cumulative fraction is shown on the left axis and singular values on the right, emphasizing the early saturation of the centered-magnitude dictionary across the calibrated angle manifold. The first six modes capture 80.3% of the cumulative energy. Extending to eight modes raises the cumulative fraction to 85.1%, and the cumulative DOA-capacity curve closely tracks the same rise.
 b, Frequency-selective spectra \(|u_r(f)|\) for modes 1–3 (overlaid), showing distinct spectral peaks for each dominant channel.
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) across 0°–180° for modes 1–3 (overlaid), forming virtual directional sensing channels.
 d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.

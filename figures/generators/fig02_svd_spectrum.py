@@ -3,7 +3,7 @@
 Double-column width (183 mm), 6 panels in a 2×3 grid:
   Row 1: (a) SVD singular-value spectrum + cumulative energy
          (b) Mode 1-3 frequency profiles (overlaid)
-         (c) Mode 1-3 polar patterns (overlaid)
+         (c) Mode 1-3 half-plane polar patterns (overlaid)
   Row 2: (d) Full dictionary H heatmap (angle x freq)
          (e) All-angle reconstruction fidelity under rank-r truncation
          (f) Inter-angle correlation matrix of H
@@ -27,7 +27,6 @@ from figures.style import (
     add_panel_label,
     load_paths,
     DOUBLE_COL_MM,
-    SEMANTIC_PALETTE,
 )
 
 
@@ -35,11 +34,9 @@ from figures.style import (
 # Data helpers
 # ---------------------------------------------------------------------------
 
-def _load_h_matrix(h_path: Path) -> tuple[np.ndarray, np.ndarray]:
-    import torch
-
-    h_data = torch.load(str(h_path), map_location="cpu", weights_only=False)
-    return h_data["H"].cpu().numpy(), np.array(h_data["angles"], dtype=float)
+def _load_dictionary_h(dict_path: Path) -> tuple[np.ndarray, np.ndarray]:
+    dict_data = np.load(dict_path, allow_pickle=True)
+    return np.asarray(dict_data["H"], dtype=float), np.asarray(dict_data["angles"], dtype=float)
 
 
 def _build_freq_axis(F: int, fs: float = 16000.0, n_fft: float = 2048.0, f_min: float = 300.0) -> np.ndarray:
@@ -73,32 +70,24 @@ def _process_frequency_mode(
 
 
 
-def _process_angular_mode(v_half: np.ndarray, angles_half: np.ndarray, n_interp: int = 360) -> tuple[np.ndarray, np.ndarray]:
-    """Mirror 0–180° to 0–360°, interpolate and smooth for polar plot."""
-    angles_mirror = 360.0 - angles_half
-    angles_combined = np.concatenate([angles_half, angles_mirror])
-    v_combined = np.concatenate([v_half, v_half])
-
-    sort_idx = np.argsort(angles_combined)
-    angles_sorted = angles_combined[sort_idx]
-    v_sorted = v_combined[sort_idx]
-
-    angles_ext = np.concatenate([angles_sorted - 360, angles_sorted, angles_sorted + 360])
-    v_ext = np.concatenate([v_sorted, v_sorted, v_sorted])
-    cs = CubicSpline(angles_ext, v_ext)
-
-    angles_smooth = np.linspace(0, 360, n_interp + 1, endpoint=True)
-    v_dense = cs(angles_smooth)
-
-    window_length = 31
-    if window_length > len(v_dense):
-        window_length = len(v_dense) // 2 * 2 + 1
-    v_smooth = savgol_filter(v_dense, window_length=window_length, polyorder=3, mode="wrap")
-
-    v_abs = np.abs(v_smooth)
+def _process_angular_mode(
+    v_half: np.ndarray, angles_half: np.ndarray, n_interp: int = 181
+) -> tuple[np.ndarray, np.ndarray]:
+    """Interpolate a smooth 0–180° display curve for one angular mode."""
+    v_abs = np.abs(v_half)
     v_max = np.max(v_abs)
     v_norm = v_abs / v_max if v_max > 1e-10 else v_abs
-    return v_norm, angles_smooth
+
+    if len(angles_half) < 2:
+        return v_norm, angles_half
+
+    spline = PchipInterpolator(angles_half, v_norm)
+    angles_smooth = np.linspace(float(angles_half[0]), float(angles_half[-1]), n_interp)
+    v_smooth = np.clip(spline(angles_smooth), 0, None)
+    v_smooth_max = np.max(v_smooth)
+    if v_smooth_max > 1e-10:
+        v_smooth = v_smooth / v_smooth_max
+    return v_smooth, angles_smooth
 
 
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
@@ -117,15 +106,15 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
 
 
 def _reconstruction_rmse_by_angle(
-    h_log_centered: np.ndarray,
+    h_centered: np.ndarray,
     u: np.ndarray,
     s: np.ndarray,
     vt: np.ndarray,
     rank: int,
 ) -> np.ndarray:
-    """Return per-angle RMSE after rank-r reconstruction in the centered log domain."""
+    """Return per-angle RMSE after rank-r reconstruction in the centered-magnitude domain."""
     reconstructed = u[:, :rank] @ np.diag(s[:rank]) @ vt[:rank, :]
-    return np.sqrt(np.mean((h_log_centered - reconstructed) ** 2, axis=0))
+    return np.sqrt(np.mean((h_centered - reconstructed) ** 2, axis=0))
 
 
 def _smooth_angle_series(
@@ -168,28 +157,36 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     set_nature_rcparams(base_fontsize=7)
 
     paths_cfg = load_paths()
-    h_path = data_root / paths_cfg["h_matrix"]
+    run_dir = data_root / paths_cfg["primary_run"]
+    dict_path = run_dir / "dictionary.npz"
 
-    if not h_path.exists():
-        print(f"[fig02] SKIP: H matrix not found at {h_path}")
+    if not dict_path.exists():
+        print(f"[fig02] SKIP: dictionary.npz not found at {dict_path}")
         return []
 
-    H_np, angles_deg = _load_h_matrix(h_path)
+    H_np, angles_deg = _load_dictionary_h(dict_path)
     F, _E = H_np.shape
     freqs = _build_freq_axis(F)
 
-    eps = 1e-8
-    H_log = np.log(np.clip(np.abs(H_np), eps, None))
-    H_log_centered = H_log - H_log.mean(axis=1, keepdims=True)
+    H_mag = np.abs(H_np)
+    H_centered = H_mag - H_mag.mean(axis=1, keepdims=True)
 
-    U, S, Vt = np.linalg.svd(H_log_centered, full_matrices=False)
+    U, S, Vt = np.linalg.svd(H_centered, full_matrices=False)
     V = Vt.T
 
     sigma_sq = S**2
     energy_r = sigma_sq / (sigma_sq.sum() + 1e-12)
+    cum_energy_r = np.cumsum(energy_r)
+    r90 = int(np.argmax(np.cumsum(energy_r) >= 0.9) + 1)
     var_v_r = V.var(axis=0)
     doa_cap_r = energy_r * var_v_r
     doa_cap_r_norm = doa_cap_r / (doa_cap_r.sum() + 1e-12)
+    cum_doa_cap_r = np.cumsum(doa_cap_r_norm)
+    r80 = int(np.argmax(cum_energy_r >= 0.80) + 1)
+    r85 = int(np.argmax(cum_energy_r >= 0.85) + 1)
+
+    full_stop = len(S)
+    panel_a_stop = min(full_stop, 10)
 
     n_modes = 3
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
@@ -214,19 +211,95 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         left=0.07, right=0.96, bottom=0.07, top=0.95,
     )
 
-    # --- Panel (a): Singular values ---
+    # --- Panel (a): Cumulative fraction + singular values ---
     ax_sv = fig.add_subplot(gs[0, 0])
-    r_idx = np.arange(1, len(S) + 1)
-    line1, = ax_sv.semilogy(r_idx, S, marker="o", markersize=2, label=r"$\sigma_r$", color="C0", linewidth=0.9)
-    ax_sv.set_xlabel("Mode index r")
-    ax_sv.set_ylabel(r"Singular value $\sigma_r$")
+    r_idx = np.arange(1, full_stop + 1)
+    ax_sv.axvspan(1, 10, color="0.97", alpha=0.9, zorder=0)
+    line2, = ax_sv.plot(
+        r_idx,
+        cum_energy_r[:full_stop],
+        color="g",
+        marker="s",
+        markersize=1.9,
+        label="Cum Energy",
+        linewidth=1.1,
+        zorder=2,
+    )
+    line3, = ax_sv.plot(
+        r_idx,
+        cum_doa_cap_r[:full_stop],
+        color="#d62728",
+        marker="^",
+        markersize=2.2,
+        markerfacecolor="white",
+        markeredgewidth=0.7,
+        linestyle="--",
+        dashes=(3.0, 1.4),
+        label="Cum DoA",
+        linewidth=0.9,
+    )
+    ax_sv.set_xlim(0.7, full_stop + 0.3)
+    ax_sv.set_xticks([1, 6, 12, 18, 24, 30, 37])
+    ax_sv.set_xlabel("Mode index r", fontsize=6)
+    ax_sv.set_ylabel("Cum. fraction", fontsize=6, labelpad=1)
+    ax_sv.set_ylim(0.25, 1.01)
+    ax_sv.set_yticks([0.25, 0.50, 0.75, 0.90, 1.00])
+    ax_sv.tick_params(axis="both", labelsize=5.5, pad=1)
+    ax_sv.grid(True, axis="y", alpha=0.20, linewidth=0.5)
 
     ax_sv2 = ax_sv.twinx()
-    line2, = ax_sv2.plot(r_idx, np.cumsum(energy_r), "g-", marker="s", markersize=2, label="Cum Energy", linewidth=0.9)
-    line3, = ax_sv2.plot(r_idx, np.cumsum(doa_cap_r_norm), "r-", marker="^", markersize=2, label="Cum DOA Cap", linewidth=0.9)
-    ax_sv2.set_ylabel("Cumulative fraction")
-    lines = [line1, line2, line3]
-    ax_sv.legend(lines, [l.get_label() for l in lines], loc="center right", fontsize=6, frameon=False)
+    ax_sv2.vlines(r_idx, 0.0, S[:full_stop], color="C0", alpha=0.20, linewidth=0.9, zorder=1)
+    line1, = ax_sv2.plot(
+        r_idx,
+        S[:full_stop],
+        marker="o",
+        markersize=2.0,
+        label=r"$\sigma_r$",
+        color="C0",
+        linewidth=1.0,
+        zorder=2,
+    )
+    ax_sv2.set_ylabel(r"Singular value $\sigma_r$", fontsize=6, labelpad=1)
+    ax_sv2.set_ylim(0.0, 0.76)
+    ax_sv2.set_yticks([0.0, 0.2, 0.4, 0.6])
+    ax_sv2.tick_params(axis="y", labelsize=5.5, pad=1)
+
+    for rank, text_xy in [
+        (r80, (21.0, 0.855)),
+        (r85, (21.0, 0.905)),
+    ]:
+        value = float(cum_energy_r[rank - 1])
+        ax_sv.axvline(rank, color="0.55", linestyle=":", linewidth=0.6, zorder=1)
+        ax_sv.scatter(rank, value, s=12, color="#2f2f2f", zorder=4)
+        ax_sv.annotate(
+            f"r={rank}, {value * 100:.1f}%",
+            xy=(rank, value),
+            xytext=text_xy,
+            textcoords="data",
+            fontsize=4.8,
+            color="#2f2f2f",
+            arrowprops={"arrowstyle": "-", "lw": 0.6, "color": "0.35"},
+            va="bottom",
+            ha="left",
+        )
+
+    lines = [line2, line3, line1]
+    ax_sv.legend(
+        lines,
+        [l.get_label() for l in lines],
+        loc="center",
+        bbox_to_anchor=(0.73, 0.50),
+        ncol=1,
+        fontsize=4.9,
+        frameon=True,
+        framealpha=0.92,
+        edgecolor="0.85",
+        facecolor="white",
+        handlelength=1.4,
+        columnspacing=0.8,
+        handletextpad=0.5,
+    )
+
     add_panel_label(ax_sv, "a", x=-0.15)
 
     # --- Panel (b): Overlaid frequency profiles ---
@@ -245,25 +318,28 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b.legend(fontsize=5.5, frameon=False, loc="upper right")
     add_panel_label(ax_b, "b", x=-0.15)
 
-    # --- Panel (c): Overlaid polar patterns (0–360°, mirrored) ---
+    # --- Panel (c): Overlaid polar patterns (0–180° half-plane) ---
     ax_c = fig.add_subplot(gs[0, 2], projection="polar")
     for r in range(n_modes):
         _, _, v_norm, angles_smooth = modes_data[r]
         angles_rad = np.deg2rad(angles_smooth)
         ax_c.plot(angles_rad, v_norm, color=colors[r], linewidth=0.9, label=mode_labels[r])
-        ax_c.fill(angles_rad, v_norm, color=colors[r], alpha=0.2)
+        ax_c.fill_between(angles_rad, 0, v_norm, color=colors[r], alpha=0.18)
     ax_c.grid(True, alpha=0.3, linewidth=0.5)
+    ax_c.set_theta_zero_location("N")
+    ax_c.set_theta_direction(-1)
+    ax_c.set_thetalim(0, np.pi)
     ax_c.set_yticklabels([])
-    ax_c.set_xticks(np.deg2rad([0, 90, 180, 270]))
-    ax_c.set_xticklabels(["0\u00b0", "90\u00b0", "180\u00b0", "270\u00b0"], fontsize=6)
-    ax_c.tick_params(pad=-2)
-    ax_c.legend(fontsize=5.5, frameon=False, loc="upper right", bbox_to_anchor=(1.25, 1.15))
+    ax_c.set_xticks(np.deg2rad([0, 45, 90, 135, 180]))
+    ax_c.set_xticklabels(["0\u00b0", "45\u00b0", "90\u00b0", "135\u00b0", "180\u00b0"], fontsize=6)
+    ax_c.tick_params(pad=1)
+    ax_c.legend(fontsize=5.5, frameon=False, loc="upper left", bbox_to_anchor=(-0.20, 1.10))
     add_panel_label(ax_c, "c", x=-0.15)
 
     # --- Panel (d): Full dictionary H heatmap ---
     ax_d = fig.add_subplot(gs[1, 0])
     im_d = ax_d.imshow(
-        np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
+        H_mag.T, aspect="auto", origin="lower", cmap="viridis",
         extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
     )
     ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
@@ -278,17 +354,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     rank_styles = [
         (3, "o", "#1f77b4"),
         (5, "s", "#ff7f0e"),
-        (10, "^", "#2ca02c"),
+        (r90, "^", "#2ca02c"),
     ]
     for rank, marker, color in rank_styles:
-        rmse_by_angle = _reconstruction_rmse_by_angle(H_log_centered, U, S, Vt, rank)
+        rmse_by_angle = _reconstruction_rmse_by_angle(H_centered, U, S, Vt, rank)
         rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
         ax_e.plot(
             angles_interp,
             rmse_interp,
             linewidth=1.0,
             color=color,
-            label=f"r={rank} (mean={rmse_by_angle.mean():.2f})",
+            label=f"r={rank} (mean={rmse_by_angle.mean():.3f})",
         )
         ax_e.plot(
             angles_deg,
@@ -301,22 +377,22 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_e.set_ylabel("RMSE", fontsize=6, labelpad=1)
     ax_e.set_title("All-angle reconstruction fidelity", fontsize=6.5)
-    ax_e.set_xticks([angles_deg[0], 60, 90, 120, angles_deg[-1]])
+    ax_e.set_xticks([0, 45, 90, 135, 180])
     ax_e.legend(fontsize=5, frameon=False, loc="upper right")
     ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
     add_panel_label(ax_e, "e", x=-0.15)
 
     # --- Panel (f): Inter-angle fingerprint similarity ---
     ax_f = fig.add_subplot(gs[1, 2])
-    H_corr = np.corrcoef(np.abs(H_np).T)  # E x E correlation
+    H_corr = np.corrcoef(H_np.T)  # E x E correlation, matching Fig. 5 structure analysis
     # Positive-only similarity matrix: use a sequential colormap rather than a zero-centered diverging map.
-    im_f = ax_f.imshow(H_corr, cmap="viridis", aspect="auto",
+    im_f = ax_f.imshow(H_corr, cmap="viridis", aspect="equal",
                         vmin=float(H_corr.min()), vmax=1.0)
-    tick_pos = [0, 9, 18, 27, 36]
-    tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos if i < len(angles_deg)]
-    ax_f.set_xticks(tick_pos[:len(tick_lab)])
+    tick_pos = np.linspace(0, len(angles_deg) - 1, 5, dtype=int).tolist()
+    tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos]
+    ax_f.set_xticks(tick_pos)
     ax_f.set_xticklabels(tick_lab, fontsize=5)
-    ax_f.set_yticks(tick_pos[:len(tick_lab)])
+    ax_f.set_yticks(tick_pos)
     ax_f.set_yticklabels(tick_lab, fontsize=5)
     ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_f.set_ylabel("Angle (\u00b0)", fontsize=6)
@@ -339,7 +415,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     fig_d_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_d_s.add_subplot(111)
     im = ax.imshow(
-        np.abs(H_np).T, aspect="auto", origin="lower", cmap="viridis",
+        H_mag.T, aspect="auto", origin="lower", cmap="viridis",
         extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
     )
     ax.set_xlabel("Frequency (kHz)")
@@ -354,14 +430,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     fig_e_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_e_s.add_subplot(111)
     for rank, marker, color in rank_styles:
-        rmse_by_angle = _reconstruction_rmse_by_angle(H_log_centered, U, S, Vt, rank)
+        rmse_by_angle = _reconstruction_rmse_by_angle(H_centered, U, S, Vt, rank)
         rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
         ax.plot(
             angles_interp,
             rmse_interp,
             linewidth=1.0,
             color=color,
-            label=f"r={rank} (mean={rmse_by_angle.mean():.2f})",
+            label=f"r={rank} (mean={rmse_by_angle.mean():.3f})",
         )
         ax.plot(
             angles_deg,
@@ -373,7 +449,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         )
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("RMSE")
-    ax.set_xticks([angles_deg[0], 60, 90, 120, angles_deg[-1]])
+    ax.set_xticks([0, 45, 90, 135, 180])
     ax.legend(fontsize=5, frameon=False)
     add_panel_label(ax, "e")
     fig_e_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
@@ -385,9 +461,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax = fig_f_s.add_subplot(111)
     im = ax.imshow(H_corr, cmap="viridis", aspect="equal",
                    vmin=float(H_corr.min()), vmax=1.0)
-    ax.set_xticks(tick_pos[:len(tick_lab)])
+    ax.set_xticks(tick_pos)
     ax.set_xticklabels(tick_lab, fontsize=6)
-    ax.set_yticks(tick_pos[:len(tick_lab)])
+    ax.set_yticks(tick_pos)
     ax.set_yticklabels(tick_lab, fontsize=6)
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
@@ -406,7 +482,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Singular-value spectrum",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "SVD spectrum with cumulative energy and DOA capacity.",
+                "description": "Full 37-mode SVD spectrum with cumulative fraction on the left axis and singular values on the right, highlighting early saturation at r=6 (80.3%) and r=8 (85.1%).",
             },
             {
                 "panel_id": "b",
@@ -420,7 +496,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Overlaid polar patterns (modes 1-3)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Direction-selective polar patterns v_r(theta) for modes 1-3 overlaid.",
+                "description": "Direction-selective half-plane polar patterns v_r(theta) for modes 1-3 overlaid across 0-180 degrees.",
             },
             {
                 "panel_id": "d",
@@ -434,7 +510,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "All-angle reconstruction fidelity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_reconstruction.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Per-angle fingerprint RMSE under rank-3, rank-5, and rank-10 truncation across all 37 angles.",
+                "description": f"Per-angle centered-magnitude RMSE under rank-3, rank-5, and rank-{r90} truncation across all 37 angles.",
             },
             {
                 "panel_id": "f",
@@ -447,5 +523,5 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     all_paths.append(manifest)
 
-    print(f"[fig02] Generated {len(all_paths)} files")
+    print(f"[fig02] Generated {len(all_paths)} files (H={H_np.shape}, angles={len(angles_deg)}, r90={r90})")
     return all_paths

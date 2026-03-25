@@ -50,19 +50,19 @@ TBD_WEIGHT_DECAY:
 # --- B_data_dimensions ---
 TBD_F_BINS:
   value: 346
-  source: h_matrix_normalized_original_to_box.pth
+  source: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
 
 TBD_N_ANGLES:
   value: 37
   source: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
 
 TBD_SVD_ENERGY_PCT:
-  value: 90.2
-  source: h_matrix_normalized_original_to_box.pth → SVD of preprocessing H
+  value: 80.3
+  source: "results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz → centered-|H| SVD used by Fig. 2 panel a"
 
 TBD_SVD_R:
-  value: 11
-  source: h_matrix_normalized_original_to_box.pth → SVD of preprocessing H
+  value: 6
+  source: "results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz → centered-|H| SVD used by Fig. 2 panel a"
 
 # --- C_signal_processing ---
 TBD_EPS:

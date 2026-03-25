@@ -89,9 +89,10 @@ fig02_svd:
   branch: feature/omp-transformer-modal-viz
   branch_tip_commit: "15b2981"
   data_artifacts:
-    - path: h_matrix_normalized_original_to_box.pth
-      type: pth
-      description: "Normalized H matrix used for SVD and dictionary construction."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+      type: npz
+      keys: [D, H, W_reduced, W_full, angles, idx2angle, atom_labels]
+      description: "Primary 37-angle dictionary used for Fig. 2 SVD, reconstruction, and fingerprint-similarity analysis; matches the active Fig. 5 physical-structure source."
 
 fig03_discriminability:
   figure_id: fig03
