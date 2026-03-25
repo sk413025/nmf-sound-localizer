@@ -1,17 +1,19 @@
 roles:
   full_solver:
-    canonical_term: physics-guided neural solver
-    display_full: full physics-aware solver
+    canonical_term: guided solver
+    display_full: guided solver
     display_short: guided solver
     legacy_display_variants:
+      - No Type Bias
       - Physics-aware AI
       - Baseline
-      - solver
-    notes: Use for the full learned method when contrasted with ablations or classical references; the shared in-panel compact label is `guided solver`.
+      - physics-aware solver
+      - full physics-aware solver
+    notes: Active Fig. 4-5 guided-solver family. Representative panels already use `no_type_bias=true` runs; sweep-backed panels use the `No Type Bias` artifact key while keeping the paper-facing label `guided solver`.
 
   no_transformer_ablation:
     canonical_term: router-bypass ablation
-    display_full: router-bypass ablation
+    display_full: router-bypass
     display_short: router-bypass
     legacy_display_variants:
       - No transformer
@@ -20,13 +22,16 @@ roles:
     notes: Use for the ablation that removes transformer routing while keeping the experiment-facing `No Transformer` artifact key unchanged.
 
   analytical_omp_baseline:
-    canonical_term: analytical OMP baseline
-    display_full: analytical OMP baseline
+    canonical_term: OMP baseline
+    display_full: OMP baseline
     display_short: OMP baseline
     legacy_display_variants:
       - OMP
       - OMP baseline
-    notes: Use only where the panel intentionally presents the classical OMP reference; prefer `OMP baseline` over bare `OMP` on active Fig. 4-6 surfaces.
+      - Fixed Heuristic
+      - G-Fixed
+      - G-Teacher
+    notes: Active Fig. 4-5 soft-OMP family. The upstream artifact keys `Fixed Heuristic`, `G-Fixed`, and `G-Teacher` collapse to the same paper-facing `OMP baseline` label.
 
   no_type_bias_ablation:
     canonical_term: type-bias component
@@ -34,7 +39,7 @@ roles:
     display_short: no type bias
     legacy_display_variants:
       - No type bias
-    notes: Figure-only label for the ablation that removes the type-bias component; keep local to Fig. 4 rather than promoting it to a paper-wide model family.
+    notes: Historical Fig. 4 sweep key retained for provenance only. Active Fig. 4-5 surfaces now bind this artifact family to the `guided solver` role instead of displaying `no type bias` as a separate model family.
 
   fixed_heuristic_ablation:
     canonical_term: fixed-heuristic routing ablation
@@ -42,7 +47,7 @@ roles:
     display_short: fixed heuristic
     legacy_display_variants:
       - Fixed heuristic
-    notes: Preserve as a Fig. 4 routing ablation unless a panel explicitly binds the same artifact key to the classical OMP role.
+    notes: Historical Fig. 4 sweep key retained for provenance only. Active Fig. 4-5 surfaces now bind this artifact family to the `OMP baseline` role.
 
   g_fixed_variant:
     canonical_term: G-fixed routing variant
@@ -50,7 +55,7 @@ roles:
     display_short: G-fixed
     legacy_display_variants:
       - G-fixed
-    notes: Keep as a Fig. 4-only experiment-facing label, not a paper-wide model name.
+    notes: Historical experiment-facing alias of the active `OMP baseline` family on Figs. 4-5.
 
   g_teacher_variant:
     canonical_term: G-teacher routing variant
@@ -58,15 +63,15 @@ roles:
     display_short: G-teacher
     legacy_display_variants:
       - G-teacher
-    notes: Keep as a Fig. 4-only experiment-facing label, not a paper-wide model name.
+    notes: Historical experiment-facing alias of the active `OMP baseline` family on Figs. 4-5.
 
   dense_routing_ablation:
-    canonical_term: dense-routing ablation
-    display_full: dense-routing ablation
+    canonical_term: dense routing
+    display_full: dense routing
     display_short: dense routing
     legacy_display_variants:
       - Dense routing
-    notes: Figure-only label for the Fig. 4 ablation that disables sparse routing.
+    notes: Use for the active dense-routing failure family on Figs. 4-5.
 
   h_physical_structure:
     canonical_term: physical encoder
@@ -83,8 +88,8 @@ roles:
     notes: Use for the learned-router correlation panel; this is a structure label, not a model name.
 
   omp_selection_reference:
-    canonical_term: analytical OMP baseline
-    display_full: analytical OMP baseline
+    canonical_term: OMP baseline
+    display_full: OMP baseline
     display_short: OMP baseline
     legacy_display_variants:
       - OMP
@@ -97,11 +102,11 @@ figures:
       c:
         bindings:
           Baseline: full_solver
-          No Type Bias: no_type_bias_ablation
+          No Type Bias: full_solver
           No Transformer: no_transformer_ablation
-          Fixed Heuristic: fixed_heuristic_ablation
-          G-Fixed: g_fixed_variant
-          G-Teacher: g_teacher_variant
+          Fixed Heuristic: analytical_omp_baseline
+          G-Fixed: analytical_omp_baseline
+          G-Teacher: analytical_omp_baseline
           Dense Routing: dense_routing_ablation
 
   fig05:
@@ -109,6 +114,7 @@ figures:
       a:
         bindings:
           Baseline: full_solver
+          No Type Bias: full_solver
           No Transformer: no_transformer_ablation
           Fixed Heuristic: analytical_omp_baseline
           Dense Routing: dense_routing_ablation

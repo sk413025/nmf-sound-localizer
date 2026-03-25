@@ -26,7 +26,7 @@ confusion_matrix:
   dense_routing: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
 
 # Aggregated clean 5-seed per-angle summary used by Fig. 5f
-fig05_panel_f_summary: results/fig05_panel_f_clean_seed_means/summary.npz
+fig05_panel_f_summary: results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz
 
 # White noise dataset (Fig 3 WN vs Speech comparison)
 white_noise_dataset: /Users/sbplab/LDV-data-experiments/snr-synthetic-2025-12/processed-48k/white_noise_box_snrInf_sync_vad_normalized

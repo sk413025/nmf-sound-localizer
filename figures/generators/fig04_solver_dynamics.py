@@ -1,10 +1,10 @@
-"""Figure 4 — Solver Dynamics: Architecture + Training + Ablation + Per-angle.
+"""Figure 4 — Solver Dynamics: Architecture + Training + Decoder Comparison + Per-angle.
 
 Panel (a): Architecture diagram (external JPG asset).
 This generator produces the NEW data panels:
   (b) Training convergence curves (loss + accuracy over epochs)
-  (c) Clean-condition ablation comparison (strip/dot chart)
-  (d) Per-angle accuracy profile (37-point bar chart)
+  (c) Clean-condition decoder comparison (strip/dot chart)
+  (d) Per-angle guided-solver accuracy profile (37-point bar chart)
 
 Data: metrics.npz (train_history, per_angle_accuracy), figure4_data.json (ablation).
 """
@@ -37,16 +37,13 @@ from figures.layout_contract import (
 
 
 # ---------------------------------------------------------------------------
-# Ablation variant styling
+# Decoder-family styling
 # ---------------------------------------------------------------------------
-ABLATION_VARIANTS = [
-    ("Baseline",         SEMANTIC_PALETTE["learned"]),
-    ("No Type Bias",     "#CC79A7"),
-    ("No Transformer",   SEMANTIC_PALETTE["highlight"]),
-    ("Fixed Heuristic",  SEMANTIC_PALETTE["ablation"]),
-    ("G-Fixed",          "#56B4E9"),
-    ("G-Teacher",        "#F0E442"),
-    ("Dense Routing",    "#000000"),
+DECODER_VARIANTS = [
+    ("No Type Bias",     SEMANTIC_PALETTE["learned"]),
+    ("No Transformer",   SEMANTIC_PALETTE["ablation"]),
+    ("Fixed Heuristic",  SEMANTIC_PALETTE["classical"]),
+    ("Dense Routing",    "#4A4A4A"),
 ]
 
 FIG04_GENERATOR = figure_section("fig04", "generator")
@@ -159,11 +156,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b2.tick_params(axis="y", labelcolor=SEMANTIC_PALETTE["physics"], labelsize=tick_label_pt)
     add_panel_label(ax_b, "b", x=-0.15, y=1.06)
 
-    # --- Panel (c): Clean-condition ablation strip chart ---
+    # --- Panel (c): Clean-condition decoder comparison ---
     ax_c = fig.add_subplot(gs[0, 1])
     y_positions = []
     y_labels = []
-    for i, (variant_key, color) in enumerate(ABLATION_VARIANTS):
+    for i, (variant_key, color) in enumerate(DECODER_VARIANTS):
         seeds = ablation_data.get(variant_key, [])
         if not seeds:
             continue
@@ -185,7 +182,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.set_yticks(y_positions)
     ax_c.set_yticklabels(y_labels, fontsize=tick_label_pt)
     ax_c.set_xlabel("Accuracy (clean)", fontsize=axis_label_pt)
-    ax_c.set_title("Ablation comparison", fontsize=title_pt)
+    ax_c.set_title("Decoder comparison", fontsize=title_pt)
     ax_c.set_xlim(0, 1.05)
     ax_c.tick_params(axis="x", labelsize=tick_label_pt)
     ax_c.grid(axis="x", linestyle="--", alpha=0.3)
@@ -256,7 +253,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax = fig_c.add_subplot(111)
     y_positions_s = []
     y_labels_s = []
-    for i, (variant_key, color) in enumerate(ABLATION_VARIANTS):
+    for i, (variant_key, color) in enumerate(DECODER_VARIANTS):
         seeds = ablation_data.get(variant_key, [])
         if not seeds:
             continue
@@ -323,10 +320,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "c",
-                "title": "Clean-condition ablation",
+                "title": "Clean decoder comparison",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Seven-variant clean-condition ablation centered on the full physics-aware solver, the router-bypass ablation, and local routing variants.",
+                "description": "Four-family clean-condition decoder comparison across the guided solver, router-bypass, OMP baseline, and dense routing families.",
             },
             {
                 "panel_id": "d",

@@ -44,7 +44,7 @@ SNR_DISPLAY = ["0", "5", "10", "15", "20", "30", "\u221e"]
 DENSE_COLOR = "#4A4A4A"
 
 SNR_VARIANTS = [
-    ("Baseline",        SEMANTIC_PALETTE["learned"],   get_bound_label("fig05", "a", "Baseline", label_type="short")),
+    ("No Type Bias",    SEMANTIC_PALETTE["learned"],   get_bound_label("fig05", "a", "No Type Bias", label_type="short")),
     ("No Transformer",  SEMANTIC_PALETTE["ablation"],  get_bound_label("fig05", "a", "No Transformer", label_type="short")),
     ("Fixed Heuristic", SEMANTIC_PALETTE["classical"], get_bound_label("fig05", "a", "Fixed Heuristic", label_type="short")),
     ("Dense Routing",   DENSE_COLOR,                   get_bound_label("fig05", "a", "Dense Routing", label_type="short")),
@@ -223,7 +223,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     diag_omp_full = get_bound_label("fig05", "f", "omp_line", label_type="full")
     diag_dense_full = get_bound_label("fig05", "f", "dense_line", label_type="full")
-    snr_solver_full = get_bound_label("fig05", "a", "Baseline", label_type="full")
+    snr_solver_full = get_bound_label("fig05", "a", "No Type Bias", label_type="full")
     snr_no_transformer_full = get_bound_label(
         "fig05", "a", "No Transformer", label_type="full"
     )

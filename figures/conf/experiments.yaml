@@ -156,7 +156,7 @@ fig04_ablation:
   data_artifacts:
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
       type: npz
-      description: "Primary-run convergence and per-angle metrics."
+      description: "Primary-run convergence and per-angle metrics for the active no-type-bias guided solver."
     - path: results/figure4_data.json
       type: json
       is_symlink: true
@@ -175,7 +175,7 @@ fig04_ablation:
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
     c:
-      title: "Clean-condition ablation"
+      title: "Clean decoder comparison"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf
       evidence_sources:
@@ -210,7 +210,7 @@ fig05_performance_structure:
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
   claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
-  legend_summary: "Noise robustness benchmark, physical/classical context, routing-failure diagnostics, and a five-seed clean per-angle benchmark."
+  legend_summary: "Noise robustness benchmark, physical/classical context, routing-failure diagnostics, and a five-seed clean per-angle benchmark under the unified four-family decoder contract."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
@@ -234,12 +234,12 @@ fig05_performance_structure:
     - path: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
       type: npz
       description: "Representative clean dense-routing confusion metrics used by panel d."
-    - path: results/fig05_panel_f_clean_seed_means/summary.npz
+    - path: results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz
       type: npz
-      description: "Five-seed clean mean/std per-angle accuracy summary used by panel f."
+      description: "Five-seed clean mean/std per-angle accuracy summary used by panel f, with the guided family sourced from the `No Type Bias` sweep."
     - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
-      description: "Baseline confusion metrics used by panels c-e through paths.yaml[confusion_matrix.baseline]."
+      description: "Guided-solver confusion metrics used by panels c-e through paths.yaml[confusion_matrix.baseline]; this representative run already uses `no_type_bias=true`."
     - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
       type: npz
       description: "No-transformer confusion metrics used by panels d-e."

@@ -38,24 +38,24 @@ f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue) a
 **Fig. 4 | Physics-guided deep unrolled network with attention-based gating.**
 a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(A\). A transformer encoder generates routing weights that gate sparse updates \(\Delta x_t\), enforcing residual consistency \(r_{t+1}=r_t-A\Delta x_t\).
 b, Training convergence: total and classification loss decrease steadily over 20 epochs; the vertical dashed line marks the best validation epoch.
-c, Clean-condition ablation: strip chart comparing the full physics-aware solver against a local ablation family centered on the router-bypass condition and related routing variants (individual seeds shown as dots, horizontal bars indicate means), demonstrating that transformer routing and the type-bias component are essential for high accuracy.
+c, Clean decoder comparison: strip chart comparing the guided solver, router-bypass, OMP baseline, and dense routing across the same five-seed clean sweep (individual seeds shown as dots, horizontal bars indicate means).
 d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform performance across the full angular grid (mean accuracy 0.946), with angles below the mean highlighted.
 
 ## Fig. 5 (6 panels)
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
 Panel logic: a benchmarks four decoder families under noise; b-c provide physical and classical reference context; d contrasts dense routing with router-bypass at the confusion level; e retains the guided-versus-router-bypass local conditional-output exemplar; f summarizes the five-seed clean mean per-angle ranking across the same four decoders using a 3-angle centered moving-average display.
-a, SNR degradation curves for the physics-aware solver, router-bypass ablation, analytical OMP baseline, and dense-routing ablation, showing graceful degradation under additive noise.
+a, SNR degradation curves for the guided solver, router-bypass, OMP baseline, and dense routing, showing graceful degradation under additive noise.
 b, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
-c, Row-normalized confusion maps contrasting the analytical OMP baseline (broader, fragmented structure; top) with the physics-aware solver (sharply diagonal; bottom), providing the classical decoding context for the lower-row routing comparisons.
+c, Row-normalized confusion maps contrasting the OMP baseline (broader, fragmented structure; top) with the guided solver (sharply diagonal; bottom), providing the classical decoding context for the lower-row routing comparisons.
 d, Row-normalized confusion maps for dense routing (top) and the router-bypass ablation (bottom). Dense routing collapses toward a single preferred output mode, whereas router-bypass retains limited local structure but broader off-axis leakage.
-e, Angle-specific conditional output distributions at two representative directions (55° and 100°): the full physics-aware solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas the router-bypass ablation shows broader off-axis leakage.
-f, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display, comparing the full physics-aware solver, router-bypass ablation, analytical OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
+e, Angle-specific conditional output distributions at two representative directions (55° and 100°): the guided solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas router-bypass shows broader off-axis leakage.
+f, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (4 panels)
 
 **Fig. 6 | Physical encoding reproduces across materials, but object quality must be screened.**
 a, Five target objects spanning a broad range of material and geometric complexity: acrylic plate, paper cup, wooden board, cardboard box, and laptop shell.
 b, Cross-material transfer-function strip for the same five objects. Shared-normalization heatmaps of \(H\) show structured angle-frequency encoding across all materials despite different resonance patterns.
-c, Ranked downstream screening metrics. Cardboard box is the primary target because it achieves the highest top-1 accuracy and the lowest mean absolute error; wooden board is the backup because it delivers the strongest within-10° robustness.
-d, Physical quality versus task accuracy. Paper cup has the highest mean coherence of \(H\) but is not the best downstream object, whereas cardboard box is the best downstream object without having the strongest coherence.
+c, Ranked downstream screening metrics from the matched per-object workflow. Cardboard box is the primary target because it achieves the highest top-1 accuracy and the lowest mean absolute error; wooden board is the backup because it delivers the strongest within-10° robustness.
+d, Physical proxy versus screening accuracy. Paper cup has the highest mean coherence of \(H\) but is not the best downstream object, whereas cardboard box is the best downstream object without having the strongest coherence.
