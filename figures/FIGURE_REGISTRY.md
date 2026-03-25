@@ -29,7 +29,7 @@ Retired material:
 | Fig 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | `fig03_fingerprint_discriminability.py` | data-backed | `experiments.yaml → fig03_discriminability` |
 | Fig 4 | `paper/figures/fig04_solver-dynamics.jpg` | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig04_ablation` |
 | Fig 5 | `paper/figures/fig05_performance-structure.jpg` | `fig05_performance_structure.py` | data-backed | `experiments.yaml → fig05_performance_structure` |
-| Fig 6 | `paper/figures/fig06_universality.jpg` | `fig06_universality.py` + `compose_master_figure3_family.py` | mixed with partial gap | `experiments.yaml → fig06_universality` |
+| Fig 6 | `paper/figures/fig06_universality.jpg` | `fig06_universality.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig06_universality` |
 
 ## Figure Details
 
@@ -73,5 +73,6 @@ Retired material:
 
 - Manuscript asset: `paper/figures/fig06_universality.jpg`
 - Generator / composer: `figures/generators/fig06_universality.py` + `scripts/paper/compose_master_figure3_family.py`
+- Manual support panel `a`: `figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png`
 - Active panel manifest: `figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig06_universality`

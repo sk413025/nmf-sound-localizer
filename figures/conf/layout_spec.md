@@ -105,32 +105,40 @@ figures:
   fig06:
     compose:
       width_mm: 183.0
-      height_mm: 144.0
+      height_mm: 132.0
       panel_a_height_mm: 24.0
-      panel_b_height_mm: 34.0
-      bottom_height_mm: 78.0
+      panel_b_height_mm: 36.0
+      bottom_height_mm: 64.0
       row_gap_mm: 4.0
       bottom_gap_mm: 5.0
-      panel_c_width_mm: 62.0
-      right_width_mm: 116.0
-      de_height_mm: 37.0
-      de_gap_mm: 4.0
+      panel_c_width_mm: 112.0
+      panel_d_width_mm: 66.0
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 72.0
+      composite_height_mm: 104.0
       composite_grid:
-        left: 0.065
-        right: 0.98
-        bottom: 0.18
-        top: 0.88
-        wspace: 0.30
-        width_ratios: [1.0, 1.28]
+        left: 0.07
+        right: 0.985
+        bottom: 0.10
+        top: 0.94
+        hspace: 0.30
+        wspace: 0.28
+        width_ratios: [1.7, 1.0]
+        height_ratios: [1.0, 1.55]
       split:
-        panel_slot_width_mm: 116.0
-        panel_slot_height_mm: 37.0
-        standalone_subplots:
-          d: {left: 0.11, right: 0.985, bottom: 0.24, top: 0.90}
-          e: {left: 0.10, right: 0.985, bottom: 0.35, top: 0.90}
+        standalone:
+          b:
+            width_mm: 183.0
+            height_mm: 36.0
+            subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.22, top: 0.86}
+          c:
+            width_mm: 112.0
+            height_mm: 64.0
+            subplots_adjust: {left: 0.18, right: 0.98, bottom: 0.12, top: 0.95}
+          d:
+            width_mm: 66.0
+            height_mm: 64.0
+            subplots_adjust: {left: 0.20, right: 0.98, bottom: 0.12, top: 0.95}
 ```
 <!-- runtime-layout-contract:end -->
 
@@ -413,11 +421,11 @@ Panels `b/c/d` use shared-colorbar two-row stacks; panel `e` remains a two-row r
 
 ---
 
-## Figure 6 — Universality (5 panels)
+## Figure 6 — Universality (4 panels)
 
-Composed: panoramic manual strips `a/b` on top, then manual `c` + generated `d/e` diagnostic block below.
-Top manual panels are intentionally cropped to suppress slide-style internal titles and keep the explanatory narrative in the caption.
-Panels `d/e` must be generated at their final `116 × 37 mm` manuscript slot size; do not downscale `183 mm`-wide standalone diagnostics into the right-hand block.
+Composed: a cropped manual exemplar strip `a` on top, a full-width generated H-matrix strip `b` beneath it, and a generated screening block `c/d` on the bottom row.
+Panel `a` remains a manual support asset and must stay tightly cropped to suppress the oversized slide-style title and bracket text from the legacy source image.
+Panels `b-d` are data-backed and must be generated at their final manuscript slot sizes; do not downscale a wide standalone plot into the smaller right-hand interpretation slot.
 
 ```
                          183.0 mm
@@ -426,28 +434,23 @@ Panels `d/e` must be generated at their final `116 × 37 mm` manuscript slot siz
 │ (a) Material exemplars strip                         │  │ 24.0 mm
 │ 183.0 × 24.0 mm                                      │  │
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
-│ (b) Representative heatmaps strip                    │  │ 34.0 mm
-│ 183.0 × 34.0 mm                                      │  │
-├──────────────────────┬───────────────────────────────┤ ─┼─ 4.0 mm
-│ (c) Cross-material   │ (d) Per-band SVD             │  │ 37.0 mm
-│ RMSE                 │ 116.0 × 37.0 mm              │  │
-│ 62.0 × 78.0 mm       ├───────────────────────────────┤ ─┼─ 4.0 mm
-│ manual portrait      │ (e) Band-resolved routing    │  │ 37.0 mm
-│ panel                │ 116.0 × 37.0 mm              │  │
-└──────────────────────┴───────────────────────────────┘ ─┴─
-     62.0 mm            5.0 mm              116.0 mm
+│ (b) Cross-material H matrices                        │  │ 36.0 mm
+│ 183.0 × 36.0 mm                                      │  │
+├───────────────────────────────┬──────────────────────┤ ─┼─ 4.0 mm
+│ (c) Material screening        │ (d) Physics versus  │  │ 64.0 mm
+│ metrics                       │ task accuracy        │  │
+│ 112.0 × 64.0 mm               │ 66.0 × 64.0 mm       │  │
+└───────────────────────────────┴──────────────────────┘ ─┴─
+       112.0 mm                  5.0 mm     66.0 mm
 ```
 
 | Parameter    | Value                                    |
 |--------------|------------------------------------------|
 | width_mm     | 183                                      |
-| height_mm    | **144**                                  |
+| height_mm    | **132**                                  |
 | Panel (a)    | **183.0 × 24.0 mm**                      |
-| Panel (b)    | **183.0 × 34.0 mm**                      |
+| Panel (b)    | **183.0 × 36.0 mm**                      |
 | Row gaps     | **4.0 mm** between `a/b` and `b/bottom`  |
-| Panel (c)    | **62.0 × 78.0 mm**                       |
-| Right width  | **116.0 mm**                             |
-| Bottom gap   | **5.0 mm** between `c` and `d/e` block   |
-| Panel (d)    | **116.0 × 37.0 mm**                      |
-| Panel (e)    | **116.0 × 37.0 mm**                      |
-| d/e gap      | **4.0 mm**                               |
+| Panel (c)    | **112.0 × 64.0 mm**                      |
+| Panel (d)    | **66.0 × 64.0 mm**                       |
+| Bottom gap   | **5.0 mm** between `c` and `d`           |

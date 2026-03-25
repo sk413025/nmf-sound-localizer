@@ -9,7 +9,7 @@ from panel-level assets whenever possible:
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
 - Fig. 4: Solver Dynamics (4 panels: a external + b,c,d generated)
 - Fig. 5: Performance + Structure (6 panels: all generated)
-- Fig. 6: Universality (5 panels: a,b,c external + d,e generated)
+- Fig. 6: Universality (4 panels: a manual support + b,c,d generated)
 """
 
 from __future__ import annotations
@@ -99,10 +99,11 @@ FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
 FIG05_WIDTH_MM = 183.0
 
-# --- Figure 6: Universality (5 panels: a,b,c external + d,e generated) ---
-FIG06_PANELS_ABC_DIR = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels"
-FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_svd.pdf"
-FIG06_PANEL_E = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_e_band_routing.pdf"
+# --- Figure 6: Universality (4 panels: a manual support + b,c,d generated) ---
+FIG06_PANEL_A = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png"
+FIG06_PANEL_B = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_b_h_matrices.pdf"
+FIG06_PANEL_C = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_c_material_screening.pdf"
+FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_physics_vs_task.pdf"
 FIG06_COMPOSE = figure_section("fig06", "compose")
 FIG06_WIDTH_MM = float(FIG06_COMPOSE["width_mm"])
 FIG06_HEIGHT_MM = float(FIG06_COMPOSE["height_mm"])
@@ -112,12 +113,8 @@ FIG06_BOTTOM_HEIGHT_MM = float(FIG06_COMPOSE["bottom_height_mm"])
 FIG06_ROW_GAP_MM = float(FIG06_COMPOSE["row_gap_mm"])
 FIG06_BOTTOM_GAP_MM = float(FIG06_COMPOSE["bottom_gap_mm"])
 FIG06_C_WIDTH_MM = float(FIG06_COMPOSE["panel_c_width_mm"])
-FIG06_RIGHT_WIDTH_MM = float(FIG06_COMPOSE["right_width_mm"])
-FIG06_DE_HEIGHT_MM = float(FIG06_COMPOSE["de_height_mm"])
-FIG06_DE_GAP_MM = float(FIG06_COMPOSE["de_gap_mm"])
+FIG06_D_WIDTH_MM = float(FIG06_COMPOSE["panel_d_width_mm"])
 FIG06_PANEL_A_CROP = (0.01, 0.36, 0.99, 0.87)
-FIG06_PANEL_B_CROP = (0.02, 0.27, 0.99, 0.73)
-FIG06_PANEL_C_CROP = (0.04, 0.10, 0.98, 0.99)
 
 
 def _ensure_parent(path: Path) -> None:
@@ -677,34 +674,18 @@ def compose_fig05(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig06(paper_dir: Path) -> list[Path]:
-    """Fig 6: panoramic exemplar strips on top + c / d / e diagnostic block below."""
+    """Fig 6: manual exemplar strip on top + generated screening panels below."""
     fig06_asset = paper_dir / "fig06_universality.jpg"
     fig06_layout_asset = fig06_asset.with_suffix(".layout.json")
 
-    # Load external panels a,b,c
-    panel_specs = [
-        ("a", "fig06_panel_a_material_exemplars.png"),
-        ("b", "fig06_panel_b_heatmaps.png"),
-        ("c", "fig06_panel_c_rmse_comparison.png"),
-    ]
-
-    external_panels = []
-    for panel_id, filename in panel_specs:
-        src = FIG06_PANELS_ABC_DIR / filename
-        if not src.exists():
-            raise FileNotFoundError(f"Missing cross-material panel: {src}")
-        img = Image.open(src).convert("RGB")
-        img = _trim_white_border(img, padding=0)
-        external_panels.append((panel_id, img))
-
-    _, panel_a = external_panels[0]
-    _, panel_b = external_panels[1]
-    _, panel_c = external_panels[2]
+    if not FIG06_PANEL_A.exists():
+        raise FileNotFoundError(f"Missing Fig. 6 panel a support asset: {FIG06_PANEL_A}")
+    panel_a = Image.open(FIG06_PANEL_A).convert("RGB")
+    panel_a = _trim_white_border(panel_a, padding=0)
     panel_a = _crop_relative(panel_a, *FIG06_PANEL_A_CROP)
-    panel_b = _crop_relative(panel_b, *FIG06_PANEL_B_CROP)
-    panel_c = _crop_relative(panel_c, *FIG06_PANEL_C_CROP)
+    panel_b = _trim_white_border(_render_pdf(FIG06_PANEL_B, scale=4.0), padding=4)
+    panel_c = _trim_white_border(_render_pdf(FIG06_PANEL_C, scale=4.0), padding=4)
     panel_d = _trim_white_border(_render_pdf(FIG06_PANEL_D, scale=4.0), padding=4)
-    panel_e = _trim_white_border(_render_pdf(FIG06_PANEL_E, scale=4.0), padding=4)
 
     figure_width_px = _mm_to_px(FIG06_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG06_HEIGHT_MM)
@@ -714,15 +695,12 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     row_gap_px = _mm_to_px(FIG06_ROW_GAP_MM)
     bottom_gap_px = _mm_to_px(FIG06_BOTTOM_GAP_MM)
     c_width_px = _mm_to_px(FIG06_C_WIDTH_MM)
-    right_width_px = _mm_to_px(FIG06_RIGHT_WIDTH_MM)
-    de_height_px = _mm_to_px(FIG06_DE_HEIGHT_MM)
-    de_gap_px = _mm_to_px(FIG06_DE_GAP_MM)
+    d_width_px = _mm_to_px(FIG06_D_WIDTH_MM)
 
     panel_a = _contain_in_box(panel_a, figure_width_px, a_height_px)
     panel_b = _contain_in_box(panel_b, figure_width_px, b_height_px)
     panel_c = _contain_in_box(panel_c, c_width_px, bottom_height_px)
-    panel_d = _contain_in_box(panel_d, right_width_px, de_height_px)
-    panel_e = _contain_in_box(panel_e, right_width_px, de_height_px)
+    panel_d = _contain_in_box(panel_d, d_width_px, bottom_height_px)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
@@ -731,15 +709,10 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
 
     bottom_y = a_height_px + row_gap_px + b_height_px + row_gap_px
     canvas.paste(panel_c, (0, bottom_y))
-    right_x = c_width_px + bottom_gap_px
-    canvas.paste(panel_d, (right_x, bottom_y))
-    canvas.paste(panel_e, (right_x, bottom_y + de_height_px + de_gap_px))
+    d_x = c_width_px + bottom_gap_px
+    canvas.paste(panel_d, (d_x, bottom_y))
 
     _draw_boxed_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(1.2))
-    _draw_boxed_panel_label(draw, "b", _mm_to_px(2.5), a_height_px + row_gap_px + _mm_to_px(1.2))
-    _draw_boxed_panel_label(draw, "c", _mm_to_px(2.5), bottom_y + _mm_to_px(1.2))
-    _draw_boxed_panel_label(draw, "d", right_x + _mm_to_px(2.0), bottom_y + _mm_to_px(1.2))
-    _draw_boxed_panel_label(draw, "e", right_x + _mm_to_px(2.0), bottom_y + de_height_px + de_gap_px + _mm_to_px(1.2))
 
     _save_composite(canvas, fig06_asset)
     _write_layout_metadata(
@@ -764,9 +737,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                 {
                     "index": 1,
                     "panel_id": "b",
-                    "kind": "manual",
-                    "has_data": False,
-                    "title": "Representative heatmaps",
+                    "kind": "rectilinear",
+                    "has_data": True,
+                    "title": "Cross-material H matrices",
                     **_bbox_payload(
                         0.0,
                         FIG06_BOTTOM_HEIGHT_MM + FIG06_ROW_GAP_MM,
@@ -777,9 +750,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                 {
                     "index": 2,
                     "panel_id": "c",
-                    "kind": "manual",
-                    "has_data": False,
-                    "title": "Cross-material RMSE",
+                    "kind": "rectilinear",
+                    "has_data": True,
+                    "title": "Material screening metrics",
                     **_bbox_payload(
                         0.0, 0.0, FIG06_C_WIDTH_MM, FIG06_BOTTOM_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
@@ -790,24 +763,11 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "d",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Per-band SVD spectra",
-                    **_bbox_payload(
-                        FIG06_C_WIDTH_MM + FIG06_BOTTOM_GAP_MM,
-                        FIG06_DE_HEIGHT_MM + FIG06_DE_GAP_MM,
-                        FIG06_RIGHT_WIDTH_MM, FIG06_DE_HEIGHT_MM,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 4,
-                    "panel_id": "e",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Band-resolved routing",
+                    "title": "Physical quality versus task accuracy",
                     **_bbox_payload(
                         FIG06_C_WIDTH_MM + FIG06_BOTTOM_GAP_MM,
                         0.0,
-                        FIG06_RIGHT_WIDTH_MM, FIG06_DE_HEIGHT_MM,
+                        FIG06_D_WIDTH_MM, FIG06_BOTTOM_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
