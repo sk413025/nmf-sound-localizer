@@ -226,7 +226,7 @@ STFT Parameters:
 
 Processing:
   - Method: Geometric mean pooling over 3 clips per angle
-  - Formula: H = exp(mean(log(|STFT(x)|)))
+  - Formula: H(f) = exp(mean_t(log(|STFT(Y / X)|)))
   - Coherence metric: γ² = |S_xy|²/(S_xx · S_yy)
 
 Output:
@@ -241,27 +241,22 @@ Output:
 ```bash
 # Box H matrix
 python -u scripts/estimate_transfer_functions.py \
-  --data_root ~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized \
-  --output_path ~/LDV-data-processed/h_matrix_box_ldv_correct.pth \
-  --freq_min 300 --freq_max 3000 --fs 16000 --n_fft 2048 --hop_length 512
+  ~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad \
+  ~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad \
+  --output ~/LDV-data-processed/h_matrix_box_ldv_correct.pth \
+  --time-pooling geometric \
+  --freq-min 300 --freq-max 3000 --files-per-angle 3
 
 # IrregularBox H matrix (similar)
 ```
 
 #### Results
 - **Box**:
-  - Coherence γ²: **1.000** (perfect!)
+  - Mean coherence γ²: **0.0307**
   - Shape: [346 × 37]
-  - Processing time: 2.06 seconds
-  - Output size: 59 KB
-
-- **IrregularBox**:
-  - Coherence γ²: **1.000** (perfect!)
-  - Shape: [346 × 37]
-  - Processing time: 1.49 seconds
-  - Output size: 59 KB
-
-- Processing speed: ~26.6 angles/sec
+  - Provenance audit status: exact array match against the canonical artifact on 2026-03-25
+- The normalized white-noise roots remain the training/evaluation dataset roots, but they do not reproduce the canonical 37-angle Box H.
+- The older repo-root `h_matrix_normalized_original_to_box.pth` remains a separate legacy 17-angle artifact and is not the canonical H used by the primary speech260 run.
 
 #### Critical Fix
 
@@ -599,7 +594,7 @@ ds = DoADataset(root=root, angles=angles, fs=16000, n_fft=2048,
 **Note**: The commit history does not show explicit Stage 3-4 for speech260. Instead, speech260 training experiments reused the **white noise H matrix and USM**, which were already at 16 kHz and compatible with the resampled speech data.
 
 **Reused Artifacts**:
-- H matrix: `~/LDV-data-processed/h_matrix_box_ldv_correct.pth` (from white noise Stage 3)
+- H matrix: `~/LDV-data-processed/h_matrix_box_ldv_correct.pth` (37-angle white-noise H rebuilt from `white_noise_original_data_no_edge_sync_vad` and `white_noise_box_data_no_edge_sync_vad`)
 - USM: `doa_speech260_config_c_16k_smoke_mps_20251114_184322/models/usm.pth` (speech-specific USM, trained separately)
 
 **Later Speech-Specific USM Training**:
@@ -1338,6 +1333,7 @@ git lfs ls-files -l | grep model_best.pth
 **White Noise Data**:
 - Stage 2 output: `~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized`
 - H matrix: `~/LDV-data-processed/h_matrix_box_ldv_correct.pth`
+- Canonical H rebuild roots: `~/LDV-data-processed/white_noise_original_data_no_edge_sync_vad` and `~/LDV-data-processed/white_noise_box_data_no_edge_sync_vad`
 - USM: `doa_normalized_config_c_corrected/models/usm.pth`
 
 **Speech Data**:

@@ -13,6 +13,9 @@ All absolute paths listed here were checked for existence on 2026-03-23.
 - Training dataset root: `/Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad_normalized`
 - File count: `111` `.npy` files
 - Paired original root: `/Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge_sync_vad_normalized`
+- Canonical 37-angle H path: `/Users/sbplab/LDV-data-processed/h_matrix_box_ldv_correct.pth`
+- Canonical H rebuild roots: `/Users/sbplab/LDV-data-processed/white_noise_original_data_no_edge_sync_vad` and `/Users/sbplab/LDV-data-processed/white_noise_box_data_no_edge_sync_vad`
+- Audit note: the normalized white-noise roots above are the model training/evaluation dataset roots, not the roots that reproduce the canonical 37-angle H.
 
 ### Speech
 
@@ -25,6 +28,7 @@ All absolute paths listed here were checked for existence on 2026-03-23.
 - White-noise laboratory root: `/Users/sbplab/jiawei/datasets/20250709/20250709/`
 - Expanded 37-angle source root: `/Users/sbplab/LDV-data`
 - Speech extraction source: `/Users/sbplab/LDV-data` segment1
+- Legacy normalized 17-angle H artifact: `/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/h_matrix_normalized_original_to_box.pth` (kept separate from the canonical 37-angle H used by the primary speech260 run)
 
 ## Key Processing Commits
 

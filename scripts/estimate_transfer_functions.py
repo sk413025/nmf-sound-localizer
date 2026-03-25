@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Standalone script to estimate transfer functions from noise dataset.
+Standalone script to estimate transfer functions from paired noise datasets.
 
-This script processes white noise data to compute directional transfer functions
-that can be later used for speech localization experiments, enabling proper
-separation between training and testing datasets.
+This script computes cross-domain directional transfer functions H = Y / X
+from an explicit reference dataset (Original playback) and an explicit
+observation dataset (Box/LDV recordings). Requiring both roots avoids the
+historical self-reference bug where the same dataset was used for X and Y.
 """
 
 import argparse
@@ -35,20 +36,26 @@ def setup_logging(verbose: bool = False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Estimate transfer functions from noise dataset',
+        description='Estimate cross-domain transfer functions from paired noise datasets',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic usage - estimate from noise dataset (geometric time pooling)
-  python scripts/estimate_transfer_functions.py /path/to/noise_data --output tf_noise.pth \
-    --freq-min 500 --freq-max 1500 --files-per-angle 100 --time-pooling geometric
+  # Basic usage - estimate Original -> Box transfer functions
+  python scripts/estimate_transfer_functions.py /path/to/original_root /path/to/box_root \
+    --output tf_noise.pth --freq-min 500 --freq-max 1500 \
+    --files-per-angle 100 --time-pooling geometric
         """
     )
     
     parser.add_argument(
-        'noise_data_root', 
+        'original_root',
         type=str,
-        help='Root directory containing noise data with angle_*/ subdirectories'
+        help='Root directory containing the reference/original noise data (X)'
+    )
+    parser.add_argument(
+        'box_root',
+        type=str,
+        help='Root directory containing the observation/box noise data (Y)'
     )
     
     parser.add_argument(
@@ -102,9 +109,19 @@ Examples:
     logger = logging.getLogger(__name__)
     
     # Validate inputs
-    noise_data_root = Path(args.noise_data_root)
-    if not noise_data_root.exists():
-        logger.error(f"Noise data directory does not exist: {noise_data_root}")
+    original_root = Path(args.original_root)
+    box_root = Path(args.box_root)
+    if not original_root.exists():
+        logger.error(f"Original data directory does not exist: {original_root}")
+        sys.exit(1)
+    if not box_root.exists():
+        logger.error(f"Box data directory does not exist: {box_root}")
+        sys.exit(1)
+    if original_root.resolve() == box_root.resolve():
+        logger.error(
+            "Original and box roots must be different directories. "
+            "Using the same dataset for both X and Y produces invalid self-reference H."
+        )
         sys.exit(1)
         
     output_path = Path(args.output)
@@ -113,7 +130,8 @@ Examples:
     logger.info("=" * 60)
     logger.info("TRANSFER FUNCTION ESTIMATION FROM NOISE DATA")
     logger.info("=" * 60)
-    logger.info(f"Input directory: {noise_data_root}")
+    logger.info(f"Original root (X): {original_root}")
+    logger.info(f"Box root (Y): {box_root}")
     logger.info(f"Output path: {output_path}")
     logger.info(f"Frequency range: {args.freq_min}-{args.freq_max} Hz")
     logger.info(f"Files per angle: {args.files_per_angle}")
@@ -135,7 +153,8 @@ Examples:
         
         # Estimate transfer functions
         H, angles, angle_folders, metadata = data_processor.estimate_transfer_functions(
-            noise_data_root,
+            original_root,
+            box_root,
             time_pooling=args.time_pooling
         )
         
@@ -165,7 +184,8 @@ Examples:
             output_path,
             metadata={
                 **metadata,
-                'noise_data_root': str(noise_data_root),
+                'original_root': str(original_root),
+                'box_root': str(box_root),
                 'estimation_params': {
                     'time_pooling': args.time_pooling,
                     'files_per_angle': args.files_per_angle,
