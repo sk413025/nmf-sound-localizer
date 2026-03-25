@@ -17,6 +17,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.colors import TwoSlopeNorm
+from matplotlib.ticker import FormatStrFormatter
 
 from figures.style import (
     set_nature_rcparams,
@@ -57,6 +59,8 @@ FIG05_HEATMAP_STACK = dict(FIG05_GENERATOR["heatmap_stack"])
 FIG05_ROUTING_STACK = dict(FIG05_GENERATOR["routing_stack"])
 FIG05_STANDALONE = dict(FIG05_GENERATOR["standalone"])
 FIG05_ROUTING_ANGLES = [55.0, 70.0, 95.0, 100.0]
+FIG05_CORR_NORM = TwoSlopeNorm(vmin=-0.15, vcenter=0.0, vmax=1.0)
+FIG05_CORR_TICKS = [-0.1, 0.0, 0.5, 1.0]
 
 
 def _titlecase_short_label(label: str) -> str:
@@ -461,7 +465,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         legend_pt=legend_pt,
     )
     ax_a.set_title("Noise robustness benchmark", fontsize=title_pt)
-    add_panel_label(ax_a, "a", x=-0.15, y=1.06)
+    add_panel_label(ax_a, "a", x=-0.15, y=1.02)
 
     # Panel (b): unified confusion-family block
     if (
@@ -577,14 +581,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         2,
         2,
         subplot_spec=gs_top[0, 2],
-        width_ratios=[1.0, 0.11],
+        width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
         hspace=0.38,
         wspace=0.10,
     )
 
     ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
-    im_c = ax_c1.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax_c1.set_title("Physical structure (H)", fontsize=title_pt, pad=1.5)
+    im_c = ax_c1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax_c1.set_title("Physical structure (H)", fontsize=title_pt, pad=6.0)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
     ax_c1.set_yticks(tick_positions)
@@ -595,8 +599,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1),
         "fig05.panel_c.bottom",
     )
-    ax_c2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax_c2.set_title("Learned routing (QK)", fontsize=title_pt, pad=1.5)
+    ax_c2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax_c2.set_title("Learned routing (QK)", fontsize=title_pt, pad=6.0)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
@@ -612,6 +616,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     cax_c = _set_gid(fig.add_subplot(gs_c[:, 1]), "fig05.panel_c.colorbar")
     cbar_c = plt.colorbar(im_c, cax=cax_c)
+    cbar_c.set_ticks(FIG05_CORR_TICKS)
+    cbar_c.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
     cbar_c.ax.tick_params(labelsize=colorbar_tick_pt)
     cbar_c.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
     add_panel_label(ax_c_panel, "c", x=-0.005, y=1.02)
@@ -700,6 +706,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 ax_d.set_xticklabels([])
             else:
                 ax_d.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+                ax_d.set_xlabel(
+                    "Predicted angle (\u00b0)",
+                    fontsize=axis_label_pt,
+                    labelpad=-0.2,
+                )
             ax_d.set_xlim(float(angles[0]), float(angles[-1]))
             ax_d.set_ylim(0, profile_ymax)
             ax_d.tick_params(axis="both", labelsize=tick_label_pt)
@@ -707,17 +718,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             if col_idx == 1:
                 ax_d.tick_params(labelleft=False)
             if idx == 0:
-                ax_d.legend(fontsize=legend_pt, frameon=False, loc="upper left")
+                ax_d.legend(
+                    fontsize=legend_pt,
+                    frameon=False,
+                    loc="upper right",
+                    bbox_to_anchor=(0.98, 0.98),
+                    borderaxespad=0.0,
+                )
         add_panel_label(ax_d_panel, "d", x=-0.04, y=1.02)
-        ax_d_panel.text(
-            0.50,
-            -0.10,
-            "Predicted angle (\u00b0)",
-            va="center",
-            ha="center",
-            transform=ax_d_panel.transAxes,
-            fontsize=axis_label_pt,
-        )
     else:
         ax_d_placeholder = fig.add_subplot(gs_bottom[0, 0])
         ax_d_placeholder.text(
@@ -814,7 +822,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             label=diag_dense_short,
             zorder=1,
         )
-        ax_e.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+        ax_e.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt, labelpad=-0.2)
         ax_e.set_title("Per-angle accuracy", fontsize=title_pt)
         ax_e.set_ylim(0, 1.05)
         ax_e.legend(
@@ -1002,16 +1010,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         top=fig_c_grid["top"],
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
-    im_c = ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax1.set_title("Physical structure (H)", fontsize=title_pt, fontweight="bold", pad=2.0)
+    im_c = ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax1.set_title("Physical structure (H)", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
     ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
-    ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", vmin=-1.0, vmax=1.0)
-    ax2.set_title("Learned routing (QK)", fontsize=title_pt, fontweight="bold", pad=2.0)
+    ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax2.set_title("Learned routing (QK)", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
@@ -1020,7 +1028,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
              transform=ax2.transAxes, fontsize=annotation_pt, ha="center", style="italic")
     cax = fig_c.add_subplot(gs_cs[:, 1])
     cbar = plt.colorbar(im_c, cax=cax)
-    cbar.set_label("Corr", fontsize=colorbar_label_pt)
+    cbar.set_ticks(FIG05_CORR_TICKS)
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    cbar.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt)
     all_paths.extend(
         save_outputs(
@@ -1095,6 +1105,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 ax.set_xticklabels([])
             else:
                 ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+                ax.set_xlabel(
+                    "Predicted angle (\u00b0)",
+                    fontsize=axis_label_pt,
+                    labelpad=-0.2,
+                )
             ax.set_xlim(float(angles[0]), float(angles[-1]))
             ax.set_ylim(0, profile_ymax)
             ax.tick_params(axis="both", labelsize=tick_label_pt)
@@ -1102,17 +1117,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             if col_idx == 1:
                 ax.tick_params(labelleft=False)
             if idx == 0:
-                ax.legend(fontsize=legend_pt, frameon=False)
+                ax.legend(
+                    fontsize=legend_pt,
+                    frameon=False,
+                    loc="upper right",
+                    bbox_to_anchor=(0.98, 0.98),
+                    borderaxespad=0.0,
+                )
         add_panel_label(ax_panel, "d")
-        ax_panel.text(
-            0.50,
-            0.04,
-            "Predicted angle (\u00b0)",
-            va="center",
-            ha="center",
-            transform=ax_panel.transAxes,
-            fontsize=axis_label_pt,
-        )
         all_paths.extend(
             save_outputs(
                 fig_d,
@@ -1178,7 +1190,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 color=SEMANTIC_PALETTE["classical"], label=diag_omp_short, zorder=2)
         ax.plot(f_angles, dense_mean, ":", linewidth=1.1,
                 color=DENSE_COLOR, label=diag_dense_short, zorder=1)
-        ax.set_xlabel("Angle (\u00b0)")
+        ax.set_xlabel("Angle (\u00b0)", labelpad=-0.2)
         ax.set_ylabel("Mean P(correct)")
         ax.set_title("Per-angle decoder accuracy", fontsize=title_pt, fontweight="bold")
         ax.set_ylim(0, 1.05)
