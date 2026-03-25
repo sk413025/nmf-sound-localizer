@@ -16,6 +16,7 @@ ablation_sweep:
 
 # Confusion-matrix metrics used by the active Fig. 5 confusion panels and the retired supplementary confusion family
 confusion_matrix:
+  omp_baseline: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
   baseline: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
   no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
 

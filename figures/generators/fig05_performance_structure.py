@@ -2,7 +2,7 @@
 
 Panel (a): 3-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline)
 Panel (b): Physical-vs-learned correlation structure (H vs QK)
-Panel (c): Classical-reference selection diagnostic (OMP-like reference vs guided solver)
+Panel (c): Classical-reference confusion diagnostic (OMP baseline vs guided solver)
 Panel (d): Confusion matrices (guided solver vs router-bypass)
 Panel (e): Representative-angle conditional output distributions (guided solver vs router-bypass)
 Panel (f): Per-angle routing gain summary (guided solver vs router-bypass)
@@ -83,31 +83,10 @@ def _compute_global_correlation(
     return expert_corr, H_corr, structure_corr
 
 
-def _compute_selection_probability(
-    routing_data: dict,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return a classical OMP-like selection reference and learned routing selection."""
-    scores_expert = routing_data["scores_expert"]
-    g_energy_expert = routing_data["g_energy_expert"]
-    labels = routing_data["labels"]
-    n_angles = 37
-
-    omp_reference_prob = np.zeros((n_angles, n_angles))
-    guided_selection_prob = np.zeros((n_angles, n_angles))
-
-    for true_angle in range(n_angles):
-        mask = labels == true_angle
-        if mask.sum() == 0:
-            continue
-        for expert_idx in range(n_angles):
-            omp_reference_prob[true_angle, expert_idx] = (
-                np.argmax(g_energy_expert[mask], axis=1) == expert_idx
-            ).mean()
-            guided_selection_prob[true_angle, expert_idx] = (
-                np.argmax(scores_expert[mask], axis=1) == expert_idx
-            ).mean()
-
-    return omp_reference_prob, guided_selection_prob
+def _row_normalize_matrix(matrix: np.ndarray) -> np.ndarray:
+    matrix = np.asarray(matrix, dtype=float)
+    row_sums = matrix.sum(axis=1, keepdims=True)
+    return np.divide(matrix, row_sums, out=np.zeros_like(matrix), where=row_sums > 0)
 
 
 def _plot_snr_panel(
@@ -181,8 +160,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     colorbar_tick_pt = typography["colorbar_tick"]
     colorbar_label_pt = typography["colorbar_label"]
 
-    selection_omp_full = get_bound_label("fig05", "c", "omp_side", label_type="full")
-    selection_solver_full = get_bound_label(
+    panel_c_omp_full = get_bound_label("fig05", "c", "omp_side", label_type="full")
+    panel_c_solver_full = get_bound_label(
         "fig05", "c", "learned_side", label_type="full"
     )
     cm_solver_short = get_bound_label("fig05", "d", "baseline_cm", label_type="short")
@@ -236,12 +215,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     dict_data = dict(np.load(dict_path, allow_pickle=True))
     angles = dict_data["angles"]
 
-    expert_corr, H_corr, pearson_r = _compute_global_correlation(
-        routing_data, dict_data
-    )
-    omp_reference_prob, guided_selection_prob = _compute_selection_probability(
-        routing_data
-    )
+    expert_corr, H_corr, pearson_r = _compute_global_correlation(routing_data, dict_data)
 
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels = [f"{int(angles[i])}" for i in tick_positions]
@@ -249,14 +223,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     # Load confusion matrix data (panels d-f)
     cm_cfg = paths_cfg.get("confusion_matrix", {})
+    omp_baseline_cm_path = data_root / cm_cfg.get("omp_baseline", "")
     baseline_cm_path = data_root / cm_cfg.get("baseline", "")
     no_trans_cm_path = data_root / cm_cfg.get("no_transformer", "")
 
+    omp_baseline_cm = None
     baseline_cm = None
     no_trans_cm = None
     baseline_per_angle = None
     no_trans_per_angle = None
 
+    if omp_baseline_cm_path.exists():
+        odata = dict(np.load(omp_baseline_cm_path, allow_pickle=True))
+        omp_baseline_cm = odata["confusion_matrix"]
     if baseline_cm_path.exists():
         bdata = dict(np.load(baseline_cm_path, allow_pickle=True))
         baseline_cm = bdata["confusion_matrix"]
@@ -353,20 +332,26 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_b2.text(0.03, 0.05, f"r = {pearson_r:.3f}",
                transform=ax_b2.transAxes, fontsize=annotation_pt, style="italic")
 
-    # Panel (c): Selection probability
+    # Panel (c): Confusion matrices (OMP baseline vs guided solver)
     gs_c = gridspec.GridSpecFromSubplotSpec(
         2, 2, subplot_spec=gs_top[0, 2],
         width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
         hspace=FIG05_HEATMAP_STACK["hspace"],
         wspace=FIG05_HEATMAP_STACK["wspace"],
     )
-    vmax_unified = max(omp_reference_prob.max(), guided_selection_prob.max())
+    if omp_baseline_cm is None or baseline_cm is None:
+        raise FileNotFoundError(
+            "Fig. 5c requires both paths.yaml[confusion_matrix.omp_baseline] and "
+            "paths.yaml[confusion_matrix.baseline] metrics."
+        )
+    omp_baseline_cm_norm = _row_normalize_matrix(omp_baseline_cm)
+    baseline_cm_norm = _row_normalize_matrix(baseline_cm)
 
     ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
-    im3 = ax_c1.imshow(omp_reference_prob, cmap="viridis", aspect="equal",
-                        extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
+    im3 = ax_c1.imshow(omp_baseline_cm_norm, cmap="viridis", aspect="equal",
+                        extent=[0, 37, 37, 0], vmin=0, vmax=1.0,
                         interpolation="nearest")
-    ax_c1.set_title("OMP baseline reference", fontsize=title_pt)
+    ax_c1.set_title("OMP baseline", fontsize=title_pt)
     ax_c1.set_ylabel("True DOA", fontsize=axis_label_pt)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
@@ -376,12 +361,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax_c1, "c", x=-0.2, y=1.12)
 
     ax_c2 = _set_gid(fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1), "fig05.panel_c.bottom")
-    im4 = ax_c2.imshow(guided_selection_prob, cmap="viridis", aspect="equal",
-                        extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
+    im4 = ax_c2.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
+                        extent=[0, 37, 37, 0], vmin=0, vmax=1.0,
                         interpolation="nearest")
-    ax_c2.set_title("Guided solver selection", fontsize=title_pt)
+    ax_c2.set_title("Guided solver", fontsize=title_pt)
     ax_c2.set_ylabel("True DOA", fontsize=axis_label_pt)
-    ax_c2.set_xlabel("Expert index", fontsize=axis_label_pt)
+    ax_c2.set_xlabel("Predicted DOA", fontsize=axis_label_pt)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
@@ -389,7 +374,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c2.tick_params(axis="both", length=2)
     cax_c = _set_gid(fig.add_subplot(gs_c[:, 1]), "fig05.panel_c.colorbar")
     cbar = plt.colorbar(im4, cax=cax_c)
-    cbar.set_label("P(select)", fontsize=colorbar_label_pt)
+    cbar.set_label("P(pred|true)", fontsize=colorbar_label_pt)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt)
 
     # --- Row 2 ---
@@ -403,16 +388,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             wspace=FIG05_HEATMAP_STACK["wspace"],
         )
 
-        # Normalize confusion matrices to row-probabilities
-        baseline_cm_norm = baseline_cm.astype(float)
-        row_sums = baseline_cm_norm.sum(axis=1, keepdims=True)
-        baseline_cm_norm = np.divide(baseline_cm_norm, row_sums,
-                                      where=row_sums > 0)
-
-        no_trans_cm_norm = no_trans_cm.astype(float)
-        row_sums_nt = no_trans_cm_norm.sum(axis=1, keepdims=True)
-        no_trans_cm_norm = np.divide(no_trans_cm_norm, row_sums_nt,
-                                      where=row_sums_nt > 0)
+        baseline_cm_norm = _row_normalize_matrix(baseline_cm)
+        no_trans_cm_norm = _row_normalize_matrix(no_trans_cm)
 
         ax_d1 = _set_gid(fig.add_subplot(gs_d[0, 0]), "fig05.panel_d.top")
         ax_d1.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
@@ -649,20 +626,20 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         top=fig_c_grid["top"],
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
-    ax1.imshow(omp_reference_prob, cmap="viridis", aspect="equal",
-               extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
+    ax1.imshow(omp_baseline_cm_norm, cmap="viridis", aspect="equal",
+               extent=[0, 37, 37, 0], vmin=0, vmax=1.0,
                interpolation="nearest")
-    ax1.set_title("OMP baseline reference", fontsize=title_pt, fontweight="bold")
+    ax1.set_title("OMP baseline", fontsize=title_pt, fontweight="bold")
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
     ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
-    ax2.imshow(guided_selection_prob, cmap="viridis", aspect="equal",
-               extent=[0, 37, 37, 0], vmin=0, vmax=vmax_unified,
+    ax2.imshow(baseline_cm_norm, cmap="viridis", aspect="equal",
+               extent=[0, 37, 37, 0], vmin=0, vmax=1.0,
                interpolation="nearest")
-    ax2.set_title("Guided solver selection", fontsize=title_pt, fontweight="bold")
+    ax2.set_title("Guided solver", fontsize=title_pt, fontweight="bold")
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
@@ -843,10 +820,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "c",
-                "title": "Classical selection reference",
+                "title": "Classical confusion reference",
                 "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_c_selection.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"{selection_omp_full} reference versus {selection_solver_full} selection heatmaps, framed as classical context rather than matched ablation.",
+                "description": f"Row-normalized confusion maps comparing {panel_c_omp_full} versus {panel_c_solver_full} as the classical context panel.",
             },
             {
                 "panel_id": "d",

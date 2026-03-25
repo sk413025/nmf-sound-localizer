@@ -228,6 +228,9 @@ fig05_performance_structure:
       type: npz
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
+    - path: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
+      type: npz
+      description: "Clean seed42 g-routing confusion metrics used by panel c as the manuscript-facing OMP baseline."
     - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
       description: "Baseline confusion/per-angle metrics used by panels d-f through paths.yaml[confusion_matrix.baseline]."

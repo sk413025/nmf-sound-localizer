@@ -48,6 +48,8 @@ decisions, not to replace manuscript prose.
     - code-state git head: `3785b1f`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
     - code-state git head: `3785b1f`
+  - `results/fig05_panel_c_g_routing_seed42_clean/metrics.npz`
+    - external sweep lineage: `14feb94` (`ablate_speech260_g_routing_snrInf_seed42_ep20_lr1e-3_babble_speech260_full_20260209_011327`)
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz`
     - code-state git head: `3785b1f`
   - `results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz`
@@ -58,7 +60,7 @@ decisions, not to replace manuscript prose.
 - Panel notes:
   - `a`: binds artifact keys `Baseline`, `No Transformer`, `Fixed Heuristic`
   - `b`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
-  - `c`: compares derived OMP-like selection against learned selection as a classical-reference context panel
+  - `c`: compares the clean seed42 `g_routing` confusion matrix against the guided-solver confusion matrix as the classical-reference context panel
   - `d/e/f`: form a matched ablation block comparing the full solver metrics run against the router-bypass ablation run
 
 ## Fig. 6

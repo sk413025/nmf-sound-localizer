@@ -117,7 +117,7 @@ figures:
           learned_matrix: qk_learned_structure
       c:
         bindings:
-          omp_side: omp_selection_reference
+          omp_side: analytical_omp_baseline
           learned_side: full_solver
       d:
         bindings:
