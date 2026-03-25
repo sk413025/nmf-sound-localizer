@@ -2,10 +2,10 @@
 
 Panel (a): White noise within vs between Pearson r (violin + stats).
 Panel (b): Speech within vs between Pearson r (violin + stats).
-Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech.
-Panel (d): Angle-resolved OMP accuracy traces (stacked WN and Speech).
+Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech, with bootstrap uncertainty bands.
+Panel (d): Angle-resolved OMP accuracy traces (stacked WN and Speech) with clip-level uncertainty bands.
 Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
-Panel (f): OMP accuracy dose-response curve across SNR levels.
+Panel (f): OMP accuracy dose-response curve across SNR levels, with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.
 
 Data: dictionary.npz (D, angles) + modal_routing_val.npz (Y_val, labels,
       g_energy_expert) + white noise raw waveforms (.npy -> STFT inline).
@@ -35,6 +35,10 @@ from figures.style import (
 # ---------------------------------------------------------------------------
 # Computation helpers
 # ---------------------------------------------------------------------------
+
+FIG03_MARGIN_BOOTSTRAP_REPS = 1000
+FIG03_MARGIN_BOOTSTRAP_SEED = 123
+FIG03_PAIRWISE_BETWEEN_SAMPLES = 10
 
 def _load_white_noise_features(
     dataset_root: str | Path,
@@ -110,6 +114,41 @@ def _compute_omp_mean_accuracy(
     return float(np.mean(_compute_omp_accuracy(Y, labels, D, n_experts, n_atoms)))
 
 
+def _compute_omp_clip_accuracy_sem(
+    Y: np.ndarray, labels: np.ndarray,
+    D: np.ndarray, n_experts: int, n_atoms: int,
+) -> tuple[float, float]:
+    """Compute overall OMP clip accuracy and clip-level SEM."""
+    g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
+    pred = np.argmax(g, axis=1)
+    correct = (pred == labels).astype(float)
+    mean_acc = float(np.mean(correct))
+    sem = float(np.std(correct, ddof=1) / np.sqrt(correct.size)) if correct.size > 1 else 0.0
+    return mean_acc, sem
+
+
+def _compute_omp_accuracy_sem(
+    Y: np.ndarray, labels: np.ndarray,
+    D: np.ndarray, n_experts: int, n_atoms: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute per-angle OMP accuracy and clip-level SEM."""
+    g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
+    pred = np.argmax(g, axis=1)
+
+    per_angle_acc = np.zeros(n_experts, dtype=float)
+    per_angle_sem = np.zeros(n_experts, dtype=float)
+    for a in range(n_experts):
+        mask = labels == a
+        if np.sum(mask) == 0:
+            continue
+        correct = (pred[mask] == a).astype(float)
+        per_angle_acc[a] = float(np.mean(correct))
+        if correct.size > 1:
+            per_angle_sem[a] = float(np.std(correct, ddof=1) / np.sqrt(correct.size))
+
+    return per_angle_acc, per_angle_sem
+
+
 def _compute_pairwise_corr(Y_val: np.ndarray, labels: np.ndarray,
                            n_angles: int) -> tuple[list[float], list[float],
                                                     np.ndarray, np.ndarray,
@@ -161,6 +200,94 @@ def _compute_pairwise_corr(Y_val: np.ndarray, labels: np.ndarray,
             break
 
     return within_all, between_all, per_angle_mean, per_angle_std, per_angle_n_pairs
+
+
+def _compute_anglewise_corr_pools(
+    Y_val: np.ndarray,
+    labels: np.ndarray,
+    n_angles: int,
+    *,
+    between_samples_per_pair: int = FIG03_PAIRWISE_BETWEEN_SAMPLES,
+    seed: int = 42,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    """Collect per-angle within/between Pearson-r pools for margin estimation."""
+    angle_indices: dict[int, np.ndarray] = {}
+    for a in range(n_angles):
+        idx = np.where(labels == a)[0]
+        if len(idx) > 0:
+            angle_indices[a] = idx
+
+    within_pools: list[np.ndarray] = [np.array([], dtype=float) for _ in range(n_angles)]
+    between_buffers: list[list[float]] = [[] for _ in range(n_angles)]
+
+    for a, idx in angle_indices.items():
+        if len(idx) < 2:
+            continue
+        clips = Y_val[idx]
+        corr_mat = np.corrcoef(clips)
+        triu_idx = np.triu_indices(len(idx), k=1)
+        within_pools[a] = np.asarray(corr_mat[triu_idx], dtype=float)
+
+    rng = np.random.default_rng(seed)
+    sorted_angles = sorted(angle_indices.keys())
+    for i, a1 in enumerate(sorted_angles):
+        idx1 = angle_indices[a1]
+        for a2 in sorted_angles[i + 1:]:
+            idx2 = angle_indices[a2]
+            n_sample = min(between_samples_per_pair, len(idx1), len(idx2))
+            if n_sample <= 0:
+                continue
+            sel1 = rng.choice(idx1, size=n_sample, replace=False)
+            sel2 = rng.choice(idx2, size=n_sample, replace=False)
+            pair_vals = np.asarray(
+                [np.corrcoef(Y_val[s1], Y_val[s2])[0, 1] for s1, s2 in zip(sel1, sel2)],
+                dtype=float,
+            )
+            between_buffers[a1].extend(pair_vals.tolist())
+            between_buffers[a2].extend(pair_vals.tolist())
+
+    between_pools = [np.asarray(vals, dtype=float) for vals in between_buffers]
+    return within_pools, between_pools
+
+
+def _margin_from_corr_pools(
+    within_pools: list[np.ndarray],
+    between_pools: list[np.ndarray],
+) -> np.ndarray:
+    """Compute per-angle discriminability margins from anglewise correlation pools."""
+    margin = np.full(len(within_pools), np.nan, dtype=float)
+    for idx, (within_vals, between_vals) in enumerate(zip(within_pools, between_pools)):
+        if len(within_vals) == 0 or len(between_vals) == 0:
+            continue
+        margin[idx] = float(np.mean(within_vals) - np.mean(between_vals))
+    return margin
+
+
+def _bootstrap_margin_interval(
+    within_pools: list[np.ndarray],
+    between_pools: list[np.ndarray],
+    *,
+    n_boot: int = FIG03_MARGIN_BOOTSTRAP_REPS,
+    seed: int = FIG03_MARGIN_BOOTSTRAP_SEED,
+    ci: float = 95.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Bootstrap per-angle discriminability-margin confidence intervals."""
+    lower = np.full(len(within_pools), np.nan, dtype=float)
+    upper = np.full(len(within_pools), np.nan, dtype=float)
+    alpha = 0.5 * (100.0 - ci)
+    rng = np.random.default_rng(seed)
+
+    for idx, (within_vals, between_vals) in enumerate(zip(within_pools, between_pools)):
+        if len(within_vals) == 0 or len(between_vals) == 0:
+            continue
+        boot = np.empty(n_boot, dtype=float)
+        for rep in range(n_boot):
+            within_sample = rng.choice(within_vals, size=len(within_vals), replace=True)
+            between_sample = rng.choice(between_vals, size=len(between_vals), replace=True)
+            boot[rep] = np.mean(within_sample) - np.mean(between_sample)
+        lower[idx], upper[idx] = np.percentile(boot, [alpha, 100.0 - alpha])
+
+    return lower, upper
 
 
 def _compute_trial_pairwise_matrix(Y_val: np.ndarray, labels: np.ndarray,
@@ -244,12 +371,35 @@ def _draw_omp_trace_axis(
     angles: np.ndarray,
     acc: np.ndarray,
     *,
+    sem: np.ndarray | None = None,
+    band_lower: np.ndarray | None = None,
+    band_upper: np.ndarray | None = None,
     color: str,
     marker: str,
     label: str,
     show_xlabel: bool = False,
 ) -> None:
     """Draw one condition-specific angle-resolved OMP trace."""
+    if band_lower is not None and band_upper is not None:
+        ax.fill_between(
+            angles,
+            np.clip(band_lower, 0.0, 1.0),
+            np.clip(band_upper, 0.0, 1.0),
+            color=color,
+            alpha=0.12,
+            linewidth=0,
+            zorder=1,
+        )
+    elif sem is not None:
+        ax.fill_between(
+            angles,
+            np.clip(acc - sem, 0.0, 1.0),
+            np.clip(acc + sem, 0.0, 1.0),
+            color=color,
+            alpha=0.12,
+            linewidth=0,
+            zorder=1,
+        )
     ax.plot(
         angles,
         acc,
@@ -258,6 +408,7 @@ def _draw_omp_trace_axis(
         linewidth=0.9,
         markersize=2.6,
         markeredgewidth=0.0,
+        zorder=2,
     )
     ax.set_ylim(-0.05, 1.05)
     ax.set_yticks([0.0, 1.0])
@@ -289,6 +440,8 @@ def _draw_stacked_omp_panel(
     angles: np.ndarray,
     omp_acc_wn: np.ndarray,
     omp_acc_sp: np.ndarray,
+    omp_sem_wn: np.ndarray,
+    omp_sem_sp: np.ndarray,
     omp_mean_wn: float,
     omp_mean_sp: float,
     panel_label: str,
@@ -302,6 +455,7 @@ def _draw_stacked_omp_panel(
         ax_top,
         angles,
         omp_acc_wn,
+        sem=omp_sem_wn,
         color=SEMANTIC_PALETTE["physics"],
         marker="o",
         label=f"White noise ({omp_mean_wn:.1%})",
@@ -311,6 +465,7 @@ def _draw_stacked_omp_panel(
         ax_bot,
         angles,
         omp_acc_sp,
+        sem=omp_sem_sp,
         color=SEMANTIC_PALETTE["ablation"],
         marker="s",
         label=f"Speech ({omp_mean_sp:.1%})",
@@ -457,8 +612,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     pa_sem_sp = np.where(pa_n_sp > 0, pa_std_sp / np.sqrt(pa_n_sp), 0.0)
 
     # --- OMP accuracy (WN and Speech) ---
-    omp_acc_wn = _compute_omp_accuracy(Y_wn, labels_wn, D, n_angles, n_atoms)
-    omp_acc_sp = _compute_omp_accuracy(Y_val, labels, D, n_angles, n_atoms)
+    omp_acc_wn, omp_sem_wn = _compute_omp_accuracy_sem(Y_wn, labels_wn, D, n_angles, n_atoms)
+    omp_acc_sp, omp_sem_sp = _compute_omp_accuracy_sem(Y_val, labels, D, n_angles, n_atoms)
     omp_mean_wn = float(np.mean(omp_acc_wn))
     omp_mean_sp = float(np.mean(omp_acc_sp))
     print(f"[fig03] OMP accuracy — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
@@ -468,8 +623,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     sim_matrix_wn = _compute_trial_pairwise_matrix(Y_wn, labels_wn, n_angles)
 
     # --- Discriminability margin (panel c) ---
-    margin_wn = _discriminability_margin(sim_matrix_wn)
-    margin_sp = _discriminability_margin(sim_matrix_sp)
+    within_pools_wn, between_pools_wn = _compute_anglewise_corr_pools(Y_wn, labels_wn, n_angles)
+    within_pools_sp, between_pools_sp = _compute_anglewise_corr_pools(Y_val, labels, n_angles)
+    margin_wn = _margin_from_corr_pools(within_pools_wn, between_pools_wn)
+    margin_sp = _margin_from_corr_pools(within_pools_sp, between_pools_sp)
+    margin_ci_lo_wn, margin_ci_hi_wn = _bootstrap_margin_interval(within_pools_wn, between_pools_wn)
+    margin_ci_lo_sp, margin_ci_hi_sp = _bootstrap_margin_interval(within_pools_sp, between_pools_sp)
     print(f"[fig03] Discrim. margin — WN: {np.nanmean(margin_wn):.3f}, "
           f"Speech: {np.nanmean(margin_sp):.3f}")
 
@@ -480,6 +639,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     snr_labels: list[str] = []
     wn_omp_accs: list[float] = []
+    wn_omp_sems: list[float] = []
 
     print("[fig03] Computing WN SNR dose-response curve...")
     for item in snr_levels_cfg:
@@ -490,10 +650,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             print(f"[fig03]   SKIP SNR={snr_db}: {ds_path} not found")
             continue
         Y_snr, lab_snr, _ = _load_white_noise_features(str(ds_path))
-        acc = _compute_omp_mean_accuracy(Y_snr, lab_snr, D, n_angles, n_atoms)
+        acc, sem = _compute_omp_clip_accuracy_sem(Y_snr, lab_snr, D, n_angles, n_atoms)
         snr_labels.append(snr_db)
         wn_omp_accs.append(acc)
-        print(f"[fig03]   WN SNR={snr_db:>3s}: OMP acc = {acc:.3f}")
+        wn_omp_sems.append(sem)
+        print(f"[fig03]   WN SNR={snr_db:>3s}: OMP acc = {acc:.3f}, SEM = {sem:.3f}")
 
     # Line 2: Speech signal + babble noise (from pre-computed 5-seed data)
     sp_babble_path = data_root / paths_cfg.get("speech_babble_omp_snr", "")
@@ -563,6 +724,24 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     valid_wn = ~np.isnan(margin_wn)
     valid_sp = ~np.isnan(margin_sp)
 
+    ax_c.fill_between(
+        angles[valid_wn],
+        margin_ci_lo_wn[valid_wn],
+        margin_ci_hi_wn[valid_wn],
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.14,
+        linewidth=0,
+        zorder=0,
+    )
+    ax_c.fill_between(
+        angles[valid_sp],
+        margin_ci_lo_sp[valid_sp],
+        margin_ci_hi_sp[valid_sp],
+        color=SEMANTIC_PALETTE["ablation"],
+        alpha=0.12,
+        linewidth=0,
+        zorder=0,
+    )
     ax_c.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
               linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
               label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
@@ -584,6 +763,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         angles=angles,
         omp_acc_wn=omp_acc_wn,
         omp_acc_sp=omp_acc_sp,
+        omp_sem_wn=omp_sem_wn,
+        omp_sem_sp=omp_sem_sp,
         omp_mean_wn=omp_mean_wn,
         omp_mean_sp=omp_mean_sp,
         panel_label="d",
@@ -626,16 +807,37 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_f = fig.add_subplot(gs[1, 2])
 
     # Line 1: WN signal (blue)
+    wn_omp_arr = np.asarray(wn_omp_accs, dtype=float)
+    wn_omp_sem_arr = np.asarray(wn_omp_sems, dtype=float)
+    ax_f.fill_between(
+        snr_x_positions,
+        np.clip(wn_omp_arr - wn_omp_sem_arr, 0.0, 1.0),
+        np.clip(wn_omp_arr + wn_omp_sem_arr, 0.0, 1.0),
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.10,
+        linewidth=0,
+        zorder=0,
+    )
     ax_f.plot(snr_x_positions, wn_omp_accs, "-o", markersize=3,
               linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
               label=f"WN signal ({wn_omp_accs[0]:.0%})", zorder=2)
 
-    # Line 2: Speech signal + babble (orange, with SEM error bars)
+    # Line 2: Speech signal + babble (orange, 5-seed mean ± SEM band)
     if sp_omp_accs:
-        ax_f.errorbar(snr_x_positions, sp_omp_accs, yerr=sp_omp_sems,
-                      fmt="-s", markersize=3, linewidth=1.0, capsize=2, capthick=0.6,
-                      color=SEMANTIC_PALETTE["ablation"],
-                      label=f"Speech signal ({sp_omp_accs[0]:.0%})", zorder=2)
+        sp_omp_arr = np.asarray(sp_omp_accs, dtype=float)
+        sp_omp_sem_arr = np.asarray(sp_omp_sems, dtype=float)
+        ax_f.fill_between(
+            snr_x_positions,
+            np.clip(sp_omp_arr - sp_omp_sem_arr, 0.0, 1.0),
+            np.clip(sp_omp_arr + sp_omp_sem_arr, 0.0, 1.0),
+            color=SEMANTIC_PALETTE["ablation"],
+            alpha=0.12,
+            linewidth=0,
+            zorder=0,
+        )
+        ax_f.plot(snr_x_positions, sp_omp_arr, "-s", markersize=3,
+                  linewidth=1.0, color=SEMANTIC_PALETTE["ablation"],
+                  label=f"Speech signal ({sp_omp_accs[0]:.0%})", zorder=2)
 
     ax_f.set_xticks(snr_x_positions)
     xtick_labels_f = ["\u221e" if lbl == "Inf" else lbl for lbl in snr_labels]
@@ -680,6 +882,24 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel c standalone
     fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_c.add_subplot(111)
+    ax.fill_between(
+        angles[valid_wn],
+        margin_ci_lo_wn[valid_wn],
+        margin_ci_hi_wn[valid_wn],
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.14,
+        linewidth=0,
+        zorder=0,
+    )
+    ax.fill_between(
+        angles[valid_sp],
+        margin_ci_lo_sp[valid_sp],
+        margin_ci_hi_sp[valid_sp],
+        color=SEMANTIC_PALETTE["ablation"],
+        alpha=0.12,
+        linewidth=0,
+        zorder=0,
+    )
     ax.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
             linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
             label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
@@ -708,6 +928,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         angles=angles,
         omp_acc_wn=omp_acc_wn,
         omp_acc_sp=omp_acc_sp,
+        omp_sem_wn=omp_sem_wn,
+        omp_sem_sp=omp_sem_sp,
         omp_mean_wn=omp_mean_wn,
         omp_mean_sp=omp_mean_sp,
         panel_label="d",
@@ -741,14 +963,35 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel f standalone
     fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_f.add_subplot(111)
+    wn_omp_arr = np.asarray(wn_omp_accs, dtype=float)
+    wn_omp_sem_arr = np.asarray(wn_omp_sems, dtype=float)
+    ax.fill_between(
+        snr_x_positions,
+        np.clip(wn_omp_arr - wn_omp_sem_arr, 0.0, 1.0),
+        np.clip(wn_omp_arr + wn_omp_sem_arr, 0.0, 1.0),
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.10,
+        linewidth=0,
+        zorder=0,
+    )
     ax.plot(snr_x_positions, wn_omp_accs, "-o", markersize=4,
             linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
             label=f"WN signal ({wn_omp_accs[0]:.0%})")
     if sp_omp_accs:
-        ax.errorbar(snr_x_positions, sp_omp_accs, yerr=sp_omp_sems,
-                    fmt="-s", markersize=4, linewidth=1.0, capsize=2, capthick=0.6,
-                    color=SEMANTIC_PALETTE["ablation"],
-                    label=f"Speech signal ({sp_omp_accs[0]:.0%})")
+        sp_omp_arr = np.asarray(sp_omp_accs, dtype=float)
+        sp_omp_sem_arr = np.asarray(sp_omp_sems, dtype=float)
+        ax.fill_between(
+            snr_x_positions,
+            np.clip(sp_omp_arr - sp_omp_sem_arr, 0.0, 1.0),
+            np.clip(sp_omp_arr + sp_omp_sem_arr, 0.0, 1.0),
+            color=SEMANTIC_PALETTE["ablation"],
+            alpha=0.12,
+            linewidth=0,
+            zorder=0,
+        )
+        ax.plot(snr_x_positions, sp_omp_arr, "-s", markersize=4,
+                linewidth=1.0, color=SEMANTIC_PALETTE["ablation"],
+                label=f"Speech signal ({sp_omp_accs[0]:.0%})")
     ax.set_xticks(snr_x_positions)
     ax.set_xticklabels(xtick_labels_f, fontsize=6, rotation=45, ha="right")
     ax.set_xlabel("SNR (dB) \u2192 noise")
@@ -784,14 +1027,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Per-angle discriminability margin",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_discrim_margin.pdf",
                 "provenance_mode": "data_backed",
-                "description": "WN vs Speech discriminability margin (within_r - between_r) per angle.",
+                "description": "WN vs Speech discriminability margin (within_r - between_r) per angle with bootstrap uncertainty bands.",
             },
             {
                 "panel_id": "d",
                 "title": "Angle-resolved OMP traces",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_omp_comparison.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Stacked white-noise and speech OMP accuracy traces over the calibrated angle grid.",
+                "description": "Stacked white-noise and speech OMP accuracy traces over the calibrated angle grid with clip-level uncertainty bands.",
             },
             {
                 "panel_id": "e",
@@ -805,7 +1048,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "OMP dose-response curve",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_f_dose_response.pdf",
                 "provenance_mode": "data_backed",
-                "description": "OMP accuracy vs content variation (SNR sweep from pure WN to speech).",
+                "description": "OMP accuracy vs content variation (SNR sweep from pure WN to speech), with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.",
             },
         ],
     )
