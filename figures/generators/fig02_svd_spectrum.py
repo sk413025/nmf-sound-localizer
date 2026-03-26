@@ -177,7 +177,6 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     sigma_sq = S**2
     energy_r = sigma_sq / (sigma_sq.sum() + 1e-12)
     cum_energy_r = np.cumsum(energy_r)
-    r90 = int(np.argmax(np.cumsum(energy_r) >= 0.9) + 1)
     var_v_r = V.var(axis=0)
     doa_cap_r = energy_r * var_v_r
     doa_cap_r_norm = doa_cap_r / (doa_cap_r.sum() + 1e-12)
@@ -337,7 +336,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.set_xticklabels(["0\u00b0", "45\u00b0", "90\u00b0", "135\u00b0", "180\u00b0"], fontsize=6)
     ax_c.tick_params(pad=1)
     ax_c.legend(fontsize=5.5, frameon=False, loc="upper left", bbox_to_anchor=(-0.20, 1.10))
-    add_panel_label(ax_c, "c", x=-0.15)
+    add_panel_label(ax_c, "c", x=-0.15, y=1.09)
 
     # --- Panel (d): Full dictionary H heatmap ---
     ax_d = fig.add_subplot(gs[1, 0])
@@ -357,17 +356,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     rank_styles = [
         (3, "o", "#1f77b4"),
         (5, "s", "#ff7f0e"),
-        (r90, "^", "#2ca02c"),
+        (6, "^", "#2ca02c"),
     ]
     for rank, marker, color in rank_styles:
         rmse_by_angle = _reconstruction_rmse_by_angle(H_centered, U, S, Vt, rank)
-        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
+        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(
+            angles_deg, rmse_by_angle, avg_window=7
+        )
         ax_e.plot(
             angles_interp,
             rmse_interp,
             linewidth=1.0,
             color=color,
-            label=f"r={rank} (mean={rmse_by_angle.mean():.3f})",
+            label=f"r={rank} (mean={rmse_by_angle.mean():.4f})",
         )
         ax_e.plot(
             angles_deg,
@@ -400,10 +401,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_f.set_ylabel("Angle (\u00b0)", fontsize=6)
     ax_f.set_title("Inter-angle fingerprint similarity", fontsize=6.5)
-    cbar = plt.colorbar(im_f, ax=ax_f, fraction=0.046, pad=0.04)
+    cax_f = ax_f.inset_axes([1.04, 0.0, 0.045, 1.0])
+    cbar = plt.colorbar(im_f, cax=cax_f)
     cbar.set_label("Pearson r", fontsize=6)
     cbar.ax.tick_params(labelsize=6)
-    add_panel_label(ax_f, "f", x=-0.15)
+    add_panel_label(ax_f, "f", x=-0.15, y=1.09)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")
     plt.close(fig)
@@ -434,13 +436,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax = fig_e_s.add_subplot(111)
     for rank, marker, color in rank_styles:
         rmse_by_angle = _reconstruction_rmse_by_angle(H_centered, U, S, Vt, rank)
-        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(angles_deg, rmse_by_angle)
+        rmse_avg, angles_interp, rmse_interp = _smooth_angle_series(
+            angles_deg, rmse_by_angle, avg_window=7
+        )
         ax.plot(
             angles_interp,
             rmse_interp,
             linewidth=1.0,
             color=color,
-            label=f"r={rank} (mean={rmse_by_angle.mean():.3f})",
+            label=f"r={rank} (mean={rmse_by_angle.mean():.4f})",
         )
         ax.plot(
             angles_deg,
@@ -470,7 +474,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_yticklabels(tick_lab, fontsize=6)
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=6)
+    cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
+    plt.colorbar(im, cax=cax).set_label("Pearson r", fontsize=6)
     add_panel_label(ax, "f")
     fig_f_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
     all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_correlation"))
@@ -513,7 +518,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "All-angle reconstruction fidelity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_reconstruction.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Per-angle centered-magnitude RMSE under rank-3, rank-5, and rank-{r90} truncation across all 37 angles.",
+                "description": "Per-angle centered-magnitude RMSE under rank-3, rank-5, and rank-6 truncation across all 37 angles.",
             },
             {
                 "panel_id": "f",
@@ -526,5 +531,5 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     all_paths.append(manifest)
 
-    print(f"[fig02] Generated {len(all_paths)} files (H={H_np.shape}, angles={len(angles_deg)}, r90={r90})")
+    print(f"[fig02] Generated {len(all_paths)} files (H={H_np.shape}, angles={len(angles_deg)})")
     return all_paths

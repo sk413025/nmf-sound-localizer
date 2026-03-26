@@ -20,7 +20,7 @@ a, Singular-value spectrum across the full 37-mode basis. Cumulative fraction is
 b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6 (overlaid). These profiles highlight a dominant broadside-like channel (Mode 1), an edge-weighted grazing-angle-like channel (Mode 2), and an end-fire-like channel with a distinct higher-frequency shoulder (Mode 6).
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) across 0°–180° for representative Modes 1, 2, and 6 (overlaid), showing three physically interpretable directional couplings that define distinct virtual sensing channels.
 d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
-e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle centered-magnitude RMSE for ranks 3, 5, and 11, showing how reconstruction fidelity improves as additional modal channels are retained across the calibrated angle manifold.
+e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle centered-magnitude RMSE for ranks 3, 5, and 6, showing that reconstruction fidelity becomes strong within the same six-mode regime highlighted in panel a.
 f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band indicates that neighboring angles share similar spectral fingerprints, revealing the smooth physical angle manifold later exploited by the learned router (Fig. 5c).
 
 ## Fig. 3 (6 panels)
