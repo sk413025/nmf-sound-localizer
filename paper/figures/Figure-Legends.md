@@ -51,10 +51,11 @@ c, Correlation structure of the physical dictionary \(H\) (top) and the learned 
 d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas router-bypass shows broader off-axis leakage.
 e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
-## Fig. 6 (4 panels)
+## Fig. 6 (5 panels)
 
-**Fig. 6 | Physical encoding reproduces across materials, but object quality must be screened.**
-a, Five target objects spanning a broad range of material and geometric complexity: acrylic plate, paper cup, wooden board, cardboard box, and laptop shell.
-b, Cross-material transfer-function strip for the same five objects. Shared-normalization heatmaps of \(H\) show structured angle-frequency encoding across all materials despite different resonance patterns.
-c, Ranked downstream screening metrics from the matched per-object workflow. Cardboard box is the primary target because it achieves the highest top-1 accuracy and the lowest mean absolute error; wooden board is the backup because it delivers the strongest within-10° robustness.
-d, Physical proxy versus screening accuracy. Paper cup has the highest mean coherence of \(H\) but is not the best downstream object, whereas cardboard box is the best downstream object without having the strongest coherence.
+**Fig. 6 | Physical encoding reproduces across materials, and material-frequency structure governs screening outcomes.**
+a, Five target objects spanning a broad range of material and geometric complexity, shown here in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
+b, Cross-material \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across all materials despite different resonance patterns.
+c, Low-rank continuity. The same row-wise mean-centered magnitude SVD used in Fig. 2 was applied separately to each material-specific dictionary. The resulting cumulative-energy curves and rank90/rank95 summaries show that the encoder remains low-dimensional across the full object set, extending the low-rank physical-dictionary view from Fig. 2 beyond the single acrylic plate.
+d, Screening consequence. The left comparison shows that stronger overall response energy does not guarantee higher Top-1 screening accuracy, while the adjacent Top-1 and mean-absolute-error summaries with 95% bootstrap confidence intervals make the downstream screening ranking explicit: cardboard box is the primary target and wooden board is the strongest backup.
+e, Material frequency structure. Each material is shown as a three-level card: normalized spectral envelope, angular-contrast spectrum, and the representative directional code recovered from that material's selected informative band.

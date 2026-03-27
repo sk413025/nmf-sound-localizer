@@ -258,16 +258,16 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Physical Encoding Reproduces Across Materials, But Object Quality Must Be Screened"
+  title: "Physical Encoding Reproduces Across Materials And Material-Frequency Structure Governs Screening"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "Distinct everyday objects all exhibit structured direction-frequency encoding, but material quality is unequal and must be screened jointly in physical and task space."
-  legend_summary: "Material exemplars plus cross-material H matrices, downstream screening metrics, and physics-versus-task decoupling."
-  panel_order: ["a", "b", "c", "d"]
+  claim: "Everyday objects all exhibit structured direction-frequency encoders; the encoder remains low-dimensional across materials, and screening differences are explained better by material-specific frequency-localized directional structure than by overall response energy alone."
+  legend_summary: "Material exemplars, cross-material H breadth, low-rank continuity, a compact screening-consequence closure panel, and per-material frequency-structure cards."
+  panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
   compose_script: scripts/paper/compose_master_figure3_family.py
@@ -300,6 +300,9 @@ fig06_universality:
     - path: ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
       type: json
       description: "Primary/backup material selection summary."
+    - path: ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/support_report.json
+      type: json
+      description: "Cross-material low-rank, bootstrap, and per-angle support analysis."
     - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
       type: png
       description: "Committed support asset for the material exemplars strip."
@@ -310,9 +313,9 @@ fig06_universality:
       asset_path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
       note: "Committed support asset retained as the manuscript-facing exemplar strip."
     b:
-      title: "Cross-material H matrices"
+      title: "Cross-material H"
       provenance_mode: data_backed
-      asset_path: figures/output/fig06_universality_panels/fig06_panel_b_h_matrices.pdf
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf
       evidence_sources:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
@@ -320,16 +323,37 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
     c:
-      title: "Material screening metrics"
+      title: "Low-rank continuity"
       provenance_mode: data_backed
-      asset_path: figures/output/fig06_universality_panels/fig06_panel_c_material_screening.pdf
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf
       evidence_sources:
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
+        - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/low_rank_summary.csv
+    d:
+      title: "Screening consequence"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf
+      evidence_sources:
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
-    d:
-      title: "Physical quality versus task accuracy"
+        - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/material_performance_summary.csv
+    e:
+      title: "Material frequency structure"
       provenance_mode: data_backed
-      asset_path: figures/output/fig06_universality_panels/fig06_panel_d_physics_vs_task.pdf
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf
       evidence_sources:
-        - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
-  note: "Panel a remains a manual support asset. Panels b-d are generator-backed against the committed cross-material H-reproduction and material-selection bundles."
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
+  note: "Panel a remains a manual support asset. Panels b-e are generator-backed against the committed cross-material H-reproduction, support-analysis, and screening bundles."
