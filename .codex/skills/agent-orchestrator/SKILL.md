@@ -1,6 +1,6 @@
 ---
 name: agent-orchestrator
-description: Use this skill when coordinating multiple agents, defining role boundaries, choosing task packets, managing review loops, or supervising manuscript-first Codex workflows in this repository.
+description: Use this skill when coordinating multiple agents, defining role boundaries, choosing task packets, managing review loops, or routing ambiguous manuscript-first requests to the right existing core skill in this repository.
 ---
 
 # Agent Orchestrator
@@ -29,6 +29,12 @@ Open and follow:
 2. Choose the right task packet, role, and core skill.
 3. Define review, handoff, and escalation requirements.
 4. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+
+Quick routing defaults:
+
+- "what is this figure or panel showing", "does this figure support the claim", or "what gap exists between this figure and this critique" -> `paper-asset-review`
+- "which factors matter most", "what can we compute now", "which metric explains performance better", or "can we do a factor audit" -> `experiment-results`
+- "write this as manuscript prose", "explain this for cross-disciplinary readers", or "rewrite this in plain language without losing rigor" -> `paper-submission`
 
 ## Guardrails
 
