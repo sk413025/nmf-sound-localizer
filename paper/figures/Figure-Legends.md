@@ -54,9 +54,9 @@ e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 mea
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Physical encoding reproduces across materials, and material-frequency structure governs screening outcomes.**
+**Fig. 6 | A cross-material physical encoding principle emerges, with material-frequency structure shaping downstream usability.**
 a, Five target objects spanning a broad range of material and geometric complexity, shown here in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Cross-material \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across all materials despite different resonance patterns.
 c, Low-rank continuity. The same row-wise mean-centered magnitude SVD used in Fig. 2 was applied separately to each material-specific dictionary. The resulting cumulative-energy curves and rank90/rank95 summaries show that the encoder remains low-dimensional across the full object set, extending the low-rank physical-dictionary view from Fig. 2 beyond the single acrylic plate.
-d, Screening consequence. The left comparison shows that stronger overall response energy does not guarantee higher Top-1 screening accuracy, while the adjacent Top-1 and mean-absolute-error summaries with 95% bootstrap confidence intervals make the downstream screening ranking explicit: cardboard box is the primary target and wooden board is the strongest backup.
+d, Screening consequence. The left comparison shows that stronger overall response energy does not guarantee higher Top-1 screening accuracy. The adjacent Top-1 and within-10° summaries with 95% bootstrap confidence intervals show that all five materials exceed chance after Holm correction, while the angle-level MAE profiles do not reveal detectable cross-material heterogeneity in this committed sample.
 e, Material frequency structure. Each material is shown as a three-level card: normalized spectral envelope, angular-contrast spectrum, and the representative directional code recovered from that material's selected informative band.
