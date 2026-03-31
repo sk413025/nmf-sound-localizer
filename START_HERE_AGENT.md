@@ -36,6 +36,8 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
 - Context mode: `summary-only` by default; switch to `summary+fork_context` only when task-relevant dialogue history cannot be safely compressed.
 - In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the parent decide when child agents are needed.
+- Apply this parent-orchestrator policy in both Default mode and Plan mode.
+- In Plan mode, delegated child work must stay non-mutating and limited to planning, exploration, checking, or review.
 - Treat the human as an occasional approver unless the task packet says otherwise.
 - Before making any paper-figure judgment, visually inspect the actual figure asset. If the asset is a PDF, convert every page to PNG previews first.
 - For generated or data-backed paper figures, trace the figure through its generator or composition code and upstream evidence sources before deciding panel identity, lineage, claim support, or Nature suitability.

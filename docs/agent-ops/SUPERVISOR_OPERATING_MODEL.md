@@ -37,6 +37,8 @@ The parent must not:
 - perform manuscript, evidence, figure-review, or experiment-analysis work that belongs to a child specialist
 - collapse into a direct worker when a child specialist should own the execution step
 
+This parent-only rule applies in both Default mode and Plan mode.
+
 ## Default flow
 
 1. classify the task
@@ -49,6 +51,13 @@ The parent must not:
 8. request review or red-team critique when required
 9. consolidate outputs
 10. escalate to the human approver only at milestone boundaries
+
+## Plan mode behavior
+
+- Keep the same parent-orchestrator routing in Plan mode.
+- The parent may spawn child agents for planning, exploration, checking, and review.
+- In Plan mode, both parent and child work must remain non-mutating and plan-safe.
+- Do not use child agents in Plan mode to implement repo-tracked changes.
 
 ## Context handoff policy
 

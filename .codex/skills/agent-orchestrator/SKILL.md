@@ -44,6 +44,8 @@ Do not:
 - collapse into the child-worker execution step yourself
 - dump irrelevant thread history into a child prompt
 
+Apply this parent-only rule in both Default mode and Plan mode.
+
 ## Workflow
 
 1. Classify the task by manuscript impact and role complexity.
@@ -55,6 +57,12 @@ Do not:
 7. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
 8. Define review, handoff, and escalation requirements.
 9. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+
+## Plan mode
+
+- Keep the same parent-orchestrator routing in Plan mode.
+- Use child agents in Plan mode only for planning, exploration, checking, and review.
+- Keep parent and child work non-mutating and plan-safe until execution mode.
 
 Quick routing defaults:
 
