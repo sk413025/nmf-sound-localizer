@@ -2,8 +2,8 @@
 
 Panel (b): Cross-material H strip across five materials.
 Panel (c): Low-rank continuity summary across materials using Fig. 2-style centered-magnitude SVD.
-Panel (d): Per-material frequency-structure cards with representative directional codes.
-Panel (e): Response-strength versus screening consequence summary.
+Panel (d): Response-strength versus screening consequence summary.
+Panel (e): Material frequency-structure matrix with representative directional codes.
 
 Panel (a) remains a manual support asset and is composed downstream.
 """
@@ -523,7 +523,7 @@ def _plot_panel_d(
     title_pt: float,
     add_label: bool,
 ) -> list[plt.Axes]:
-    ranking = ("b", "w", "a", "p", "m")
+    ranking = data["ranking"]
     freqs_khz = data["freqs_khz"]
     ax_block = _make_panel_block(
         fig,
@@ -533,89 +533,154 @@ def _plot_panel_d(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 3, hspace=0.28, wspace=0.18)
+    grid = slot_spec.subgridspec(
+        len(ranking),
+        4,
+        width_ratios=[0.50, 1.06, 1.06, 0.96],
+        hspace=0.22,
+        wspace=0.18,
+    )
     axes: list[plt.Axes] = []
+    row_axes: list[tuple[plt.Axes, plt.Axes, plt.Axes, plt.Axes]] = []
+    column_headers = ("Context / support", "Informative band", "Recovered code")
+    contrast_ymax = max(float(data["angular_contrast_smooth"][material].max()) for material in ranking)
+    contrast_ymax = 1.05 * max(contrast_ymax, 1e-6)
 
-    positions = {
-        "b": (0, 0),
-        "w": (0, 1),
-        "a": (0, 2),
-        "p": (1, 0),
-        "m": (1, 1),
-    }
-    for material in ranking:
-        row_idx, col_idx = positions[material]
+    def _style_matrix_axis(ax: plt.Axes, *, bottom_row: bool) -> None:
+        ax.set_facecolor("white")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#C6C6C6")
+        ax.spines["bottom"].set_color("#C6C6C6")
+        ax.spines["left"].set_linewidth(0.55)
+        ax.spines["bottom"].set_linewidth(0.55)
+        ax.tick_params(axis="y", left=False, labelleft=False)
+        if bottom_row:
+            ax.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
+        else:
+            ax.tick_params(axis="x", bottom=False, labelbottom=False)
+
+    for row_idx, material in enumerate(ranking):
         tint = _material_color(
             material,
             primary=data["primary_material"],
             backup=data["backup_material"],
         )
-        card = grid[row_idx, col_idx].subgridspec(3, 1, height_ratios=[1.0, 1.0, 1.0], hspace=0.08)
-        ax_env = fig.add_subplot(card[0, 0])
-        ax_contrast = fig.add_subplot(card[1, 0], sharex=ax_env)
-        ax_code = fig.add_subplot(card[2, 0])
+        ax_label = fig.add_subplot(grid[row_idx, 0])
+        ax_env = fig.add_subplot(grid[row_idx, 1])
+        ax_contrast = fig.add_subplot(grid[row_idx, 2], sharex=ax_env)
+        ax_code = fig.add_subplot(grid[row_idx, 3])
 
         band_lo = data["representative_band_lo_khz"][material]
         band_hi = data["representative_band_hi_khz"][material]
         freq_hz = data["representative_band_freq_hz"][material]
         angles = data["angles"][material]
+        band_center_khz = freq_hz / 1000.0
+        bottom_row = row_idx == len(ranking) - 1
+        support_alpha = 0.42 if material in {data["primary_material"], data["backup_material"]} else 0.30
 
-        ax_env.plot(freqs_khz, data["spectral_envelopes"][material], color=tint, linewidth=1.35)
-        ax_contrast.plot(freqs_khz, data["angular_contrast_smooth"][material], color=tint, linewidth=1.35)
-        ax_code.plot(angles, data["representative_directivity"][material], color=tint, linewidth=1.45)
+        ax_label.set_axis_off()
+        ax_label.text(
+            0.98,
+            0.5,
+            MATERIAL_LABELS[material],
+            transform=ax_label.transAxes,
+            ha="right",
+            va="center",
+            fontsize=max(axis_label_pt - 0.4, 5.4),
+            color=tint,
+        )
 
-        ax_env.axvspan(band_lo, band_hi, color=tint, alpha=0.10, zorder=0)
-        ax_contrast.axvspan(band_lo, band_hi, color=tint, alpha=0.10, zorder=0)
-
-        ax_env.set_title(MATERIAL_SHORT_LABELS[material], fontsize=title_pt - 0.2, pad=1.8)
+        ax_env.axvspan(band_lo, band_hi, color=tint, alpha=0.08, zorder=0)
+        ax_env.fill_between(freqs_khz, 0, data["spectral_envelopes"][material], color=tint, alpha=0.05)
+        ax_env.plot(
+            freqs_khz,
+            data["spectral_envelopes"][material],
+            color=tint,
+            alpha=support_alpha,
+            linewidth=1.0,
+        )
         ax_env.set_xlim(0.3, 3.0)
-        ax_env.set_ylim(0.0, 1.05)
+        ax_env.set_ylim(0.0, 1.02)
         ax_env.set_xticks([0.5, 1.5, 2.5])
-        ax_env.tick_params(axis="both", labelsize=tick_label_pt, length=2)
-        ax_env.tick_params(axis="x", bottom=False, labelbottom=False)
-        ax_env.grid(True, alpha=0.18)
+        _style_matrix_axis(ax_env, bottom_row=bottom_row)
 
-        ymax = max(1.0, float(data["angular_contrast_smooth"][material].max()))
-        ax_contrast.set_ylim(0.0, 1.05 * ymax)
+        ax_contrast.axvspan(band_lo, band_hi, color=tint, alpha=0.18, zorder=0)
+        ax_contrast.axvline(band_center_khz, color=tint, linewidth=0.9, linestyle="--", alpha=0.55)
+        ax_contrast.plot(
+            freqs_khz,
+            data["angular_contrast_smooth"][material],
+            color=tint,
+            linewidth=1.5,
+        )
+        ax_contrast.set_xlim(0.3, 3.0)
+        ax_contrast.set_ylim(0.0, contrast_ymax)
         ax_contrast.set_xticks([0.5, 1.5, 2.5])
-        ax_contrast.tick_params(axis="both", labelsize=tick_label_pt, length=2)
-        ax_contrast.grid(True, alpha=0.18)
-        if row_idx == 0:
-            ax_contrast.tick_params(axis="x", bottom=False, labelbottom=False)
+        ax_contrast.text(
+            0.98,
+            0.82,
+            f"{band_center_khz:.2f} kHz",
+            transform=ax_contrast.transAxes,
+            ha="right",
+            va="center",
+            fontsize=max(tick_label_pt - 0.2, 5.0),
+            color="black",
+            bbox={"boxstyle": "round,pad=0.14", "facecolor": "white", "edgecolor": "none", "alpha": 0.82},
+        )
+        _style_matrix_axis(ax_contrast, bottom_row=bottom_row)
 
+        ax_code.fill_between(angles, 0, data["representative_directivity"][material], color=tint, alpha=0.10)
+        ax_code.plot(
+            angles,
+            data["representative_directivity"][material],
+            color=tint,
+            linewidth=1.55,
+        )
         ax_code.set_xlim(float(angles.min()), float(angles.max()))
         ax_code.set_ylim(-0.02, 1.02)
         ax_code.set_xticks([0, 90, 180])
-        ax_code.tick_params(axis="both", labelsize=tick_label_pt, length=2)
-        ax_code.grid(True, alpha=0.18)
-        if row_idx == 0:
-            ax_code.tick_params(axis="x", labelbottom=False)
-        ax_code.text(
-            0.98,
-            0.94,
-            f"{int(round(freq_hz))} Hz",
-            transform=ax_code.transAxes,
-            ha="right",
-            va="top",
-            fontsize=max(title_pt - 0.55, 5.2),
+        _style_matrix_axis(ax_code, bottom_row=bottom_row)
+
+        if bottom_row:
+            ax_env.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
+            ax_contrast.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
+            ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.5)
+
+        axes.extend([ax_label, ax_env, ax_contrast, ax_code])
+        row_axes.append((ax_label, ax_env, ax_contrast, ax_code))
+
+    block_bbox = ax_block.get_position()
+    x_left = (row_axes[0][0].get_position().x0 - block_bbox.x0) / block_bbox.width
+    x_right = (row_axes[0][3].get_position().x1 - block_bbox.x0) / block_bbox.width
+    for col_idx, header in enumerate(column_headers):
+        axis_bbox = row_axes[0][col_idx + 1].get_position()
+        x_center = ((axis_bbox.x0 + axis_bbox.x1) * 0.5 - block_bbox.x0) / block_bbox.width
+        ax_block.text(
+            x_center,
+            1.015,
+            header,
+            transform=ax_block.transAxes,
+            ha="center",
+            va="bottom",
+            fontsize=max(title_pt - 0.2, 5.8),
+            color="black",
         )
 
-        if col_idx == 0 and row_idx == 0:
-            ax_env.set_ylabel("Norm.\n|H|", fontsize=axis_label_pt, labelpad=1.0)
-            ax_contrast.set_ylabel("Ang.\ncontrast", fontsize=axis_label_pt, labelpad=1.0)
-            ax_code.set_ylabel("Norm.\ncode", fontsize=axis_label_pt, labelpad=1.0)
-        else:
-            ax_env.set_yticklabels([])
-            ax_contrast.set_yticklabels([])
-            ax_code.set_yticklabels([])
+    for row_idx in range(len(row_axes) - 1):
+        upper_bbox = row_axes[row_idx][1].get_position()
+        lower_bbox = row_axes[row_idx + 1][1].get_position()
+        y_sep = ((upper_bbox.y0 + lower_bbox.y1) * 0.5 - block_bbox.y0) / block_bbox.height
+        ax_block.plot(
+            [x_left, x_right],
+            [y_sep, y_sep],
+            transform=ax_block.transAxes,
+            color="#E1E1E1",
+            linewidth=0.85,
+            zorder=0,
+            clip_on=False,
+        )
 
-        # Keep only tick labels on the bottom cards; panel-level x-axis wording is
-        # less important than avoiding collisions inside this dense mechanism row.
-
-        axes.extend([ax_env, ax_contrast, ax_code])
-    ax_blank = fig.add_subplot(grid[1, 2])
-    ax_blank.axis("off")
-    return [ax_block, *axes, ax_blank]
+    return [ax_block, *axes]
 
 
 def _plot_panel_e(
@@ -912,7 +977,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Material frequency structure",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Per-material cards showing normalized spectral envelope, angular-contrast spectrum, and the representative band-limited directional code selected from the committed H matrices.",
+                "description": "Five-row by three-column mechanism matrix showing the contextual spectral support, informative angular-contrast band, and recovered representative directional code for each screened material.",
             },
         ],
         typography=typography,
