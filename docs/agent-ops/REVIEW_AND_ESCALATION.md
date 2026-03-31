@@ -34,6 +34,7 @@ Red-team review is mandatory for:
 - `WARN_CAPABILITY`: the proposal assumes Codex features that are not grounded in local primitives
 - `WARN_ACTIONABILITY`: the output cannot be handed to another agent without new decisions
 - `WARN_CONTEXT`: the child-agent handoff is missing relevant conversation context or leaks irrelevant history
+- `WARN_DECOMPOSITION`: the parent kept a multi-scope request in one child task without a valid single-child rationale
 - `WARN_SUPERVISION`: the parent interrupted or closed a child agent without first checking current status or latest output
 - `WARN_DUPLICATION`: the output duplicates an existing role, skill, or document path
 - `WARN_EVIDENCE`: claims or recommendations are not tied to files, commands, or artifacts

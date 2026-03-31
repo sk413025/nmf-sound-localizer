@@ -32,6 +32,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Prefer a task packet and a skill before improvising a workflow.
 - The top-level agent is the parent orchestrator, not a worker.
 - Even a single bounded task should be handed to at least one child agent.
+- Use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
 - After spawning a child agent, monitor it until completion, explicit redirect, or a justified shutdown.

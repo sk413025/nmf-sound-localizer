@@ -52,20 +52,32 @@ Apply this parent-only rule in both Default mode and Plan mode.
 
 1. Classify the task by manuscript impact and role complexity.
 2. Treat this repository's default operating mode as standing authorization for sub-agent use.
-3. Choose the right child task packet, role, and core skill.
-4. Write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`.
-5. Summarize only the task-relevant conversation history.
-6. Use `Context mode: summary-only` by default.
-7. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-8. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-9. Define review, handoff, and escalation requirements.
-10. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+3. Decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
+4. Choose the right child task packet, role, and core skill for each child task.
+5. Write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`.
+6. Summarize only the task-relevant conversation history.
+7. Use `Context mode: summary-only` by default.
+8. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+9. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+10. Define review, handoff, and escalation requirements.
+11. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## Plan mode
 
 - Keep the same parent-orchestrator routing in Plan mode.
 - Use child agents in Plan mode only for planning, exploration, checking, and review.
 - Keep parent and child work non-mutating and plan-safe until execution mode.
+
+## Decomposition decision
+
+Use a single child only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
+
+Decompose into multiple child tasks when the request:
+
+- spans multiple skills or specialist roles
+- mixes execution with a separate review, audit, or red-team pass
+- contains parallelizable subproblems with different source-of-truth sets or outputs
+- would force one child packet to satisfy multiple independent acceptance criteria
 
 ## Supervision loop
 

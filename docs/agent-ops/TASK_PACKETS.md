@@ -16,6 +16,10 @@ Every packet should include:
 `Context mode: summary-only` is the default.
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
 
+Before issuing any packet, the parent must make a decomposition decision.
+Use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
+Split the request into multiple child packets when it spans multiple skills or roles, mixes execution with separate review work, or contains independent acceptance criteria that can be delegated separately.
+
 ## Manuscript and submission packet
 
 - Role: `manuscript-reviser`, `claim-auditor`, or `submission-auditor`
@@ -121,7 +125,7 @@ Use `Context mode: summary+fork_context` only when exact wording, multi-turn dec
   - assume repository-default standing authorization for sub-agent use unless a higher-level constraint blocks delegation
 - Expected outputs:
   - task framing
-  - role assignments, review findings, or `Context mode` decisions
+  - role assignments, decomposition decisions, review findings, or `Context mode` decisions
   - warnings, rewrites, or milestone summary
 - Escalate when:
   - a proposal introduces new governance layers or duplicate skills

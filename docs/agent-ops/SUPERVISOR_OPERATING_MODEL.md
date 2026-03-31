@@ -45,8 +45,8 @@ This parent-only rule applies in both Default mode and Plan mode.
 
 1. classify the task
 2. treat the repository default as standing authorization for sub-agent use
-3. choose the right child role, specialist skill, and task packet
-4. decide whether one child or multiple children are needed
+3. decide whether the request is a true single-child task or must be decomposed into multiple child tasks
+4. choose the right child role, specialist skill, and task packet for each child task
 5. write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`
 6. choose `summary-only` or `summary+fork_context`
 7. assign child specialists with explicit outputs and handoff targets
@@ -54,6 +54,23 @@ This parent-only rule applies in both Default mode and Plan mode.
 9. request review or red-team critique when required
 10. consolidate outputs
 11. escalate to the human approver only at milestone boundaries
+
+## Decomposition threshold
+
+Use a single child only when all of the following are true:
+
+- the work maps to one core skill
+- the work has one main output bundle
+- the work does not require an independent review or red-team pass as a separate child task
+- the acceptance criteria can be satisfied by one bounded specialist task packet
+
+Decompose into multiple child tasks when any of the following are true:
+
+- the request spans more than one core skill or specialist role
+- the request combines execution work with a separate review, audit, or red-team step
+- the request contains parallelizable subproblems with different source-of-truth sets or output bundles
+- one child packet would otherwise contain multiple independent acceptance criteria or loosely related asks
+- evidence, figure, manuscript, or governance work must be coordinated but should not be executed by the same child
 
 ## Plan mode behavior
 

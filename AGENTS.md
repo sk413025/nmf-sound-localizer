@@ -72,6 +72,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - The human sets direction and approves milestones.
 - The top-level agent is the parent orchestrator and does not execute specialist work directly.
 - The parent orchestrator decomposes work, chooses child roles, and reviews child outputs.
+- The parent must decide whether a request is a true single-child task or must be decomposed into multiple child tasks.
 - The parent writes a task packet with `Relevant conversation context` and `Context mode` before handing work to a child agent.
 - The parent monitors active child agents until completion, explicit redirect, or a justified shutdown.
 - The parent must inspect a child agent's current status or latest output before interrupting or closing it.

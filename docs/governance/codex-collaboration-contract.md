@@ -19,6 +19,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Distinguish branch-local source of truth from archive material.
 - Route the top-level agent through `agent-orchestrator` and treat it as a parent orchestrator, not a worker.
 - Multi-agent recommendations must include explicit acceptance criteria and ownership boundaries.
+- The top-level parent must make an explicit decomposition decision before execution: single child only for genuinely single-scope work, otherwise split the request into multiple child tasks.
 - Require every child-agent handoff to include task framing plus `Relevant conversation context`.
 - Default child-agent handoff to `Context mode: summary-only`; use `summary+fork_context` only when exact task-relevant dialogue cannot be safely compressed.
 - Do not pass irrelevant thread history, hidden reasoning, or expected answers to child agents.
@@ -44,6 +45,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - local skills align with branch governance and stay limited to the core branch workflows
 - top-level routing goes through `agent-orchestrator`
 - task packets and role definitions are discoverable from the main governance path
+- decomposition guidance distinguishes valid single-child tasks from tasks that must be split
 - task packets include `Relevant conversation context` and explicit `Context mode`
 - supervision guidance requires child-status checks before interruption or shutdown
 - governance checks confirm the key files and links exist
