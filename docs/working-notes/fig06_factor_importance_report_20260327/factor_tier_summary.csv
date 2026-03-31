@@ -1,0 +1,6 @@
+family,tier,representative_metrics,mae_stability,descriptive_support,family_level_support,manuscript_safety,internal_note
+Geometry separability,Tier 1,full_far_mean; band_local_far_gap; rank95_far_collision_gt_0_8,Strong,Strong,Mixed,High,"Current leading candidate driver. The main signal comes from non-local overlap, collision, and local-vs-far separation rather than rank alone."
+Cross-material subspace overlap,Tier 2,mean_top3_subspace_overlap_to_others,Strong,Moderate,Weak,Medium,"Stable in elastic-net ranking, but family-level held-out support is still mixed. Good internal hypothesis, not yet a main-paper law."
+Dictionary conditioning,Tier 2,raw_condition_number,Strong,Weak,Moderate,Medium,"Conditioning still matters, but less than separability. It behaves more like a secondary structural constraint than the main driver."
+Low-rankness itself,Tier 3,effective_rank_centered_mag,Weak,Weak,Weak,High,"Necessary background substrate, but weak as a standalone predictor of encoding quality."
+Raw coherence,Tier 4,raw_mean_coherence,Unsupported,Unsupported,Unsupported,Low,Should not be used as the main summary variable for Fig. 6. It is inconsistent with downstream outcome and was dropped by collinearity filtering.
