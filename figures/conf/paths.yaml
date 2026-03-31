@@ -19,6 +19,9 @@ ablation_sweep:
   sweep_suffix: babble_speech260_full_20260209_011327
   aggregated_json: results/figure4_data.json
 
+# Derived stepwise mechanism artifact used by the active Fig. 4 panels b-d
+fig04_stepwise_mechanics: results/fig04_stepwise_mechanics.npz
+
 # Confusion-matrix metrics used by the active Fig. 5 confusion panels and the retired supplementary confusion family
 confusion_matrix:
   omp_baseline: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz

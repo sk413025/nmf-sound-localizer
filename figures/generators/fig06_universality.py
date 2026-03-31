@@ -300,6 +300,10 @@ def _material_color(material: str, *, primary: str, backup: str | None) -> str:
     return OTHER_COLOR
 
 
+def _screening_material_style(material: str) -> dict[str, str]:
+    return PANEL_C_MATERIAL_STYLES.get(material, {"color": OTHER_COLOR, "marker": "o"})
+
+
 def _make_panel_block(
     fig: plt.Figure,
     slot_spec,
@@ -643,11 +647,9 @@ def _plot_panel_e(
     mae_values: list[float] = []
     top1_values: list[float] = []
     for idx, material in enumerate(ranking):
-        tint = _material_color(
-            material,
-            primary=data["primary_material"],
-            backup=data["backup_material"],
-        )
+        style = _screening_material_style(material)
+        tint = style["color"]
+        marker = style["marker"]
         if material in {data["primary_material"], data["backup_material"]}:
             for ax in (ax_energy, ax_top1, ax_mae):
                 ax.axhspan(idx - 0.48, idx + 0.48, color=tint, alpha=0.06, zorder=0)
@@ -668,32 +670,35 @@ def _plot_panel_e(
         ax_energy.scatter(
             energy_x,
             idx,
-            s=26,
+            s=36,
             facecolors="white",
-            edgecolors="#333333",
-            linewidths=1.0,
+            edgecolors=tint,
+            linewidths=1.15,
+            marker=marker,
             zorder=3,
         )
-        ax_energy.scatter(top1_x, idx, s=30, color=tint, zorder=4)
+        ax_energy.scatter(top1_x, idx, s=40, color=tint, marker=marker, zorder=4)
 
         ax_top1.errorbar(
             top1,
             idx,
             xerr=[[top1 - top1_lo], [top1_hi - top1]],
-            fmt="o",
+            fmt="none",
             capsize=3,
-            color=tint,
+            ecolor=tint,
             zorder=3,
         )
+        ax_top1.scatter(top1, idx, s=40, color=tint, marker=marker, zorder=4)
         ax_mae.errorbar(
             mae,
             idx,
             xerr=[[mae - mae_lo], [mae_hi - mae]],
-            fmt="o",
+            fmt="none",
             capsize=3,
-            color=tint,
+            ecolor=tint,
             zorder=3,
         )
+        ax_mae.scatter(mae, idx, s=40, color=tint, marker=marker, zorder=4)
 
     ax_energy.set_title("Energy / Top-1", fontsize=title_pt - 0.1, loc="left", x=0.10, pad=2)
     ax_energy.set_xlim(-0.02, 1.02)

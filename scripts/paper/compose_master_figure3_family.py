@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compose panel-first paper-facing figures (6-figure, 32-panel structure).
+"""Compose panel-first paper-facing figures (6-figure manuscript set).
 
 This script rebuilds the manuscript assets for the current main-paper figure set
 from panel-level assets whenever possible:
@@ -7,7 +7,7 @@ from panel-level assets whenever possible:
 - Fig. 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
-- Fig. 4: Solver Dynamics (4 panels: a external + b,c,d generated)
+- Fig. 4: Solver Mechanism (5 panels: a external + b,c,d,e generated)
 - Fig. 5: Performance + Structure (6 panels: all generated)
 - Fig. 6: Universality (4 panels: a manual support + b,c,d generated)
 """
@@ -67,31 +67,31 @@ FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Solver Dynamics (4 panels: a manual support + b,c,d generated) ---
+# --- Figure 4: Solver Mechanism (5 panels: a manual support + b,c,d,e generated) ---
 FIG04_PANEL_A = (
     REPO_ROOT
     / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg"
 )
-FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf"
-FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf"
-FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf"
+FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf"
+FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf"
+FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf"
+FIG04_PANEL_E = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf"
 FIG04_COMPOSE = figure_section("fig04", "compose")
 FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
 FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
-FIG04_A_HEIGHT_MM = float(FIG04_COMPOSE["panel_a_height_mm"])
+FIG04_OUTER_MARGIN_MM = float(FIG04_COMPOSE["outer_margin_mm"])
+FIG04_PANEL_A_SLOT_WIDTH_MM = float(FIG04_COMPOSE["panel_a_slot_width_mm"])
+FIG04_PANEL_A_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_a_slot_height_mm"])
 FIG04_ROW_GAP_MM = float(FIG04_COMPOSE["row_gap_mm"])
-FIG04_BOTTOM_GAP_MM = float(FIG04_COMPOSE["bottom_gap_mm"])
-FIG04_BOTTOM_B_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["b"])
-FIG04_BOTTOM_C_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["c"])
-FIG04_BOTTOM_D_WEIGHT = float(FIG04_COMPOSE["bottom_weights"]["d"])
-FIG04_BOTTOM_ROW_HEIGHT_MM = FIG04_HEIGHT_MM - FIG04_A_HEIGHT_MM - FIG04_ROW_GAP_MM
-FIG04_BOTTOM_AVAILABLE_WIDTH_MM = FIG04_WIDTH_MM - 2 * FIG04_BOTTOM_GAP_MM
-FIG04_BOTTOM_UNIT_MM = FIG04_BOTTOM_AVAILABLE_WIDTH_MM / (
-    FIG04_BOTTOM_B_WEIGHT + FIG04_BOTTOM_C_WEIGHT + FIG04_BOTTOM_D_WEIGHT
-)
-FIG04_B_WIDTH_MM = FIG04_BOTTOM_B_WEIGHT * FIG04_BOTTOM_UNIT_MM
-FIG04_C_WIDTH_MM = FIG04_BOTTOM_C_WEIGHT * FIG04_BOTTOM_UNIT_MM
-FIG04_D_WIDTH_MM = FIG04_BOTTOM_D_WEIGHT * FIG04_BOTTOM_UNIT_MM
+FIG04_COL_GAP_MM = float(FIG04_COMPOSE["col_gap_mm"])
+FIG04_LOWER_PANEL_SLOT_WIDTH_MM = float(FIG04_COMPOSE["lower_panel_slot_width_mm"])
+FIG04_LOWER_PANEL_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["lower_panel_slot_height_mm"])
+FIG04_PANEL_D_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_d_slot_height_mm"])
+FIG04_PANEL_E_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_e_slot_height_mm"])
+FIG04_RIGHT_STACK_GAP_MM = float(FIG04_COMPOSE["right_stack_gap_mm"])
+FIG04_LABEL_LANE_MM = float(FIG04_COMPOSE["label_lane_mm"])
+FIG04_CONTENT_INSET_X_MM = float(FIG04_COMPOSE["content_inset_x_mm"])
+FIG04_CONTENT_INSET_BOTTOM_MM = float(FIG04_COMPOSE["content_inset_bottom_mm"])
 FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 0.88)
 
 # --- Figure 5: Performance + Structure (6 panels: all generated) ---
@@ -99,22 +99,41 @@ FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
 FIG05_WIDTH_MM = 183.0
 
-# --- Figure 6: Universality (4 panels: a manual support + b,c,d generated) ---
+# --- Figure 6: Universality (5 panels: a manual support + b,c,d,e generated) ---
 FIG06_PANEL_A = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png"
-FIG06_PANEL_B = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_b_h_matrices.pdf"
-FIG06_PANEL_C = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_c_material_screening.pdf"
-FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_physics_vs_task.pdf"
-FIG06_COMPOSE = figure_section("fig06", "compose")
-FIG06_WIDTH_MM = float(FIG06_COMPOSE["width_mm"])
-FIG06_HEIGHT_MM = float(FIG06_COMPOSE["height_mm"])
-FIG06_A_HEIGHT_MM = float(FIG06_COMPOSE["panel_a_height_mm"])
-FIG06_B_HEIGHT_MM = float(FIG06_COMPOSE["panel_b_height_mm"])
-FIG06_BOTTOM_HEIGHT_MM = float(FIG06_COMPOSE["bottom_height_mm"])
-FIG06_ROW_GAP_MM = float(FIG06_COMPOSE["row_gap_mm"])
-FIG06_BOTTOM_GAP_MM = float(FIG06_COMPOSE["bottom_gap_mm"])
-FIG06_C_WIDTH_MM = float(FIG06_COMPOSE["panel_c_width_mm"])
-FIG06_D_WIDTH_MM = float(FIG06_COMPOSE["panel_d_width_mm"])
-FIG06_PANEL_A_CROP = (0.01, 0.36, 0.99, 0.87)
+FIG06_PANEL_B = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf"
+FIG06_PANEL_C = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf"
+FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf"
+FIG06_PANEL_E = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf"
+FIG06_LAYOUT_ERROR: Exception | None = None
+try:
+    FIG06_COMPOSE = figure_section("fig06", "compose")
+    FIG06_WIDTH_MM = float(FIG06_COMPOSE["width_mm"])
+    FIG06_HEIGHT_MM = float(FIG06_COMPOSE["height_mm"])
+    FIG06_OUTER_MARGIN_X_MM = float(FIG06_COMPOSE["outer_margin_x_mm"])
+    FIG06_OUTER_MARGIN_TOP_MM = float(FIG06_COMPOSE["outer_margin_top_mm"])
+    FIG06_OUTER_MARGIN_BOTTOM_MM = float(FIG06_COMPOSE["outer_margin_bottom_mm"])
+    FIG06_A_HEIGHT_MM = float(FIG06_COMPOSE["panel_a_height_mm"])
+    FIG06_B_HEIGHT_MM = float(FIG06_COMPOSE["panel_b_height_mm"])
+    FIG06_C_HEIGHT_MM = float(FIG06_COMPOSE["panel_c_height_mm"])
+    FIG06_D_HEIGHT_MM = float(FIG06_COMPOSE["panel_d_height_mm"])
+    FIG06_PANEL_C_WIDTH_MM = float(FIG06_COMPOSE["panel_c_width_mm"])
+    FIG06_PANEL_E_WIDTH_MM = float(FIG06_COMPOSE["panel_e_width_mm"])
+    FIG06_COL_GAP_MM = float(FIG06_COMPOSE["col_gap_mm"])
+    FIG06_ROW_GAP_MM = float(FIG06_COMPOSE["row_gap_mm"])
+except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06 contract drift
+    FIG06_LAYOUT_ERROR = exc
+    FIG06_COMPOSE = {}
+    FIG06_WIDTH_MM = FIG06_HEIGHT_MM = 0.0
+    FIG06_OUTER_MARGIN_X_MM = FIG06_OUTER_MARGIN_TOP_MM = FIG06_OUTER_MARGIN_BOTTOM_MM = 0.0
+    FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_C_HEIGHT_MM = FIG06_D_HEIGHT_MM = 0.0
+    FIG06_PANEL_C_WIDTH_MM = FIG06_PANEL_E_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
+    FIG06_ROW_GAP_MM = 0.0
+FIG06_PANEL_A_CROP = (0.01, 0.43, 0.99, 0.83)
+FIG06_TYPOGRAPHY_PT = {
+    **font_tokens(),
+    **figure_section("fig06", "typography"),
+}
 
 
 def _ensure_parent(path: Path) -> None:
@@ -167,6 +186,15 @@ def _resize_to_width(img: Image.Image, target_width: int) -> Image.Image:
 
 
 def _contain_in_box(img: Image.Image, box_width: int, box_height: int) -> Image.Image:
+    contained, _geometry = _contain_in_box_with_geometry(img, box_width, box_height)
+    return contained
+
+
+def _contain_in_box_with_geometry(
+    img: Image.Image,
+    box_width: int,
+    box_height: int,
+) -> tuple[Image.Image, dict[str, int | float]]:
     scale = min(box_width / max(img.width, 1), box_height / max(img.height, 1))
     target_width = int(round(img.width * scale))
     target_height = int(round(img.height * scale))
@@ -175,7 +203,13 @@ def _contain_in_box(img: Image.Image, box_width: int, box_height: int) -> Image.
     x = (box_width - target_width) // 2
     y = (box_height - target_height) // 2
     canvas.paste(resized, (x, y))
-    return canvas
+    return canvas, {
+        "offset_x_px": x,
+        "offset_y_px": y,
+        "resized_width_px": target_width,
+        "resized_height_px": target_height,
+        "scale": scale,
+    }
 
 
 def _crop_relative(
@@ -193,6 +227,25 @@ def _crop_relative(
         int(round(height * bottom)),
     )
     return img.crop(box)
+
+
+def _reorder_strip_tiles(img: Image.Image, order: list[int]) -> Image.Image:
+    if not order:
+        return img
+    n_tiles = len(order)
+    tile_width = img.width // n_tiles
+    tiles = []
+    for idx in range(n_tiles):
+        left = idx * tile_width
+        right = img.width if idx == n_tiles - 1 else (idx + 1) * tile_width
+        tiles.append(img.crop((left, 0, right, img.height)))
+    canvas = Image.new("RGB", img.size, "white")
+    x = 0
+    for idx in order:
+        tile = tiles[idx]
+        canvas.paste(tile, (x, 0))
+        x += tile.width
+    return canvas
 
 
 def _mm_to_px(mm: float) -> int:
@@ -236,6 +289,35 @@ def _bbox_payload(x0_mm: float, y0_mm: float, width_mm: float, height_mm: float,
 def _write_layout_metadata(path: Path, payload: dict[str, Any]) -> None:
     _ensure_parent(path)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _write_reference_panel_manifest(
+    path: Path,
+    *,
+    figure_id: str,
+    composite_asset: str,
+    panels: list[dict[str, str]],
+) -> None:
+    _ensure_parent(path)
+    payload = {
+        "composite_asset": composite_asset,
+        "figure_id": figure_id,
+        "panel_order": [panel["panel_id"] for panel in panels],
+        "panels": [
+            {
+                "asset_path": panel["asset_path"],
+                "panel_id": panel["panel_id"],
+                "provenance_mode": panel["provenance_mode"],
+                "source_asset": panel["asset_path"],
+                "source_layer": "mixed_panel_lineage",
+                "storage_mode": "reference_existing_outputs",
+                "title": panel["title"],
+            }
+            for panel in panels
+        ],
+        "storage_mode": "reference_existing_outputs",
+    }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _transform_bbox_norm_for_manuscript(
@@ -301,8 +383,10 @@ def _transform_layout_payload_for_manuscript(
     canvas_width_px: int,
     canvas_height_px: int,
     figure_width_mm: float,
+    figure_height_mm: float | None = None,
 ) -> dict[str, Any]:
-    figure_height_mm = round(figure_width_mm * canvas_height_px / canvas_width_px, 3)
+    if figure_height_mm is None:
+        figure_height_mm = round(figure_width_mm * canvas_height_px / canvas_width_px, 3)
     cropped_width_px = max(crop_box[2] - crop_box[0], 1)
     scale = resized_width_px / cropped_width_px
     bbox_keys = (
@@ -348,6 +432,37 @@ def _transform_layout_payload_for_manuscript(
     }
 
 
+def _bbox_payload_from_canvas_px(
+    left_px: int,
+    top_px: int,
+    width_px: int,
+    height_px: int,
+    *,
+    canvas_width_px: int,
+    canvas_height_px: int,
+    figure_width_mm: float,
+    figure_height_mm: float,
+) -> dict[str, dict[str, float]]:
+    x0_norm = float(left_px) / canvas_width_px
+    y0_norm = float(canvas_height_px - (top_px + height_px)) / canvas_height_px
+    width_norm = float(width_px) / canvas_width_px
+    height_norm = float(height_px) / canvas_height_px
+    return {
+        "bbox_norm": {
+            "x0": round(x0_norm, 6),
+            "y0": round(y0_norm, 6),
+            "width": round(width_norm, 6),
+            "height": round(height_norm, 6),
+        },
+        "bbox_mm": {
+            "x0": round(x0_norm * figure_width_mm, 3),
+            "y0": round(y0_norm * figure_height_mm, 3),
+            "width": round(width_norm * figure_width_mm, 3),
+            "height": round(height_norm * figure_height_mm, 3),
+        },
+    }
+
+
 def _draw_panel_label(draw: ImageDraw.ImageDraw, label: str, x_px: int, y_px: int) -> None:
     panel_label_px = pt_to_px(PANEL_LABEL_PT, COMPOSE_DPI)
     draw.text((x_px, y_px), label, fill="black", font=_load_font(panel_label_px))
@@ -363,6 +478,8 @@ def _draw_boxed_panel_label(draw: ImageDraw.ImageDraw, label: str, x_px: int, y_
         (left - pad_x, top - pad_y, right + pad_x, bottom + pad_y),
         radius=6,
         fill="white",
+        outline="#404040",
+        width=1,
     )
     draw.text((x_px, y_px), label, fill="black", font=font)
 
@@ -488,14 +605,14 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             },
             "axes": axes,
             "source_layout_spec": source_layout_spec(),
-            "typography_pt": TYPOGRAPHY_PT,
+            "typography_pt": FIG06_TYPOGRAPHY_PT,
         },
     )
     return [fig01_asset, fig01_layout_asset]
 
 
 def compose_fig02(paper_dir: Path) -> list[Path]:
-    """Fig 2: All 7 panels from composite PDF (a-g)."""
+    """Fig 2: All 6 panels from composite PDF (a-f)."""
     fig02_asset = paper_dir / "fig02_svd-physical-dictionary.jpg"
 
     composite = _trim_white_border(_render_pdf(FIG02_COMPOSITE, scale=4.0), padding=4)
@@ -531,102 +648,264 @@ def compose_fig03(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig04(paper_dir: Path) -> list[Path]:
-    """Fig 4: full-width architecture on top + b/c/d diagnostics across the bottom row."""
+    """Fig 4: hero architecture plus b/c lower panels and a stacked d/e right slot."""
     fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
     panel_a = _trim_white_border(Image.open(FIG04_PANEL_A).convert("RGB"), padding=0)
     panel_a = _crop_relative(panel_a, *FIG04_PANEL_A_CROP)
-    panel_b = _trim_white_border(_render_pdf(FIG04_PANEL_B, scale=4.0), padding=4)
-    panel_c = _trim_white_border(_render_pdf(FIG04_PANEL_C, scale=4.0), padding=4)
-    panel_d = _trim_white_border(_render_pdf(FIG04_PANEL_D, scale=4.0), padding=4)
-
     figure_width_px = _mm_to_px(FIG04_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG04_HEIGHT_MM)
-    a_height_px = _mm_to_px(FIG04_A_HEIGHT_MM)
+    outer_margin_px = _mm_to_px(FIG04_OUTER_MARGIN_MM)
+    a_slot_width_px = _mm_to_px(FIG04_PANEL_A_SLOT_WIDTH_MM)
+    a_slot_height_px = _mm_to_px(FIG04_PANEL_A_SLOT_HEIGHT_MM)
     row_gap_px = _mm_to_px(FIG04_ROW_GAP_MM)
-    bottom_gap_px = _mm_to_px(FIG04_BOTTOM_GAP_MM)
-    bottom_row_height_px = _mm_to_px(FIG04_BOTTOM_ROW_HEIGHT_MM)
-    b_width_px = _mm_to_px(FIG04_B_WIDTH_MM)
-    c_width_px = _mm_to_px(FIG04_C_WIDTH_MM)
-    d_width_px = figure_width_px - b_width_px - c_width_px - 2 * bottom_gap_px
+    col_gap_px = _mm_to_px(FIG04_COL_GAP_MM)
+    lower_slot_width_px = _mm_to_px(FIG04_LOWER_PANEL_SLOT_WIDTH_MM)
+    lower_slot_height_px = _mm_to_px(FIG04_LOWER_PANEL_SLOT_HEIGHT_MM)
+    d_slot_height_px = _mm_to_px(FIG04_PANEL_D_SLOT_HEIGHT_MM)
+    e_slot_height_px = _mm_to_px(FIG04_PANEL_E_SLOT_HEIGHT_MM)
+    right_stack_gap_px = _mm_to_px(FIG04_RIGHT_STACK_GAP_MM)
+    label_lane_px = _mm_to_px(FIG04_LABEL_LANE_MM)
+    content_inset_x_px = _mm_to_px(FIG04_CONTENT_INSET_X_MM)
+    content_inset_bottom_px = _mm_to_px(FIG04_CONTENT_INSET_BOTTOM_MM)
 
-    panel_a = _contain_in_box(panel_a, figure_width_px, a_height_px)
-    panel_b = _contain_in_box(panel_b, b_width_px, bottom_row_height_px)
-    panel_c = _contain_in_box(panel_c, c_width_px, bottom_row_height_px)
-    panel_d = _contain_in_box(panel_d, d_width_px, bottom_row_height_px)
+    a_slot_left_px = outer_margin_px
+    a_slot_top_px = outer_margin_px
+    lower_slot_top_px = outer_margin_px + a_slot_height_px + row_gap_px
+    b_slot_left_px = outer_margin_px
+    c_slot_left_px = b_slot_left_px + lower_slot_width_px + col_gap_px
+    d_slot_left_px = figure_width_px - outer_margin_px - lower_slot_width_px
+    d_slot_top_px = lower_slot_top_px
+    e_slot_left_px = d_slot_left_px
+    e_slot_top_px = d_slot_top_px + d_slot_height_px + right_stack_gap_px
+
+    def _content_box(slot_left_px: int, slot_top_px: int, slot_width_px: int, slot_height_px: int) -> tuple[int, int, int, int]:
+        return (
+            slot_left_px + content_inset_x_px,
+            slot_top_px + label_lane_px,
+            slot_width_px - 2 * content_inset_x_px,
+            slot_height_px - label_lane_px - content_inset_bottom_px,
+        )
+
+    def _paste_panel_pdf(
+        pdf_path: Path,
+        *,
+        padding: int,
+        content_left_px: int,
+        content_top_px: int,
+        content_width_px: int,
+        content_height_px: int,
+    ) -> tuple[Image.Image, list[dict[str, Any]]]:
+        rendered = _render_pdf(pdf_path, scale=4.0)
+        trimmed, crop_box = _trim_white_border_with_bbox(rendered, padding=padding)
+        contained, geometry = _contain_in_box_with_geometry(trimmed, content_width_px, content_height_px)
+        layout_payload = json.loads(pdf_path.with_suffix(".layout.json").read_text(encoding="utf-8"))
+        transformed = _transform_layout_payload_for_manuscript(
+            layout_payload,
+            source_width_px=rendered.width,
+            source_height_px=rendered.height,
+            crop_box=crop_box,
+            resized_width_px=int(geometry["resized_width_px"]),
+            offset_x_px=content_left_px + int(geometry["offset_x_px"]),
+            offset_y_px=content_top_px + int(geometry["offset_y_px"]),
+            canvas_width_px=figure_width_px,
+            canvas_height_px=figure_height_px,
+            figure_width_mm=FIG04_WIDTH_MM,
+            figure_height_mm=FIG04_HEIGHT_MM,
+        )
+        return contained, list(transformed["axes"])
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
-    canvas.paste(panel_a, (0, 0))
-    bottom_y = a_height_px + row_gap_px
-    b_x = 0
-    c_x = b_width_px + bottom_gap_px
-    d_x = c_x + c_width_px + bottom_gap_px
-    canvas.paste(panel_b, (b_x, bottom_y))
-    canvas.paste(panel_c, (c_x, bottom_y))
-    canvas.paste(panel_d, (d_x, bottom_y))
 
-    _draw_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(2.0))
-    _draw_panel_label(draw, "b", _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
-    _draw_panel_label(draw, "c", c_x + _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
-    _draw_panel_label(draw, "d", d_x + _mm_to_px(2.0), bottom_y + _mm_to_px(1.5))
+    a_content_left_px, a_content_top_px, a_content_width_px, a_content_height_px = _content_box(
+        a_slot_left_px,
+        a_slot_top_px,
+        a_slot_width_px,
+        a_slot_height_px,
+    )
+    panel_a, panel_a_geometry = _contain_in_box_with_geometry(
+        panel_a,
+        a_content_width_px,
+        a_content_height_px,
+    )
+    canvas.paste(panel_a, (a_content_left_px, a_content_top_px))
+
+    b_content_left_px, b_content_top_px, b_content_width_px, b_content_height_px = _content_box(
+        b_slot_left_px,
+        lower_slot_top_px,
+        lower_slot_width_px,
+        lower_slot_height_px,
+    )
+    c_content_left_px, c_content_top_px, c_content_width_px, c_content_height_px = _content_box(
+        c_slot_left_px,
+        lower_slot_top_px,
+        lower_slot_width_px,
+        lower_slot_height_px,
+    )
+    d_content_left_px, d_content_top_px, d_content_width_px, d_content_height_px = _content_box(
+        d_slot_left_px,
+        d_slot_top_px,
+        lower_slot_width_px,
+        d_slot_height_px,
+    )
+    e_content_left_px, e_content_top_px, e_content_width_px, e_content_height_px = _content_box(
+        e_slot_left_px,
+        e_slot_top_px,
+        lower_slot_width_px,
+        e_slot_height_px,
+    )
+
+    panel_b, panel_b_axes = _paste_panel_pdf(
+        FIG04_PANEL_B,
+        padding=10,
+        content_left_px=b_content_left_px,
+        content_top_px=b_content_top_px,
+        content_width_px=b_content_width_px,
+        content_height_px=b_content_height_px,
+    )
+    panel_c, panel_c_axes = _paste_panel_pdf(
+        FIG04_PANEL_C,
+        padding=10,
+        content_left_px=c_content_left_px,
+        content_top_px=c_content_top_px,
+        content_width_px=c_content_width_px,
+        content_height_px=c_content_height_px,
+    )
+    panel_d, panel_d_axes = _paste_panel_pdf(
+        FIG04_PANEL_D,
+        padding=8,
+        content_left_px=d_content_left_px,
+        content_top_px=d_content_top_px,
+        content_width_px=d_content_width_px,
+        content_height_px=d_content_height_px,
+    )
+    panel_e, panel_e_axes = _paste_panel_pdf(
+        FIG04_PANEL_E,
+        padding=8,
+        content_left_px=e_content_left_px,
+        content_top_px=e_content_top_px,
+        content_width_px=e_content_width_px,
+        content_height_px=e_content_height_px,
+    )
+
+    canvas.paste(panel_b, (b_content_left_px, b_content_top_px))
+    canvas.paste(panel_c, (c_content_left_px, c_content_top_px))
+    canvas.paste(panel_d, (d_content_left_px, d_content_top_px))
+    canvas.paste(panel_e, (e_content_left_px, e_content_top_px))
+
+    label_x_px = _mm_to_px(1.5)
+    label_y_px = _mm_to_px(0.6)
+    _draw_panel_label(draw, "a", a_slot_left_px + label_x_px, a_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "b", b_slot_left_px + label_x_px, lower_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "c", c_slot_left_px + label_x_px, lower_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "d", d_slot_left_px + label_x_px, d_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "e", e_slot_left_px + label_x_px, e_slot_top_px + label_y_px)
 
     _save_composite(canvas, fig04_asset)
+    manuscript_manifest = REPO_ROOT / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json"
+    _write_reference_panel_manifest(
+        manuscript_manifest,
+        figure_id="fig04",
+        composite_asset="paper/figures/fig04_solver-dynamics.jpg",
+        panels=[
+            {
+                "panel_id": "a",
+                "title": "Architecture diagram",
+                "asset_path": "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg",
+                "provenance_mode": "manual_support",
+            },
+            {
+                "panel_id": "b",
+                "title": "Routing formation",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "c",
+                "title": "Gated update and residual correction",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "d",
+                "title": "Aggregation bridge",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "e",
+                "title": "Routing-mechanism ablation",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf",
+                "provenance_mode": "data_backed",
+            },
+        ],
+    )
+    a_bbox = _bbox_payload_from_canvas_px(
+        a_content_left_px + int(panel_a_geometry["offset_x_px"]),
+        a_content_top_px + int(panel_a_geometry["offset_y_px"]),
+        int(panel_a_geometry["resized_width_px"]),
+        int(panel_a_geometry["resized_height_px"]),
+        canvas_width_px=figure_width_px,
+        canvas_height_px=figure_height_px,
+        figure_width_mm=FIG04_WIDTH_MM,
+        figure_height_mm=FIG04_HEIGHT_MM,
+    )
+    a_slot_bbox = _bbox_payload_from_canvas_px(
+        a_slot_left_px,
+        a_slot_top_px,
+        a_slot_width_px,
+        a_slot_height_px,
+        canvas_width_px=figure_width_px,
+        canvas_height_px=figure_height_px,
+        figure_width_mm=FIG04_WIDTH_MM,
+        figure_height_mm=FIG04_HEIGHT_MM,
+    )
+    axes_payload: list[dict[str, Any]] = [
+        {
+            "index": 0,
+            "panel_id": "a",
+            "gid": "fig04.panel_a.main",
+            "kind": "manual",
+            "has_data": False,
+            "title": "Architecture diagram",
+            **a_bbox,
+            "decorated_bbox_norm": a_slot_bbox["bbox_norm"],
+            "decorated_bbox_mm": a_slot_bbox["bbox_mm"],
+            "title_bbox_norm": None,
+            "title_bbox_mm": None,
+            "xlabel": None,
+            "xlabel_bbox_norm": None,
+            "xlabel_bbox_mm": None,
+            "ylabel": None,
+            "ylabel_bbox_norm": None,
+            "ylabel_bbox_mm": None,
+            "xticklabels_bbox_norm": None,
+            "xticklabels_bbox_mm": None,
+            "yticklabels_bbox_norm": None,
+            "yticklabels_bbox_mm": None,
+            "legend_bbox_norm": None,
+            "legend_bbox_mm": None,
+        }
+    ]
+    axes_payload.extend(panel_b_axes)
+    axes_payload.extend(panel_c_axes)
+    axes_payload.extend(panel_d_axes)
+    axes_payload.extend(panel_e_axes)
+    for idx, axis in enumerate(axes_payload):
+        gid = axis.get("gid")
+        if gid:
+            parts = str(gid).split(".")
+            if len(parts) >= 2 and parts[1].startswith("panel_"):
+                axis.setdefault("panel_id", parts[1].removeprefix("panel_"))
+        axis["index"] = idx
     _write_layout_metadata(
         fig04_layout_asset,
         {
             "contract_version": contract_version(),
             "figure_mm": {"width": FIG04_WIDTH_MM, "height": FIG04_HEIGHT_MM},
-            "axes": [
-                {
-                    "index": 0,
-                    "panel_id": "a",
-                    "kind": "manual",
-                    "has_data": False,
-                    "title": "Architecture diagram",
-                    **_bbox_payload(
-                        0.0, FIG04_BOTTOM_ROW_HEIGHT_MM + FIG04_ROW_GAP_MM,
-                        FIG04_WIDTH_MM, FIG04_A_HEIGHT_MM,
-                        FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 1,
-                    "panel_id": "b",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Training convergence",
-                    **_bbox_payload(
-                        0.0, 0.0, FIG04_B_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
-                        FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 2,
-                    "panel_id": "c",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Ablation comparison",
-                    **_bbox_payload(
-                        FIG04_B_WIDTH_MM + FIG04_BOTTOM_GAP_MM,
-                        0.0, FIG04_C_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
-                        FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 3,
-                    "panel_id": "d",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Per-angle accuracy",
-                    **_bbox_payload(
-                        FIG04_B_WIDTH_MM + FIG04_C_WIDTH_MM + 2 * FIG04_BOTTOM_GAP_MM,
-                        0.0, FIG04_D_WIDTH_MM, FIG04_BOTTOM_ROW_HEIGHT_MM,
-                        FIG04_WIDTH_MM, FIG04_HEIGHT_MM,
-                    ),
-                },
-            ],
+            "axes": axes_payload,
             "source_layout_spec": source_layout_spec(),
             "typography_pt": TYPOGRAPHY_PT,
         },
@@ -635,7 +914,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig05(paper_dir: Path) -> list[Path]:
-    """Fig 5: All 6 panels from composite PDF (a-f)."""
+    """Fig 5: All 5 panels from composite PDF (a-e)."""
     fig05_asset = paper_dir / "fig05_performance-structure.jpg"
     fig05_layout_asset = fig05_asset.with_suffix(".layout.json")
 
@@ -674,7 +953,13 @@ def compose_fig05(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig06(paper_dir: Path) -> list[Path]:
-    """Fig 6: manual exemplar strip on top + generated screening panels below."""
+    """Fig 6: manual exemplar strip + H breadth + low-rank + mechanism + consequence."""
+    if FIG06_LAYOUT_ERROR is not None:
+        raise RuntimeError(
+            "Fig. 6 compose contract is invalid in the current worktree; "
+            "fix the fig06 layout contract before composing fig06"
+        ) from FIG06_LAYOUT_ERROR
+
     fig06_asset = paper_dir / "fig06_universality.jpg"
     fig06_layout_asset = fig06_asset.with_suffix(".layout.json")
 
@@ -683,38 +968,101 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     panel_a = Image.open(FIG06_PANEL_A).convert("RGB")
     panel_a = _trim_white_border(panel_a, padding=0)
     panel_a = _crop_relative(panel_a, *FIG06_PANEL_A_CROP)
+    panel_a = _reorder_strip_tiles(panel_a, [3, 2, 0, 1, 4])
     panel_b = _trim_white_border(_render_pdf(FIG06_PANEL_B, scale=4.0), padding=4)
     panel_c = _trim_white_border(_render_pdf(FIG06_PANEL_C, scale=4.0), padding=4)
     panel_d = _trim_white_border(_render_pdf(FIG06_PANEL_D, scale=4.0), padding=4)
-
+    panel_e = _trim_white_border(_render_pdf(FIG06_PANEL_E, scale=4.0), padding=4)
     figure_width_px = _mm_to_px(FIG06_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG06_HEIGHT_MM)
+    outer_margin_x_px = _mm_to_px(FIG06_OUTER_MARGIN_X_MM)
+    outer_margin_top_px = _mm_to_px(FIG06_OUTER_MARGIN_TOP_MM)
+    outer_margin_bottom_px = _mm_to_px(FIG06_OUTER_MARGIN_BOTTOM_MM)
     a_height_px = _mm_to_px(FIG06_A_HEIGHT_MM)
     b_height_px = _mm_to_px(FIG06_B_HEIGHT_MM)
-    bottom_height_px = _mm_to_px(FIG06_BOTTOM_HEIGHT_MM)
+    c_height_px = _mm_to_px(FIG06_C_HEIGHT_MM)
+    d_height_px = _mm_to_px(FIG06_D_HEIGHT_MM)
+    panel_c_width_px = _mm_to_px(FIG06_PANEL_C_WIDTH_MM)
+    col_gap_px = _mm_to_px(FIG06_COL_GAP_MM)
     row_gap_px = _mm_to_px(FIG06_ROW_GAP_MM)
-    bottom_gap_px = _mm_to_px(FIG06_BOTTOM_GAP_MM)
-    c_width_px = _mm_to_px(FIG06_C_WIDTH_MM)
-    d_width_px = _mm_to_px(FIG06_D_WIDTH_MM)
+    inner_width_px = figure_width_px - 2 * outer_margin_x_px
+    panel_e_width_px = inner_width_px - panel_c_width_px - col_gap_px
+    if panel_e_width_px <= 0:
+        raise RuntimeError(
+            "Fig. 6 compose contract is inconsistent after px rounding: "
+            f"{inner_width_px=}, {panel_c_width_px=}, {panel_e_width_px=}, {col_gap_px=}"
+        )
 
-    panel_a = _contain_in_box(panel_a, figure_width_px, a_height_px)
-    panel_b = _contain_in_box(panel_b, figure_width_px, b_height_px)
-    panel_c = _contain_in_box(panel_c, c_width_px, bottom_height_px)
-    panel_d = _contain_in_box(panel_d, d_width_px, bottom_height_px)
+    panel_a = _contain_in_box(panel_a, inner_width_px, a_height_px)
+    panel_b = _contain_in_box(panel_b, inner_width_px, b_height_px)
+    panel_c = _contain_in_box(panel_c, panel_c_width_px, c_height_px)
+    panel_d = _contain_in_box(panel_d, panel_e_width_px, c_height_px)
+    panel_e = _contain_in_box(panel_e, inner_width_px, d_height_px)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
-    canvas.paste(panel_a, (0, 0))
-    canvas.paste(panel_b, (0, a_height_px + row_gap_px))
+    row_a_y = outer_margin_top_px
+    row_b_y = row_a_y + a_height_px + row_gap_px
+    row_ce_y = row_b_y + b_height_px + row_gap_px
+    row_d_y = row_ce_y + c_height_px + row_gap_px
+    panel_a_x = outer_margin_x_px
+    panel_b_x = outer_margin_x_px
+    panel_c_x = outer_margin_x_px
+    panel_e_x = panel_c_x + panel_c_width_px + col_gap_px
+    panel_d_x = outer_margin_x_px
 
-    bottom_y = a_height_px + row_gap_px + b_height_px + row_gap_px
-    canvas.paste(panel_c, (0, bottom_y))
-    d_x = c_width_px + bottom_gap_px
-    canvas.paste(panel_d, (d_x, bottom_y))
+    canvas.paste(panel_a, (panel_a_x, row_a_y))
+    canvas.paste(panel_b, (panel_b_x, row_b_y))
+    canvas.paste(panel_c, (panel_c_x, row_ce_y))
+    canvas.paste(panel_d, (panel_e_x, row_ce_y))
+    canvas.paste(panel_e, (panel_d_x, row_d_y))
 
-    _draw_boxed_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(1.2))
+    _draw_panel_label(
+        draw,
+        "a",
+        panel_a_x + _mm_to_px(2.0),
+        row_a_y + _mm_to_px(1.5),
+    )
 
     _save_composite(canvas, fig06_asset)
+    manuscript_manifest = REPO_ROOT / "figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json"
+    _write_reference_panel_manifest(
+        manuscript_manifest,
+        figure_id="fig06",
+        composite_asset="paper/figures/fig06_universality.jpg",
+        panels=[
+            {
+                "panel_id": "a",
+                "title": "Material exemplars",
+                "asset_path": "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png",
+                "provenance_mode": "manual_support",
+            },
+            {
+                "panel_id": "b",
+                "title": "Cross-material H",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "c",
+                "title": "Low-rank continuity",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "d",
+                "title": "Screening consequence",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "e",
+                "title": "Material frequency structure",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
+                "provenance_mode": "data_backed",
+            },
+        ],
+    )
     _write_layout_metadata(
         fig06_layout_asset,
         {
@@ -728,9 +1076,10 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "has_data": False,
                     "title": "Material exemplars",
                     **_bbox_payload(
-                        0.0,
-                        FIG06_B_HEIGHT_MM + FIG06_BOTTOM_HEIGHT_MM + 2 * FIG06_ROW_GAP_MM,
-                        FIG06_WIDTH_MM, FIG06_A_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_HEIGHT_MM - FIG06_OUTER_MARGIN_TOP_MM - FIG06_A_HEIGHT_MM,
+                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_A_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -739,11 +1088,12 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "b",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Cross-material H matrices",
+                    "title": "Cross-material H",
                     **_bbox_payload(
-                        0.0,
-                        FIG06_BOTTOM_HEIGHT_MM + FIG06_ROW_GAP_MM,
-                        FIG06_WIDTH_MM, FIG06_B_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_C_HEIGHT_MM + 2 * FIG06_ROW_GAP_MM,
+                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_B_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -752,9 +1102,12 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "c",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Material screening metrics",
+                    "title": "Low-rank continuity",
                     **_bbox_payload(
-                        0.0, 0.0, FIG06_C_WIDTH_MM, FIG06_BOTTOM_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_ROW_GAP_MM,
+                        FIG06_PANEL_C_WIDTH_MM,
+                        FIG06_C_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -763,11 +1116,26 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "d",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Physical quality versus task accuracy",
+                    "title": "Screening consequence",
                     **_bbox_payload(
-                        FIG06_C_WIDTH_MM + FIG06_BOTTOM_GAP_MM,
-                        0.0,
-                        FIG06_D_WIDTH_MM, FIG06_BOTTOM_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_X_MM + FIG06_PANEL_C_WIDTH_MM + FIG06_COL_GAP_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_ROW_GAP_MM,
+                        FIG06_PANEL_E_WIDTH_MM,
+                        FIG06_C_HEIGHT_MM,
+                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
+                    ),
+                },
+                {
+                    "index": 4,
+                    "panel_id": "e",
+                    "kind": "rectilinear",
+                    "has_data": True,
+                    "title": "Material frequency structure",
+                    **_bbox_payload(
+                        FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM,
+                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
+                        FIG06_D_HEIGHT_MM,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -776,7 +1144,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
             "typography_pt": TYPOGRAPHY_PT,
         },
     )
-    return [fig06_asset, fig06_layout_asset]
+    return [fig06_asset, fig06_layout_asset, manuscript_manifest]
 
 
 COMPOSERS = {

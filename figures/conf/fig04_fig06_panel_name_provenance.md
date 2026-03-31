@@ -21,22 +21,41 @@ decisions, not to replace manuscript prose.
   - `64d832c` `figures: fix visual quality across all generators`
   - `8dce255` `figures: swap Fig 3 (solver) ↔ Fig 4 (discriminability) for assertion-first narrative`
 - Upstream artifacts:
-  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz`
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth`
+    - code-state git head: `3785b1f`
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/code_state.json`
+    - active architecture / routing arguments for the primary guided solver
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth`
+    - active physical dictionary used by the guided residual updates
+  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz`
     - code-state git head: `3785b1f`
   - `results/figure4_data.json`
     - aggregated clean-condition ablation sweep
     - `figures/conf/experiments.yaml` records experiment commit `14feb94`
+  - `results/fig04_stepwise_mechanics.npz`
+    - governed derived artifact rebuilt from the active primary run
 - Panel notes:
   - `a`: manual architecture asset, no run-variant label logic
-  - `b`: convergence panel, no model-comparison labels
-  - `c`: clean decoder-comparison panel; the upstream sweep still stores the
+  - `b`: routing-formation panel; it shows the stage-0 physical correlation
+    `g_t(θ)`, the angle-aggregated learned `QK` score `(q_tK_t^T)(θ)`, and the
+    routing weight `w_t(θ)` on the active angle manifold for the shared 70°
+    interior exemplar
+  - `c`: merged mechanism-closure panel; it combines the shared exemplar
+    gated-update profile `Δx_t(θ)` relative to `g_t(θ)`, the first residual-step
+    change from `g_t = D^Tr_t` to `g_{t+1} = D^Tr_{t+1}`, a validation-wide
+    localization summary, and residual-norm descent across the unrolled stages
+  - `d`: aggregation-bridge panel; it exposes the shared exemplar's
+    mode-resolved routing tensor `w_{t,θ,m}` and gated-update magnitude
+    `|ηΔx̂_{t,θ,m}|`, then shows their angle-level reductions
+    `w_t(θ)=Σ_m w_{t,θ,m}` and `Δx_t(θ)=||ηΔx̂_{t,θ,\cdot}||_2` so panels `b/c`
+    can be read directly as projections of panel `a`
+  - `e`: clean decoder-comparison panel; the upstream sweep still stores the
     artifact keys `Baseline`, `No Type Bias`, `No Transformer`,
     `Fixed Heuristic`, `G-Fixed`, `G-Teacher`, and `Dense Routing`, but the
     active paper-facing panel collapses them to four families:
     `No Type Bias -> guided solver`, `No Transformer -> router-bypass`,
     `Fixed Heuristic/G-Fixed/G-Teacher -> OMP baseline`, and
     `Dense Routing -> dense routing`
-  - `d`: per-angle accuracy profile for the active guided-solver representative run; the current `primary_run` already uses `no_type_bias=true`
 
 ## Fig. 5
 
@@ -90,8 +109,13 @@ decisions, not to replace manuscript prose.
   - `../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_{a,p,w,b,m}.pth`
   - `../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json`
   - `../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json`
+  - `../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/support_report.json`
+  - `../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/material_performance_summary.csv`
+  - `../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/low_rank_summary.csv`
+  - `../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/per_angle_metrics.csv`
 - Panel notes:
   - `a`: retained manual support exemplar strip cropped from the committed legacy support image
-  - `b`: plots the five `Original -> Material` H matrices as a shared-normalization strip
-  - `c`: ranks materials by downstream screening metrics from the committed selection bundle
-  - `d`: compares H-level mean coherence against task-level top-1 accuracy to show that the strongest physical proxy is not automatically the best downstream object
+  - `b`: isolates the five `Original -> Material` H matrices so breadth of structured angle-frequency encoding reads as its own panel
+  - `c`: carries the Fig. 2-aligned centered-magnitude cumulative-energy curves and rank90/rank95 summary so low-rank continuity remains explicit as a separate panel
+  - `d`: combines the normalized energy-versus-Top-1 comparison with Top-1 and MAE summaries so the figure closes on screening consequence
+  - `e`: turns each material into its own three-level card by pairing the normalized spectral envelope, the angular-contrast curve, and the representative band-limited directional code selected from the committed `H` matrices

@@ -54,13 +54,14 @@ Retired material:
 - Active panel manifest: `figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig03_discriminability`
 
-### Fig 4 — Solver Dynamics
+### Fig 4 — Physics-Guided Solver Mechanism
 
 - Manuscript asset: `paper/figures/fig04_solver-dynamics.jpg`
 - Generator / composer: `figures/generators/fig04_solver_dynamics.py` + `scripts/paper/compose_master_figure3_family.py`
 - Manual support panel `a`: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg`
 - Active panel manifest: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig04_ablation`
+- Active panel logic: architecture + routing formation + gated-update/residual-correction closure + explicit mode-to-angle aggregation bridge + clean routing-mechanism ablation
 
 ### Fig 5 — Performance And Structure
 
@@ -76,3 +77,4 @@ Retired material:
 - Manual support panel `a`: `figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png`
 - Active panel manifest: `figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig06_universality`
+- Active panel logic: material exemplars + cross-material H breadth + low-rank continuity + compact screening-consequence closure + per-material frequency-structure cards

@@ -132,16 +132,16 @@ fig03_discriminability:
 fig04_ablation:
   figure_id: fig04
   figure: "Fig 4"
-  title: "Solver Dynamics"
+  title: "Physics-Guided Solver Mechanism"
   type: mixed_composite
   manuscript_asset: paper/figures/fig04_solver-dynamics.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided neural solver combines a manual architecture panel with generator-backed convergence, ablation, and per-angle evidence."
-  legend_summary: "Architecture, training convergence, clean-condition ablation, and per-angle accuracy."
-  panel_order: ["a", "b", "c", "d"]
+  claim: "The physics-guided solver converts broad physical correlations g_t into gated sparse updates Δx_t through learned QK routing, exposes those updates on the angle axis through explicit mode-to-angle aggregation, and then reduces the residual through staged dictionary-consistent updates."
+  legend_summary: "Architecture, routing formation, gated-update plus residual correction, an explicit aggregation bridge from mode-resolved routing to angle-axis quantities, and clean-condition routing-mechanism ablation."
+  panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
   compose_script: scripts/paper/compose_master_figure3_family.py
@@ -155,14 +155,26 @@ fig04_ablation:
   commit_message: "Results: Babble Speech260 full sweep (245/245, ep20)"
   worktree: exp-omp-ablation-snr-rerun-20260128
   data_artifacts:
-    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
+      type: checkpoint
+      description: "Primary-run guided-solver checkpoint replayed to extract representative stepwise routing traces."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/code_state.json
+      type: json
+      description: "Active architecture and routing configuration for the primary guided-solver run."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
+      type: pth
+      description: "Primary-run physical dictionary used for the guided residual updates."
+    - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       type: npz
-      description: "Primary-run convergence and per-angle metrics for the active no-type-bias guided solver."
+      description: "Validation-set stage-0 routing outputs used to summarize angle-conditioned mechanics and select the shared 70-degree exemplar."
     - path: results/figure4_data.json
       type: json
       is_symlink: true
       symlink_target: "worktrees/exp-omp-ablation-snr-rerun-20260128/results/figure4_data.json"
       description: "Aggregated clean-condition ablation sweep."
+    - path: results/fig04_stepwise_mechanics.npz
+      type: npz
+      description: "Governed derived artifact containing the stage-0 g_t/QK/w_t summaries for panel b, the shared 70-degree gated-update and residual-step summaries for panel c, and the mode-resolved routing/update tensors used by the aggregation-bridge panel d."
   panel_provenance:
     a:
       title: "Architecture diagram"
@@ -170,23 +182,36 @@ fig04_ablation:
       asset_path: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg
       note: "Committed architecture support panel in the manuscript-panel layer; no run-generated evidence."
     b:
-      title: "Training convergence"
+      title: "Routing formation"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_convergence.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf
       evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
+        - results/fig04_stepwise_mechanics.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Clean decoder comparison"
+      title: "Gated update and residual correction"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_ablation.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf
+      evidence_sources:
+        - results/fig04_stepwise_mechanics.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
+    d:
+      title: "Aggregation bridge"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf
+      evidence_sources:
+        - results/fig04_stepwise_mechanics.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
+    e:
+      title: "Routing-mechanism ablation"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf
       evidence_sources:
         - results/figure4_data.json
-    d:
-      title: "Per-angle accuracy profile"
-      provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_perangle.pdf
-      evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz
   sweep:
     noise_type: babble
     variants:

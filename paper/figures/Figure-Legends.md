@@ -33,13 +33,14 @@ d, Stacked angle-resolved OMP traces for white noise and speech, shown with ligh
 e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (diffuse but structured manifold), with the diagonal masked to separate the two regimes.
 f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
 
-## Fig. 4 (4 panels)
+## Fig. 4 (5 panels)
 
-**Fig. 4 | Physics-guided deep unrolled network with attention-based gating.**
-a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(A\). A transformer encoder generates routing weights that gate sparse updates \(\Delta x_t\), enforcing residual consistency \(r_{t+1}=r_t-A\Delta x_t\).
-b, Training convergence: total and classification loss decrease steadily over 20 epochs; the vertical dashed line marks the best validation epoch.
-c, Clean decoder comparison: strip chart comparing the guided solver, router-bypass, OMP baseline, and dense routing across the same five-seed clean sweep (individual seeds shown as dots, horizontal bars indicate means).
-d, Per-angle accuracy profile: the 37-point bar chart confirms near-uniform performance across the full angular grid (mean accuracy 0.946), with angles below the mean highlighted.
+**Fig. 4 | The physics-guided solver forms angle-local gates and updates the residual in stages.**
+a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(D\) to form \(g_t = D^\top r_t\). A transformer encoder converts QK scores \(q_tK_t^\top\) into routing weights, which gate the sparse update \(\Delta x_t\) and enforce residual consistency \(r_{t+1}=r_t-D\Delta x_t\).
+b, Routing formation: angle-conditioned validation summaries at a shared 70° exemplar trace the stage-0 path from the broad physical correlation \(g_t(\theta)\), through the angle-aggregated QK score \((q_tK_t^\top)(\theta)\), to the routing weight \(w_t(\theta)\).
+c, Gated update and residual correction: the shared 70° exemplar shows that the gated update \(\Delta x_t(\theta)\) localizes mass much more strongly than the raw physical correlation \(g_t(\theta)\), after which the first residual-consistent update changes \(g_t = D^\top r_t\) to \(g_{t+1} = D^\top r_{t+1}\); the lower summaries quantify validation-wide localization and residual-norm descent across the unrolled stages.
+d, Aggregation bridge: the shared 70° exemplar makes the symbol mapping in panel a explicit by showing the mode-resolved routing tensor \(w_{t,\theta,m}\) and gated-update tensor \(|\eta\hat{\Delta x}_{t,\theta,m}|\), together with their angle-level reductions \(w_t(\theta)=\sum_m w_{t,\theta,m}\) and \(\Delta x_t(\theta)=\|\eta\hat{\Delta x}_{t,\theta,\cdot}\|_2\) plotted in panels b-c.
+e, Routing-mechanism ablation: compact clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots, points with horizontal bars indicate mean \(\pm\) s.e.m.).
 
 ## Fig. 5 (5 panels)
 

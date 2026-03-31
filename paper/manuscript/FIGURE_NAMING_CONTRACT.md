@@ -24,7 +24,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | 1 | `paper/figures/fig01_paradigm-shift.jpg` | Direction-dependent structural filtering revealed by single-point laser vibrometry | a-e | `figures/conf/layout_spec.md` |
 | 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Physical encoding via spectral-spatial modes and construction of a structured dictionary | a-f | `figures/conf/layout_spec.md` |
 | 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Encoding survives content variation but classical decoding fails | a-f | `figures/conf/layout_spec.md` |
-| 4 | `paper/figures/fig04_solver-dynamics.jpg` | Physics-guided deep unrolled network with attention-based gating | a-d | `figures/conf/layout_spec.md` |
+| 4 | `paper/figures/fig04_solver-dynamics.jpg` | Physics-guided deep unrolled network with attention-based gating | a-e | `figures/conf/layout_spec.md` |
 | 5 | `paper/figures/fig05_performance-structure.jpg` | The learned router mirrors physical structure and maintains robust decoding under noise | a-e | `figures/conf/layout_spec.md` |
 | 6 | `paper/figures/fig06_universality.jpg` | Universal physical encoding across diverse materials | a-e | `figures/conf/layout_spec.md` |
 

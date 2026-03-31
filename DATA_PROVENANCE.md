@@ -35,7 +35,7 @@ Audit entrypoints:
 | Fig. 3 | `fig03_fingerprint_discriminability.py` | `dictionary.npz` + `modal_routing_val.npz` + SNR sweep inputs | Fully data-backed, with some inputs resolved through `paths.yaml` |
 | Fig. 4 | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | `metrics.npz` + `results/figure4_data.json` | Mixed figure with explicit manual architecture panel `a` under `figures/output/fig04_solver_dynamics_manuscript_panels/` |
 | Fig. 5 | `fig05_performance_structure.py` | routing + dictionary + confusion metrics | Fully data-backed |
-| Fig. 6 | `fig06_universality.py` + `compose_master_figure3_family.py` | cross-material `Original -> Material` H bundle + material-selection bundle | Mixed figure with manual support panel `a` and data-backed panels `b-d` |
+| Fig. 6 | `fig06_universality.py` + `compose_master_figure3_family.py` | cross-material `Original -> Material` H bundle + material-selection bundle + Fig. 6 support bundle | Mixed figure with manual support panel `a` and data-backed panels `b-e` |
 
 ## Panel-Level Provenance Classes
 
@@ -61,4 +61,4 @@ Do not treat "managed" as equivalent to "fully data-backed."
 
 - Figs. 2, 3, and 5 are intended to be fully data-backed.
 - Figs. 1 and 4 are mixed figures with explicit manual support panels.
-- Fig. 6 now uses a mixed contract: panel `a` remains manual support, while panels `b-d` are data-backed against the committed cross-material H-reproduction and screening bundles.
+- Fig. 6 now uses a mixed contract: panel `a` remains manual support, while panels `b-e` are data-backed against the committed cross-material H-reproduction, support-analysis, and screening bundles.
