@@ -1,4 +1,4 @@
-from: markdown
+from: markdown+tex_math_single_backslash
 to: docx
 standalone: true
 citeproc: true

@@ -1,7 +1,10 @@
-.PHONY: paper-build paper-check manuscript figures paper-review-assets paper-review-gate clean
+.PHONY: paper-build paper-pdf paper-check manuscript figures paper-review-assets paper-review-gate clean
 
 paper-build:
 	bash scripts/paper/build_docx.sh
+
+paper-pdf:
+	bash scripts/paper/build_pdf.sh
 
 paper-check:
 	python scripts/paper/check_required_sections.py

@@ -158,6 +158,7 @@ results/
 tmp/
 temp/
 *.tmp
+/.codex-fig06*-stage/
 
 # Logs
 logs/

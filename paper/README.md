@@ -10,8 +10,8 @@ This folder is a **Markdown-first** manuscript workspace intended for drafting a
 - `paper/csl/`: CSL file (`style.csl`) controlling citation style.
 - `paper/out/`: Build outputs (ignored by git).
 
-## Build (DOCX)
-Prerequisite: `pandoc` (tested with Pandoc 3.x).
+## Build
+Prerequisite for DOCX: `pandoc` (tested with Pandoc 3.x).
 
 ```bash
 make paper-build
@@ -20,6 +20,16 @@ make paper-build
 Outputs:
 - `paper/out/manuscript.docx`
 - `paper/out/build.log`
+
+Prerequisites for PDF: `pandoc` plus a LaTeX engine such as `xelatex`.
+
+```bash
+make paper-pdf
+```
+
+Outputs:
+- `paper/out/manuscript.pdf`
+- `paper/out/build_pdf.log`
 
 ## Governance and checks
 
