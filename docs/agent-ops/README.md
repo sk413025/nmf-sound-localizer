@@ -49,8 +49,10 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 ## Default operating model
 
 1. human gives a goal
-2. supervisor frames the task when needed
-3. specialists work through one of the core skills and one of the unified task packets
-4. reviewer or red-team agents challenge outputs when required
-5. supervisor consolidates
-6. human approves or redirects at milestone boundaries
+2. the top-level supervisor acts as the parent orchestrator
+3. the parent chooses the child role, specialist skill, and unified task packet
+4. the parent writes `Relevant conversation context` and chooses `Context mode`
+5. child specialists work through one of the core skills and one of the unified task packets
+6. reviewer or red-team agents challenge outputs when required
+7. the parent supervisor consolidates
+8. the human approves or redirects at milestone boundaries

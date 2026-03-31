@@ -9,6 +9,7 @@ Reviewer involvement is mandatory for:
 - manuscript claim changes
 - movement of assets between main paper and supplementary
 - governance or role changes
+- delegation-gate or context-handoff policy changes
 - large rewrites of Results, Discussion, or Abstract
 - paper-figure layout/readability disputes that require paper-asset-review or geometry-audit confirmation
 
@@ -18,6 +19,7 @@ Red-team review is mandatory for:
 
 - new workflows or role systems
 - changes that increase process complexity
+- changes to parent-only routing or child-context policy
 - proposals that redefine `codex-native` or `agent-native`
 
 ## Standard warning levels
@@ -31,6 +33,7 @@ Red-team review is mandatory for:
 - `WARN_SCOPE`: the task drifted away from manuscript-first outcomes
 - `WARN_CAPABILITY`: the proposal assumes Codex features that are not grounded in local primitives
 - `WARN_ACTIONABILITY`: the output cannot be handed to another agent without new decisions
+- `WARN_CONTEXT`: the child-agent handoff is missing relevant conversation context or leaks irrelevant history
 - `WARN_DUPLICATION`: the output duplicates an existing role, skill, or document path
 - `WARN_EVIDENCE`: claims or recommendations are not tied to files, commands, or artifacts
 
@@ -40,6 +43,7 @@ Escalate to the human approver at these boundaries:
 
 - strategic direction changes
 - scientific claim changes with interpretation risk
+- delegation policy changes that affect top-level agent behavior
 - submission packaging choices with paper-level consequences
 - final approval for a coordinated multi-agent change set
 

@@ -52,6 +52,10 @@ Use only the minimal skill set for repeated work:
 - `agent-orchestrator`
 - `experiment-results`
 
+Route top-level work through `agent-orchestrator` first.
+Treat the top-level agent as the parent orchestrator, not a worker.
+Treat `paper-submission`, `paper-asset-review`, and `experiment-results` as specialist child-worker skills.
+In this repository's default operating mode, the human provides standing authorization for sub-agent use and the top-level parent may decide when child agents are needed.
 If a task does not clearly fit one of these skills, route through `agent-orchestrator` first instead of inventing a parallel workflow.
 
 ## Command Surface
@@ -65,8 +69,11 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 ## Current Operating Model
 
 - The human sets direction and approves milestones.
-- The supervisor or orchestrator decomposes multi-agent work.
-- Specialists execute bounded paper-facing tasks.
+- The top-level agent is the parent orchestrator and does not execute specialist work directly.
+- The parent orchestrator decomposes work, chooses child roles, and reviews child outputs.
+- The parent writes a task packet with `Relevant conversation context` and `Context mode` before handing work to a child agent.
+- The default `Context mode` is `summary-only`; escalate to `summary+fork_context` only when exact dialogue history cannot be safely compressed.
+- Specialists execute bounded paper-facing tasks as child agents.
 - Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
 
 ## Asset Boundaries

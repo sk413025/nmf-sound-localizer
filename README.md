@@ -25,6 +25,9 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `figures/conf/layout_spec.md`
 - Task routing:
   - `docs/agent-ops/TASK_PACKETS.md`
+- Top-level agent routing:
+  - `.codex/skills/agent-orchestrator/SKILL.md`
+  - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
 - Asset classification:
   - `docs/governance/ASSET_CLASSES.md`
 
