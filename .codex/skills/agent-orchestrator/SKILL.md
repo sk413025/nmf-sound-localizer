@@ -36,6 +36,7 @@ Do:
 - choose `Context mode`
 - decide whether `fork_context` is necessary
 - spawn child agents
+- monitor active child-agent progress and latest outputs
 - review outputs and synthesize results
 
 Do not:
@@ -43,6 +44,7 @@ Do not:
 - perform the specialist execution step yourself
 - collapse into the child-worker execution step yourself
 - dump irrelevant thread history into a child prompt
+- close a child agent solely because it feels slow
 
 Apply this parent-only rule in both Default mode and Plan mode.
 
@@ -55,14 +57,22 @@ Apply this parent-only rule in both Default mode and Plan mode.
 5. Summarize only the task-relevant conversation history.
 6. Use `Context mode: summary-only` by default.
 7. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-8. Define review, handoff, and escalation requirements.
-9. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+8. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+9. Define review, handoff, and escalation requirements.
+10. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## Plan mode
 
 - Keep the same parent-orchestrator routing in Plan mode.
 - Use child agents in Plan mode only for planning, exploration, checking, and review.
 - Keep parent and child work non-mutating and plan-safe until execution mode.
+
+## Supervision loop
+
+- After spawning a child agent, either continue non-overlapping parent work or check the child's progress explicitly.
+- Before interrupting or closing a child agent, inspect its current status or latest output first.
+- Close a child agent only after completion, user cancellation, clear supersession, or an explicit redirect decision grounded in observed status.
+- Do not close a child agent solely because elapsed time feels long.
 
 Quick routing defaults:
 
@@ -79,3 +89,4 @@ Quick routing defaults:
 - Do not let the parent do child-worker execution.
 - Do not omit `Relevant conversation context` from a child handoff.
 - Do not use `summary+fork_context` when `summary-only` is sufficient.
+- Do not interrupt or close a child agent without first checking status or latest output.

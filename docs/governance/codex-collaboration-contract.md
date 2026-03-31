@@ -23,6 +23,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Default child-agent handoff to `Context mode: summary-only`; use `summary+fork_context` only when exact task-relevant dialogue cannot be safely compressed.
 - Do not pass irrelevant thread history, hidden reasoning, or expected answers to child agents.
 - In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the top-level parent decide when child agents are needed.
+- Require the top-level parent to monitor active child agents and inspect status before interrupting or closing them.
+- Do not close a child agent solely because elapsed time feels long.
 - For paper-related figures, use Codex multimodal capability on the real asset rather than metadata-only inference.
 - Require image inspection for `jpg` and `png`, and page-by-page PDF-to-PNG conversion before figure interpretation when the asset is a `pdf`.
 - For generated or data-backed figures, require a three-layer check: visual asset, generator or composition code, and upstream evidence or provenance artifact.
@@ -43,6 +45,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - top-level routing goes through `agent-orchestrator`
 - task packets and role definitions are discoverable from the main governance path
 - task packets include `Relevant conversation context` and explicit `Context mode`
+- supervision guidance requires child-status checks before interruption or shutdown
 - governance checks confirm the key files and links exist
 - Codex-native orchestration guidance remains discoverable from the main governance path
 - paper-related figure workflows do not allow metadata-only acceptance when visual inspection or provenance backtrace is required

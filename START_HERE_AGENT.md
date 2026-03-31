@@ -34,6 +34,9 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Even a single bounded task should be handed to at least one child agent.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
+- After spawning a child agent, monitor it until completion, explicit redirect, or a justified shutdown.
+- Inspect a child agent's current status or latest output before interrupting or closing it.
+- Do not close a child agent just because it feels slow.
 - Context mode: `summary-only` by default; switch to `summary+fork_context` only when task-relevant dialogue history cannot be safely compressed.
 - In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the parent decide when child agents are needed.
 - Apply this parent-orchestrator policy in both Default mode and Plan mode.

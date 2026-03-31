@@ -30,12 +30,14 @@ The parent may:
 - write task packets and `Relevant conversation context`
 - choose `Context mode` and decide whether `fork_context` is necessary
 - spawn child agents
+- monitor active child-agent progress and latest outputs
 - review outputs and produce final synthesis
 
 The parent must not:
 
 - perform manuscript, evidence, figure-review, or experiment-analysis work that belongs to a child specialist
 - collapse into a direct worker when a child specialist should own the execution step
+- close a child agent solely because it feels slow
 
 This parent-only rule applies in both Default mode and Plan mode.
 
@@ -48,9 +50,10 @@ This parent-only rule applies in both Default mode and Plan mode.
 5. write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`
 6. choose `summary-only` or `summary+fork_context`
 7. assign child specialists with explicit outputs and handoff targets
-8. request review or red-team critique when required
-9. consolidate outputs
-10. escalate to the human approver only at milestone boundaries
+8. monitor active child agents and inspect status before interrupting, redirecting, or closing them
+9. request review or red-team critique when required
+10. consolidate outputs
+11. escalate to the human approver only at milestone boundaries
 
 ## Plan mode behavior
 
@@ -58,6 +61,13 @@ This parent-only rule applies in both Default mode and Plan mode.
 - The parent may spawn child agents for planning, exploration, checking, and review.
 - In Plan mode, both parent and child work must remain non-mutating and plan-safe.
 - Do not use child agents in Plan mode to implement repo-tracked changes.
+
+## Supervision loop
+
+- After spawning a child agent, either do non-overlapping parent work or check the child's progress explicitly.
+- Before interrupting or closing a child agent, inspect its current status or latest output first.
+- Close a child agent only when it has completed, the user has cancelled the work, the task has been superseded, or the parent has reviewed the status and decided on an explicit redirect.
+- Do not shut down a child agent solely because elapsed time feels long.
 
 ## Context handoff policy
 
@@ -67,6 +77,7 @@ This parent-only rule applies in both Default mode and Plan mode.
 - Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
 - Do not dump irrelevant thread history into child agents.
 - Do not pass hidden reasoning or expected answers as handoff context.
+- Treat current child status and latest output as part of the required supervision context before any redirect or shutdown.
 
 ## When the supervisor is especially important
 
@@ -100,6 +111,7 @@ Escalate to the human when:
 - delegation policy checks
 - context triage and `Context mode` decisions
 - agent assignment packets
+- child-status checks before interruption or shutdown
 - warnings and rewrite requests
 - final synthesis
 - milestone summary for the human approver
