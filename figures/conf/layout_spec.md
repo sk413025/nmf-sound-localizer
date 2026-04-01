@@ -119,18 +119,18 @@ figures:
   fig06:
     compose:
       width_mm: 183.0
-      height_mm: 202.0
+      height_mm: 169.0
       outer_margin_x_mm: 6.0
       outer_margin_top_mm: 4.0
       outer_margin_bottom_mm: 4.0
-      panel_a_height_mm: 32.0
-      panel_b_height_mm: 32.0
-      panel_c_height_mm: 56.0
-      panel_d_height_mm: 62.0
-      panel_c_width_mm: 112.0
-      panel_e_width_mm: 54.0
-      col_gap_mm: 5.0
-      row_gap_mm: 4.0
+      panel_a_height_mm: 22.0
+      panel_b_height_mm: 26.0
+      panel_c_height_mm: 49.0
+      panel_d_height_mm: 55.0
+      panel_c_width_mm: 104.0
+      panel_e_width_mm: 63.0
+      col_gap_mm: 4.0
+      row_gap_mm: 3.0
     typography:
       panel_label: 8.0
       title: 6.8
@@ -150,25 +150,25 @@ figures:
         hspace: 0.22
         wspace: 0.0
         width_ratios: [1.0]
-        height_ratios: [32.0, 56.0, 62.0]
+        height_ratios: [26.0, 49.0, 55.0]
       split:
         standalone:
           b:
             width_mm: 171.0
-            height_mm: 32.0
-            subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.16, top: 0.93}
+            height_mm: 26.0
+            subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.18, top: 0.92}
           c:
-            width_mm: 112.0
-            height_mm: 56.0
-            subplots_adjust: {left: 0.09, right: 0.98, bottom: 0.14, top: 0.92}
+            width_mm: 104.0
+            height_mm: 49.0
+            subplots_adjust: {left: 0.09, right: 0.98, bottom: 0.15, top: 0.92}
           d:
             width_mm: 171.0
-            height_mm: 62.0
+            height_mm: 55.0
             subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.14, top: 0.92}
           e:
-            width_mm: 54.0
-            height_mm: 56.0
-            subplots_adjust: {left: 0.18, right: 0.97, bottom: 0.12, top: 0.92}
+            width_mm: 63.0
+            height_mm: 50.0
+            subplots_adjust: {left: 0.23, right: 0.98, bottom: 0.14, top: 0.91}
 ```
 <!-- runtime-layout-contract:end -->
 

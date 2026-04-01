@@ -283,14 +283,14 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Physical Encoding Reproduces Across Materials And Material-Frequency Structure Governs Screening"
+  title: "Physical Encoding Reproduces Across Materials; Material-Frequency Structure Remains Exploratory"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "Everyday objects all exhibit structured direction-frequency encoders; the encoder remains low-dimensional across materials, and screening differences are explained better by material-specific frequency-localized directional structure than by overall response energy alone."
+  claim: "Across the tested objects, structured direction-frequency encoding recurs and remains low-dimensional under object-specific calibration; screening differences are not captured by overall response energy alone, and the material-specific frequency-localized interpretation remains exploratory."
   legend_summary: "Material exemplars, cross-material H breadth, low-rank continuity, a compact screening-consequence closure panel, and per-material frequency-structure cards."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
@@ -328,6 +328,15 @@ fig06_universality:
     - path: ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/support_report.json
       type: json
       description: "Cross-material low-rank, bootstrap, and per-angle support analysis."
+    - path: results/fig06_cross_material_stat_tests_20260331_173907/per_material_above_chance_tests.csv
+      type: csv
+      description: "Holm-corrected per-material above-chance tests for Top-1 and within-10°."
+    - path: results/fig06_cross_material_stat_tests_20260331_173907/cross_material_heterogeneity.csv
+      type: csv
+      description: "Friedman omnibus heterogeneity summary for the angle-level MAE matrix."
+    - path: results/fig06_cross_material_stat_tests_20260331_173907/stats_report.md
+      type: md
+      description: "Manuscript-facing statistical summary for the current Fig. 6 screening and heterogeneity claims."
     - path: figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png
       type: png
       description: "Committed support asset for the material exemplars strip."
@@ -371,6 +380,9 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
         - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/material_performance_summary.csv
+        - results/fig06_cross_material_stat_tests_20260331_173907/per_material_above_chance_tests.csv
+        - results/fig06_cross_material_stat_tests_20260331_173907/cross_material_heterogeneity.csv
+        - results/fig06_cross_material_stat_tests_20260331_173907/stats_report.md
     e:
       title: "Material frequency structure"
       provenance_mode: data_backed

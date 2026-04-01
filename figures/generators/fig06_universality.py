@@ -49,6 +49,13 @@ MATERIAL_SHORT_LABELS = {
     "b": "Cardboard",
     "m": "Laptop",
 }
+MATERIAL_SCREENING_LABELS = {
+    "a": "Acrylic",
+    "p": "Cup",
+    "w": "Wood",
+    "b": "Card",
+    "m": "Laptop",
+}
 OTHER_COLOR = "#7A7A7A"
 BACKUP_COLOR = SEMANTIC_PALETTE["learned"]
 PRIMARY_COLOR = SEMANTIC_PALETTE["physics"]
@@ -65,6 +72,10 @@ PANEL_C_MATERIAL_STYLES = {
 FIG06_GENERATOR = figure_section("fig06", "generator")
 FIG06_GRID = dict(FIG06_GENERATOR["composite_grid"])
 FIG06_SPLIT = dict(FIG06_GENERATOR["split"]["standalone"])
+FIG06_MIDDLE_WIDTH_RATIOS = [
+    float(FIG06_SPLIT["c"]["width_mm"]),
+    float(FIG06_SPLIT["e"]["width_mm"]),
+]
 FIG06_TYPOGRAPHY = {
     **font_tokens(),
     **figure_section("fig06", "typography"),
@@ -701,9 +712,9 @@ def _plot_panel_e(
         title=None,
         title_pt=title_pt,
         add_label=add_label,
-        label_y=1.03,
+        label_y=1.018,
     )
-    grid = slot_spec.subgridspec(3, 1, hspace=0.64)
+    grid = slot_spec.subgridspec(3, 1, hspace=0.42)
     ax_energy = fig.add_subplot(grid[0, 0])
     ax_top1 = fig.add_subplot(grid[1, 0], sharey=ax_energy)
     ax_mae = fig.add_subplot(grid[2, 0], sharey=ax_energy)
@@ -749,7 +760,7 @@ def _plot_panel_e(
             idx,
             xerr=[[top1 - top1_lo], [top1_hi - top1]],
             fmt="none",
-            capsize=3,
+            capsize=2.5,
             ecolor=tint,
             zorder=3,
         )
@@ -759,42 +770,51 @@ def _plot_panel_e(
             idx,
             xerr=[[mae - mae_lo], [mae_hi - mae]],
             fmt="none",
-            capsize=3,
+            capsize=2.5,
             ecolor=tint,
             zorder=3,
         )
         ax_mae.scatter(mae, idx, s=40, color=tint, marker=marker, zorder=4)
 
-    ax_energy.set_title("Energy / Top-1", fontsize=title_pt - 0.1, loc="left", x=0.10, pad=2)
+    for ax in (ax_energy, ax_top1, ax_mae):
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#AFAFAF")
+        ax.spines["bottom"].set_color("#AFAFAF")
+        ax.spines["left"].set_linewidth(0.7)
+        ax.spines["bottom"].set_linewidth(0.7)
+
+    ax_energy.set_title("Energy / Top-1", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1.5)
     ax_energy.set_xlim(-0.02, 1.02)
     ax_energy.set_yticks(y)
     ax_energy.set_yticklabels(
-        [MATERIAL_SHORT_LABELS[m] for m in ranking],
-        fontsize=max(tick_label_pt - 0.35, 5.0),
+        [MATERIAL_SCREENING_LABELS[m] for m in ranking],
+        fontsize=max(tick_label_pt - 0.7, 4.8),
     )
     ax_energy.invert_yaxis()
-    ax_energy.tick_params(axis="x", labelsize=tick_label_pt, length=2)
+    ax_energy.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
+    ax_energy.tick_params(axis="y", length=0, pad=1)
     ax_energy.grid(axis="x", linestyle="--", alpha=0.25)
     ax_energy.text(
         0.98,
-        0.96,
-        "open = energy\nfilled = Top-1",
+        1.02,
+        "open/filled = energy/Top-1",
         transform=ax_energy.transAxes,
         ha="right",
-        va="top",
-        fontsize=max(tick_label_pt - 0.35, 5.0),
+        va="bottom",
+        fontsize=max(tick_label_pt - 0.55, 4.8),
     )
 
-    ax_top1.set_title("Top-1 CI", fontsize=title_pt - 0.1, loc="left", pad=1)
+    ax_top1.set_title("Top-1 CI", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1)
     ax_top1.set_xlim(max(0.0, min(top1_values) - 0.03), min(1.0, max(top1_values) + 0.03))
-    ax_top1.tick_params(axis="x", labelsize=tick_label_pt, length=2)
+    ax_top1.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
     ax_top1.tick_params(axis="y", left=False, labelleft=False)
     ax_top1.grid(axis="x", linestyle="--", alpha=0.25)
 
-    ax_mae.set_title("MAE CI", fontsize=title_pt - 0.1, loc="left", pad=1)
+    ax_mae.set_title("MAE CI", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1)
     ax_mae.set_xlim(max(0.0, min(mae_values) - 0.5), max(mae_values) + 0.5)
     ax_mae.set_xlabel("MAE (deg)", fontsize=axis_label_pt, labelpad=0.8)
-    ax_mae.tick_params(axis="x", labelsize=tick_label_pt, length=2)
+    ax_mae.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
     ax_mae.tick_params(axis="y", left=False, labelleft=False)
     ax_mae.grid(axis="x", linestyle="--", alpha=0.25)
 
@@ -843,7 +863,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         colorbar_label_pt=colorbar_label_pt,
         add_label=True,
     )
-    middle = outer[1, 0].subgridspec(1, 2, width_ratios=[112.0, 54.0], wspace=0.18)
+    middle = outer[1, 0].subgridspec(1, 2, width_ratios=FIG06_MIDDLE_WIDTH_RATIOS, wspace=0.16)
     _plot_panel_c(
         fig,
         middle[0, 0],

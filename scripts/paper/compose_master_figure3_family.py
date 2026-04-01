@@ -129,7 +129,7 @@ except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06
     FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_C_HEIGHT_MM = FIG06_D_HEIGHT_MM = 0.0
     FIG06_PANEL_C_WIDTH_MM = FIG06_PANEL_E_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
     FIG06_ROW_GAP_MM = 0.0
-FIG06_PANEL_A_CROP = (0.01, 0.43, 0.99, 0.83)
+FIG06_PANEL_A_CROP = (0.015, 0.405, 0.985, 0.755)
 FIG06_TYPOGRAPHY_PT = {
     **font_tokens(),
     **figure_section("fig06", "typography"),
@@ -1169,6 +1169,8 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
 
     fig06_asset = paper_dir / "fig06_universality.jpg"
     fig06_layout_asset = fig06_asset.with_suffix(".layout.json")
+    manuscript_panel_dir = REPO_ROOT / "figures/output/fig06_universality_manuscript_panels"
+    panel_a_manuscript_asset = manuscript_panel_dir / "fig06_panel_a_material_exemplars.png"
 
     if not FIG06_PANEL_A.exists():
         raise FileNotFoundError(f"Missing Fig. 6 panel a support asset: {FIG06_PANEL_A}")
@@ -1205,6 +1207,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     panel_c = _contain_in_box(panel_c, panel_c_width_px, c_height_px)
     panel_d = _contain_in_box(panel_d, panel_e_width_px, c_height_px)
     panel_e = _contain_in_box(panel_e, inner_width_px, d_height_px)
+    _save_composite(panel_a, panel_a_manuscript_asset)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
@@ -1232,7 +1235,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     )
 
     _save_composite(canvas, fig06_asset)
-    manuscript_manifest = REPO_ROOT / "figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json"
+    manuscript_manifest = manuscript_panel_dir / "fig06_panel_manifest.json"
     _write_reference_panel_manifest(
         manuscript_manifest,
         figure_id="fig06",
@@ -1241,7 +1244,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
             {
                 "panel_id": "a",
                 "title": "Material exemplars",
-                "asset_path": "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png",
+                "asset_path": "figures/output/fig06_universality_manuscript_panels/fig06_panel_a_material_exemplars.png",
                 "provenance_mode": "manual_support",
             },
             {
