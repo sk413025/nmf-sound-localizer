@@ -42,17 +42,16 @@ figures:
   fig04:
     compose:
       width_mm: 183.0
-      height_mm: 154.0
+      height_mm: 146.0
       outer_margin_mm: 4.0
       panel_a_slot_width_mm: 175.0
-      panel_a_slot_height_mm: 74.0
+      panel_a_slot_height_mm: 28.0
       row_gap_mm: 4.0
       col_gap_mm: 4.0
-      lower_panel_slot_width_mm: 55.667
-      lower_panel_slot_height_mm: 68.0
-      panel_d_slot_height_mm: 43.0
-      panel_e_slot_height_mm: 22.0
-      right_stack_gap_mm: 3.0
+      middle_panel_slot_width_mm: 85.5
+      middle_panel_slot_height_mm: 74.0
+      panel_d_slot_width_mm: 175.0
+      panel_d_slot_height_mm: 28.0
       label_lane_mm: 4.5
       content_inset_x_mm: 1.5
       content_inset_bottom_mm: 1.5
@@ -60,22 +59,19 @@ figures:
       composite_width_mm: 183.0
       composite_height_mm: 76.0
       composite_grid:
-        left: 0.075
+        left: 0.070
         right: 0.990
         bottom: 0.08
         top: 0.98
-        wspace: 0.28
-        width_ratios: [58.333, 58.333, 58.333]
-        stack_height_ratios: [43.0, 22.0]
-        stack_hspace: 0.34
+        wspace: 0.26
+        width_ratios: [61.0, 61.0, 46.0]
       split:
-        panel_slot_width_mm: {b: 58.333, c: 58.333, d: 58.333, e: 58.333}
-        panel_slot_height_mm: {b: 76.0, c: 76.0, d: 45.0, e: 23.0}
+        panel_slot_width_mm: {b: 88.0, c: 88.0, d: 175.0}
+        panel_slot_height_mm: {b: 82.0, c: 82.0, d: 28.0}
         standalone_subplots:
-          b: {left: 0.14, right: 0.995, bottom: 0.08, top: 0.980}
-          c: {left: 0.12, right: 0.995, bottom: 0.08, top: 0.980}
-          d: {left: 0.14, right: 0.995, bottom: 0.12, top: 0.985}
-          e: {left: 0.12, right: 0.995, bottom: 0.28, top: 0.94}
+          b: {left: 0.11, right: 0.995, bottom: 0.11, top: 0.980}
+          c: {left: 0.11, right: 0.995, bottom: 0.11, top: 0.980}
+          d: {left: 0.12, right: 0.995, bottom: 0.26, top: 0.92}
   fig05:
     generator:
       composite_width_mm: 183.0
@@ -89,7 +85,7 @@ figures:
         height_ratios: [62.0, 64.0]
       top_row:
         wspace: 0.110
-        width_ratios: [48.0, 73.0, 40.0]
+        width_ratios: [46.0, 64.0, 51.0]
       bottom_row:
         wspace: 0.086
         width_ratios: [90.0, 72.0]
@@ -340,50 +336,50 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 
 ---
 
-## Figure 4 — Solver Mechanism (5 panels)
+## Figure 4 — Solver Mechanism (4 panels)
 
-Composed: hero architecture panel `a` in a decorated top slot plus generated
-`b/c` portrait mechanism panels in the lower row, with the rightmost lower slot
-split into a larger aggregation bridge `d` and a compact ablation closure `e`.
-This contract adds an explicit manuscript collar and a dedicated panel-label
-lane so Fig. 4 uses the same paper-facing visual discipline as Figs. 1, 3, and 5.
+Composed: a compact physics-first overview `a`, two enlarged mechanism panels
+`b/c`, and a single full-width decoder comparison `d`. The old aggregation
+bridge is removed from the main-paper surface so the figure reads as broad
+physical match -> local concentration -> cleaner residual -> decoder payoff.
+This contract keeps the manuscript collar and dedicated panel-label lane, but
+spends the available width on the physically important panels rather than on
+small bookkeeping axes.
 
 ```
                          183.0 mm
 ┌──────────────────────────────────────────────────────┐
 │                4.0 mm manuscript collar              │
 │  ┌────────────────────────────────────────────────┐  │
-│  │ (a) Architecture diagram                       │  │ 74.0 mm slot
-│  │              175.0 × 74.0 mm                  │  │
+│  │ (a) Mechanism strip                            │  │ 28.0 mm slot
+│  │              175.0 × 28.0 mm                  │  │
 │  └────────────────────────────────────────────────┘  │
 │                    4.0 mm row gap                    │
-│  ┌───────────────┬───────────────┬───────────────┐  │
-│  │ (b) Routing   │ (c) Gated     │ (d) Aggrega-  │  │
-│  │ formation     │ update +      │ tion bridge   │  │ 43.0 mm
-│  │ 55.7 × 68.0   │ residual      │ 55.7 × 43.0   │  │
-│  │               │ 55.7 × 68.0   ├───────────────┤  │ 3.0 mm gap
-│  │               │               │ (e) Routing-  │  │ 22.0 mm
-│  │               │               │ mechanism     │  │
-│  │               │               │ ablation      │  │
-│  │               │               │ 55.7 × 22.0   │  │
-│  └───────────────┴───────────────┴───────────────┘  │
+│  ┌────────────────────────┬──────────────────────┐  │
+│  │ (b) Broad match +      │ (c) Residual after   │  │ 74.0 mm
+│  │ local update overlay   │ one local step       │  │
+│  │ 85.5 × 74.0 mm         │ 85.5 × 74.0 mm       │  │
+│  └────────────────────────┴──────────────────────┘  │
+│                    4.0 mm row gap                    │
+│  ┌────────────────────────────────────────────────┐  │
+│  │ (d) Decoder-family comparison                 │  │ 28.0 mm
+│  │              175.0 × 28.0 mm                  │  │
+│  └────────────────────────────────────────────────┘  │
 │                4.0 mm manuscript collar              │
 └──────────────────────────────────────────────────────┘
-                              total = 154.0 mm
+                              total = 146.0 mm
 ```
 
 | Parameter      | Value                                  |
 |----------------|----------------------------------------|
 | width_mm       | 183                                    |
-| height_mm      | **154**                                |
+| height_mm      | **146**                                |
 | Outer collar   | **4.0 mm** on all four sides           |
-| Panel (a) slot | **175.0 × 74.0 mm**                    |
+| Panel (a) slot | **175.0 × 28.0 mm**                    |
 | Row gap        | **4.0 mm**                             |
-| Panels (b,c)   | **55.7 × 68.0 mm**                     |
-| Panel (d)      | **55.7 × 43.0 mm**                     |
-| Panel (e)      | **55.7 × 22.0 mm**                     |
-| d/e gap        | **3.0 mm**                             |
-| Column gap     | **4.0 mm** between lower panels        |
+| Panels (b,c)   | **85.5 × 74.0 mm**                     |
+| Panel (d)      | **175.0 × 28.0 mm**                    |
+| Column gap     | **4.0 mm** between middle panels       |
 | Label lane     | **4.5 mm** at the top of each slot     |
 | Content inset  | **1.5 mm** left/right/bottom           |
 
@@ -397,7 +393,8 @@ decorated-bbox budgeting, not raw-slot-only packing:
 - Top row `a-b-c`: benchmark + unified confusion family + structure anchor
 - Bottom row `d-e`: four-angle conditional outputs + per-angle benchmark
 
-Panel `b` remains the dominant confusion-family block. `c` keeps its own
+Panel `b` remains the dominant confusion-family block, but `c` is widened so
+the physical-manifold anchor does not read like a side note. `c` keeps its own
 composite colorbar and shared axis labels. The larger inter-row gap is
 intentional and exists to prevent decorated text from colliding across rows.
 
@@ -412,11 +409,11 @@ intentional and exists to prevent decorated text from colliding across rows.
 │  Row gap: 16 mm                                     │  │
 │                                                      │  │
 │  Top row                                             │  │
-│  ┌──────────────┬────────────────────────┬───────┐   │  │
-│  │ (a)          │ (b) unified confusion  │ (c)   │   │  │
-│  │ benchmark    │ family block           │ H/QK  │   │  │ 62 mm
-│  │ 48 × 62 mm   │ 73 × 62 mm             │ 40×62 │   │  │
-│  └──────────────┴────────────────────────┴───────┘   │  │
+│  ┌──────────────┬──────────────────────┬─────────┐   │  │
+│  │ (a)          │ (b) unified confusion│ (c)     │   │  │
+│  │ benchmark    │ family block         │ manifold│   │  │ 62 mm
+│  │ 46 × 62 mm   │ 64 × 62 mm           │ 51×62   │   │  │
+│  └──────────────┴──────────────────────┴─────────┘   │  │
 │      4 mm gap              4 mm gap                  │  │
 │                                                      │  │
 │  Bottom row                                          │  │
@@ -435,13 +432,13 @@ intentional and exists to prevent decorated text from colliding across rows.
 | width_mm              | 183                                        |
 | height_mm             | **156**                                    |
 | Outer rows            | 2×1, height ratios 62 / 64                 |
-| Top row               | 1×3, width ratios 48 / 73 / 40             |
+| Top row               | 1×3, width ratios 46 / 64 / 51             |
 | Bottom row            | 1×2, width ratios 90 / 72                  |
 | Margins               | 7 mm on all sides                          |
 | Row gap               | 16 mm                                      |
-| Panel (a)             | 48 × 62 mm                                 |
-| Panel (b)             | 73 × 62 mm                                 |
-| Panel (c)             | 40 × 62 mm                                 |
+| Panel (a)             | 46 × 62 mm                                 |
+| Panel (b)             | 64 × 62 mm                                 |
+| Panel (c)             | 51 × 62 mm                                 |
 | Panel (d)             | 90 × 64 mm                                 |
 | Panel (e)             | 72 × 64 mm                                 |
 
@@ -449,7 +446,7 @@ intentional and exists to prevent decorated text from colliding across rows.
 
 ## Figure 6 — Universality (5 panels)
 
-Composed: a cropped manual exemplar strip `a` on top, a full-width generated `H` row `b`, then a shared row with low-rank continuity `c` on the left and screening consequence `e` on the right, followed by a full-width material-frequency mechanism row `d`.
+Composed: a cropped manual exemplar strip `a` on top, a full-width generated `H` row `b`, then a shared row with low-rank continuity `c` on the left and an exploratory screen summary `e` on the right, followed by a full-width material-frequency mechanism row `d`.
 Panel `a` remains a manual support asset and must stay tightly cropped to suppress the oversized slide-style title and bracket text from the legacy source image.
 Panels `b-e` are data-backed and generated at their final manuscript slot sizes.
 
@@ -464,7 +461,7 @@ Panels `b-e` are data-backed and generated at their final manuscript slot sizes.
 │      (b) 171.0 × 32.0 mm cross-material H row       │  │ 32.0 mm
 ├───────────────────────────────┬──────────────────────┤ ─┼─ 4.0 mm
 │ (c) 112.0 × 56.0 mm           │ (e) 54.0 × 56.0 mm  │  │ 56.0 mm
-│ Low-rank continuity           │ Screening consequence│  │
+│ Low-rank continuity           │ Exploratory summary  │  │
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
 │      (d) 171.0 × 62.0 mm material mechanism row     │  │ 62.0 mm
 └───────────────────────────────┴──────────────────────┘ ─┼─

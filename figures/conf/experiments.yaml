@@ -139,9 +139,9 @@ fig04_ablation:
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided solver converts broad physical correlations g_t into gated sparse updates Δx_t through learned QK routing, exposes those updates on the angle axis through explicit mode-to-angle aggregation, and then reduces the residual through staged dictionary-consistent updates."
-  legend_summary: "Architecture, routing formation, gated-update plus residual correction, an explicit aggregation bridge from mode-resolved routing to angle-axis quantities, and clean-condition routing-mechanism ablation."
-  panel_order: ["a", "b", "c", "d", "e"]
+  claim: "The physics-guided solver concentrates a broad physical match into one local angle neighborhood before residual subtraction, and that local concentration improves decoder accuracy."
+  legend_summary: "Thin physics-first mechanism strip, one-axis exemplar overlay from broad match to local update, one-axis residual-cleanup overlay with compact summary callouts, and clean-condition decoder-family comparison."
+  panel_order: ["a", "b", "c", "d"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
   compose_script: scripts/paper/compose_master_figure3_family.py
@@ -174,22 +174,22 @@ fig04_ablation:
       description: "Aggregated clean-condition ablation sweep."
     - path: results/fig04_stepwise_mechanics.npz
       type: npz
-      description: "Governed derived artifact containing the stage-0 g_t/QK/w_t summaries for panel b, the shared 70-degree gated-update and residual-step summaries for panel c, and the mode-resolved routing/update tensors used by the aggregation-bridge panel d."
+      description: "Governed derived artifact containing the stage-0 g_t/w_t/Δx_t summaries for panel b and the shared 70-degree residual-cleanup summaries for panel c."
   panel_provenance:
     a:
-      title: "Architecture diagram"
+      title: "Mechanism strip"
       provenance_mode: manual_support
       asset_path: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg
-      note: "Generator-built manuscript support schematic aligned to the current solver notation; no run-generated evidence."
+      note: "Generator-built manuscript support strip that reduces the mechanism to a schematic broad-match -> local-concentration -> cleaner-residual sequence; no run-generated evidence."
     b:
-      title: "Routing formation"
+      title: "Broad match, local gate, and local update"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Gated update and residual correction"
+      title: "Residual after one local step"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf
       evidence_sources:
@@ -198,18 +198,9 @@ fig04_ablation:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
     d:
-      title: "Aggregation bridge"
+      title: "Decoder-family comparison"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf
-      evidence_sources:
-        - results/fig04_stepwise_mechanics.npz
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
-    e:
-      title: "Routing-mechanism ablation"
-      provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf
       evidence_sources:
         - results/figure4_data.json
   sweep:
@@ -235,8 +226,8 @@ fig05_performance_structure:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
-  claim: "The learned router mirrors the physical angle manifold and stabilizes decoding under noise."
-  legend_summary: "Noise robustness benchmark, a unified four-decoder confusion-family block, physical structure alignment, representative conditional outputs, and a five-seed clean per-angle benchmark under the unified four-family decoder contract."
+  claim: "The guided solver follows the measured angle manifold and stabilizes decoding under noise."
+  legend_summary: "Noise robustness benchmark, a unified four-decoder confusion-family block, measured-manifold versus guided-map alignment, representative conditional outputs, and a five-seed clean per-angle benchmark under the unified four-family decoder contract."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
@@ -283,7 +274,7 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Physical Encoding Reproduces Across Materials; Material-Frequency Structure Remains Exploratory"
+  title: "Physical Encoding Recurs In An Exploratory Five-Object Screen"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
@@ -291,7 +282,7 @@ fig06_universality:
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
   claim: "Across the tested objects, structured direction-frequency encoding recurs and remains low-dimensional under object-specific calibration; screening differences are not captured by overall response energy alone, and the material-specific frequency-localized interpretation remains exploratory."
-  legend_summary: "Material exemplars, cross-material H breadth, low-rank continuity, a compact screening-consequence closure panel, and per-material frequency-structure cards."
+  legend_summary: "Material exemplars, cross-material H breadth, low-rank continuity, a compact exploratory screen summary, and per-material frequency-structure cards."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
@@ -368,7 +359,7 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
         - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/low_rank_summary.csv
     d:
-      title: "Screening consequence"
+      title: "Exploratory screen summary"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf
       evidence_sources:

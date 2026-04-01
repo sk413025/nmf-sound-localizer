@@ -987,7 +987,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Screening consequence",
+                "title": "Exploratory screen summary",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Normalized energy-versus-Top-1 comparison plus Top-1 and MAE summaries with uncertainty, showing that overall response strength alone is insufficient to explain the screening ranking.",

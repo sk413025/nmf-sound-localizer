@@ -7,9 +7,9 @@ from panel-level assets whenever possible:
 - Fig. 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
-- Fig. 4: Solver Mechanism (5 panels: a governed support schematic + b,c,d,e generated)
-- Fig. 5: Performance + Structure (6 panels: all generated)
-- Fig. 6: Universality (4 panels: a manual support + b,c,d generated)
+- Fig. 4: Solver Mechanism (4 panels: a governed support schematic + b,c,d generated)
+- Fig. 5: Performance + Structure (5 panels: all generated)
+- Fig. 6: Universality (5 panels: a manual support + b,c,d,e generated)
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
 try:
@@ -67,15 +68,14 @@ FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Solver Mechanism (5 panels: a governed support schematic + b,c,d,e generated) ---
+# --- Figure 4: Solver Mechanism (4 panels: a governed support schematic + b,c,d generated) ---
 FIG04_PANEL_A = (
     REPO_ROOT
     / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg"
 )
 FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf"
 FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf"
-FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf"
-FIG04_PANEL_E = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf"
+FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf"
 FIG04_COMPOSE = figure_section("fig04", "compose")
 FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
 FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
@@ -84,17 +84,16 @@ FIG04_PANEL_A_SLOT_WIDTH_MM = float(FIG04_COMPOSE["panel_a_slot_width_mm"])
 FIG04_PANEL_A_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_a_slot_height_mm"])
 FIG04_ROW_GAP_MM = float(FIG04_COMPOSE["row_gap_mm"])
 FIG04_COL_GAP_MM = float(FIG04_COMPOSE["col_gap_mm"])
-FIG04_LOWER_PANEL_SLOT_WIDTH_MM = float(FIG04_COMPOSE["lower_panel_slot_width_mm"])
-FIG04_LOWER_PANEL_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["lower_panel_slot_height_mm"])
+FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM = float(FIG04_COMPOSE["middle_panel_slot_width_mm"])
+FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["middle_panel_slot_height_mm"])
+FIG04_PANEL_D_SLOT_WIDTH_MM = float(FIG04_COMPOSE["panel_d_slot_width_mm"])
 FIG04_PANEL_D_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_d_slot_height_mm"])
-FIG04_PANEL_E_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_e_slot_height_mm"])
-FIG04_RIGHT_STACK_GAP_MM = float(FIG04_COMPOSE["right_stack_gap_mm"])
 FIG04_LABEL_LANE_MM = float(FIG04_COMPOSE["label_lane_mm"])
 FIG04_CONTENT_INSET_X_MM = float(FIG04_COMPOSE["content_inset_x_mm"])
 FIG04_CONTENT_INSET_BOTTOM_MM = float(FIG04_COMPOSE["content_inset_bottom_mm"])
 FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 1.00)
 
-# --- Figure 5: Performance + Structure (6 panels: all generated) ---
+# --- Figure 5: Performance + Structure (5 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
 FIG05_WIDTH_MM = 183.0
@@ -242,123 +241,103 @@ def _draw_centered_box(
 
 
 def _build_fig04_architecture_panel(panel_path: Path) -> None:
-    """Generate the manuscript-facing Fig. 4a schematic from current solver logic."""
+    """Generate the manuscript-facing Fig. 4a mechanism strip."""
     width_px = 2784
-    height_px = 1536
-    active_height_px = int(round(height_px * 0.88))
+    height_px = 420
     canvas = Image.new("RGB", (width_px, height_px), "white")
     draw = ImageDraw.Draw(canvas)
 
-    title_font = _load_font(66)
-    stage_font = _load_font(46)
-    box_title_font = _load_font(52)
-    box_body_font = _load_unicode_font(38)
+    caption_font = _load_unicode_font(34)
+    label_font = _load_font(38)
+    arrow_color = "#5A5A5A"
+    frame_fill = "#FCFCFA"
+    frame_outline = "#D6D6D0"
+    baseline_color = "#D7D7D0"
+    labels = [
+        ("broad physical match", "#2C7BC9"),
+        ("local concentration", "#12A36E"),
+        ("cleaner residual", "#3B82F6"),
+    ]
 
-    box_colors = {
-        "physics": ("#EEF5FB", "#2C7BC9"),
-        "learned": ("#FBF1E8", "#D28A45"),
-        "gate": ("#EDF8F3", "#12A36E"),
-        "residual": ("#F3F4F6", "#7A7F85"),
-        "update": ("#F1F5FB", "#3B82F6"),
-        "readout": ("#F7F3FB", "#8B5FBF"),
-    }
-    arrow_color = "#4B4B4B"
+    caption = "Schematic only: broad evidence is focused locally before the residual is recomputed."
+    caption_bbox = draw.textbbox((0, 0), caption, font=caption_font)
+    caption_x = (width_px - (caption_bbox[2] - caption_bbox[0])) // 2
+    draw.text((caption_x, 26), caption, fill="#4A4A4A", font=caption_font)
 
-    draw.text((width_px * 0.34, 70), "Stage t", fill="#1A1A1A", font=title_font)
-    draw.text((width_px * 0.76, 70), "Readout / residual branch", fill="#1A1A1A", font=stage_font)
-    draw.line((170, 150, width_px - 160, 150), fill="#202020", width=5)
-    _draw_arrow(draw, (width_px - 220, 150), (width_px - 140, 150), fill="#202020", width=5, head_size=16)
+    frame_top = 92
+    frame_bottom = 270
+    label_y = 320
+    gap = 118
+    usable_width = width_px - 2 * 160
+    frame_width = int((usable_width - 2 * gap) / 3)
+    x_positions = [160 + idx * (frame_width + gap) for idx in range(3)]
+    highlight_fill = (247, 232, 177)
 
-    boxes = {
-        "residual": (110, 360, 500, 620),
-        "correlation": (580, 360, 1020, 620),
-        "scores": (1100, 360, 1540, 620),
-        "gate": (1620, 360, 1890, 620),
-        "update": (1970, 360, 2400, 620),
-        "readout": (1860, 150, 2250, 330),
-        "doa": (2320, 150, 2700, 330),
-    }
+    def _draw_profile_points(
+        x0: int,
+        x1: int,
+        center_strength: float,
+        width_scale: float,
+        *,
+        y_base: int,
+        y_span: int,
+    ) -> list[tuple[int, int]]:
+        xs = np.linspace(x0 + 30, x1 - 30, 96)
+        norm_x = np.linspace(-1.0, 1.0, xs.size)
+        curve = np.exp(-0.5 * (norm_x / max(width_scale, 1e-3)) ** 2)
+        ys = y_base - center_strength * curve * y_span
+        return [(int(round(x)), int(round(y))) for x, y in zip(xs, ys, strict=False)]
 
-    _draw_centered_box(
-        draw,
-        boxes["residual"],
-        title="Residual",
-        body="r_t",
-        fill=box_colors["residual"][0],
-        outline=box_colors["residual"][1],
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
-    _draw_centered_box(
-        draw,
-        boxes["correlation"],
-        title="Physical correlation",
-        body="g_t = D^T r_t",
-        fill=box_colors["physics"][0],
-        outline=box_colors["physics"][1],
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
-    _draw_centered_box(
-        draw,
-        boxes["scores"],
-        title="Expert scores",
-        body="s_t[e] = <q_t, k_e>/sqrt(d_k)",
-        fill=box_colors["learned"][0],
-        outline=box_colors["learned"][1],
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
-    _draw_centered_box(
-        draw,
-        boxes["gate"],
-        title="Routed gate",
-        body="w_t",
-        fill=box_colors["gate"][0],
-        outline=box_colors["gate"][1],
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
-    _draw_centered_box(
-        draw,
-        boxes["update"],
-        title="Sparse / residual update",
-        body="Delta x_t = w_t * g_t\nr_(t+1) = r_t - D(eta Delta x_t)",
-        fill=box_colors["update"][0],
-        outline=box_colors["update"][1],
-        title_font=_load_font(46),
-        body_font=_load_unicode_font(30),
-    )
-    _draw_centered_box(
-        draw,
-        boxes["readout"],
-        title="Expert-score readout",
-        body="s_bar[e]",
-        fill=box_colors["readout"][0],
-        outline=box_colors["readout"][1],
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
-    _draw_centered_box(
-        draw,
-        boxes["doa"],
-        title="Final DOA",
-        body="theta_hat = theta_argmax_e\ns_bar[e]",
-        fill="#F8F8F8",
-        outline="#808080",
-        title_font=box_title_font,
-        body_font=box_body_font,
-    )
+    for idx, ((label, color), x0) in enumerate(zip(labels, x_positions, strict=False)):
+        x1 = x0 + frame_width
+        draw.rounded_rectangle(
+            (x0, frame_top, x1, frame_bottom),
+            radius=20,
+            fill=frame_fill,
+            outline=frame_outline,
+            width=4,
+        )
+        x_center = (x0 + x1) // 2
+        draw.rectangle((x_center - 8, frame_top + 18, x_center + 8, frame_bottom - 18), fill=highlight_fill)
+        baseline_y = frame_bottom - 34
+        draw.line((x0 + 24, baseline_y, x1 - 24, baseline_y), fill=baseline_color, width=3)
 
-    # Main stage-t path
-    _draw_arrow(draw, (500, 490), (580, 490), fill=arrow_color)
-    _draw_arrow(draw, (1020, 490), (1100, 490), fill=arrow_color)
-    _draw_arrow(draw, (1540, 490), (1620, 490), fill=arrow_color)
-    _draw_arrow(draw, (1890, 490), (1970, 490), fill=arrow_color)
+        if idx == 0:
+            broad_points = _draw_profile_points(x0, x1, 0.58, 0.52, y_base=baseline_y, y_span=88)
+            draw.line(broad_points, fill=color, width=7, joint="curve")
+        elif idx == 1:
+            gate_points = _draw_profile_points(x0, x1, 0.88, 0.10, y_base=baseline_y, y_span=112)
+            polygon = [(gate_points[0][0], baseline_y), *gate_points, (gate_points[-1][0], baseline_y)]
+            draw.polygon(polygon, fill="#D8F0E5")
+            draw.line(gate_points, fill=color, width=7, joint="curve")
+        else:
+            before_points = _draw_profile_points(x0, x1, 0.52, 0.48, y_base=baseline_y, y_span=82)
+            draw.line(before_points[::2], fill="#9A9A9A", width=4)
+            xs = np.linspace(x0 + 30, x1 - 30, 96)
+            norm_x = np.linspace(-1.0, 1.0, xs.size)
+            broad = 0.36 * np.exp(-0.5 * (norm_x / 0.62) ** 2)
+            notch = 0.28 * np.exp(-0.5 * (norm_x / 0.12) ** 2)
+            cleaned = np.clip(broad - notch + 0.03, 0.04, None)
+            cleaned_points = [
+                (int(round(x)), int(round(baseline_y - value * 120.0)))
+                for x, value in zip(xs, cleaned, strict=False)
+            ]
+            draw.line(cleaned_points, fill=color, width=7, joint="curve")
 
-    # Readout branch
-    _draw_arrow(draw, (1320, 360), (1320, 240), fill=arrow_color)
-    _draw_arrow(draw, (2250, 240), (2320, 240), fill=arrow_color)
+        label_bbox = draw.textbbox((0, 0), label, font=label_font)
+        label_x = x_center - (label_bbox[2] - label_bbox[0]) // 2
+        draw.text((label_x, label_y), label, fill=color, font=label_font)
+
+        if idx < len(x_positions) - 1:
+            y_mid = (frame_top + frame_bottom) // 2
+            _draw_arrow(
+                draw,
+                (x1 + 18, y_mid),
+                (x1 + gap - 24, y_mid),
+                fill=arrow_color,
+                width=6,
+                head_size=16,
+            )
 
     _ensure_parent(panel_path)
     canvas.save(panel_path, quality=95)
@@ -854,7 +833,7 @@ def compose_fig03(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig04(paper_dir: Path) -> list[Path]:
-    """Fig 4: hero architecture plus b/c lower panels and a stacked d/e right slot."""
+    """Fig 4: thin mechanism strip + enlarged one-axis panels + full-width decoder comparison."""
     fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
@@ -868,24 +847,21 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     a_slot_height_px = _mm_to_px(FIG04_PANEL_A_SLOT_HEIGHT_MM)
     row_gap_px = _mm_to_px(FIG04_ROW_GAP_MM)
     col_gap_px = _mm_to_px(FIG04_COL_GAP_MM)
-    lower_slot_width_px = _mm_to_px(FIG04_LOWER_PANEL_SLOT_WIDTH_MM)
-    lower_slot_height_px = _mm_to_px(FIG04_LOWER_PANEL_SLOT_HEIGHT_MM)
+    middle_slot_width_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM)
+    middle_slot_height_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM)
+    d_slot_width_px = _mm_to_px(FIG04_PANEL_D_SLOT_WIDTH_MM)
     d_slot_height_px = _mm_to_px(FIG04_PANEL_D_SLOT_HEIGHT_MM)
-    e_slot_height_px = _mm_to_px(FIG04_PANEL_E_SLOT_HEIGHT_MM)
-    right_stack_gap_px = _mm_to_px(FIG04_RIGHT_STACK_GAP_MM)
     label_lane_px = _mm_to_px(FIG04_LABEL_LANE_MM)
     content_inset_x_px = _mm_to_px(FIG04_CONTENT_INSET_X_MM)
     content_inset_bottom_px = _mm_to_px(FIG04_CONTENT_INSET_BOTTOM_MM)
 
     a_slot_left_px = outer_margin_px
     a_slot_top_px = outer_margin_px
-    lower_slot_top_px = outer_margin_px + a_slot_height_px + row_gap_px
+    middle_slot_top_px = outer_margin_px + a_slot_height_px + row_gap_px
     b_slot_left_px = outer_margin_px
-    c_slot_left_px = b_slot_left_px + lower_slot_width_px + col_gap_px
-    d_slot_left_px = figure_width_px - outer_margin_px - lower_slot_width_px
-    d_slot_top_px = lower_slot_top_px
-    e_slot_left_px = d_slot_left_px
-    e_slot_top_px = d_slot_top_px + d_slot_height_px + right_stack_gap_px
+    c_slot_left_px = b_slot_left_px + middle_slot_width_px + col_gap_px
+    d_slot_left_px = outer_margin_px
+    d_slot_top_px = middle_slot_top_px + middle_slot_height_px + row_gap_px
 
     def _content_box(slot_left_px: int, slot_top_px: int, slot_width_px: int, slot_height_px: int) -> tuple[int, int, int, int]:
         return (
@@ -941,27 +917,21 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
 
     b_content_left_px, b_content_top_px, b_content_width_px, b_content_height_px = _content_box(
         b_slot_left_px,
-        lower_slot_top_px,
-        lower_slot_width_px,
-        lower_slot_height_px,
+        middle_slot_top_px,
+        middle_slot_width_px,
+        middle_slot_height_px,
     )
     c_content_left_px, c_content_top_px, c_content_width_px, c_content_height_px = _content_box(
         c_slot_left_px,
-        lower_slot_top_px,
-        lower_slot_width_px,
-        lower_slot_height_px,
+        middle_slot_top_px,
+        middle_slot_width_px,
+        middle_slot_height_px,
     )
     d_content_left_px, d_content_top_px, d_content_width_px, d_content_height_px = _content_box(
         d_slot_left_px,
         d_slot_top_px,
-        lower_slot_width_px,
+        d_slot_width_px,
         d_slot_height_px,
-    )
-    e_content_left_px, e_content_top_px, e_content_width_px, e_content_height_px = _content_box(
-        e_slot_left_px,
-        e_slot_top_px,
-        lower_slot_width_px,
-        e_slot_height_px,
     )
 
     panel_b, panel_b_axes = _paste_panel_pdf(
@@ -988,27 +958,17 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         content_width_px=d_content_width_px,
         content_height_px=d_content_height_px,
     )
-    panel_e, panel_e_axes = _paste_panel_pdf(
-        FIG04_PANEL_E,
-        padding=8,
-        content_left_px=e_content_left_px,
-        content_top_px=e_content_top_px,
-        content_width_px=e_content_width_px,
-        content_height_px=e_content_height_px,
-    )
 
     canvas.paste(panel_b, (b_content_left_px, b_content_top_px))
     canvas.paste(panel_c, (c_content_left_px, c_content_top_px))
     canvas.paste(panel_d, (d_content_left_px, d_content_top_px))
-    canvas.paste(panel_e, (e_content_left_px, e_content_top_px))
 
     label_x_px = _mm_to_px(1.5)
     label_y_px = _mm_to_px(0.6)
     _draw_panel_label(draw, "a", a_slot_left_px + label_x_px, a_slot_top_px + label_y_px)
-    _draw_panel_label(draw, "b", b_slot_left_px + label_x_px, lower_slot_top_px + label_y_px)
-    _draw_panel_label(draw, "c", c_slot_left_px + label_x_px, lower_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "b", b_slot_left_px + label_x_px, middle_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "c", c_slot_left_px + label_x_px, middle_slot_top_px + label_y_px)
     _draw_panel_label(draw, "d", d_slot_left_px + label_x_px, d_slot_top_px + label_y_px)
-    _draw_panel_label(draw, "e", e_slot_left_px + label_x_px, e_slot_top_px + label_y_px)
 
     _save_composite(canvas, fig04_asset)
     manuscript_manifest = REPO_ROOT / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json"
@@ -1019,32 +979,26 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         panels=[
             {
                 "panel_id": "a",
-                "title": "Architecture diagram",
+                "title": "Mechanism strip",
                 "asset_path": "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg",
                 "provenance_mode": "manual_support",
             },
             {
                 "panel_id": "b",
-                "title": "Routing formation",
+                "title": "Broad match, local gate, and local update",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "c",
-                "title": "Gated update and residual correction",
+                "title": "Residual after one local step",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "d",
-                "title": "Aggregation bridge",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_aggregation_bridge.pdf",
-                "provenance_mode": "data_backed",
-            },
-            {
-                "panel_id": "e",
-                "title": "Routing-mechanism ablation",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf",
+                "title": "Decoder-family comparison",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf",
                 "provenance_mode": "data_backed",
             },
         ],
@@ -1076,7 +1030,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
             "gid": "fig04.panel_a.main",
             "kind": "manual",
             "has_data": False,
-            "title": "Architecture diagram",
+            "title": "Mechanism strip",
             **a_bbox,
             "decorated_bbox_norm": a_slot_bbox["bbox_norm"],
             "decorated_bbox_mm": a_slot_bbox["bbox_mm"],
@@ -1099,7 +1053,6 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     axes_payload.extend(panel_b_axes)
     axes_payload.extend(panel_c_axes)
     axes_payload.extend(panel_d_axes)
-    axes_payload.extend(panel_e_axes)
     for idx, axis in enumerate(axes_payload):
         gid = axis.get("gid")
         if gid:
@@ -1261,7 +1214,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Screening consequence",
+                "title": "Exploratory screen summary",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
             },
@@ -1326,7 +1279,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "d",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Screening consequence",
+                    "title": "Exploratory screen summary",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM + FIG06_PANEL_C_WIDTH_MM + FIG06_COL_GAP_MM,
                         FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_ROW_GAP_MM,

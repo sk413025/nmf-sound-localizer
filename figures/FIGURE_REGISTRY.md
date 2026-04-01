@@ -61,7 +61,7 @@ Retired material:
 - Manual support panel `a`: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg`
 - Active panel manifest: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig04_ablation`
-- Active panel logic: architecture + routing formation + gated-update/residual-correction closure + explicit mode-to-angle aggregation bridge + clean routing-mechanism ablation
+- Active panel logic: physics-first mechanism overview + broad-match-to-local-update exemplar + residual-cleanup summary + clean decoder-family comparison
 
 ### Fig 5 — Performance And Structure
 
@@ -77,4 +77,4 @@ Retired material:
 - Manual support panel `a`: `figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png`
 - Active panel manifest: `figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig06_universality`
-- Active panel logic: material exemplars + cross-material H breadth + low-rank continuity + compact screening-consequence closure + per-material frequency-structure cards
+- Active panel logic: material exemplars + cross-material H breadth + low-rank continuity + compact exploratory-screen summary + per-material frequency-structure cards

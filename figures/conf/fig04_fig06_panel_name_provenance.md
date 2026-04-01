@@ -35,21 +35,15 @@ decisions, not to replace manuscript prose.
   - `results/fig04_stepwise_mechanics.npz`
     - governed derived artifact rebuilt from the active primary run
 - Panel notes:
-  - `a`: manual architecture asset, no run-variant label logic
-  - `b`: routing-formation panel; it shows the stage-0 physical correlation
-    `g_t(θ)`, the angle-aggregated learned `QK` score `(q_tK_t^T)(θ)`, and the
-    routing weight `w_t(θ)` on the active angle manifold for the shared 70°
-    interior exemplar
-  - `c`: merged mechanism-closure panel; it combines the shared exemplar
-    gated-update profile `Δx_t(θ)` relative to `g_t(θ)`, the first residual-step
-    change from `g_t = D^Tr_t` to `g_{t+1} = D^Tr_{t+1}`, a validation-wide
-    localization summary, and residual-norm descent across the unrolled stages
-  - `d`: aggregation-bridge panel; it exposes the shared exemplar's
-    mode-resolved routing tensor `w_{t,θ,m}` and gated-update magnitude
-    `|ηΔx̂_{t,θ,m}|`, then shows their angle-level reductions
-    `w_t(θ)=Σ_m w_{t,θ,m}` and `Δx_t(θ)=||ηΔx̂_{t,θ,\cdot}||_2` so panels `b/c`
-    can be read directly as projections of panel `a`
-  - `e`: clean decoder-comparison panel; the upstream sweep still stores the
+  - `a`: manual mechanism-strip asset, no run-variant label logic
+  - `b`: broad-to-local exemplar overlay; it places the stage-0 physical match
+    `g_t(θ)`, the local gate `w_t(θ)`, and the localized update `Δx_t(θ)` on
+    one shared axis for the active 70° interior exemplar
+  - `c`: residual-cleanup overlay; it shows the first residual-step change from
+    `g_t = D^Tr_t` to `g_{t+1} = D^Tr_{t+1}` and carries the validation-wide
+    inward-mass and residual-drop summaries as compact callouts rather than as
+    separate stacked subplots
+  - `d`: clean decoder-comparison panel; the upstream sweep still stores the
     artifact keys `Baseline`, `No Type Bias`, `No Transformer`,
     `Fixed Heuristic`, `G-Fixed`, `G-Teacher`, and `Dense Routing`, but the
     active paper-facing panel collapses them to four families:
@@ -87,7 +81,7 @@ decisions, not to replace manuscript prose.
 - Panel notes:
   - `a`: binds artifact keys `No Type Bias`, `No Transformer`, `Fixed Heuristic`, `Dense Routing` to the four active paper-facing decoder families
   - `b`: merges the four decoder confusion maps into one unified family block: clean seed42 `g_routing` (OMP baseline), guided solver, representative clean dense routing, and router-bypass
-  - `c`: compares the physical matrix and learned QK structure as the physical-interpretability anchor
+  - `c`: compares the measured physical manifold and the guided neighborhood map as the physical-interpretability anchor
   - `d`: retains the guided-vs-router-bypass conditional-output profiles as the local routing-sharpening exemplar
   - `e`: compares five-seed clean mean per-angle accuracy across the guided solver, router-bypass, OMP baseline, and dense routing; the guided curve now comes from the `No Type Bias` sweep family rather than the retired `Baseline` sweep key
 - Guided-family alignment note:
@@ -117,5 +111,5 @@ decisions, not to replace manuscript prose.
   - `a`: retained manual support exemplar strip cropped from the committed legacy support image
   - `b`: isolates the five `Original -> Material` H matrices so breadth of structured angle-frequency encoding reads as its own panel
   - `c`: carries the Fig. 2-aligned centered-magnitude cumulative-energy curves and rank90/rank95 summary so low-rank continuity remains explicit as a separate panel
-  - `d`: combines the normalized energy-versus-Top-1 comparison with Top-1 and MAE summaries so the figure closes on screening consequence
+  - `d`: combines the normalized energy-versus-Top-1 comparison with Top-1 and MAE summaries so the figure closes on an explicitly exploratory screen summary
   - `e`: turns each material into its own three-level card by pairing the normalized spectral envelope, the angular-contrast curve, and the representative band-limited directional code selected from the committed `H` matrices
