@@ -223,7 +223,16 @@ Data and processed features used in this study are available at {USER_TBD: data 
 Code used for data processing, model training, and figure generation is available at {USER_TBD: code repository URL}.
 
 ## Acknowledgements
-Supported by {USER_TBD: funding information}.
+{USER_TBD: acknowledgements}.
+
+## Funding
+{USER_TBD: funding statement}.
+
+## Author contributions
+{USER_TBD: author contributions statement}.
+
+## Competing interests
+{USER_TBD: competing interests statement}.
 
 ## References
 ::: {#refs}
