@@ -36,10 +36,13 @@ Split the request into multiple child packets when it spans multiple skills or r
   - `docs/nature-communications/nature-communications-submission-requirements.md`
 - Constraints:
   - preserve claim and evidence integrity
+  - default to cross-disciplinary readability for Nature-facing prose
+  - inspect neighboring paragraphs and section logic before treating a local rewrite as complete
   - record visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
   - figure and Methods anchors for every claim-level change
+  - coherence or terminology notes when surrounding transitions had to change to keep the manuscript natural
   - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
   - explicit unresolved issues if evidence is weak
 - Escalate when:

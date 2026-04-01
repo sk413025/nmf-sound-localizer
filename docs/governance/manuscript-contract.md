@@ -17,6 +17,10 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 - Methods carries procedural detail and reproducibility-critical specifications.
 - Symbols and advanced concepts must be introduced with bridge sentences and clear physical meaning.
 - Paragraphs should end with evidence-anchored take-home claims.
+- Nature-facing main text should remain intelligible to scientifically literate readers outside the immediate subfield.
+- Local revisions must preserve upstream and downstream logic; inspect neighboring paragraphs and section purpose before treating an edit as complete.
+- Terminology, comparator labels, and mechanism language must stay consistent across sections unless the manuscript explicitly marks a shift.
+- Each Results subsection should make its local question, evidence, and paper-level consequence explicit.
 - Any manuscript change that depends on figure meaning, panel mapping, or figure lineage must be grounded in actual visual inspection of the figure asset.
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
@@ -49,11 +53,20 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Every reference cited in the Discussion must have a corresponding mention or contextual anchor in the Introduction. Do not introduce new literature threads in the Discussion that lack any Introduction setup.
 - Do not include a standalone Road map paragraph. Integrate paper-organization cues into the contribution statement.
 
+**Audience and narrative coherence:**
+
+- Default to cross-disciplinary scientific prose rather than field-internal shorthand.
+- Introduce the physical problem or question before naming the metric, model block, or architectural label that addresses it.
+- Use paragraph openings to orient the reader and paragraph endings to carry the logic forward.
+- Avoid patchwork editing: when a local revision changes emphasis or scope, revise transitions and nearby framing so the manuscript still reads naturally.
+
 ## Required outputs
 
 - manuscript text consistent with the branch writing style
+- manuscript text coherent at sentence, paragraph, and section level
 - correct figure references
 - consistent symbols across sections
+- consistent terminology and comparator naming across sections
 - no unexplained placeholders in final paper-facing output
 
 ## Acceptance criteria
@@ -62,6 +75,9 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - figure references are consistent with the manuscript and figure registry
 - figure-dependent claim edits are grounded in visual inspection plus generator and provenance backtrace when applicable
 - figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
+- prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
+- paragraph and section transitions are natural and preserve the paper-level logic
+- terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved
 - paper-facing checks under `make paper-check` pass
 
