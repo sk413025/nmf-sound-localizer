@@ -206,7 +206,7 @@ The reported runtime path does not apply PCA/SVD before decoding and instead ope
 
 ## Supplementary Methods 3. Analytical hard-OMP recursion for the reduced-order surrogate
 
-The exact analytical hard-OMP baseline is defined for the reduced-order surrogate (S20). Let the initial residual and support be
+After discretizing direction onto an angle grid, the reduced-order surrogate (S20) becomes a sparse-support recovery problem over the calibration dictionary, and hard OMP is the standard greedy baseline for that classical formulation. The exact analytical hard-OMP baseline is defined for the reduced-order surrogate (S20). Let the initial residual and support be
 
 $$
 r_0 = z,
@@ -289,6 +289,8 @@ $$
 g_t = D^\top r_t.
 \tag{S30}
 $$
+
+Relative to Supplementary Methods 3, the residual-correction logic is unchanged: the solver still scores the current residual against the physical dictionary and updates the residual after each stage. The key change is the selection rule. Hard OMP commits to one best atom and refits on the active set, whereas the routed solver distributes weight across a local neighborhood of angle groups before subtraction.
 
 The learned routing branch does not replace (S30); it gates it. Let \(q_{t,e,m}^{(\mathrm{QK})}\) denote the atom-level query-key score produced from the current residual and dictionary tokens. Aggregating those atom-level scores within each direction yields expert-level routing scores \(s_t^{(\mathrm{exp})}[e]\). In the implementation used here, the default expert aggregation is an L2 norm over the per-direction atom scores. Direction-level routing weights are then obtained from a Gumbel-family gating rule,
 
