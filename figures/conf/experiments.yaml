@@ -97,7 +97,7 @@ fig02_svd:
 fig03_discriminability:
   figure_id: fig03
   figure: "Fig 3"
-  title: "Discriminability And Classical OMP Failure"
+  title: "Discriminability And Greedy Diagnostic Failure"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig03_fingerprint-discriminability.jpg
   asset_layer: manuscript_composite
@@ -105,7 +105,7 @@ fig03_discriminability:
   width_mode: double
   manuscript_anchor: "Results / Fig. 3"
   claim: "Directional encoding survives content variation even though analytical OMP decoding fails."
-  legend_summary: "Discriminability, OMP comparison, pairwise similarity, and dose response."
+  legend_summary: "Discriminability, correlation-based greedy diagnostic traces, pairwise similarity, and dose response."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
   generator: figures/generators/fig03_fingerprint_discriminability.py
@@ -180,7 +180,7 @@ fig04_ablation:
       title: "Architecture diagram"
       provenance_mode: manual_support
       asset_path: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg
-      note: "Committed architecture support panel in the manuscript-panel layer; no run-generated evidence."
+      note: "Generator-built manuscript support schematic aligned to the current solver notation; no run-generated evidence."
     b:
       title: "Routing formation"
       provenance_mode: data_backed

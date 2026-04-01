@@ -7,7 +7,7 @@ from panel-level assets whenever possible:
 - Fig. 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
-- Fig. 4: Solver Mechanism (5 panels: a external + b,c,d,e generated)
+- Fig. 4: Solver Mechanism (5 panels: a governed support schematic + b,c,d,e generated)
 - Fig. 5: Performance + Structure (6 panels: all generated)
 - Fig. 6: Universality (4 panels: a manual support + b,c,d generated)
 """
@@ -67,7 +67,7 @@ FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Solver Mechanism (5 panels: a manual support + b,c,d,e generated) ---
+# --- Figure 4: Solver Mechanism (5 panels: a governed support schematic + b,c,d,e generated) ---
 FIG04_PANEL_A = (
     REPO_ROOT
     / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg"
@@ -92,7 +92,7 @@ FIG04_RIGHT_STACK_GAP_MM = float(FIG04_COMPOSE["right_stack_gap_mm"])
 FIG04_LABEL_LANE_MM = float(FIG04_COMPOSE["label_lane_mm"])
 FIG04_CONTENT_INSET_X_MM = float(FIG04_COMPOSE["content_inset_x_mm"])
 FIG04_CONTENT_INSET_BOTTOM_MM = float(FIG04_COMPOSE["content_inset_bottom_mm"])
-FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 0.88)
+FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 1.00)
 
 # --- Figure 5: Performance + Structure (6 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
@@ -153,9 +153,215 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+def _load_unicode_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    font_candidates = [
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+    ]
+    for candidate in font_candidates:
+        path = Path(candidate)
+        if path.exists():
+            return ImageFont.truetype(str(path), size=size)
+    return ImageFont.load_default()
+
+
 def _trim_white_border(img: Image.Image, padding: int = 8) -> Image.Image:
     trimmed, _bbox = _trim_white_border_with_bbox(img, padding=padding)
     return trimmed
+
+
+def _draw_arrow(
+    draw: ImageDraw.ImageDraw,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    *,
+    fill: str = "#4A4A4A",
+    width: int = 7,
+    head_size: int = 18,
+) -> None:
+    draw.line([start, end], fill=fill, width=width)
+    if start == end:
+        return
+    if abs(end[0] - start[0]) >= abs(end[1] - start[1]):
+        direction = 1 if end[0] >= start[0] else -1
+        points = [
+            end,
+            (end[0] - direction * head_size, end[1] - head_size // 2),
+            (end[0] - direction * head_size, end[1] + head_size // 2),
+        ]
+    else:
+        direction = 1 if end[1] >= start[1] else -1
+        points = [
+            end,
+            (end[0] - head_size // 2, end[1] - direction * head_size),
+            (end[0] + head_size // 2, end[1] - direction * head_size),
+        ]
+    draw.polygon(points, fill=fill)
+
+
+def _draw_centered_box(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    *,
+    title: str,
+    body: str | None = None,
+    fill: str = "#F7F7F3",
+    outline: str = "#C8C8C0",
+    title_font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    body_font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    text_fill: str = "#1A1A1A",
+) -> None:
+    x0, y0, x1, y1 = box
+    draw.rounded_rectangle(box, radius=26, fill=fill, outline=outline, width=4)
+    lines = [title] if body is None else [title, body]
+    fonts = [title_font] if body is None else [title_font, body_font]
+    spacings = [10] if body is None else [10, 8]
+    total_height = 0
+    block_metrics: list[tuple[str, ImageFont.FreeTypeFont | ImageFont.ImageFont, tuple[int, int, int, int]]] = []
+    for idx, (line, font) in enumerate(zip(lines, fonts)):
+        bbox = draw.multiline_textbbox((0, 0), line, font=font, align="center", spacing=spacings[idx])
+        block_metrics.append((line, font, bbox))
+        total_height += bbox[3] - bbox[1]
+        if idx < len(lines) - 1:
+            total_height += 18
+    cursor_y = y0 + (y1 - y0 - total_height) / 2
+    for idx, (line, font, bbox) in enumerate(block_metrics):
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+        cursor_x = x0 + (x1 - x0 - width) / 2
+        draw.multiline_text(
+            (cursor_x, cursor_y),
+            line,
+            font=font,
+            fill=text_fill,
+            align="center",
+            spacing=spacings[idx],
+        )
+        cursor_y += height + 18
+
+
+def _build_fig04_architecture_panel(panel_path: Path) -> None:
+    """Generate the manuscript-facing Fig. 4a schematic from current solver logic."""
+    width_px = 2784
+    height_px = 1536
+    active_height_px = int(round(height_px * 0.88))
+    canvas = Image.new("RGB", (width_px, height_px), "white")
+    draw = ImageDraw.Draw(canvas)
+
+    title_font = _load_font(66)
+    stage_font = _load_font(46)
+    box_title_font = _load_font(52)
+    box_body_font = _load_unicode_font(38)
+
+    box_colors = {
+        "physics": ("#EEF5FB", "#2C7BC9"),
+        "learned": ("#FBF1E8", "#D28A45"),
+        "gate": ("#EDF8F3", "#12A36E"),
+        "residual": ("#F3F4F6", "#7A7F85"),
+        "update": ("#F1F5FB", "#3B82F6"),
+        "readout": ("#F7F3FB", "#8B5FBF"),
+    }
+    arrow_color = "#4B4B4B"
+
+    draw.text((width_px * 0.34, 70), "Stage t", fill="#1A1A1A", font=title_font)
+    draw.text((width_px * 0.76, 70), "Readout / residual branch", fill="#1A1A1A", font=stage_font)
+    draw.line((170, 150, width_px - 160, 150), fill="#202020", width=5)
+    _draw_arrow(draw, (width_px - 220, 150), (width_px - 140, 150), fill="#202020", width=5, head_size=16)
+
+    boxes = {
+        "residual": (110, 360, 500, 620),
+        "correlation": (580, 360, 1020, 620),
+        "scores": (1100, 360, 1540, 620),
+        "gate": (1620, 360, 1890, 620),
+        "update": (1970, 360, 2400, 620),
+        "readout": (1860, 150, 2250, 330),
+        "doa": (2320, 150, 2700, 330),
+    }
+
+    _draw_centered_box(
+        draw,
+        boxes["residual"],
+        title="Residual",
+        body="r_t",
+        fill=box_colors["residual"][0],
+        outline=box_colors["residual"][1],
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+    _draw_centered_box(
+        draw,
+        boxes["correlation"],
+        title="Physical correlation",
+        body="g_t = D^T r_t",
+        fill=box_colors["physics"][0],
+        outline=box_colors["physics"][1],
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+    _draw_centered_box(
+        draw,
+        boxes["scores"],
+        title="Expert scores",
+        body="s_t[e] = <q_t, k_e>/sqrt(d_k)",
+        fill=box_colors["learned"][0],
+        outline=box_colors["learned"][1],
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+    _draw_centered_box(
+        draw,
+        boxes["gate"],
+        title="Routed gate",
+        body="w_t",
+        fill=box_colors["gate"][0],
+        outline=box_colors["gate"][1],
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+    _draw_centered_box(
+        draw,
+        boxes["update"],
+        title="Sparse / residual update",
+        body="Delta x_t = w_t * g_t\nr_(t+1) = r_t - D(eta Delta x_t)",
+        fill=box_colors["update"][0],
+        outline=box_colors["update"][1],
+        title_font=_load_font(46),
+        body_font=_load_unicode_font(30),
+    )
+    _draw_centered_box(
+        draw,
+        boxes["readout"],
+        title="Expert-score readout",
+        body="s_bar[e]",
+        fill=box_colors["readout"][0],
+        outline=box_colors["readout"][1],
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+    _draw_centered_box(
+        draw,
+        boxes["doa"],
+        title="Final DOA",
+        body="theta_hat = theta_argmax_e\ns_bar[e]",
+        fill="#F8F8F8",
+        outline="#808080",
+        title_font=box_title_font,
+        body_font=box_body_font,
+    )
+
+    # Main stage-t path
+    _draw_arrow(draw, (500, 490), (580, 490), fill=arrow_color)
+    _draw_arrow(draw, (1020, 490), (1100, 490), fill=arrow_color)
+    _draw_arrow(draw, (1540, 490), (1620, 490), fill=arrow_color)
+    _draw_arrow(draw, (1890, 490), (1970, 490), fill=arrow_color)
+
+    # Readout branch
+    _draw_arrow(draw, (1320, 360), (1320, 240), fill=arrow_color)
+    _draw_arrow(draw, (2250, 240), (2320, 240), fill=arrow_color)
+
+    _ensure_parent(panel_path)
+    canvas.save(panel_path, quality=95)
 
 
 def _trim_white_border_with_bbox(img: Image.Image, padding: int = 8) -> tuple[Image.Image, tuple[int, int, int, int]]:
@@ -652,6 +858,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
+    _build_fig04_architecture_panel(FIG04_PANEL_A)
     panel_a = _trim_white_border(Image.open(FIG04_PANEL_A).convert("RGB"), padding=0)
     panel_a = _crop_relative(panel_a, *FIG04_PANEL_A_CROP)
     figure_width_px = _mm_to_px(FIG04_WIDTH_MM)

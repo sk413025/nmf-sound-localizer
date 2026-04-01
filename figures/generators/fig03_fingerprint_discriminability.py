@@ -3,9 +3,12 @@
 Panel (a): White noise within vs between Pearson r (violin + stats).
 Panel (b): Speech within vs between Pearson r (violin + stats).
 Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech, with bootstrap uncertainty bands.
-Panel (d): Angle-resolved OMP accuracy traces (stacked WN and Speech) with clip-level uncertainty bands.
+Panel (d): Angle-resolved correlation-greedy / OMP-family diagnostic traces
+           (stacked WN and Speech) with clip-level uncertainty bands.
 Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
-Panel (f): OMP accuracy dose-response curve across SNR levels, with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.
+Panel (f): Correlation-greedy / OMP-family diagnostic dose-response curve
+           across SNR levels, with WN clip-level SEM shading and speech
+           5-seed mean ± SEM shading.
 
 Data: dictionary.npz (D, angles) + modal_routing_val.npz (Y_val, labels,
       g_energy_expert) + white noise raw waveforms (.npy -> STFT inline).
@@ -96,7 +99,7 @@ def _compute_omp_accuracy(
     Y: np.ndarray, labels: np.ndarray,
     D: np.ndarray, n_experts: int, n_atoms: int,
 ) -> np.ndarray:
-    """Compute OMP per-angle accuracy: g = |Y @ D|.reshape(N,E,M).sum(2)."""
+    """Compute greedy correlation top-1 matches: g = |Y @ D|.reshape(N,E,M).sum(2)."""
     g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
     pred = np.argmax(g, axis=1)
     per_angle_acc = np.array([
@@ -110,7 +113,7 @@ def _compute_omp_mean_accuracy(
     Y: np.ndarray, labels: np.ndarray,
     D: np.ndarray, n_experts: int, n_atoms: int,
 ) -> float:
-    """Compute OMP mean accuracy across all angles."""
+    """Compute mean greedy diagnostic match rate across all angles."""
     return float(np.mean(_compute_omp_accuracy(Y, labels, D, n_experts, n_atoms)))
 
 
@@ -118,7 +121,7 @@ def _compute_omp_clip_accuracy_sem(
     Y: np.ndarray, labels: np.ndarray,
     D: np.ndarray, n_experts: int, n_atoms: int,
 ) -> tuple[float, float]:
-    """Compute overall OMP clip accuracy and clip-level SEM."""
+    """Compute overall greedy diagnostic match rate and clip-level SEM."""
     g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
     pred = np.argmax(g, axis=1)
     correct = (pred == labels).astype(float)
@@ -131,7 +134,7 @@ def _compute_omp_accuracy_sem(
     Y: np.ndarray, labels: np.ndarray,
     D: np.ndarray, n_experts: int, n_atoms: int,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute per-angle OMP accuracy and clip-level SEM."""
+    """Compute per-angle greedy diagnostic match rates and clip-level SEM."""
     g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
     pred = np.argmax(g, axis=1)
 
@@ -446,7 +449,7 @@ def _draw_stacked_omp_panel(
     omp_mean_sp: float,
     panel_label: str,
 ):
-    """Draw panel d as stacked angle-resolved traces."""
+    """Draw panel d as stacked angle-resolved greedy diagnostic traces."""
     subgs = subplot_spec.subgridspec(2, 1, hspace=0.08, height_ratios=[1.0, 1.0])
     ax_top = fig.add_subplot(subgs[0, 0])
     ax_bot = fig.add_subplot(subgs[1, 0], sharex=ax_top)
@@ -472,9 +475,9 @@ def _draw_stacked_omp_panel(
         show_xlabel=True,
     )
 
-    ax_top.set_ylabel("OMP\naccuracy", fontsize=5.5)
+    ax_top.set_ylabel("Top-1\nmatch rate", fontsize=5.5)
     ax_bot.set_ylabel("")
-    ax_top.set_title("Classical OMP baseline", fontsize=6.5)
+    ax_top.set_title("Greedy correlation diagnostic", fontsize=6.5)
     ax_top.set_xlim(float(angles[0]), float(angles[-1]))
     add_panel_label(ax_top, panel_label, x=-0.18, y=1.12)
     return ax_top, ax_bot
@@ -843,8 +846,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     xtick_labels_f = ["\u221e" if lbl == "Inf" else lbl for lbl in snr_labels]
     ax_f.set_xticklabels(xtick_labels_f, fontsize=5, rotation=45, ha="right")
     ax_f.set_xlabel("SNR (dB) \u2192 noise", fontsize=6)
-    ax_f.set_ylabel("OMP accuracy", fontsize=6)
-    ax_f.set_title("OMP dose-response", fontsize=6.5)
+    ax_f.set_ylabel("Top-1 match rate", fontsize=6)
+    ax_f.set_title("Greedy diagnostic dose-response", fontsize=6.5)
     ax_f.set_ylim(-0.02, 1.05)
     ax_f.grid(axis="y", linestyle="--", alpha=0.3)
     ax_f.legend(fontsize=5, frameon=False, loc="upper right")
@@ -995,7 +998,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xticks(snr_x_positions)
     ax.set_xticklabels(xtick_labels_f, fontsize=6, rotation=45, ha="right")
     ax.set_xlabel("SNR (dB) \u2192 noise")
-    ax.set_ylabel("OMP accuracy")
+    ax.set_ylabel("Top-1 match rate")
     ax.set_ylim(-0.02, 1.05)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
     ax.legend(fontsize=6, frameon=False, loc="upper right")
@@ -1031,10 +1034,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Angle-resolved OMP traces",
+                "title": "Angle-resolved greedy diagnostic traces",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_omp_comparison.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Stacked white-noise and speech OMP accuracy traces over the calibrated angle grid with clip-level uncertainty bands.",
+                "description": "Stacked white-noise and speech correlation-based greedy / OMP-family diagnostic traces over the calibrated angle grid with clip-level uncertainty bands.",
             },
             {
                 "panel_id": "e",
@@ -1045,10 +1048,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "f",
-                "title": "OMP dose-response curve",
+                "title": "Greedy diagnostic dose-response curve",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_f_dose_response.pdf",
                 "provenance_mode": "data_backed",
-                "description": "OMP accuracy vs content variation (SNR sweep from pure WN to speech), with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.",
+                "description": "Correlation-based greedy / OMP-family diagnostic match rate vs content variation (SNR sweep from pure WN to speech), with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.",
             },
         ],
     )
@@ -1057,7 +1060,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     print(f"[fig03] Generated {len(all_paths)} files")
     print(f"[fig03] WN: p={p_wn:.2e}, d={d_wn:.2f}, mean_within_r={mean_within_wn:.3f}")
     print(f"[fig03] Speech: p={p_sp:.2e}, d={d_sp:.2f}, mean_within_r={mean_within_sp:.3f}")
-    print(f"[fig03] OMP — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
+    print(f"[fig03] Greedy diagnostic — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
     print(f"[fig03] WN dose-response: {' -> '.join(f'{a:.1%}' for a in wn_omp_accs)}")
     if sp_omp_accs:
         print(f"[fig03] Sp dose-response: {' -> '.join(f'{a:.1%}' for a in sp_omp_accs)}")
