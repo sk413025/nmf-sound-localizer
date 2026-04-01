@@ -8,10 +8,10 @@ Naming contract: `paper/manuscript/FIGURE_NAMING_CONTRACT.md`.
 
 **Fig. 1 | Direction-dependent structural filtering revealed by single-point laser vibrometry.**
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)).
-b, Conceptual schematic: the structure acts as a direction-dependent spectral filter H(θ, f) — a flat broadband source is transformed into angle-specific spectral fingerprints.
+b, Conceptual schematic: the structure acts as a direction-dependent spectral filter \(\mathcal H(\theta, f)\) and transforms a flat broadband source into angle-specific spectral fingerprints.
 c, Input-to-output spectral shaping: the flat white-noise source spectrum (grey dashed) is reshaped differently at five representative angles (0°, 45°, 90°, 135°, 180°).
 d, Trial repeatability: mean spectra (±1 s.d. shading) from three independent white-noise recordings at each of five angles.
-e, Frequency-dependent directivity: polar plot of normalized |H(θ, f)| across 0°–180° for four frequency bands (0.3–0.5, 0.5–1, 1–2, 2–3 kHz), showing that each band carries a distinct directional response pattern.
+e, Frequency-dependent directivity: polar plot of normalized \(|\mathcal H(\theta, f)|\) across 0°–180° for four frequency bands (0.3–0.5, 0.5–1, 1–2, 2–3 kHz), showing that each band carries a distinct directional response pattern.
 
 ## Fig. 2 (6 panels)
 
@@ -19,8 +19,8 @@ e, Frequency-dependent directivity: polar plot of normalized |H(θ, f)| across 0
 a, Singular-value spectrum across the full 37-mode basis. Cumulative fraction is shown on the left axis and singular values on the right, emphasizing the early saturation of the centered-magnitude dictionary across the calibrated angle manifold. The first six modes capture 80.3% of the cumulative energy. Extending to eight modes raises the cumulative fraction to 85.1%, and the cumulative DOA-capacity curve closely tracks the same rise.
 b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6 (overlaid). These profiles highlight a dominant broadside-like channel (Mode 1), an edge-weighted grazing-angle-like channel (Mode 2), and an end-fire-like channel with a distinct higher-frequency shoulder (Mode 6).
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) across 0°–180° for representative Modes 1, 2, and 6 (overlaid), showing three physically interpretable directional couplings that define distinct virtual sensing channels.
-d, Full angle–frequency heatmap of the dictionary \(H\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
-e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle centered-magnitude RMSE for ranks 3, 5, and 6, showing that reconstruction fidelity becomes strong within the same six-mode regime highlighted in panel a.
+d, Full angle–frequency heatmap of the magnitude dictionary \(|H|\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
+e, All-angle reconstruction fidelity under rank-\(r\) truncation: per-angle centered-magnitude RMSE in the \(H_{\mathrm{fig}}\) representation for ranks 3, 5, and 6, showing that reconstruction fidelity becomes strong within the same six-mode regime highlighted in panel a.
 f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band indicates that neighboring angles share similar spectral fingerprints, revealing the smooth physical angle manifold later exploited by the learned router (Fig. 5c).
 
 ## Fig. 3 (6 panels)
@@ -29,23 +29,22 @@ f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-si
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11), shown with light bootstrap uncertainty bands; speech margin is reduced but positive at all angles.
-d, Stacked angle-resolved OMP traces for white noise and speech, shown with light clip-level uncertainty bands, highlighting high white-noise performance across most calibrated angles but near-chance speech performance across the grid (white noise 83.8% versus speech 1.7%).
+d, Stacked angle-resolved correlation-based greedy diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands, highlighting high white-noise performance across most calibrated angles but near-chance speech performance across the grid (white noise 83.8% versus speech 1.7%).
 e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (diffuse but structured manifold), with the diagonal masked to separate the two regimes.
-f, Dose-response curves: OMP accuracy versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
+f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
 
 ## Fig. 4 (5 panels)
 
-**Fig. 4 | The physics-guided solver forms angle-local gates and updates the residual in stages.**
-a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(D\) to form \(g_t = D^\top r_t\). A transformer encoder converts QK scores \(q_tK_t^\top\) into routing weights, which gate the sparse update \(\Delta x_t\) and enforce residual consistency \(r_{t+1}=r_t-D\Delta x_t\).
-b, Routing formation: angle-conditioned validation summaries at a shared 70° exemplar trace the stage-0 path from the broad physical correlation \(g_t(\theta)\), through the angle-aggregated QK score \((q_tK_t^\top)(\theta)\), to the routing weight \(w_t(\theta)\).
-c, Gated update and residual correction: the shared 70° exemplar shows that the gated update \(\Delta x_t(\theta)\) localizes mass much more strongly than the raw physical correlation \(g_t(\theta)\), after which the first residual-consistent update changes \(g_t = D^\top r_t\) to \(g_{t+1} = D^\top r_{t+1}\); the lower summaries quantify validation-wide localization and residual-norm descent across the unrolled stages.
-d, Aggregation bridge: the shared 70° exemplar makes the symbol mapping in panel a explicit by showing the mode-resolved routing tensor \(w_{t,\theta,m}\) and gated-update tensor \(|\eta\hat{\Delta x}_{t,\theta,m}|\), together with their angle-level reductions \(w_t(\theta)=\sum_m w_{t,\theta,m}\) and \(\Delta x_t(\theta)=\|\eta\hat{\Delta x}_{t,\theta,\cdot}\|_2\) plotted in panels b-c.
+**Fig. 4 | The physics-guided solver forms angle-local gates, shows their angle-axis reductions, and updates the residual in stages.**
+a, Architecture: at stage \(t\), the residual \(r_t\) is correlated with the physical dictionary \(D\) to form \(g_t = D^\top r_t\). A transformer encoder converts QK scores \(q_tK_t^\top\) into routed weights that gate the sparse update \(\Delta x_t\), accumulate \(x_{t+1}=x_t+\eta\Delta x_t\), and enforce residual consistency \(r_{t+1}=r_t-D(\eta\Delta x_t)\).
+b, Routing formation: angle-conditioned validation summaries at a shared 70° exemplar trace the stage-0 sequence from the broad physical correlation \(g_t(\theta)\), through the angle-aggregated QK score \((q_tK_t^\top)(\theta)\), to the routed weight \(w_t(\theta)\).
+c, Gated update and residual correction: the shared 70° exemplar shows that the gated update \(\Delta x_t(\theta)\) localizes mass much more strongly than the raw physical correlation \(g_t(\theta)\). The first residual-consistent update then changes \(g_t = D^\top r_t\) to \(g_{t+1} = D^\top r_{t+1}\); the lower summaries quantify validation-wide localization and residual-norm descent across the unrolled stages.
+d, Aggregation bridge: the shared 70° exemplar makes the symbol mapping in panel a explicit by showing the mode-resolved routing tensor \(w_{t,\theta,m}\) and gated-update tensor \(|\eta\hat{\Delta x}_{t,\theta,m}|\), together with the angle-level reductions \(w_t(\theta)=\sum_m w_{t,\theta,m}\) and \(\Delta x_t(\theta)=\|\eta\hat{\Delta x}_{t,\theta,\cdot}\|_2\) used in panels b-c.
 e, Routing-mechanism ablation: compact clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots, points with horizontal bars indicate mean \(\pm\) s.e.m.).
 
 ## Fig. 5 (5 panels)
 
 **Fig. 5 | The learned router mirrors physical structure and maintains robust decoding under noise.**
-Panel logic: a benchmarks four decoder families under noise; b gathers the four decoder confusion structures into one unified family block; c anchors the learned router to the physical manifold; d retains the guided-versus-router-bypass local conditional-output exemplar; e summarizes the five-seed clean mean per-angle ranking across the same four decoders using a 3-angle centered moving-average display with light +/-1 s.e.m. shading.
 a, SNR degradation curves for the guided solver, router-bypass, OMP baseline, and dense routing, showing graceful degradation under additive noise.
 b, Unified row-normalized confusion-family block across the four decoders. The OMP baseline shows broader fragmented off-axis spillover, the guided solver remains sharply diagonal, dense routing collapses toward a single preferred output mode, and router-bypass retains limited local structure with broader leakage.
 c, Correlation structure of the physical dictionary \(H\) (top) and the learned router's QK attention map (bottom), showing that learned routing mirrors the physical angle manifold.
