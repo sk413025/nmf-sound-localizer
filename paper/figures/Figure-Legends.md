@@ -16,7 +16,7 @@ e, Frequency-dependent directivity: polar plot of normalized \(|\mathcal H(\thet
 ## Fig. 2 (6 panels)
 
 **Fig. 2 | Physical encoding via spectral–spatial modes and construction of a structured dictionary.**
-a, Singular-value spectrum across the full 37-mode basis. Cumulative fraction is shown on the left axis and singular values on the right, emphasizing the early saturation of the centered-magnitude dictionary across the calibrated angle manifold. The first six modes capture 80.3% of the cumulative energy. Extending to eight modes raises the cumulative fraction to 85.1%, and the cumulative DOA-capacity curve closely tracks the same rise.
+a, Singular-value spectrum across the full 37-mode basis. Cumulative fraction is shown on the left axis and singular values on the right, emphasizing the early saturation of the centered-magnitude dictionary across the calibrated angle manifold. The first six modes capture 80.3% of the cumulative energy. Extending to eight modes raises the cumulative fraction to 85.1%, and the cumulative direction-of-arrival capacity curve closely tracks the same rise.
 b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6 (overlaid). These profiles highlight a dominant broadside-like channel (Mode 1), an edge-weighted grazing-angle-like channel (Mode 2), and an end-fire-like channel with a distinct higher-frequency shoulder (Mode 6).
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) across 0°–180° for representative Modes 1, 2, and 6 (overlaid), showing three physically interpretable directional couplings that define distinct virtual sensing channels.
 d, Full angle–frequency heatmap of the magnitude dictionary \(|H|\) (37 angles × 346 frequency bins), showing systematic spectral variation across directions.
@@ -35,8 +35,8 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 
 ## Fig. 4 (5 panels)
 
-**Fig. 4 | The physics-guided solver sharpens local ambiguity before residual correction.**
-a, Architecture: at each stage, the residual is compared with the physical dictionary to form a match score. A gate concentrates that score, updates the sparse estimate, and refreshes the residual.
+**Fig. 4 | The guided solver sharpens local ambiguity before residual correction.**
+a, Architecture: at each stage, the residual is compared with the physical dictionary to form a match score. A gate concentrates that score into nearby directions, updates the sparse estimate, and refreshes the residual.
 b, Routing formation: at a shared 70° exemplar, the broad physical match narrows into a local peak.
 c, Gated update and residual correction: the shared 70° exemplar shows that the gated update localizes mass much more strongly than the raw physical match. The next residual then shifts the match landscape accordingly.
 d, Aggregation bridge: the shared 70° exemplar links the angle-axis summaries to the underlying stagewise localization and update fields used in panels b-c.
@@ -44,18 +44,18 @@ e, Routing-mechanism ablation: compact clean-condition comparison across the gui
 
 ## Fig. 5 (5 panels)
 
-**Fig. 5 | The guided decoder mirrors physical structure and maintains robust decoding under noise.**
+**Fig. 5 | The guided solver mirrors physical structure and maintains robust decoding under noise.**
 a, SNR degradation curves for the guided solver, router-bypass, OMP baseline, and dense routing, showing graceful degradation under additive noise.
 b, Unified row-normalized confusion-family block across the four decoders. The OMP baseline shows broader fragmented off-axis spillover, the guided solver remains sharply diagonal, dense routing collapses toward a single preferred output mode, and router-bypass retains limited local structure with broader leakage.
-c, Correlation structure of the physical dictionary \(H\) (top) and the model's local similarity map (bottom), showing that the learned structure mirrors the physical angle manifold.
+c, Correlation structure of the physical dictionary \(H\) (top) and the guided solver's local similarity map (bottom), showing that the learned structure mirrors the physical angle manifold.
 d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver sharpens the prediction profile around the correct angle and its local neighborhood, whereas router-bypass shows broader off-axis leakage.
 e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Direction-dependent encoding and low-rank continuity recur across materials.**
+**Fig. 6 | Direction-dependent encoding and low-rank continuity recur in an exploratory five-object screen.**
 a, Five target objects spanning a broad range of material and geometric complexity, shown here in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Cross-material \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across all materials despite different resonance patterns.
 c, Low-rank continuity. The same row-wise mean-centered magnitude SVD used in Fig. 2 was applied separately to each material-specific dictionary. The resulting cumulative-energy curves and rank90/rank95 summaries show that the encoder remains low-dimensional across the full object set, extending the low-rank physical-dictionary view from Fig. 2 beyond the single acrylic plate.
-d, Screening consequence. All five objects remain above chance. The left comparison plots normalized overall response energy and Top-1 accuracy for each material, showing that stronger overall response energy does not guarantee higher Top-1 screening accuracy. The adjacent Top-1 and MAE summaries report 95% bootstrap confidence intervals, while the separate angle-level MAE matrix used for the omnibus heterogeneity test does not reveal detectable cross-material heterogeneity in this committed sample.
+d, Exploratory screen consequence. All five objects remain above chance. The left comparison plots normalized overall response energy and Top-1 accuracy for each material, showing that stronger overall response energy does not guarantee higher Top-1 screening accuracy. The adjacent Top-1 and MAE summaries report 95% bootstrap confidence intervals, while the separate angle-level MAE matrix used for the omnibus heterogeneity test does not reveal detectable cross-material heterogeneity in this committed sample.
 e, Material frequency structure. Each material is shown as a three-level card: normalized spectral envelope, angular-contrast spectrum, and the representative directional code recovered from that material's selected informative band.
