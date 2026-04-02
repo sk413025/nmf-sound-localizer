@@ -29,20 +29,20 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | One local update resolves nearby overlap and reduces the residual.**
-a, Mechanism strip illustrating the broad-match -> local-gate -> cleaner-residual sequence.
-b, Shared 70° exemplar: the initial broad match is concentrated into one local neighborhood around 70°.
-c, After one local step, less signal remains once the overlapping neighborhood has been updated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-d, Clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing variants over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The model that pools local evidence before commitment is most accurate in this restricted setting.
+**Fig. 4 | Nearby overlap narrows after one refinement step.**
+a, Sequence summary illustrating the broad-match -> neighborhood-concentration -> lower-residual progression.
+b, Shared 70° case: the initial broad match is concentrated into one local neighborhood around 70°.
+c, After one refinement step, less signal remains once the overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
+d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The most locally concentrated comparison is most accurate in this restricted setting.
 
 ## Fig. 5 (5 panels)
 
-**Fig. 5 | Overlap-aware readout follows the measured local structure across the benchmark.**
-a, SNR degradation curves comparing four decoder variants across additive-noise levels; the overlap-aware readout degrades least as noise increases.
-b, Row-normalized confusion-family block across the four decoders. The guided solver stays most concentrated near the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
-c, Correlation structure of the measured template matrix \(H\) (top) and the guided neighborhood map (bottom), showing that the learned map places most weight near the same diagonal angle ordering seen in the measured fingerprints.
-d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage.
-e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The overlap-aware readout retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
+**Fig. 5 | Benchmark predictions remain aligned with the measured local structure.**
+a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the most locally concentrated comparison degrades least as noise increases.
+b, Row-normalized benchmark comparison across the four benchmarked approaches. The most locally concentrated comparison stays nearest the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
+c, Correlation structure of the measured template matrix \(H\) (top) and the corresponding neighborhood-emphasis map (bottom), showing that the lower map places most of its weight near the same diagonal angle ordering seen in the measured fingerprints.
+d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the most locally concentrated comparison produces tighter local prediction profiles, whereas the less locally constrained alternative shows broader off-axis leakage.
+e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The most locally concentrated comparison retains the highest clean mean accuracy overall, whereas the least locally constrained comparison remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 
