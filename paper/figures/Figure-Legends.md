@@ -29,11 +29,11 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | A local update illustrates neighborhood pooling in the guided solver.**
+**Fig. 4 | One local update concentrates nearby support and reduces the residual.**
 a, Mechanism strip illustrating the broad-match -> local-gate -> cleaner-residual sequence.
-b, Shared 70° exemplar: support is initially broad across nearby directions, then concentrated into one local neighborhood.
-c, After one local step, less signal remains near the updated neighborhood. Compact callouts report the same change numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-d, Clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.).
+b, Shared 70° exemplar: the initial broad match is concentrated into one local neighborhood around 70°.
+c, After one local step, less signal remains near the updated neighborhood. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
+d, Clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The highest accuracy occurs in the family that performs local pooling before commitment.
 
 ## Fig. 5 (5 panels)
 
@@ -42,7 +42,7 @@ a, SNR degradation curves comparing four decoder families across additive-noise 
 b, Row-normalized confusion-family block across the four decoders. The guided solver stays most concentrated near the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
 c, Correlation structure of the measured template matrix \(H\) (top) and the guided neighborhood map (bottom), showing that the learned map places most weight near the same diagonal angle ordering seen in the measured fingerprints.
 d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage.
-e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
+e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The family that pools nearby evidence before commitment remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 
