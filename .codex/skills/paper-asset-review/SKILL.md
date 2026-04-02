@@ -86,6 +86,7 @@ Acceptance surface for this skill:
 - panel logic, labels, and emphasis make the intended comparison readable
 - evidence support and comparator logic match the manuscript claim
 - any split, simplify, revise, or move-to-supplementary recommendation is made explicit
+- review notes and interpretive writeups use active voice, simple cause-effect phrasing, and low noun-stack density when prose is needed
 
 Common trigger phrases:
 

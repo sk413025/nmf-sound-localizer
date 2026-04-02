@@ -66,6 +66,7 @@ Acceptance surface for this skill:
 - descriptive findings, candidate mechanism, and unsupported interpretation remain clearly separated
 - comparator fairness and physical plausibility risks are surfaced when they matter
 - manuscript-facing follow-up is routed onward when the output now requires prose or figure revision rather than more analysis
+- manuscript-facing prose uses active voice, simple cause-effect phrasing, and low noun-stack density; do not bury causality in nominalizations
 
 Common trigger phrases:
 
