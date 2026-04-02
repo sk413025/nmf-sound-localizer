@@ -46,9 +46,9 @@ e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 mea
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Direction-dependent fingerprints recur across an exploratory five-object screen.**
+**Fig. 6 | Direction-dependent fingerprints recur under matched calibration across an exploratory five-object screen.**
 a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
-b, Cross-material \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across all materials despite different resonance patterns.
-c, Low-rank continuity. Applying the same centered-magnitude SVD view used in Fig. 2 to each material-specific template matrix again shows early energy capture for every object.
-d, Screening performance across the five objects. All objects remain above chance in this screen, and the energy-versus-accuracy comparison indicates that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
-e, Frequency structure across objects. Material-specific spectra and directional band profiles indicate that the informative frequency band can shift across objects.
+b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
+c, Low-rank continuity. Applying the same centered-magnitude SVD view used in Fig. 2 to each object's template matrix again shows early energy capture across the five-object screen.
+d, Screening performance across the five objects. All five objects remain above chance under matched calibration, and the energy-versus-accuracy comparison shows that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
+e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects.
