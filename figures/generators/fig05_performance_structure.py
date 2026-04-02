@@ -253,12 +253,14 @@ def _plot_snr_panel(
     ax.grid(axis="y", linestyle="--", alpha=0.3)
     legend_ncol = 2 if len(variants) > 3 else 1
     ax.legend(
-        fontsize=legend_pt,
+        fontsize=max(legend_pt - 0.45, 5.8),
         frameon=False,
         loc="lower left",
-        ncol=legend_ncol,
-        columnspacing=0.8,
-        handletextpad=0.4,
+        ncol=1,
+        columnspacing=0.6,
+        handlelength=1.4,
+        handletextpad=0.35,
+        borderaxespad=0.2,
     )
 
 
@@ -464,7 +466,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         tick_label_pt=tick_label_pt,
         legend_pt=legend_pt,
     )
-    ax_a.set_title("Noise robustness benchmark", fontsize=title_pt)
+    ax_a.set_title("Noise robustness", fontsize=title_pt)
     add_panel_label(ax_a, "a", x=-0.15, y=1.02)
 
     # Panel (b): unified confusion-family block
@@ -588,7 +590,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
     im_c = ax_c1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c1.set_title("Measured angle manifold", fontsize=title_pt, pad=6.0)
+    ax_c1.set_title("Measured manifold", fontsize=title_pt, pad=6.0)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
     ax_c1.set_yticks(tick_positions)
@@ -600,7 +602,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         "fig05.panel_c.bottom",
     )
     ax_c2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c2.set_title("Guided neighborhood map", fontsize=title_pt, pad=6.0)
+    ax_c2.set_title("Guided map", fontsize=title_pt, pad=6.0)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
@@ -609,7 +611,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c2.text(
         0.03,
         0.05,
-        f"Pearson r = {pearson_r:.3f}",
+        f"r = {pearson_r:.3f}",
         transform=ax_c2.transAxes,
         fontsize=annotation_pt,
         style="italic",
@@ -823,7 +825,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             zorder=1,
         )
         ax_e.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt, labelpad=-0.2)
-        ax_e.set_title("Per-angle accuracy", fontsize=title_pt)
+        ax_e.set_title("Decoder accuracy", fontsize=title_pt)
         ax_e.set_ylim(0, 1.05)
         ax_e.legend(
             fontsize=legend_pt,
@@ -1011,7 +1013,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
     im_c = ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax1.set_title("Measured angle manifold", fontsize=title_pt, fontweight="bold", pad=6.0)
+    ax1.set_title("Measured manifold", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
@@ -1019,12 +1021,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
     ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax2.set_title("Guided neighborhood map", fontsize=title_pt, fontweight="bold", pad=6.0)
+    ax2.set_title("Guided map", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)
     ax2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
-    ax2.text(0.5, -0.22, f"Pearson r = {pearson_r:.3f}",
+    ax2.text(0.5, -0.22, f"r = {pearson_r:.3f}",
              transform=ax2.transAxes, fontsize=annotation_pt, ha="center", style="italic")
     cax = fig_c.add_subplot(gs_cs[:, 1])
     cbar = plt.colorbar(im_c, cax=cax)
@@ -1192,7 +1194,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 color=DENSE_COLOR, label=diag_dense_short, zorder=1)
         ax.set_xlabel("Angle (\u00b0)", labelpad=-0.2)
         ax.set_ylabel("Mean P(correct)")
-        ax.set_title("Per-angle decoder accuracy", fontsize=title_pt, fontweight="bold")
+        ax.set_title("Decoder accuracy", fontsize=title_pt, fontweight="bold")
         ax.set_ylim(0, 1.05)
         ax.legend(
             fontsize=legend_pt,

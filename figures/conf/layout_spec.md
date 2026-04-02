@@ -75,22 +75,22 @@ figures:
   fig05:
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 156.0
+      composite_height_mm: 164.0
       composite_grid:
-        left: 0.038
-        right: 0.962
-        bottom: 0.045
-        top: 0.955
-        hspace: 0.254
-        height_ratios: [62.0, 64.0]
+        left: 0.034
+        right: 0.966
+        bottom: 0.040
+        top: 0.960
+        hspace: 0.220
+        height_ratios: [66.0, 58.0]
       top_row:
-        wspace: 0.110
-        width_ratios: [46.0, 64.0, 51.0]
+        wspace: 0.095
+        width_ratios: [41.0, 69.0, 54.0]
       bottom_row:
-        wspace: 0.086
-        width_ratios: [90.0, 72.0]
-      heatmap_stack: {hspace: 0.50, wspace: 0.06, colorbar_ratio: 0.08}
-      routing_stack: {hspace: 0.42, wspace: 0.18}
+        wspace: 0.088
+        width_ratios: [88.0, 76.0]
+      heatmap_stack: {hspace: 0.44, wspace: 0.05, colorbar_ratio: 0.06}
+      routing_stack: {hspace: 0.34, wspace: 0.16}
       standalone:
         a:
           width_mm: 183.0
@@ -119,12 +119,12 @@ figures:
       outer_margin_x_mm: 6.0
       outer_margin_top_mm: 4.0
       outer_margin_bottom_mm: 4.0
-      panel_a_height_mm: 22.0
-      panel_b_height_mm: 26.0
-      panel_c_height_mm: 49.0
-      panel_d_height_mm: 55.0
-      panel_c_width_mm: 104.0
-      panel_e_width_mm: 63.0
+      panel_a_height_mm: 20.0
+      panel_b_height_mm: 28.0
+      panel_c_height_mm: 57.0
+      panel_d_height_mm: 47.0
+      panel_c_width_mm: 107.0
+      panel_e_width_mm: 60.0
       col_gap_mm: 4.0
       row_gap_mm: 3.0
     typography:
@@ -146,25 +146,25 @@ figures:
         hspace: 0.22
         wspace: 0.0
         width_ratios: [1.0]
-        height_ratios: [26.0, 49.0, 55.0]
+        height_ratios: [27.0, 58.0, 45.0]
       split:
         standalone:
           b:
             width_mm: 171.0
-            height_mm: 26.0
+            height_mm: 28.0
             subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.18, top: 0.92}
           c:
-            width_mm: 104.0
-            height_mm: 49.0
+            width_mm: 107.0
+            height_mm: 57.0
             subplots_adjust: {left: 0.09, right: 0.98, bottom: 0.15, top: 0.92}
           d:
             width_mm: 171.0
-            height_mm: 55.0
+            height_mm: 47.0
             subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.14, top: 0.92}
           e:
-            width_mm: 63.0
-            height_mm: 50.0
-            subplots_adjust: {left: 0.23, right: 0.98, bottom: 0.14, top: 0.91}
+            width_mm: 60.0
+            height_mm: 57.0
+            subplots_adjust: {left: 0.17, right: 0.985, bottom: 0.14, top: 0.91}
 ```
 <!-- runtime-layout-contract:end -->
 

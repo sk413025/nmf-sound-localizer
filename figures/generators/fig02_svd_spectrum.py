@@ -1,9 +1,9 @@
-"""Figure 2 — SVD Spectrum + Modal Decomposition + Dictionary + Manifold.
+"""Figure 2 — SVD spectrum + centered-|H| component patterns + dictionary + manifold.
 
 Double-column width (183 mm), 6 panels in a 2×3 grid:
   Row 1: (a) SVD singular-value spectrum + cumulative energy
-         (b) Representative mode frequency profiles (overlaid)
-         (c) Representative mode half-plane polar patterns (overlaid)
+         (b) Representative component frequency loadings (overlaid)
+         (c) Representative component half-plane angle loadings (overlaid)
   Row 2: (d) Full dictionary H heatmap (angle x freq)
          (e) All-angle reconstruction fidelity under rank-r truncation
          (f) Inter-angle correlation matrix of H
@@ -190,7 +190,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     selected_mode_indices = [0, 1, 5]
     n_modes = len(selected_mode_indices)
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-    mode_labels = ["Mode 1", "Mode 2", "Mode 6"]
+    mode_labels = ["Comp. 1", "Comp. 2", "Comp. 6"]
 
     # Process modes
     modes_data = []
@@ -242,7 +242,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax_sv.set_xlim(0.7, full_stop + 0.3)
     ax_sv.set_xticks([1, 6, 12, 18, 24, 30, 37])
-    ax_sv.set_xlabel("Mode index r", fontsize=6)
+    ax_sv.set_xlabel("Component index r", fontsize=6)
     ax_sv.set_ylabel("Cum. fraction", fontsize=6, labelpad=1)
     ax_sv.set_ylim(0.25, 1.01)
     ax_sv.set_yticks([0.25, 0.50, 0.75, 0.90, 1.00])
@@ -312,7 +312,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ax_b.plot(freqs_smooth, u_abs, color=colors[r], linewidth=0.9, label=mode_labels[r])
         ax_b.fill_between(freqs_smooth, u_abs, color=colors[r], alpha=0.15)
     ax_b.set_xlabel("Frequency (kHz)")
-    ax_b.set_ylabel(r"$|u_r(f)|$", labelpad=1)
+    ax_b.set_ylabel("Rel. loading", labelpad=1)
     ax_b.tick_params(axis="both", which="major", pad=1, labelsize=5)
     ax_b.set_xticks([500, 1500, 2500])
     ax_b.set_xticklabels(["0.5k", "1.5k", "2.5k"])
@@ -346,7 +346,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
     ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_d.set_title("Full dictionary H", fontsize=6.5)
+    ax_d.set_title("Angle-frequency dictionary H", fontsize=6.5)
     cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.035, pad=0.02)
     cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_d, "d", x=-0.15)
@@ -380,7 +380,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         )
     ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
     ax_e.set_ylabel("RMSE", fontsize=6, labelpad=1)
-    ax_e.set_title("All-angle reconstruction fidelity", fontsize=6.5)
+    ax_e.set_title(r"Centered-$|H|$ reconstruction fidelity", fontsize=6.5)
     ax_e.set_xticks([0, 45, 90, 135, 180])
     ax_e.legend(fontsize=5, frameon=False, loc="upper right")
     ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
@@ -490,32 +490,32 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Singular-value spectrum",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Full 37-mode SVD spectrum with cumulative fraction on the left axis and singular values on the right, highlighting early saturation at r=6 (80.3%) and r=8 (85.1%).",
+                "description": "Full centered-|H| SVD spectrum with cumulative fraction on the left axis and singular values on the right, highlighting early saturation at r=6 (80.3%) and r=8 (85.1%).",
             },
             {
                 "panel_id": "b",
-                "title": "Overlaid frequency profiles (Modes 1, 2, 6)",
+                "title": "Overlaid frequency loadings (components 1, 2, 6)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Frequency-selective spectra |u_r(f)| for representative Modes 1, 2, and 6 overlaid.",
+                "description": "Frequency loadings for representative centered-|H| components 1, 2, and 6 overlaid.",
             },
             {
                 "panel_id": "c",
-                "title": "Overlaid polar patterns (Modes 1, 2, 6)",
+                "title": "Overlaid angle loadings (components 1, 2, 6)",
                 "asset_path": "figures/output/fig02_svd_spectrum.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Direction-selective half-plane polar patterns v_r(theta) for representative Modes 1, 2, and 6 overlaid across 0-180 degrees.",
+                "description": "Half-plane angle loadings for representative centered-|H| components 1, 2, and 6 overlaid across 0-180 degrees.",
             },
             {
                 "panel_id": "d",
-                "title": "Full dictionary H heatmap",
+                "title": "Angle-frequency dictionary H",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_d_full_H.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Complete angle-frequency heatmap of H (37 angles x 346 freq bins).",
             },
             {
                 "panel_id": "e",
-                "title": "All-angle reconstruction fidelity",
+                "title": "Centered-|H| reconstruction fidelity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_e_reconstruction.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Per-angle centered-magnitude RMSE under rank-3, rank-5, and rank-6 truncation across all 37 angles.",

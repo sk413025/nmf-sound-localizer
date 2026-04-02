@@ -36,10 +36,10 @@ from figures.style import (
 
 
 DECODER_VARIANTS = [
-    ("No Type Bias", SEMANTIC_PALETTE["learned"]),
-    ("No Transformer", SEMANTIC_PALETTE["ablation"]),
-    ("Fixed Heuristic", SEMANTIC_PALETTE["classical"]),
-    ("Dense Routing", "#4A4A4A"),
+    ("No Type Bias", "guided solver", SEMANTIC_PALETTE["learned"]),
+    ("No Transformer", "router bypass", SEMANTIC_PALETTE["ablation"]),
+    ("Fixed Heuristic", "OMP baseline", SEMANTIC_PALETTE["classical"]),
+    ("Dense Routing", "dense routing", "#4A4A4A"),
 ]
 BEFORE_UPDATE_COLOR = "#7A7A7A"
 LIGHT_GATE_COLOR = "#8DCDB7"
@@ -57,9 +57,6 @@ FIG04_PANEL_SLOT_HEIGHTS_MM = {
     key: float(value)
     for key, value in dict(FIG04_SPLIT["panel_slot_height_mm"]).items()
 }
-ABLATION_XLABELS = ["guided", "bypass", "OMP", "dense"]
-ABLATION_YLABELS = ["guided", "bypass", "OMP", "dense"]
-
 
 def _save_panel_manifest(
     panel_dir: Path,
@@ -270,7 +267,7 @@ def _plot_panel_b(
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     track_specs = [
         (
-            "broad match " + r"$g_t(\theta)$",
+            "broad match",
             mechanics["stage0_g_norm_mean"],
             mechanics["stage0_g_norm_sem"],
             SEMANTIC_PALETTE["physics"],
@@ -279,7 +276,7 @@ def _plot_panel_b(
             0.08,
         ),
         (
-            "local gate " + r"$w_t(\theta)$",
+            "local gate",
             mechanics["stage0_w_theta_norm_mean"],
             mechanics["stage0_w_theta_norm_sem"],
             LIGHT_GATE_COLOR,
@@ -288,7 +285,7 @@ def _plot_panel_b(
             0.10,
         ),
         (
-            "local update " + r"$\Delta x_t(\theta)$",
+            "local update",
             mechanics["stage0_delta_norm_mean"],
             mechanics["stage0_delta_norm_sem"],
             SEMANTIC_PALETTE["learned"],
@@ -317,7 +314,7 @@ def _plot_panel_b(
         show_xticklabels=True,
         show_yticks=True,
     )
-    ax.set_ylabel("Norm. response", fontsize=axis_label_pt)
+    ax.set_ylabel("Relative response", fontsize=axis_label_pt)
     ax.set_xlabel("Angle (\N{DEGREE SIGN})", fontsize=axis_label_pt)
     ax.text(
         0.03,
@@ -384,14 +381,14 @@ def _plot_panel_c(
         linestyle="--",
         linewidth=1.20,
         color=BEFORE_UPDATE_COLOR,
-        label=r"$g_t(\theta)$",
+        label="before step",
     )
     ax.plot(
         angles_deg,
         g_after,
         linewidth=1.55,
         color="#2878B5",
-        label=r"$g_{t+1}(\theta)$",
+        label="after step",
     )
     ax.axvspan(target_angle - 5.0, target_angle + 5.0, color=SEMANTIC_PALETTE["highlight"], alpha=0.08)
     ax.axvline(target_angle, color=SEMANTIC_PALETTE["highlight"], linewidth=0.9, alpha=0.95)
@@ -401,7 +398,7 @@ def _plot_panel_c(
         show_xticklabels=True,
         show_yticks=True,
     )
-    ax.set_ylabel("Norm. match", fontsize=axis_label_pt)
+    ax.set_ylabel("Relative match", fontsize=axis_label_pt)
     ax.set_xlabel("Angle (\N{DEGREE SIGN})", fontsize=axis_label_pt)
     ax.text(
         0.03,
@@ -430,7 +427,7 @@ def _plot_panel_c(
     summary_text = "\n".join(
         [
             "after one local step",
-            f"0-15{chr(176)} mass: {local_mass_before:.2f} -> {local_mass_after:.2f}",
+            f"mass within 15{chr(176)}: {local_mass_before:.2f} -> {local_mass_after:.2f}",
             f"residual: 1.00 -> {residual_after:.2f}",
             f"n = {clip_count}",
         ]
@@ -553,7 +550,16 @@ def _plot_panel_d_ablation(
 ) -> None:
     ax.set_gid("fig04.panel_d.main")
     row_positions = np.arange(len(DECODER_VARIANTS) - 1, -1, -1, dtype=np.float32)
-    for (variant_key, color), y_pos in zip(DECODER_VARIANTS, row_positions, strict=False):
+    chance_level = min(
+        float(np.asarray(ablation_data.get("Dense Routing", [0.0]), dtype=np.float32).mean()),
+        0.08,
+    )
+
+    ax.axvspan(0.0, chance_level, color="#F3F3F3", zorder=0)
+    ax.axvspan(0.90, 1.0, color="#F4FBF7", zorder=0)
+    ax.axvline(chance_level, color="#CFCFCF", linestyle="--", linewidth=0.85, zorder=1)
+
+    for (variant_key, display_label, color), y_pos in zip(DECODER_VARIANTS, row_positions, strict=False):
         seeds = ablation_data.get(variant_key, [])
         if not seeds:
             continue
@@ -569,8 +575,8 @@ def _plot_panel_d_ablation(
             seed_arr,
             np.full(seed_arr.size, y_pos, dtype=np.float32) + offsets,
             color=color,
-            s=18,
-            alpha=0.80,
+            s=26,
+            alpha=0.72,
             edgecolors="none",
             zorder=3,
         )
@@ -580,38 +586,50 @@ def _plot_panel_d_ablation(
             xerr=sem_val,
             fmt="o",
             color=color,
-            markersize=4.6,
-            capsize=1.8,
-            linewidth=1.0,
+            markersize=8.2,
+            capsize=2.2,
+            linewidth=1.35,
             zorder=4,
+        )
+        value_x = min(mean_val + 0.075, 0.985)
+        value_ha = "left" if value_x < 0.94 else "right"
+        ax.text(
+            value_x,
+            y_pos + 0.20,
+            f"{mean_val:.2f}",
+            fontsize=tick_label_pt + 0.4,
+            va="center",
+            ha=value_ha,
+            color=color,
+            fontweight="bold",
+        )
+        ax.text(
+            0.03,
+            y_pos,
+            display_label,
+            fontsize=axis_label_pt + 0.1,
+            va="center",
+            ha="left",
+            color="#303030",
         )
 
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(-0.55, len(DECODER_VARIANTS) - 0.45)
-    ax.set_xticks([0.0, 0.5, 1.0])
-    ax.tick_params(axis="x", labelsize=tick_label_pt, length=2)
+    ax.set_xticks([0.0, 0.25, 0.50, 0.75, 1.0])
+    ax.tick_params(axis="x", labelsize=tick_label_pt + 0.2, length=2)
     ax.set_yticks([])
-    ax.grid(axis="x", linestyle="--", alpha=0.25)
+    ax.set_xlabel("Clean accuracy", fontsize=axis_label_pt, labelpad=1.2)
+    ax.grid(axis="x", linestyle="--", alpha=0.22)
     ax.text(
-        0.98,
-        0.96,
-        r"$P(\mathrm{correct})$",
+        0.015,
+        0.93,
+        "chance",
         transform=ax.transAxes,
-        fontsize=tick_label_pt,
+        fontsize=tick_label_pt - 0.1,
         va="top",
-        ha="right",
-        color="#4A4A4A",
+        ha="left",
+        color="#6B6B6B",
     )
-    for label, y_pos in zip(ABLATION_YLABELS, row_positions, strict=False):
-        ax.text(
-            0.05,
-            y_pos,
-            label,
-            fontsize=tick_label_pt,
-            va="center",
-            ha="left",
-            color="#3A3A3A",
-        )
 
     if add_label:
         add_panel_label(ax, "d", x=0.0, y=1.02)
@@ -779,14 +797,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Broad match, local gate, and local update",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"One-axis overlay for the shared exemplar showing the broad physical match g_t, the local gate w_t, and the localized update Δx_t on the active {mechanics_path.name} manifold.",
+                "description": f"One-axis overlay for the shared exemplar showing the broad match, the local gate, and the local update on the active {mechanics_path.name} manifold.",
             },
             {
                 "panel_id": "c",
                 "title": "Residual after one local step",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf",
                 "provenance_mode": "data_backed",
-                "description": "One-axis cleanup overlay for the shared 70-degree exemplar, with compact callouts summarizing the validation-wide 0-15-degree inward mass and the first residual-norm drop.",
+                "description": "One-axis cleanup overlay for the shared 70-degree exemplar, with compact callouts summarizing the validation-wide mass moved within 15 degrees and the first residual-norm drop.",
             },
             {
                 "panel_id": "d",

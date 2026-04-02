@@ -1,10 +1,12 @@
 # Supplementary Information
 
-**Non-contact acoustic direction sensing via physical encoding in everyday objects**
+**Everyday objects as calibrated acoustic direction encoders**
 
-This Supplementary Information gives the derivation chain behind the manuscript's decoding model in the same order a reader would encounter it physically: from the continuous plate equation to Green's function, modal superposition, ideal transfer matrix, low-rank interpretation, sparse direction-grid surrogate, and finally the deep-unrolled routed solver. Three objects are kept distinct throughout: the ideal complex response \(\mathcal H\) from the continuous physical model, the executed standardized fingerprint dictionary \(H=[h_1,\dots,h_E]\), and the centered-magnitude analysis matrix \(H_{\mathrm{fig}}\) used for Fig. 2.
+Sound direction enters the measured LDV spectrum through the object's continuous structural response, and the following derivations trace how that response becomes a standardized directional fingerprint and a local-overlap decoding problem. The reduced-order surrogate isolates the local angle geometry, whereas the guided solver and OMP baseline are defined in the full standardized feature space.
 
-## Supplementary Methods 1. Continuous physical model: Kirchhoff-Love operator, Green's function, modal decomposition, and ideal transfer matrix
+## Supplementary Methods 1. Single-spectrum response from the continuous plate model
+
+Incidence direction enters the single-LDV spectrum in the idealized plate model through the continuous structural response.
 
 Under small-amplitude linear structural dynamics, the out-of-plane displacement field \(W(x,y,\omega;\theta)\) at angular frequency \(\omega\) and incidence direction \(\theta\) satisfies a linear frequency-domain operator equation
 
@@ -24,7 +26,7 @@ D_p\nabla^4 - \rho t\,\omega^2 + i\omega c_d,
 \tag{S2}
 $$
 
-where \(D_p\) is the bending stiffness, \(\rho t\) is the areal mass density, and \(c_d\) is an effective damping term. This operator gives a concrete starting point for the derivation chain, although the manuscript requires only that the response be approximately linear and time-invariant over the analysis window.
+where \(D_p\) is the bending stiffness, \(\rho t\) is the areal mass density, and \(c_d\) is an effective damping term. This operator provides one concrete starting point for the derivation and motivates the approximate linear time-invariant response used over the analyzed window.
 
 For a fixed LDV measurement point \((x_L,y_L)\), the single-point velocity response is
 
@@ -47,7 +49,7 @@ $$
 
 Equation (S4) makes the forward map explicit: direction changes the effective forcing pattern \(P\), and the structure converts that forcing into a single measured spectrum through the Green's kernel seen by the LDV point.
 
-If only \(R\) structural modes contribute appreciably in the analysis band, the response admits the modal expansion
+When \(R\) structural modes contribute appreciably in the analysis band, the response admits the modal expansion
 
 $$
 Y(\omega;\theta)
@@ -63,14 +65,14 @@ Y(\omega;\theta)
 \tag{S5}
 $$
 
-The manuscript's Eq. 1 is the compact notation
+Suppressing the explicit \(\omega\)-dependence in the coupling term gives the compact form used in Eq. (1) of the main text,
 
 $$
 Y(\omega;\theta) \approx \sum_{m=1}^{R} s_m(\omega)\,\alpha_m(\theta),
 \tag{S6}
 $$
 
-where the explicit \(\omega\)-dependence in the coupling term has been suppressed into a compact notation. In words, the measured single-point spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\), each weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
+In words, the measured single-point spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\), each weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
 
 Sampling frequency at \(\omega_1,\dots,\omega_F\) and direction at \(\theta_1,\dots,\theta_E\) gives the ideal complex transfer matrix
 
@@ -99,9 +101,11 @@ A_{e,m}=a_m(\theta_e),
 \tag{S9}
 $$
 
-The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure only at this approximate level. This low-rank physical picture motivates the later reduced-order view, but sparsity enters only after the discrete angle-grid surrogate is introduced in Supplementary Methods 2.
+The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure at this approximate level. This low-rank physical picture motivates the later reduced-order view, and sparsity enters after the discrete angle-grid surrogate introduced in Supplementary Methods 2.
 
-## Supplementary Methods 2. Executed observable construction, standardized dictionary \(H\), centered-magnitude SVD, and reduced-order sparse surrogate
+## Supplementary Methods 2. Standardized fingerprints and the Fig. 2 reduced view
+
+The experiments use a standardized fingerprint dictionary built from measured single-point spectra, and Fig. 2 summarizes its centered-magnitude low-rank structure.
 
 The measured waveform at angle index \(e\) and trial index \(n\) is the single-point LDV velocity signal \(v_{e,n}(t)\). After short-time Fourier transformation, the complex coefficient at frequency bin \(k\) and frame \(t\) is
 
@@ -110,7 +114,7 @@ V_{e,n}[k,t] = \mathrm{STFT}\{v_{e,n}\}[k,t].
 \tag{S10}
 $$
 
-The time-averaged power statistic used in the paper is
+The analysis uses the time-averaged power statistic
 
 $$
 \widehat{S}_{e,n}[k] = \frac{1}{T_{e,n}} \sum_{t=1}^{T_{e,n}} \left|V_{e,n}[k,t]\right|^2,
@@ -142,7 +146,7 @@ $$
 \tag{S14}
 $$
 
-The executed angle-indexed calibration dictionary is the mean standardized fingerprint at each angle,
+The angle-indexed calibration dictionary is the mean standardized fingerprint at each angle,
 
 $$
 h_e = \frac{1}{N_e}\sum_{n\in\mathcal C_e}\tilde y_{e,n} \in \mathbb{R}^F,
@@ -151,9 +155,9 @@ H=[h_1,\dots,h_E]\in\mathbb{R}^{F\times E},
 \tag{S15}
 $$
 
-where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the experimental dictionary used for downstream analysis and inference. It is not the ideal complex matrix \(\mathcal H\) from Supplementary Methods 1.
+where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the experimental dictionary used for downstream analysis and inference. It is built from standardized measured fingerprints, whereas \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix.
 
-Figure 2 does not decompose \(\mathcal H\) directly. Matching the committed Fig. 2 generator, it analyzes the centered-magnitude matrix
+To isolate angle-dependent structure from shared magnitude offsets, we analyze the centered-magnitude matrix
 
 $$
 H_{\mathrm{fig}}[k,e]
@@ -171,9 +175,9 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation reported in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering.
 
-The low-rank picture motivates a reduced-order surrogate, but sparsity enters only after introducing a discrete single-source angle-grid approximation. In full standardized feature space, that surrogate can be written as
+Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints and carries the local angle ordering into measured space. In the full standardized feature space, a held-out fingerprint can be written as
 
 $$
 \tilde y \approx Hx,
@@ -182,9 +186,9 @@ $$
 \tag{S18}
 $$
 
-where a dominant coefficient identifies the source angle and any additional support captures local directional overlap or noise. Operationally, \(K\) is the residual-correction budget or pursuit depth, not a claim that the physical transfer matrix itself is sparse.
+where a dominant coefficient marks the source angle and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore expresses the compact modal picture as a local-overlap model on the discrete calibrated angle grid.
 
-For exposition around the manuscript's Eq. 2, one may further project the standardized fingerprint and calibration dictionary into a retained singular subspace,
+Projecting the same local-overlap surrogate into a retained singular subspace gives
 
 $$
 z = U_r^\top \tilde y,
@@ -202,11 +206,11 @@ z \approx A x,
 \tag{S20}
 $$
 
-The reported runtime path does not apply PCA/SVD before decoding and instead operates directly in the full \(F=346\) standardized feature space.
+This projected form makes the reduced-order geometry behind Eq. 2 explicit. The decoder itself operates in the full \(F=346\) standardized feature space on \(H\) and its grouped descendants rather than the projected pair \((z, A)\).
 
-## Supplementary Methods 3. Analytical hard-OMP recursion for the reduced-order surrogate
+## Supplementary Methods 3. Hard OMP on the reduced-order surrogate
 
-After discretizing direction onto an angle grid, the reduced-order surrogate (S20) becomes a sparse-support recovery problem over the calibration dictionary, and hard OMP is the standard greedy baseline for that classical formulation. The exact analytical hard-OMP baseline is defined for the reduced-order surrogate (S20). Let the initial residual and support be
+On the reduced-order surrogate, hard OMP iteratively selects the strongest direction on the calibrated angle grid and then refits on the active support. The exact greedy recursion is
 
 $$
 r_0 = z,
@@ -263,11 +267,13 @@ $$
 \tag{S27}
 $$
 
-Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate. The displayed Fig. 3 panels are slightly different: they use a correlation-based greedy / OMP-family diagnostic on the same calibration dictionary rather than a literal panel-by-panel visualization of every least-squares refit step. Concretely, the plotted score aggregates \(|\langle y,d_{e,m}\rangle|\) within each direction group.
+Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate. Figure 3 summarizes the correlation landscape that drives the first greedy choice on the same calibration dictionary: the plotted score aggregates \(|\langle y,d_{e,m}\rangle|\) within each direction group. When that score concentrates near the matched direction, the current fingerprint remains locally separable; when it spreads across neighboring groups, the fingerprint becomes locally ambiguous and hard OMP is more likely to make an unstable first selection on held-out speech.
 
-## Supplementary Methods 4. Deep unrolling and attention-gated routed pursuit in full standardized feature space
+## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
 
-The guided solver studied in the manuscript operates in the full standardized feature space with a grouped dictionary
+The guided solver turns a broad residual match into a local update without making an immediate one-angle commitment, and it operates directly in the full standardized feature space. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; what changes is the selection rule.
+
+The guided solver uses a grouped dictionary
 
 $$
 D=[d_{e,m}] \in \mathbb{R}^{F\times (EM)},
@@ -290,9 +296,9 @@ g_t = D^\top r_t.
 \tag{S30}
 $$
 
-Relative to Supplementary Methods 3, the residual-correction logic is unchanged: the solver still scores the current residual against the physical dictionary and updates the residual after each stage. The key change is the selection rule. Hard OMP commits to one best atom and refits on the active set, whereas the routed solver distributes weight across a local neighborhood of angle groups before subtraction.
+Hard OMP commits to one best atom and refits on the active set, whereas the routed solver distributes weight across a local neighborhood of angle groups before subtraction.
 
-The learned routing branch does not replace (S30); it gates it. Let \(q_{t,e,m}^{(\mathrm{QK})}\) denote the atom-level query-key score produced from the current residual and dictionary tokens. Aggregating those atom-level scores within each direction yields expert-level routing scores \(s_t^{(\mathrm{exp})}[e]\). In the implementation used here, the default expert aggregation is an L2 norm over the per-direction atom scores. Direction-level routing weights are then obtained from a Gumbel-family gating rule,
+The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the implementation used here, that pooling step is an L2 norm over the per-direction atom scores. The model then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
 
 $$
 w_t = \mathrm{GumbelSoftmax}\!\left(s_t^{(\mathrm{exp})};\tau\right),
@@ -301,7 +307,7 @@ w_t \in \Delta^{E-1}.
 \tag{S31}
 $$
 
-Within each selected direction group, an atom-level gate \(u_t^{(e)}\in\Delta^{M-1}\) is formed analogously. The combined gate is therefore
+Within each selected direction group, the model forms an atom-level gate \(u_t^{(e)}\in\Delta^{M-1}\) in the same way. The combined gate is therefore
 
 $$
 W_t[e,m] = w_t[e]\,u_t^{(e)}[m].
@@ -324,7 +330,7 @@ r_{t+1} = r_t - D(\eta\,\Delta x_t) = \tilde y - D x_{t+1},
 \tag{S34}
 $$
 
-where \(\eta\) is a learned step size. These equations define the deep-unrolled residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the angle manifold, applies a gated coefficient update, and then redefines the residual for the next stage.
+where \(\eta\) is a learned step size. These equations define the deep-unrolled residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage.
 
 Training and evaluation do not decode direction from \(\|x_K^{(e)}\|_2\). Instead they read out expert-level routing scores. Let
 
@@ -335,7 +341,7 @@ $$
 \tag{S35}
 $$
 
-where the reported configuration uses \(K_{\mathrm{sup}}=1\), so the readout is the first-stage expert score. The composite training objective is
+where \(K_{\mathrm{sup}}=1\) in the configuration studied here, so the readout is the first-stage expert score. The composite training objective is
 
 $$
 \mathcal L = \alpha\,\mathcal L_{\mathrm{rec}} + \beta\,\mathcal L_{\mathrm{mono}} + \gamma\,\mathcal L_{\mathrm{cls}},
@@ -363,9 +369,11 @@ $$
 \tag{S38}
 $$
 
-Equation S36 gives the main loss. In the cited primary guided-solver run, the implementation also includes an auxiliary early-epoch teacher-warmup cross-entropy addend for the first 10 epochs. The routed solver is OMP-inspired rather than a literal least-squares unrolling of Supplementary Methods 3. The `use_hard_gumbel` switch is optional in the codebase; in the cited primary guided-solver run it is enabled, so the forward routing step uses the straight-through hard-Gumbel variant within the broader Gumbel-family formulation above.
+Equation (S36) gives the main loss. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver keeps the OMP residual-correction scaffold but replaces exact least-squares refitting with learned local routing. In the forward pass, routing is treated as a hard discrete choice through a straight-through Gumbel approximation.
 
-## Supplementary Methods 5. Discriminability and similarity-statistic definitions
+## Supplementary Methods 5. Fig. 2 and Fig. 3 summary statistics
+
+Figs. 2 and 3 summarize angle separability and similarity with the following descriptive statistics.
 
 Let \(\tilde y_{e,n}\in\mathbb{R}^F\) denote the standardized fingerprint of trial \(n\) at angle \(e\). For any two vectors \(u,v\in\mathbb{R}^F\), the Pearson correlation coefficient is
 

@@ -133,6 +133,13 @@ FIG06_TYPOGRAPHY_PT = {
     **font_tokens(),
     **figure_section("fig06", "typography"),
 }
+FIG06_SCREENING_STRIP_LABELS = (
+    "1 Cardboard",
+    "2 Wood",
+    "3 Acrylic",
+    "4 Cup",
+    "5 Laptop",
+)
 
 
 def _ensure_parent(path: Path) -> None:
@@ -247,31 +254,29 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
     canvas = Image.new("RGB", (width_px, height_px), "white")
     draw = ImageDraw.Draw(canvas)
 
-    caption_font = _load_unicode_font(34)
-    label_font = _load_font(38)
+    label_font = _load_font(32)
+    step_font = _load_font(22)
+    transition_font = _load_font(20)
     arrow_color = "#5A5A5A"
-    frame_fill = "#FCFCFA"
-    frame_outline = "#D6D6D0"
-    baseline_color = "#D7D7D0"
+    frame_fill = "#FEFEFD"
+    frame_outline = "#D8D8D0"
+    baseline_color = "#D9D9D4"
     labels = [
-        ("broad physical match", "#2C7BC9"),
-        ("local concentration", "#12A36E"),
-        ("cleaner residual", "#3B82F6"),
+        ("match broadly", "#1A1A1A"),
+        ("gate locally", "#1A1A1A"),
+        ("clean residual", "#1A1A1A"),
     ]
+    step_tags = ["1", "2", "3"]
+    transition_tags = ["focus", "subtract"]
 
-    caption = "Schematic only: broad evidence is focused locally before the residual is recomputed."
-    caption_bbox = draw.textbbox((0, 0), caption, font=caption_font)
-    caption_x = (width_px - (caption_bbox[2] - caption_bbox[0])) // 2
-    draw.text((caption_x, 26), caption, fill="#4A4A4A", font=caption_font)
-
-    frame_top = 92
-    frame_bottom = 270
-    label_y = 320
+    frame_top = 72
+    frame_bottom = 252
+    label_y = 286
     gap = 118
     usable_width = width_px - 2 * 160
     frame_width = int((usable_width - 2 * gap) / 3)
     x_positions = [160 + idx * (frame_width + gap) for idx in range(3)]
-    highlight_fill = (247, 232, 177)
+    highlight_fill = (248, 236, 189)
 
     def _draw_profile_points(
         x0: int,
@@ -298,8 +303,8 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
             width=4,
         )
         x_center = (x0 + x1) // 2
-        draw.rectangle((x_center - 8, frame_top + 18, x_center + 8, frame_bottom - 18), fill=highlight_fill)
-        baseline_y = frame_bottom - 34
+        draw.rectangle((x_center - 7, frame_top + 18, x_center + 7, frame_bottom - 18), fill=highlight_fill)
+        baseline_y = frame_bottom - 30
         draw.line((x0 + 24, baseline_y, x1 - 24, baseline_y), fill=baseline_color, width=3)
 
         if idx == 0:
@@ -324,23 +329,85 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
             ]
             draw.line(cleaned_points, fill=color, width=7, joint="curve")
 
+        step_bbox = draw.textbbox((0, 0), step_tags[idx], font=step_font)
+        step_x = x0 + 26
+        step_y = frame_top + 16
+        step_box = (
+            step_x - 10,
+            step_y - 4,
+            step_x + (step_bbox[2] - step_bbox[0]) + 10,
+            step_y + (step_bbox[3] - step_bbox[1]) + 4,
+        )
+        draw.rounded_rectangle(step_box, radius=10, fill="#F4F4EF", outline=None)
+        draw.text((step_x, step_y), step_tags[idx], fill="#5E5E5E", font=step_font)
+
         label_bbox = draw.textbbox((0, 0), label, font=label_font)
         label_x = x_center - (label_bbox[2] - label_bbox[0]) // 2
         draw.text((label_x, label_y), label, fill=color, font=label_font)
 
         if idx < len(x_positions) - 1:
             y_mid = (frame_top + frame_bottom) // 2
+            arrow_start = (x1 + 18, y_mid)
+            arrow_end = (x1 + gap - 24, y_mid)
             _draw_arrow(
                 draw,
-                (x1 + 18, y_mid),
-                (x1 + gap - 24, y_mid),
+                arrow_start,
+                arrow_end,
                 fill=arrow_color,
-                width=6,
-                head_size=16,
+                width=5,
+                head_size=14,
             )
+            transition = transition_tags[idx]
+            transition_bbox = draw.textbbox((0, 0), transition, font=transition_font)
+            transition_x = (arrow_start[0] + arrow_end[0] - (transition_bbox[2] - transition_bbox[0])) // 2
+            transition_y = y_mid - 34
+            draw.rounded_rectangle(
+                (
+                    transition_x - 8,
+                    transition_y - 4,
+                    transition_x + (transition_bbox[2] - transition_bbox[0]) + 8,
+                    transition_y + (transition_bbox[3] - transition_bbox[1]) + 4,
+                ),
+                radius=10,
+                fill="#F7F7F3",
+                outline=None,
+            )
+            draw.text((transition_x, transition_y), transition, fill="#5A5A5A", font=transition_font)
 
     _ensure_parent(panel_path)
     canvas.save(panel_path, quality=95)
+
+
+def _annotate_fig06_screening_strip(panel_a: Image.Image) -> Image.Image:
+    annotated = panel_a.copy()
+    draw = ImageDraw.Draw(annotated)
+    tag_font = _load_font(24)
+    n_tiles = len(FIG06_SCREENING_STRIP_LABELS)
+    tile_width = annotated.width / n_tiles
+    top_pad = max(int(round(annotated.height * 0.08)), 10)
+    left_pad = max(int(round(tile_width * 0.04)), 12)
+
+    for idx, label in enumerate(FIG06_SCREENING_STRIP_LABELS):
+        text_bbox = draw.textbbox((0, 0), label, font=tag_font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        x0 = int(round(idx * tile_width)) + left_pad
+        y0 = top_pad
+        draw.rounded_rectangle(
+            (
+                x0 - 10,
+                y0 - 6,
+                x0 + text_width + 12,
+                y0 + text_height + 8,
+            ),
+            radius=12,
+            fill="#F7F7F3",
+            outline="#D8D8D0",
+            width=2,
+        )
+        draw.text((x0, y0), label, fill="#1F1F1F", font=tag_font)
+
+    return annotated
 
 
 def _trim_white_border_with_bbox(img: Image.Image, padding: int = 8) -> tuple[Image.Image, tuple[int, int, int, int]]:
@@ -843,17 +910,18 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     figure_width_px = _mm_to_px(FIG04_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG04_HEIGHT_MM)
     outer_margin_px = _mm_to_px(FIG04_OUTER_MARGIN_MM)
-    a_slot_width_px = _mm_to_px(FIG04_PANEL_A_SLOT_WIDTH_MM)
-    a_slot_height_px = _mm_to_px(FIG04_PANEL_A_SLOT_HEIGHT_MM)
     row_gap_px = _mm_to_px(FIG04_ROW_GAP_MM)
     col_gap_px = _mm_to_px(FIG04_COL_GAP_MM)
+    a_slot_width_px = _mm_to_px(FIG04_PANEL_A_SLOT_WIDTH_MM)
     middle_slot_width_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM)
-    middle_slot_height_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM)
     d_slot_width_px = _mm_to_px(FIG04_PANEL_D_SLOT_WIDTH_MM)
-    d_slot_height_px = _mm_to_px(FIG04_PANEL_D_SLOT_HEIGHT_MM)
-    label_lane_px = _mm_to_px(FIG04_LABEL_LANE_MM)
-    content_inset_x_px = _mm_to_px(FIG04_CONTENT_INSET_X_MM)
-    content_inset_bottom_px = _mm_to_px(FIG04_CONTENT_INSET_BOTTOM_MM)
+    # Reweight the manuscript surface so panel d survives at journal scale.
+    a_slot_height_mm = 20.0
+    middle_slot_height_mm = 68.0
+    d_slot_height_mm = 42.0
+    a_slot_height_px = _mm_to_px(a_slot_height_mm)
+    middle_slot_height_px = _mm_to_px(middle_slot_height_mm)
+    d_slot_height_px = _mm_to_px(d_slot_height_mm)
 
     a_slot_left_px = outer_margin_px
     a_slot_top_px = outer_margin_px
@@ -863,12 +931,24 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     d_slot_left_px = outer_margin_px
     d_slot_top_px = middle_slot_top_px + middle_slot_height_px + row_gap_px
 
-    def _content_box(slot_left_px: int, slot_top_px: int, slot_width_px: int, slot_height_px: int) -> tuple[int, int, int, int]:
+    def _content_box(
+        slot_left_px: int,
+        slot_top_px: int,
+        slot_width_px: int,
+        slot_height_px: int,
+        *,
+        inset_x_mm: float,
+        label_lane_mm: float,
+        inset_bottom_mm: float,
+    ) -> tuple[int, int, int, int]:
+        inset_x_px = _mm_to_px(inset_x_mm)
+        label_lane_px = _mm_to_px(label_lane_mm)
+        inset_bottom_px = _mm_to_px(inset_bottom_mm)
         return (
-            slot_left_px + content_inset_x_px,
+            slot_left_px + inset_x_px,
             slot_top_px + label_lane_px,
-            slot_width_px - 2 * content_inset_x_px,
-            slot_height_px - label_lane_px - content_inset_bottom_px,
+            slot_width_px - 2 * inset_x_px,
+            slot_height_px - label_lane_px - inset_bottom_px,
         )
 
     def _paste_panel_pdf(
@@ -907,6 +987,9 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         a_slot_top_px,
         a_slot_width_px,
         a_slot_height_px,
+        inset_x_mm=1.0,
+        label_lane_mm=2.0,
+        inset_bottom_mm=0.8,
     )
     panel_a, panel_a_geometry = _contain_in_box_with_geometry(
         panel_a,
@@ -920,18 +1003,27 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         middle_slot_top_px,
         middle_slot_width_px,
         middle_slot_height_px,
+        inset_x_mm=1.2,
+        label_lane_mm=3.4,
+        inset_bottom_mm=1.0,
     )
     c_content_left_px, c_content_top_px, c_content_width_px, c_content_height_px = _content_box(
         c_slot_left_px,
         middle_slot_top_px,
         middle_slot_width_px,
         middle_slot_height_px,
+        inset_x_mm=1.2,
+        label_lane_mm=3.4,
+        inset_bottom_mm=1.0,
     )
     d_content_left_px, d_content_top_px, d_content_width_px, d_content_height_px = _content_box(
         d_slot_left_px,
         d_slot_top_px,
         d_slot_width_px,
         d_slot_height_px,
+        inset_x_mm=0.8,
+        label_lane_mm=3.2,
+        inset_bottom_mm=0.8,
     )
 
     panel_b, panel_b_axes = _paste_panel_pdf(
@@ -1085,8 +1177,8 @@ def compose_fig05(paper_dir: Path) -> list[Path]:
 
     # Keep the same left/right breathing room while trimming the vertical collar
     # slightly so the final manuscript asset stays under the 170 mm main-figure cap.
-    margin_x = 40
-    margin_y = 36
+    margin_x = 28
+    margin_y = 28
     canvas_w = margin_x * 2 + composite.width
     canvas_h = margin_y * 2 + composite.height
     canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
@@ -1140,13 +1232,21 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     outer_margin_x_px = _mm_to_px(FIG06_OUTER_MARGIN_X_MM)
     outer_margin_top_px = _mm_to_px(FIG06_OUTER_MARGIN_TOP_MM)
     outer_margin_bottom_px = _mm_to_px(FIG06_OUTER_MARGIN_BOTTOM_MM)
-    a_height_px = _mm_to_px(FIG06_A_HEIGHT_MM)
-    b_height_px = _mm_to_px(FIG06_B_HEIGHT_MM)
-    c_height_px = _mm_to_px(FIG06_C_HEIGHT_MM)
-    d_height_px = _mm_to_px(FIG06_D_HEIGHT_MM)
-    panel_c_width_px = _mm_to_px(FIG06_PANEL_C_WIDTH_MM)
     col_gap_px = _mm_to_px(FIG06_COL_GAP_MM)
     row_gap_px = _mm_to_px(FIG06_ROW_GAP_MM)
+    # Reweight Fig. 6 toward recurrence/early-energy-capture and away from the
+    # lower exploratory dashboard layer.
+    a_height_mm = 17.0
+    b_height_mm = 29.0
+    c_height_mm = 64.0
+    d_height_mm = 42.0
+    panel_e_width_mm = 52.0
+    panel_c_width_mm = FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM - FIG06_COL_GAP_MM - panel_e_width_mm
+    a_height_px = _mm_to_px(a_height_mm)
+    b_height_px = _mm_to_px(b_height_mm)
+    c_height_px = _mm_to_px(c_height_mm)
+    d_height_px = _mm_to_px(d_height_mm)
+    panel_c_width_px = _mm_to_px(panel_c_width_mm)
     inner_width_px = figure_width_px - 2 * outer_margin_x_px
     panel_e_width_px = inner_width_px - panel_c_width_px - col_gap_px
     if panel_e_width_px <= 0:
@@ -1156,6 +1256,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
         )
 
     panel_a = _contain_in_box(panel_a, inner_width_px, a_height_px)
+    panel_a = _annotate_fig06_screening_strip(panel_a)
     panel_b = _contain_in_box(panel_b, inner_width_px, b_height_px)
     panel_c = _contain_in_box(panel_c, panel_c_width_px, c_height_px)
     panel_d = _contain_in_box(panel_d, panel_e_width_px, c_height_px)
@@ -1240,9 +1341,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "title": "Material exemplars",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_HEIGHT_MM - FIG06_OUTER_MARGIN_TOP_MM - FIG06_A_HEIGHT_MM,
+                        FIG06_HEIGHT_MM - FIG06_OUTER_MARGIN_TOP_MM - a_height_mm,
                         FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_A_HEIGHT_MM,
+                        a_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1254,9 +1355,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "title": "Cross-material H",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_C_HEIGHT_MM + 2 * FIG06_ROW_GAP_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + c_height_mm + 2 * FIG06_ROW_GAP_MM,
                         FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_B_HEIGHT_MM,
+                        b_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1268,9 +1369,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "title": "Low-rank continuity",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_ROW_GAP_MM,
-                        FIG06_PANEL_C_WIDTH_MM,
-                        FIG06_C_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + FIG06_ROW_GAP_MM,
+                        panel_c_width_mm,
+                        c_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1281,10 +1382,10 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "has_data": True,
                     "title": "Exploratory screen summary",
                     **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM + FIG06_PANEL_C_WIDTH_MM + FIG06_COL_GAP_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + FIG06_D_HEIGHT_MM + FIG06_ROW_GAP_MM,
-                        FIG06_PANEL_E_WIDTH_MM,
-                        FIG06_C_HEIGHT_MM,
+                        FIG06_OUTER_MARGIN_X_MM + panel_c_width_mm + FIG06_COL_GAP_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + FIG06_ROW_GAP_MM,
+                        panel_e_width_mm,
+                        c_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1298,7 +1399,7 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                         FIG06_OUTER_MARGIN_X_MM,
                         FIG06_OUTER_MARGIN_BOTTOM_MM,
                         FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_D_HEIGHT_MM,
+                        d_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },

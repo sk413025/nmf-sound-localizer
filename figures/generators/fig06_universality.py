@@ -1,9 +1,9 @@
-"""Figure 6 — Cross-material breadth, low-rank continuity, and screening consequence.
+"""Figure 6 — Cross-material recurrence under object-specific calibration.
 
 Panel (b): Cross-material H strip across five materials.
 Panel (c): Low-rank continuity summary across materials using Fig. 2-style centered-magnitude SVD.
-Panel (d): Response-strength versus screening consequence summary.
-Panel (e): Material frequency-structure matrix with representative directional codes.
+Panel (d): Compact response-strength versus Top-1 screen summary.
+Panel (e): Low-emphasis material band/code support strip.
 
 Panel (a) remains a manual support asset and is composed downstream.
 """
@@ -546,18 +546,18 @@ def _plot_panel_d(
     )
     grid = slot_spec.subgridspec(
         len(ranking),
-        4,
-        width_ratios=[0.50, 1.06, 1.06, 0.96],
-        hspace=0.22,
-        wspace=0.18,
+        3,
+        width_ratios=[0.58, 1.60, 0.94],
+        hspace=0.26,
+        wspace=0.16,
     )
     axes: list[plt.Axes] = []
-    row_axes: list[tuple[plt.Axes, plt.Axes, plt.Axes, plt.Axes]] = []
-    column_headers = ("Context / support", "Informative band", "Recovered code")
+    row_axes: list[tuple[plt.Axes, plt.Axes, plt.Axes]] = []
+    column_headers = ("Selected band", "Recovered code")
     contrast_ymax = max(float(data["angular_contrast_smooth"][material].max()) for material in ranking)
-    contrast_ymax = 1.05 * max(contrast_ymax, 1e-6)
+    contrast_ymax = max(contrast_ymax, 1e-6)
 
-    def _style_matrix_axis(ax: plt.Axes, *, bottom_row: bool) -> None:
+    def _style_row_axis(ax: plt.Axes, *, bottom_row: bool) -> None:
         ax.set_facecolor("white")
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -578,9 +578,8 @@ def _plot_panel_d(
             backup=data["backup_material"],
         )
         ax_label = fig.add_subplot(grid[row_idx, 0])
-        ax_env = fig.add_subplot(grid[row_idx, 1])
-        ax_contrast = fig.add_subplot(grid[row_idx, 2], sharex=ax_env)
-        ax_code = fig.add_subplot(grid[row_idx, 3])
+        ax_freq = fig.add_subplot(grid[row_idx, 1])
+        ax_code = fig.add_subplot(grid[row_idx, 2])
 
         band_lo = data["representative_band_lo_khz"][material]
         band_hi = data["representative_band_hi_khz"][material]
@@ -589,6 +588,8 @@ def _plot_panel_d(
         band_center_khz = freq_hz / 1000.0
         bottom_row = row_idx == len(ranking) - 1
         support_alpha = 0.42 if material in {data["primary_material"], data["backup_material"]} else 0.30
+        support = data["spectral_envelopes"][material]
+        contrast = data["angular_contrast_smooth"][material] / contrast_ymax
 
         ax_label.set_axis_off()
         ax_label.text(
@@ -599,70 +600,63 @@ def _plot_panel_d(
             ha="right",
             va="center",
             fontsize=max(axis_label_pt - 0.4, 5.4),
-            color=tint,
+            color="#4A4A4A",
         )
 
-        ax_env.axvspan(band_lo, band_hi, color=tint, alpha=0.08, zorder=0)
-        ax_env.fill_between(freqs_khz, 0, data["spectral_envelopes"][material], color=tint, alpha=0.05)
-        ax_env.plot(
+        ax_freq.axvspan(band_lo, band_hi, color=tint, alpha=0.14, zorder=0)
+        ax_freq.fill_between(freqs_khz, 0, support, color="#BFC4C7", alpha=0.16)
+        ax_freq.plot(
             freqs_khz,
-            data["spectral_envelopes"][material],
-            color=tint,
-            alpha=support_alpha,
-            linewidth=1.0,
+            support,
+            color="#8B8F93",
+            alpha=max(support_alpha, 0.36),
+            linewidth=0.9,
         )
-        ax_env.set_xlim(0.3, 3.0)
-        ax_env.set_ylim(0.0, 1.02)
-        ax_env.set_xticks([0.5, 1.5, 2.5])
-        _style_matrix_axis(ax_env, bottom_row=bottom_row)
-
-        ax_contrast.axvspan(band_lo, band_hi, color=tint, alpha=0.18, zorder=0)
-        ax_contrast.axvline(band_center_khz, color=tint, linewidth=0.9, linestyle="--", alpha=0.55)
-        ax_contrast.plot(
+        ax_freq.plot(
             freqs_khz,
-            data["angular_contrast_smooth"][material],
-            color=tint,
-            linewidth=1.5,
+            contrast,
+            color="#3A3D40",
+            linewidth=1.15,
         )
-        ax_contrast.set_xlim(0.3, 3.0)
-        ax_contrast.set_ylim(0.0, contrast_ymax)
-        ax_contrast.set_xticks([0.5, 1.5, 2.5])
-        ax_contrast.text(
+        ax_freq.axvline(band_center_khz, color=tint, linewidth=0.9, linestyle="--", alpha=0.55)
+        ax_freq.set_xlim(0.3, 3.0)
+        ax_freq.set_ylim(0.0, 1.02)
+        ax_freq.set_xticks([0.5, 1.5, 2.5])
+        ax_freq.text(
             0.98,
-            0.82,
+            0.80,
             f"{band_center_khz:.2f} kHz",
-            transform=ax_contrast.transAxes,
+            transform=ax_freq.transAxes,
             ha="right",
             va="center",
             fontsize=max(tick_label_pt - 0.2, 5.0),
             color="black",
             bbox={"boxstyle": "round,pad=0.14", "facecolor": "white", "edgecolor": "none", "alpha": 0.82},
         )
-        _style_matrix_axis(ax_contrast, bottom_row=bottom_row)
+        _style_row_axis(ax_freq, bottom_row=bottom_row)
 
         ax_code.fill_between(angles, 0, data["representative_directivity"][material], color=tint, alpha=0.10)
         ax_code.plot(
             angles,
             data["representative_directivity"][material],
-            color=tint,
-            linewidth=1.55,
+            color="#3A3D40",
+            linewidth=1.25,
         )
         ax_code.set_xlim(float(angles.min()), float(angles.max()))
         ax_code.set_ylim(-0.02, 1.02)
         ax_code.set_xticks([0, 90, 180])
-        _style_matrix_axis(ax_code, bottom_row=bottom_row)
+        _style_row_axis(ax_code, bottom_row=bottom_row)
 
         if bottom_row:
-            ax_env.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
-            ax_contrast.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
+            ax_freq.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
             ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.5)
 
-        axes.extend([ax_label, ax_env, ax_contrast, ax_code])
-        row_axes.append((ax_label, ax_env, ax_contrast, ax_code))
+        axes.extend([ax_label, ax_freq, ax_code])
+        row_axes.append((ax_label, ax_freq, ax_code))
 
     block_bbox = ax_block.get_position()
     x_left = (row_axes[0][0].get_position().x0 - block_bbox.x0) / block_bbox.width
-    x_right = (row_axes[0][3].get_position().x1 - block_bbox.x0) / block_bbox.width
+    x_right = (row_axes[0][2].get_position().x1 - block_bbox.x0) / block_bbox.width
     for col_idx, header in enumerate(column_headers):
         axis_bbox = row_axes[0][col_idx + 1].get_position()
         x_center = ((axis_bbox.x0 + axis_bbox.x1) * 0.5 - block_bbox.x0) / block_bbox.width
@@ -673,8 +667,8 @@ def _plot_panel_d(
             transform=ax_block.transAxes,
             ha="center",
             va="bottom",
-            fontsize=max(title_pt - 0.2, 5.8),
-            color="black",
+            fontsize=max(title_pt - 0.35, 5.6),
+            color="#2A2A2A",
         )
 
     for row_idx in range(len(row_axes) - 1):
@@ -714,111 +708,74 @@ def _plot_panel_e(
         add_label=add_label,
         label_y=1.018,
     )
-    grid = slot_spec.subgridspec(3, 1, hspace=0.42)
-    ax_energy = fig.add_subplot(grid[0, 0])
-    ax_top1 = fig.add_subplot(grid[1, 0], sharey=ax_energy)
-    ax_mae = fig.add_subplot(grid[2, 0], sharey=ax_energy)
+    ax = fig.add_subplot(slot_spec)
 
     y = np.arange(len(ranking))
-    mae_values: list[float] = []
-    top1_values: list[float] = []
     for idx, material in enumerate(ranking):
         style = _screening_material_style(material)
         tint = style["color"]
         marker = style["marker"]
         if material in {data["primary_material"], data["backup_material"]}:
-            for ax in (ax_energy, ax_top1, ax_mae):
-                ax.axhspan(idx - 0.48, idx + 0.48, color=tint, alpha=0.06, zorder=0)
+            ax.axhspan(idx - 0.48, idx + 0.48, color=tint, alpha=0.06, zorder=0)
 
         row = data["performance_by_material"][material]
         energy_x = data["normalized_energy"][material]
-        top1_x = data["normalized_top1"][material]
         top1 = float(row["top1_acc"])
         top1_lo = float(row["top1_ci_low"])
         top1_hi = float(row["top1_ci_high"])
-        mae = float(row["mae_deg"])
-        mae_lo = float(row["mae_ci_low"])
-        mae_hi = float(row["mae_ci_high"])
-        top1_values.extend([top1_lo, top1, top1_hi])
-        mae_values.extend([mae_lo, mae, mae_hi])
-
-        ax_energy.plot([energy_x, top1_x], [idx, idx], color="#B5B5B5", linewidth=1.1, zorder=1)
-        ax_energy.scatter(
-            energy_x,
-            idx,
-            s=36,
-            facecolors="white",
-            edgecolors=tint,
-            linewidths=1.15,
-            marker=marker,
-            zorder=3,
-        )
-        ax_energy.scatter(top1_x, idx, s=40, color=tint, marker=marker, zorder=4)
-
-        ax_top1.errorbar(
+        ax.plot([energy_x, top1], [idx, idx], color="#B5B5B5", linewidth=1.25, zorder=1)
+        ax.errorbar(
             top1,
             idx,
             xerr=[[top1 - top1_lo], [top1_hi - top1]],
             fmt="none",
-            capsize=2.5,
+            capsize=2.3,
             ecolor=tint,
-            zorder=3,
+            linewidth=1.0,
+            zorder=2,
         )
-        ax_top1.scatter(top1, idx, s=40, color=tint, marker=marker, zorder=4)
-        ax_mae.errorbar(
-            mae,
+        ax.scatter(
+            energy_x,
             idx,
-            xerr=[[mae - mae_lo], [mae_hi - mae]],
-            fmt="none",
-            capsize=2.5,
-            ecolor=tint,
+            s=72,
+            facecolors="white",
+            edgecolors=tint,
+            linewidths=1.45,
+            marker=marker,
             zorder=3,
         )
-        ax_mae.scatter(mae, idx, s=40, color=tint, marker=marker, zorder=4)
+        ax.scatter(top1, idx, s=80, color=tint, marker=marker, zorder=4)
 
-    for ax in (ax_energy, ax_top1, ax_mae):
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color("#AFAFAF")
-        ax.spines["bottom"].set_color("#AFAFAF")
-        ax.spines["left"].set_linewidth(0.7)
-        ax.spines["bottom"].set_linewidth(0.7)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#AFAFAF")
+    ax.spines["bottom"].set_color("#AFAFAF")
+    ax.spines["left"].set_linewidth(0.75)
+    ax.spines["bottom"].set_linewidth(0.75)
 
-    ax_energy.set_title("Energy / Top-1", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1.5)
-    ax_energy.set_xlim(-0.02, 1.02)
-    ax_energy.set_yticks(y)
-    ax_energy.set_yticklabels(
+    compact_tick_pt = max(tick_label_pt - 0.25, 5.0)
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_xticks([0.0, 0.5, 1.0])
+    ax.set_xlabel("Norm. energy and Top-1", fontsize=axis_label_pt, labelpad=1.0)
+    ax.set_yticks(y)
+    ax.set_yticklabels(
         [MATERIAL_SCREENING_LABELS[m] for m in ranking],
-        fontsize=max(tick_label_pt - 0.7, 4.8),
+        fontsize=compact_tick_pt,
     )
-    ax_energy.invert_yaxis()
-    ax_energy.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
-    ax_energy.tick_params(axis="y", length=0, pad=1)
-    ax_energy.grid(axis="x", linestyle="--", alpha=0.25)
-    ax_energy.text(
+    ax.invert_yaxis()
+    ax.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
+    ax.tick_params(axis="y", length=0, pad=1)
+    ax.grid(axis="x", linestyle="--", alpha=0.22)
+    ax.text(
         0.98,
         1.02,
-        "open/filled = energy/Top-1",
-        transform=ax_energy.transAxes,
+        "open = energy, filled = Top-1 ± CI",
+        transform=ax.transAxes,
         ha="right",
         va="bottom",
-        fontsize=max(tick_label_pt - 0.55, 4.8),
+        fontsize=compact_tick_pt,
     )
-
-    ax_top1.set_title("Top-1 CI", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1)
-    ax_top1.set_xlim(max(0.0, min(top1_values) - 0.03), min(1.0, max(top1_values) + 0.03))
-    ax_top1.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
-    ax_top1.tick_params(axis="y", left=False, labelleft=False)
-    ax_top1.grid(axis="x", linestyle="--", alpha=0.25)
-
-    ax_mae.set_title("MAE CI", fontsize=title_pt - 0.2, loc="left", x=0.00, pad=1)
-    ax_mae.set_xlim(max(0.0, min(mae_values) - 0.5), max(mae_values) + 0.5)
-    ax_mae.set_xlabel("MAE (deg)", fontsize=axis_label_pt, labelpad=0.8)
-    ax_mae.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
-    ax_mae.tick_params(axis="y", left=False, labelleft=False)
-    ax_mae.grid(axis="x", linestyle="--", alpha=0.25)
-
-    return [ax_block, ax_energy, ax_top1, ax_mae]
+    return [ax_block, ax]
 
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
@@ -990,14 +947,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Exploratory screen summary",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Normalized energy-versus-Top-1 comparison plus Top-1 and MAE summaries with uncertainty, showing that overall response strength alone is insufficient to explain the screening ranking.",
+                "description": "Compact normalized-energy versus Top-1 comparison with Top-1 uncertainty, showing that overall response strength alone does not explain the screening ranking.",
             },
             {
                 "panel_id": "e",
                 "title": "Material frequency structure",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Five-row by three-column mechanism matrix showing the contextual spectral support, informative angular-contrast band, and recovered representative directional code for each screened material.",
+                "description": "Five-row support strip showing the selected frequency band and recovered representative directional code for each screened material.",
             },
         ],
         typography=typography,
