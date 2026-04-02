@@ -43,6 +43,14 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Limit em dashes to at most one per paragraph. Prefer comma-delimited appositives or separate sentences over em-dash insertions.
 - Limit numerical values to at most 3 per sentence. Additional values should be directed to figure panels.
 
+**Sentence architecture and causal clarity:**
+
+- Prefer active voice when it preserves scientific accuracy. Make the actor, action, and consequence explicit instead of hiding them inside abstract nouns or passive phrasing.
+- Prefer verb-led, cause-effect sentences over dense nominalization. If one mechanism, intervention, or result leads to another, state that relation directly.
+- Reduce noun-stack friction. Avoid overloaded front-loaded noun phrases when a clause with a clear subject and verb would read more naturally.
+- Keep sentence openings light enough that the reader can identify what is acting before they must unpack multiple modifiers, labels, or stacked technical nouns.
+- When drafting or revising a paragraph, check that a cross-disciplinary reader can tell in one pass what changed, what caused it, and why it matters.
+
 **Verb and tone discipline:**
 
 - Vary the verbs in contribution statements. Do not use "We show" more than once in the same paragraph; alternate with demonstrate, establish, further show, reveal.
@@ -76,6 +84,7 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - figure-dependent claim edits are grounded in visual inspection plus generator and provenance backtrace when applicable
 - figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
+- prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved

@@ -67,6 +67,7 @@ Evaluation goal:
 - Check whether a scientifically literate reader outside the immediate subfield can follow the claim, setup, and implication without Methods-first reading.
 - Remove field-internal shorthand, unexplained jumps, and local jargon that would block a broad Nature audience.
 - Verify that important terms, comparators, and mechanism labels are introduced before they are relied on.
+- Check that key sentences use active, verb-led phrasing and direct cause-effect relations instead of nominalization-heavy or front-loaded noun-stack constructions.
 - Flag paragraphs that are technically correct but too compressed to be legible across disciplines.
 
 ### physical-mechanism reviewer
@@ -120,6 +121,7 @@ Evaluation goal:
 
 - Check whether the manuscript moves through problem, method, evidence, and implication in a sequence that feels inevitable rather than patched together.
 - Verify that transitions between sections and figures preserve story logic and do not force the reader to reconstruct missing links.
+- Identify places where the paper's logic is buried inside abstract noun chains rather than explicit actions, results, and consequences.
 - Identify abrupt scope changes, repeated explanations, and local rewrites that create whole-manuscript drift.
 - Flag places where section order or paragraph function needs revision to keep the paper natural and persuasive.
 
@@ -129,6 +131,7 @@ Evaluation goal:
 
 - Check whether the paper asks the reader to track too many new concepts, panel purposes, or comparator families at once.
 - Identify where density, notation, or panel complexity overwhelms the amount of progress delivered to the reader.
+- Flag nominalization-heavy sentences, overloaded front-loaded noun phrases, and other sentence forms that make the reader decode syntax before science.
 - Verify that each section and figure earns its complexity and that important takeaways are easy to retain.
 - Flag compression patterns that may be efficient for insiders but exhausting for reviewers or editors.
 

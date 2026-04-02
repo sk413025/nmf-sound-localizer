@@ -56,12 +56,13 @@ Apply this parent-only rule in both Default mode and Plan mode.
 3. Decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
 4. Choose the right child task packet, role, and core skill for each child task.
 5. Write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`.
-6. Summarize only the task-relevant conversation history.
-7. Use `Context mode: summary-only` by default.
-8. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-9. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-10. Define review, handoff, and escalation requirements.
-11. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+6. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
+7. Summarize only the task-relevant conversation history.
+8. Use `Context mode: summary-only` by default.
+9. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+10. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+11. Define review, handoff, and escalation requirements.
+12. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## Reviewer-stack routing
 
@@ -71,7 +72,7 @@ Do not invent ad hoc reviewer personas when the stack already covers the risk.
 Use the minimal reviewer subset that matches the acceptance surface:
 
 - `handling-editor-scope reviewer` and `reviewer-routing reviewer` for editorial fit, paper-level framing, or likely reviewer-community routing
-- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for manuscript prose, whole-paper flow, or reader-burden risk
+- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for manuscript prose, whole-paper flow, reader-burden risk, or sentence-level friction from passive phrasing, nominalization, and noun stacking
 - `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` for interpretation, plausibility, comparator fairness, or evidence sufficiency risk
 - `figure-science-readability reviewer` for figure science, panel logic, caption burden, or main-vs-supplementary judgment
 
@@ -86,6 +87,7 @@ Parent acceptance on reviewer-stack use:
 - the packet cites the canonical reviewer-stack doc
 - the reviewer subset is minimal and task-matched
 - the acceptance surface is explicit rather than implied
+- manuscript-facing packets explicitly state the active-voice, simple-causality, and noun-stack-friction standard when prose quality is in scope
 - review findings are consolidated at the parent layer instead of left as disconnected comments
 
 ## Plan mode
