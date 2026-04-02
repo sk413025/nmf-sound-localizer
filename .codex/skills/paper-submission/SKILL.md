@@ -23,6 +23,7 @@ Open and follow:
 - `START_HERE_AGENT.md`
 - `docs/governance/manuscript-contract.md`
 - `docs/governance/submission-contract.md`
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 
 If the task involves official Nature guidance, also open:
@@ -50,6 +51,22 @@ If the task is about converting results into stronger manuscript logic, cross-di
 10. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
 11. Keep Results interpretive and Methods procedural.
 12. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
+
+## Reviewer subset and acceptance surface
+
+Use `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
+Default to the minimal reviewer subset that matches the manuscript change:
+
+- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for most Nature-facing prose revision, explanation, and coherence passes
+- `handling-editor-scope reviewer` and `reviewer-routing reviewer` when title, abstract, Results framing, Discussion framing, or paper-level positioning could change editorial fit
+- `physical-mechanism reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` when wording changes touch mechanism language, comparator logic, or evidence strength
+
+Acceptance surface for this skill:
+
+- the revised text remains legible to cross-disciplinary readers
+- paragraph and section flow still reads as one manuscript-level argument
+- mechanism, comparator, and evidence wording stay within the support shown by figures, Methods, and artifacts
+- unresolved reviewer-stack risks are named and escalated instead of hidden inside cleaner prose
 
 Common trigger phrases:
 

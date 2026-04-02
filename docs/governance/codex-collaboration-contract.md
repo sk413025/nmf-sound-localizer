@@ -8,6 +8,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - `START_HERE_AGENT.md`
 - project-local skills under `.codex/skills/`
 - `docs/agent-ops/`
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - supervisor, specialist, and red-team coordination
 
 ## Core rules
@@ -26,6 +27,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the top-level parent decide when child agents are needed.
 - Require the top-level parent to monitor active child agents and inspect status before interrupting or closing them.
 - Do not close a child agent solely because elapsed time feels long.
+- For manuscript hardening, editor-scope review, reviewer-routing review, or high-stakes red-team critique, require the supervisor to select the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md` rather than inventing ad hoc reviewer personas.
+- Treat the canonical Nature reviewer stack as a review-lens layer routed through existing roles and skills, not as a parallel workflow system.
 - For paper-related figures, use Codex multimodal capability on the real asset rather than metadata-only inference.
 - Require image inspection for `jpg` and `png`, and page-by-page PDF-to-PNG conversion before figure interpretation when the asset is a `pdf`.
 - For generated or data-backed figures, require a three-layer check: visual asset, generator or composition code, and upstream evidence or provenance artifact.
@@ -35,6 +38,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - clear routing for human, agent, and supervisor roles
 - reusable skills and unified task packets for repeated work
 - task packets that record `Relevant conversation context` and a `Context mode` decision
+- review plans that name the applicable canonical reviewer roles when manuscript-facing critique is required
 - evidence-backed recommendations
 - executable checks where policy is high value and low ambiguity
 - a stable agent operating model for task decomposition, handoff, and review
@@ -48,6 +52,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - decomposition guidance distinguishes valid single-child tasks from tasks that must be split
 - task packets include `Relevant conversation context` and explicit `Context mode`
 - supervision guidance requires child-status checks before interruption or shutdown
+- the canonical Nature reviewer stack is discoverable from the main governance path and routed through existing roles rather than duplicated
 - governance checks confirm the key files and links exist
 - Codex-native orchestration guidance remains discoverable from the main governance path
 - paper-related figure workflows do not allow metadata-only acceptance when visual inspection or provenance backtrace is required

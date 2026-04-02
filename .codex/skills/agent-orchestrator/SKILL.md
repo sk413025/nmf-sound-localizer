@@ -20,6 +20,7 @@ Open and follow:
 - `START_HERE_AGENT.md`
 - `docs/governance/codex-collaboration-contract.md`
 - `docs/agent-ops/README.md`
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 - `docs/agent-ops/REVIEW_AND_ESCALATION.md`
@@ -61,6 +62,31 @@ Apply this parent-only rule in both Default mode and Plan mode.
 9. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
 10. Define review, handoff, and escalation requirements.
 11. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+
+## Reviewer-stack routing
+
+For manuscript-facing work, treat `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
+Do not invent ad hoc reviewer personas when the stack already covers the risk.
+
+Use the minimal reviewer subset that matches the acceptance surface:
+
+- `handling-editor-scope reviewer` and `reviewer-routing reviewer` for editorial fit, paper-level framing, or likely reviewer-community routing
+- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for manuscript prose, whole-paper flow, or reader-burden risk
+- `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` for interpretation, plausibility, comparator fairness, or evidence sufficiency risk
+- `figure-science-readability reviewer` for figure science, panel logic, caption burden, or main-vs-supplementary judgment
+
+When writing a child packet or review request, name:
+
+- the selected reviewer roles
+- the acceptance surface they are judging
+- any follow-up owner if a reviewer finding must be routed to another skill
+
+Parent acceptance on reviewer-stack use:
+
+- the packet cites the canonical reviewer-stack doc
+- the reviewer subset is minimal and task-matched
+- the acceptance surface is explicit rather than implied
+- review findings are consolidated at the parent layer instead of left as disconnected comments
 
 ## Plan mode
 

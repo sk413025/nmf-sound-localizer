@@ -22,6 +22,7 @@ Open and follow:
 
 - `START_HERE_AGENT.md`
 - `docs/governance/experiment-contract.md`
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 
 If the task is about "what matters most", "which factors can we compute now", "candidate universal equation", or "cross-material geometry", also read:
@@ -48,6 +49,23 @@ If the task is about "what matters most", "which factors can we compute now", "c
 8. When you create a new analysis, write it as a reproducible run bundle under `results/<run_name>/` with script, command, and machine-readable outputs.
 9. Write analysis in the language required by the experiment contract.
 10. Escalate if the requested claim outruns the available evidence.
+
+## Reviewer subset and acceptance surface
+
+Use `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source when results analysis is feeding manuscript claims or figure interpretation.
+Default to the minimal reviewer subset that matches the analysis risk:
+
+- `statistics-evidence reviewer` for nearly all manuscript-supporting results summaries, audits, and scorecards
+- `physical-mechanism reviewer` when the analysis is being used to justify mechanism language rather than only descriptive performance language
+- `sparse-inverse-problem-comparator reviewer` when the result compares solver families, baselines, or ablations whose fairness depends on setup choices
+- `acoustics-doa reviewer` when conclusions depend on geometry, acoustics framing, or DOA plausibility
+
+Acceptance surface for this skill:
+
+- findings are tied to committed artifacts, fixed metric definitions, and named provenance paths
+- descriptive findings, candidate mechanism, and unsupported interpretation remain clearly separated
+- comparator fairness and physical plausibility risks are surfaced when they matter
+- manuscript-facing follow-up is routed onward when the output now requires prose or figure revision rather than more analysis
 
 Common trigger phrases:
 

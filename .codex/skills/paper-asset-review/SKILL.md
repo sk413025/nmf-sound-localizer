@@ -22,6 +22,7 @@ Open and follow:
 
 - `START_HERE_AGENT.md`
 - `docs/governance/submission-contract.md`
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 - [docs/nature-communications/nature-communications-submission-requirements.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/nature-communications-submission-requirements.md)
 - [docs/nature-communications/paper-asset-review-workflow.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/paper-asset-review-workflow.md)
@@ -66,6 +67,25 @@ Every paper-facing asset review must include these roles:
 10. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
 11. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
 12. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
+
+## Reviewer subset and acceptance surface
+
+Use `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
+The canonical stack supplements the required formal-review roles here; it does not replace `visual-reviewer`, `manuscript-fit-reviewer`, or `supervisor`.
+
+Default to the minimal reviewer subset that matches the figure risk:
+
+- `figure-science-readability reviewer` for almost every manuscript-facing figure or table decision
+- `statistics-evidence reviewer` when the figure may overclaim relative to the supporting evidence
+- `sparse-inverse-problem-comparator reviewer` when comparator families, baselines, or panel-to-panel comparison logic could be read as unfair or silently shifting
+- `cognitive-load reviewer` or `narrative-flow reviewer` when panel density, panel order, or caption burden makes the figure hard to use in the paper sequence
+
+Acceptance surface for this skill:
+
+- the figure has a clear scientific job in the paper
+- panel logic, labels, and emphasis make the intended comparison readable
+- evidence support and comparator logic match the manuscript claim
+- any split, simplify, revise, or move-to-supplementary recommendation is made explicit
 
 Common trigger phrases:
 

@@ -17,13 +17,15 @@ This layer treats:
 
 1. `SUPERVISOR_OPERATING_MODEL.md`
 2. `ROLE_CATALOG.md`
-3. `TASK_PACKETS.md`
-4. `REVIEW_AND_ESCALATION.md`
+3. `NATURE_REVIEWER_STACK.md`
+4. `TASK_PACKETS.md`
+5. `REVIEW_AND_ESCALATION.md`
 
 ## Main files
 
 - `SUPERVISOR_OPERATING_MODEL.md`
 - `ROLE_CATALOG.md`
+- `NATURE_REVIEWER_STACK.md`
 - `TASK_PACKETS.md`
 - `REVIEW_AND_ESCALATION.md`
 
@@ -52,7 +54,8 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 2. the top-level supervisor acts as the parent orchestrator
 3. the parent chooses the child role, specialist skill, and unified task packet
 4. the parent writes `Relevant conversation context` and chooses `Context mode`
-5. child specialists work through one of the core skills and one of the unified task packets
-6. reviewer or red-team agents challenge outputs when required
-7. the parent supervisor consolidates
-8. the human approves or redirects at milestone boundaries
+5. for manuscript-facing hardening, the parent selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
+6. child specialists work through one of the core skills and one of the unified task packets
+7. reviewer or red-team agents challenge outputs when required, using the canonical reviewer stack instead of ad hoc reviewer personas
+8. the parent supervisor consolidates
+9. the human approves or redirects at milestone boundaries

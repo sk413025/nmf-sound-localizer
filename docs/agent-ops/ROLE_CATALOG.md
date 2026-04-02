@@ -57,3 +57,12 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Required skill: `agent-orchestrator`
 - Allowed decisions: issue warnings, request rewrites, and recommend simplification
 - Forbidden decisions: block work without providing a simpler or safer alternative
+
+## Canonical Nature reviewer stack
+
+The canonical Nature Communications reviewer stack lives in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+
+- Use it for manuscript-facing hardening, editor-scope review, reviewer-routing review, figure-science review, and red-team critique that could affect claims, submission posture, or reader burden.
+- Treat the named reviewers in that document as review lenses, not replacement workflow roles.
+- The supervisor selects the minimal applicable reviewer subset and records the chosen reviewer roles and evaluation goals in the task packet or review request.
+- Route those reviewer lenses through the existing role system in this catalog instead of inventing new skills or a parallel role tree.

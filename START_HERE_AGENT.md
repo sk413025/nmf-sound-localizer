@@ -24,7 +24,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
    - `.codex/skills/experiment-results/SKILL.md`
 4. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md` and assume only TF + USM + soft-OMP support is active unless proven otherwise.
 5. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
-6. If the task could shift claims, governance, or submission posture, stay in the supervisor model and hand the execution step to a child worker.
+6. If the task is manuscript-facing hardening or could shift claims, governance, or submission posture, open `docs/agent-ops/NATURE_REVIEWER_STACK.md`, select the applicable reviewer roles and evaluation goals, and stay in the supervisor model for routing.
 
 ## Agent-first operating model
 
@@ -34,6 +34,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Even a single bounded task should be handed to at least one child agent.
 - Use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
+- For manuscript-facing review and hardening, use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md` instead of inventing review personas ad hoc.
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
 - After spawning a child agent, monitor it until completion, explicit redirect, or a justified shutdown.
 - Inspect a child agent's current status or latest output before interrupting or closing it.

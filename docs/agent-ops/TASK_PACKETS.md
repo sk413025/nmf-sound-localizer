@@ -15,6 +15,7 @@ Every packet should include:
 `Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
 `Context mode: summary-only` is the default.
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+If the packet includes manuscript-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
 
 Before issuing any packet, the parent must make a decomposition decision.
 Use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.

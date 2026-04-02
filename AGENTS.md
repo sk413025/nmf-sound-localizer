@@ -40,6 +40,7 @@ When instructions conflict, follow this order:
 - Manuscript writing and claim/evidence discipline: `docs/governance/manuscript-contract.md`
 - Submission packaging and Nature compliance: `docs/governance/submission-contract.md`
 - Codex-native routing, skills, and orchestration: `docs/governance/codex-collaboration-contract.md`
+- Canonical Nature reviewer roles and evaluation goals: `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - Active code and package substrate: `docs/governance/runtime-substrate-contract.md`
 - Asset classification: `docs/governance/ASSET_CLASSES.md`
 
@@ -81,6 +82,8 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - In Plan mode, parent and child agents may still use this routing model, but all delegated work must remain non-mutating and plan-safe.
 - Specialists execute bounded paper-facing tasks as child agents.
 - Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
+- Manuscript-facing hardening, editor-scope review, reviewer-routing review, and high-stakes critique must use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+- The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
 
 ## Asset Boundaries
 
