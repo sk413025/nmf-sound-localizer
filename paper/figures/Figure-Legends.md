@@ -10,12 +10,12 @@ e, Frequency-dependent directivity: polar plot of normalized \(|\mathcal H(\thet
 ## Fig. 2 (6 panels)
 
 **Fig. 2 | Calibration fingerprints occupy a compact angle-ordered space.**
-a, Singular-value spectrum of the centered-magnitude fingerprint matrix. The cumulative curve rises quickly across the 37-angle grid: six modes capture 80.3% of the energy and eight capture 85.1%. The overlaid direction-decoding trace is included as a visual comparison.
+a, Singular-value spectrum of the centered-magnitude fingerprint matrix. The cumulative curve rises quickly across the 37-angle grid: six modes capture 80.3% of the energy and eight capture 85.1%. The overlaid direction-decoding trace follows the same rapid early accumulation.
 b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6. These traces show three reusable spectral patterns in the compressed representation.
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) for representative Modes 1, 2, and 6, showing how those same modes vary across 0°–180°.
 d, Full angle-frequency heatmap of the template matrix \(|H|\) (37 angles × 346 frequency bins), showing structured spectral variation across directions.
 e, All-angle reconstruction fidelity under rank-\(r\) truncation. Per-angle centered-magnitude RMSE falls markedly by the same six-mode regime highlighted in panel a.
-f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band shows that neighboring angles remain close in fingerprint space, revealing the local angle ordering later compared with the guided neighborhood map in Fig. 5c.
+f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band shows that neighboring angles remain close in fingerprint space, revealing a local angle ordering across nearby directions.
 
 ## Fig. 3 (6 panels)
 
@@ -29,20 +29,20 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | Nearby overlap narrows after one refinement step.**
-a, Sequence summary illustrating the broad-match -> neighborhood-concentration -> lower-residual progression.
-b, Shared 70° case: the initial broad match is concentrated into one local neighborhood around 70°.
-c, After one refinement step, less signal remains once the overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The most locally concentrated comparison is most accurate in this restricted setting.
+**Fig. 4 | Nearby overlap concentrates into the correct neighborhood.**
+a, Sequence summary of broad support, concentration into the correct local neighborhood, and residual cleanup after one step.
+b, Representative 70° case: support initially spans nearby calibrated directions and is then concentrated into one local neighborhood around 70°.
+c, After one refinement step, less signal remains once that overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
+d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). In this restricted setting, the readout that stays most concentrated near the correct neighborhood is also the most accurate.
 
 ## Fig. 5 (5 panels)
 
 **Fig. 5 | Benchmark predictions remain aligned with the measured local structure.**
-a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the most locally concentrated comparison degrades least as noise increases.
-b, Row-normalized benchmark comparison across the four benchmarked approaches. The most locally concentrated comparison stays nearest the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
-c, Correlation structure of the measured template matrix \(H\) (top) and the corresponding neighborhood-emphasis map (bottom), showing that the lower map places most of its weight near the same diagonal angle ordering seen in the measured fingerprints.
-d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the most locally concentrated comparison produces tighter local prediction profiles, whereas the less locally constrained alternative shows broader off-axis leakage.
-e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The most locally concentrated comparison retains the highest clean mean accuracy overall, whereas the least locally constrained comparison remains near chance across almost the entire angle set.
+a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the readout most aligned with the measured local neighborhood degrades least as noise increases.
+b, Row-normalized benchmark comparison across the four benchmarked approaches. The readout most aligned with the measured local structure stays nearest the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
+c, Correlation structure of the measured template matrix \(H\) (top) and the corresponding neighborhood-emphasis map (bottom), showing that the lower map concentrates weight near the same diagonal angle ordering seen in the measured fingerprints.
+d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the readout most aligned with the measured local structure produces tighter local prediction profiles, whereas the less locally constrained alternative shows broader off-axis leakage.
+e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The readout most aligned with the measured local structure retains the highest clean mean accuracy overall, whereas the least locally constrained comparison remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 
