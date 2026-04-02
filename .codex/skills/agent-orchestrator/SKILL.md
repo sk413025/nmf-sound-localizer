@@ -56,7 +56,7 @@ Apply this parent-only rule in both Default mode and Plan mode.
 3. Decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
 4. Choose the right child task packet, role, and core skill for each child task.
 5. Write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`.
-6. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
+6. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
 7. Summarize only the task-relevant conversation history.
 8. Use `Context mode: summary-only` by default.
 9. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
@@ -80,6 +80,7 @@ When writing a child packet or review request, name:
 
 - the selected reviewer roles
 - the acceptance surface they are judging
+- the in-scope and out-of-scope surfaces they must and must not treat as review failures
 - any follow-up owner if a reviewer finding must be routed to another skill
 
 Parent acceptance on reviewer-stack use:
@@ -87,8 +88,23 @@ Parent acceptance on reviewer-stack use:
 - the packet cites the canonical reviewer-stack doc
 - the reviewer subset is minimal and task-matched
 - the acceptance surface is explicit rather than implied
-- manuscript-facing packets explicitly state the active-voice, simple-causality, and noun-stack-friction standard when prose quality is in scope
+- manuscript-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
 - review findings are consolidated at the parent layer instead of left as disconnected comments
+
+Reviewer qualification gate:
+
+- Reject planner or reviewer outputs as under-scoped when they do not engage the required acceptance surface.
+- Reject manuscript-hardening review as unqualified when it ignores scientific inference versus manuscript-management language, even if it comments on grammar or passive voice.
+- Exclude submission metadata placeholders from scientific-narrative review unless submission packaging is explicitly in scope.
+
+Manuscript-hardening planning and review checklist:
+
+- disciplinary narrative shift: does the prose drift from scientific inference into explanation of paper positioning or process
+- defensive tone: does the text rely on `X rather than Y` framing or rebuttal-like self-defense
+- structural pacing: do section and paragraph endings carry scientific consequence rather than administrative wrap-up
+- figure-as-actor phrasing: are figures or panels narrating sentences that should be carried by observations, interventions, or mechanisms
+- supplement and legend leakage: do supplementary text, legends, or inline legend prose slip into manuscript-management language
+- audience expectation mismatch: will physicist, acoustics, and ML readers infer different scope or evidence promises from the current wording
 
 ## Plan mode
 

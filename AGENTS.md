@@ -17,6 +17,7 @@ When instructions conflict, follow this order:
 
 - Keep the branch manuscript-first. Do not treat it as a generic package-development branch or a figure-only sandbox.
 - Keep code subordinate to paper work. Read or change code only when it supports manuscript, evidence, review, or submission tasks.
+- Keep manuscript-facing prose scientific. Across main text, supplementary text, figure legends, inline legends, and manuscript-facing Methods prose, advance by `observation -> inference -> bounded conclusion`, not by rebuttal-style, guidebook-style, curator-style, or manuscript-management language.
 - For any paper-related figure task, inspect the actual figure visually before interpreting, comparing, replacing, renumbering, or approving it.
 - For `jpg` and `png` paper assets, inspect the image directly. For `pdf` paper assets, convert every page to viewable PNG previews before judging content or suitability.
 - For any generated or data-backed paper figure, inspect the visual asset, the generator or composition code, and the upstream evidence or provenance source before concluding what the figure shows or how it should be used in the manuscript.
@@ -83,7 +84,10 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - Specialists execute bounded paper-facing tasks as child agents.
 - Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
 - Manuscript-facing hardening, editor-scope review, reviewer-routing review, and high-stakes critique must use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+- High-stakes manuscript hardening and critique must be adversarial. Reviewers should try to surface rejection-grade objections, not merely confirm adequacy.
 - The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
+- Every review request must define its in-scope and out-of-scope acceptance surfaces. Submission metadata placeholders do not fail a scientific-narrative review unless submission packaging is explicitly in scope.
+- The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the manuscript-facing prose rule above where it is in scope.
 
 ## Asset Boundaries
 

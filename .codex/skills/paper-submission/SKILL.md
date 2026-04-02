@@ -46,7 +46,7 @@ If the task is about converting results into stronger manuscript logic, cross-di
    - what is a current best mechanism or candidate explanation
    - what remains a frontier or open question
 7. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
-8. Simplify language without upgrading the evidence level. Prefer active voice, verb-led clauses, and direct cause-effect phrasing over dense nominalization or front-loaded noun stacks.
+8. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, and direct cause-effect phrasing over dense nominalization, front-loaded noun stacks, or manuscript-management language.
 9. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
 10. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
 11. Keep Results interpretive and Methods procedural.
@@ -64,10 +64,24 @@ Default to the minimal reviewer subset that matches the manuscript change:
 Acceptance surface for this skill:
 
 - the revised text remains legible to cross-disciplinary readers
+- the revised text uses scientific inference rather than rebuttal, guidebook, curator, or manuscript-management phrasing
 - the revised text uses active voice and simple cause-effect sentence structure where scientifically appropriate, without translation-like noun stacking
 - paragraph and section flow still reads as one manuscript-level argument
 - mechanism, comparator, and evidence wording stay within the support shown by figures, Methods, and artifacts
 - unresolved reviewer-stack risks are named and escalated instead of hidden inside cleaner prose
+
+## Manuscript-management blacklist
+
+Treat the following as rewrite triggers on manuscript-facing surfaces unless a narrow procedural context truly requires them:
+
+- `This section asks...`
+- `We use Fig. X...`
+- `Panel X shows...` when the scientific actor, observation, or intervention can carry the sentence
+- `used in the paper`
+- `summarized in manuscript Fig...`
+- repo or provenance bookkeeping in manuscript prose such as `committed`, `executed`, or code-switch framing between manuscript and repository state
+
+Replace these patterns with evidence-led phrasing that states what was observed, what changed, what was compared, and what bounded conclusion follows.
 
 Common trigger phrases:
 
@@ -90,5 +104,6 @@ Common trigger phrases:
 - Do not leave terminology drift, comparator drift, or abrupt transitions after a local rewrite.
 - Do not assume a Nature Communications reader shares the subfield's shorthand or unstated background.
 - Do not preserve nominalization-heavy or front-loaded noun-stack phrasing just because the terminology itself is correct.
+- Do not preserve rebuttal-style, guidebook-style, curator-style, panel-choreography, or manuscript-management language just because the sentence is now active voice.
 - Do not turn this branch into a code-first editing workflow.
 - Prefer fewer, clearer steps and fewer, clearer docs when simplifying the paper workflow.

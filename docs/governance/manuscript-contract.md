@@ -51,6 +51,14 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Keep sentence openings light enough that the reader can identify what is acting before they must unpack multiple modifiers, labels, or stacked technical nouns.
 - When drafting or revising a paragraph, check that a cross-disciplinary reader can tell in one pass what changed, what caused it, and why it matters.
 
+**Scientific inference discipline:**
+
+- Manuscript-facing prose must advance by `observation -> inference -> bounded conclusion`, not by document guidance, rebuttal-style positioning, curator narration, or manuscript-management phrasing.
+- Hold supplementary text, figure legends, inline legends, and manuscript-facing Methods prose to the same prose standard as the main text.
+- Prefer scientific actors and observations over figure-as-actor wording. Avoid panel-choreography phrasing when the sentence can instead name what was measured, changed, or inferred.
+- If a sentence mainly explains how to read the paper, how the manuscript is organized, or how a figure is being used, rewrite it so the sentence states what the evidence implies.
+- If a local rewrite removes passive voice but still reads like a guidebook, rebuttal, caption choreography, or repo-provenance note, it is not yet acceptable manuscript prose.
+
 **Verb and tone discipline:**
 
 - Vary the verbs in contribution statements. Do not use "We show" more than once in the same paragraph; alternate with demonstrate, establish, further show, reveal.
@@ -85,6 +93,7 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
 - prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
+- prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved

@@ -35,8 +35,13 @@ For full manuscript hardening, the supervisor should assume this stack is the de
 1. Decide whether the work needs one reviewer pass or multiple parallel reviewer passes.
 2. Select the applicable reviewer roles from this document instead of inventing new ones.
 3. Record the selected reviewer roles and their evaluation goals in the task packet or review request.
-4. Route each reviewer pass through the existing role system and core skills.
-5. Consolidate reviewer findings at the supervisor layer.
+4. Define the in-scope and out-of-scope acceptance surfaces for the review. Do not fail scientific-narrative review on submission metadata placeholders unless packaging is explicitly in scope.
+5. Route each reviewer pass through the existing role system and core skills.
+6. Consolidate reviewer findings at the supervisor layer.
+
+Reviewer qualification gate:
+
+- When manuscript-facing prose is in scope, treat a reviewer output as unqualified if it does not test for scientific inference versus manuscript-management language, or if it ignores the stated acceptance surface.
 
 These reviewer roles are review lenses, not new top-level workflow roles.
 
@@ -50,6 +55,7 @@ Evaluation goal:
 - Check whether the claimed advance is legible at the paper level before technical details are unpacked.
 - Test whether the title, abstract, Results framing, and Discussion together justify editorial interest and scope.
 - Flag cases where the manuscript feels technically busy but editorially under-motivated.
+- Flag rebuttal-style, guidebook-style, or manuscript-positioning prose that explains the paper instead of advancing the scientific inference.
 
 ### reviewer-routing reviewer
 
@@ -68,6 +74,7 @@ Evaluation goal:
 - Remove field-internal shorthand, unexplained jumps, and local jargon that would block a broad Nature audience.
 - Verify that important terms, comparators, and mechanism labels are introduced before they are relied on.
 - Check that key sentences use active, verb-led phrasing and direct cause-effect relations instead of nominalization-heavy or front-loaded noun-stack constructions.
+- Test whether the prose advances by observation, inference, and bounded conclusion rather than by guidebook, rebuttal, or manuscript-management language.
 - Flag paragraphs that are technically correct but too compressed to be legible across disciplines.
 
 ### physical-mechanism reviewer
@@ -123,6 +130,7 @@ Evaluation goal:
 - Verify that transitions between sections and figures preserve story logic and do not force the reader to reconstruct missing links.
 - Identify places where the paper's logic is buried inside abstract noun chains rather than explicit actions, results, and consequences.
 - Identify abrupt scope changes, repeated explanations, and local rewrites that create whole-manuscript drift.
+- Flag defensive `X rather than Y` framing, panel-choreography prose, and manuscript-positioning sentences that explain paper structure more than scientific consequence.
 - Flag places where section order or paragraph function needs revision to keep the paper natural and persuasive.
 
 ### cognitive-load reviewer
@@ -132,6 +140,7 @@ Evaluation goal:
 - Check whether the paper asks the reader to track too many new concepts, panel purposes, or comparator families at once.
 - Identify where density, notation, or panel complexity overwhelms the amount of progress delivered to the reader.
 - Flag nominalization-heavy sentences, overloaded front-loaded noun phrases, and other sentence forms that make the reader decode syntax before science.
+- Flag figure-as-actor, guidebook, curator, and manuscript-management phrasing that makes the reader track paper machinery instead of scientific actors and observations.
 - Verify that each section and figure earns its complexity and that important takeaways are easy to retain.
 - Flag compression patterns that may be efficient for insiders but exhausting for reviewers or editors.
 
