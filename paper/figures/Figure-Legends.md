@@ -10,37 +10,37 @@ e, Frequency-dependent directivity: polar plot of normalized \(|\mathcal H(\thet
 ## Fig. 2 (6 panels)
 
 **Fig. 2 | Calibration fingerprints occupy a compact angle-ordered space.**
-a, Singular-value spectrum of the centered-magnitude fingerprint dictionary. The cumulative curve rises quickly across the 37-angle grid: six modes capture 80.3% of the energy and eight capture 85.1%. The overlaid direction-decoding trace is included as a visual comparison.
+a, Singular-value spectrum of the centered-magnitude fingerprint matrix. The cumulative curve rises quickly across the 37-angle grid: six modes capture 80.3% of the energy and eight capture 85.1%. The overlaid direction-decoding trace is included as a visual comparison.
 b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6. These traces show three reusable spectral patterns in the compressed representation.
 c, Direction-selective half-plane polar patterns \(v_r(\theta)\) for representative Modes 1, 2, and 6, showing how those same modes vary across 0°–180°.
-d, Full angle-frequency heatmap of the magnitude dictionary \(|H|\) (37 angles × 346 frequency bins), showing structured spectral variation across directions.
+d, Full angle-frequency heatmap of the template matrix \(|H|\) (37 angles × 346 frequency bins), showing structured spectral variation across directions.
 e, All-angle reconstruction fidelity under rank-\(r\) truncation. Per-angle centered-magnitude RMSE falls markedly by the same six-mode regime highlighted in panel a.
 f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band shows that neighboring angles remain close in fingerprint space, revealing the local angle ordering later compared with the guided neighborhood map in Fig. 5c.
 
 ## Fig. 3 (6 panels)
 
-**Fig. 3 | Encoding survives content variation but classical decoding fails.**
+**Fig. 3 | Directional structure persists under speech, but first-choice matching fails.**
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11), shown with light bootstrap uncertainty bands; speech margin is reduced but positive at all angles.
-d, Stacked angle-resolved correlation-based greedy diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands: the greedy diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
-e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (diffuse but still angle-ordered), with the diagonal masked to separate the two regimes.
+d, Stacked angle-resolved correlation-based first-choice diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands: the diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
+e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (broader local overlap but retained angle ordering), with the diagonal masked to separate the two regimes.
 f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | Local neighborhood routing sharpens ambiguous matches.**
-a, Decoder strip illustrating the broad-match -> local-concentration -> cleaner-residual sequence.
-b, Shared 70° example: broad physical match, local gate, and localized update on one axis.
-c, Residual cleanup: after the first local update, the next correlation profile \(g_{t+1} = D^\top r_{t+1}\) is reduced near the updated neighborhood. Compact callouts report the corresponding 0-15° inward mass shift and first residual-norm drop.
-d, Clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots, points with horizontal bars indicate mean \(\pm\) s.e.m.).
+**Fig. 4 | A local update illustrates neighborhood pooling in the guided solver.**
+a, Mechanism strip illustrating the broad-match -> local-gate -> cleaner-residual sequence.
+b, Shared 70° exemplar: support is initially broad across nearby directions, then concentrated into one local neighborhood.
+c, After one local step, less signal remains near the updated neighborhood. Compact callouts report the same change numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
+d, Clean-condition comparison across the guided solver, router-bypass, OMP baseline, and dense routing families over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.).
 
 ## Fig. 5 (5 panels)
 
-**Fig. 5 | Neighborhood-aware decoding remains most robust across the benchmark.**
-a, SNR degradation curves for the guided solver, router-bypass, OMP baseline, and dense routing across additive-noise levels.
-b, Row-normalized confusion-family block across the four decoders. The guided solver stays most concentrated near the diagonal, whereas the OMP baseline and router-bypass show broader off-axis leakage and dense routing collapses toward a preferred output mode.
-c, Correlation structure of the measured physical dictionary \(H\) (top) and the guided neighborhood map (bottom), showing that the learned map places most weight near the same diagonal angle ordering seen in the measured dictionary.
+**Fig. 5 | Neighborhood-aware readout is strongest across the benchmark.**
+a, SNR degradation curves comparing four decoder families across additive-noise levels; the strongest performance comes from the family that pools nearby evidence before commitment.
+b, Row-normalized confusion-family block across the four decoders. The guided solver stays most concentrated near the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
+c, Correlation structure of the measured template matrix \(H\) (top) and the guided neighborhood map (bottom), showing that the learned map places most weight near the same diagonal angle ordering seen in the measured fingerprints.
 d, Angle-specific conditional output distributions at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage.
 e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the guided solver, router-bypass, OMP baseline, and dense routing. The guided solver remains strongest overall, whereas dense routing remains near chance across almost the entire angle set.
 
@@ -49,6 +49,6 @@ e, Per-angle decoder accuracy: five-seed clean mean P(correct) across the 37 mea
 **Fig. 6 | Direction-dependent fingerprints recur across an exploratory five-object screen.**
 a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Cross-material \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across all materials despite different resonance patterns.
-c, Low-rank continuity. Applying the same centered-magnitude SVD view used in Fig. 2 to each material-specific dictionary again shows early energy capture for every object.
+c, Low-rank continuity. Applying the same centered-magnitude SVD view used in Fig. 2 to each material-specific template matrix again shows early energy capture for every object.
 d, Screening performance across the five objects. All objects remain above chance in this screen, and the energy-versus-accuracy comparison indicates that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
 e, Frequency structure across objects. Material-specific spectra and directional band profiles indicate that the informative frequency band can shift across objects.
