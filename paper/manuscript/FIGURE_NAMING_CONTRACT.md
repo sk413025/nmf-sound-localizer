@@ -32,7 +32,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 
 | Canonical term | Prose short form | Shared in-panel short label | Use for | Do not use as the default name |
 |----------------|------------------|-----------------------------|---------|--------------------------------|
-| guided solver | guided solver | guided solver | the active learned decoder family on Figs. 4-5; a physics-guided deep-unrolled residual-correction solver with learned local gating, backed by `no_type_bias=true` runs and the `No Type Bias` clean sweep key | physics-aware solver, full physics-aware solver, baseline model, bare `No Type Bias` |
+| guided solver | guided solver | guided solver | the active learned decoder family on Figs. 4-5; a physics-guided residual-correction readout with learned local gating, backed by `no_type_bias=true` runs and the `No Type Bias` clean sweep key | physics-aware solver, full physics-aware solver, baseline model, bare `No Type Bias` |
 | OMP baseline | OMP baseline | OMP baseline | the collapsed paper-facing soft-OMP baseline family on active Figs. 4-5; not exact hard OMP by default | fixed heuristic, G-fixed, G-teacher, bare OMP when the paper-facing family is meant |
 | router-bypass ablation | router-bypass ablation | router-bypass | the ablation that bypasses the transformer router | no-transformer, identity model |
 | dense-routing ablation | dense routing | dense routing | the ablation that disables sparse routing and spreads weight across all experts | dense model, uniform router |

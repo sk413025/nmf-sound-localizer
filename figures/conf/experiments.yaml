@@ -139,7 +139,7 @@ fig04_ablation:
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided solver uses learned local gating within a deep-unrolled residual-correction scaffold to concentrate nearby overlap into the correct local neighborhood before residual subtraction; panel d then provides a secondary restricted clean-condition check on the same point."
+  claim: "The physics-guided solver uses learned local gating within a staged residual-correction scaffold to concentrate nearby overlap into the correct local neighborhood before residual subtraction; panel d then provides a secondary restricted clean-condition check on the same point."
   legend_summary: "Schematic mechanism strip, data-backed exemplar of local concentration and residual cleanup, and a restricted clean-condition family comparison."
   panel_order: ["a", "b", "c", "d"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json

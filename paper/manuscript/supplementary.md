@@ -2,7 +2,7 @@
 
 **Object-specific directional readout in calibrated passive objects**
 
-Sound direction enters the measured LDV spectrum through the object's continuous structural response, and the following derivations trace how that response becomes a standardized directional fingerprint and a local-overlap decoding problem in the acrylic reference-object benchmark and its object-specific extensions. The reduced-order surrogate isolates the local angle geometry, whereas the guided solver writes that local continuity into staged residual updates in the full standardized feature space and the OMP baseline provides the hard-selection comparison.
+Sound direction enters the measured LDV spectrum through the object's continuous structural response, and the following derivations trace how that response becomes a standardized directional fingerprint and a local-overlap decoding problem in the acrylic reference-object study and its object-specific extensions. The reduced-order surrogate isolates the local angle geometry, whereas the guided solver writes that local continuity into staged residual updates in the full standardized feature space and the OMP baseline provides the hard-selection comparison.
 
 ## Supplementary Methods 1. Single-spectrum response from the continuous plate model
 
@@ -271,7 +271,7 @@ Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order 
 
 ## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
 
-The guided solver is a physics-guided deep-unrolled residual-correction network. It operates directly in the full standardized feature space and replaces immediate one-angle commitment with learned local gating. Its role is narrow: preserve the contiguous angle neighborhood implied by the calibrated dictionary long enough for subtraction to act on a physically plausible local support. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; what changes is the selection rule.
+The guided solver is a physics-guided residual-correction readout with learned local gating. It operates directly in the full standardized feature space and replaces immediate one-angle commitment with learned local gating. Its role is narrow: preserve the contiguous angle neighborhood implied by the calibrated dictionary long enough for subtraction to act on a physically plausible local support. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; what changes is the selection rule.
 
 The guided solver uses a grouped dictionary
 
@@ -298,7 +298,7 @@ $$
 
 Unlike the reduced-order hard-OMP recursion in Supplementary Methods 3, the routed solver does not commit to one support element and refit. Instead it distributes weight across a local neighborhood of angle groups before subtraction.
 
-The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions. Its scientific job is to keep the measured local continuity active before subtraction. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the implementation used here, that pooling step is an L2 norm over the per-direction atom scores. The model then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
+The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions. Its scientific job is to keep the measured local continuity active before subtraction. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the reported implementation, that pooling step is an L2 norm over the per-direction atom scores. The implementation then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
 
 $$
 w_t = \mathrm{GumbelSoftmax}\!\left(s_t^{(\mathrm{exp})};\tau\right),
@@ -330,7 +330,7 @@ r_{t+1} = r_t - D(\eta\,\Delta x_t) = \tilde y - D x_{t+1},
 \tag{S34}
 $$
 
-where \(\eta\) is a learned step size. These equations define the deep-unrolled residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage.
+where \(\eta\) is a learned step size. These equations define the staged residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage.
 
 Training and evaluation do not decode direction from \(\|x_K^{(e)}\|_2\). Instead they read out expert-level routing scores. Let
 
@@ -369,7 +369,7 @@ $$
 \tag{S38}
 $$
 
-Equation (S36) gives the main loss. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver keeps the OMP residual-correction scaffold but replaces exact least-squares refitting with learned local routing. In practice, the transformer and straight-through Gumbel approximation are the implementation used here for that local gate; their manuscript-facing role is to preserve local physical continuity before subtraction rather than to define a separate black-box inference problem.
+Equation (S36) gives the main loss. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver keeps the OMP residual-correction scaffold but replaces exact least-squares refitting with learned local routing. In the reported implementation, the local gate uses a transformer parameterization together with a straight-through Gumbel approximation; their manuscript-facing role is to preserve local physical continuity before subtraction rather than to define a separate black-box inference problem.
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 summary statistics
 
