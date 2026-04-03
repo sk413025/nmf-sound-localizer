@@ -33,16 +33,16 @@ f, Dose-response curves for stage-0 correlation-based first-choice matching vers
 a, Sequence summary of broad physical match, learned local gating, and residual cleanup after one step.
 b, Representative 70° validation exemplar: the initial physical match spans nearby calibrated directions, the learned local gate concentrates that support around the correct neighborhood, and the resulting local update remains confined to that band.
 c, Residual profile before and after one refinement step for the same exemplar. The 15° mass callout summarizes the corresponding validation-wide aggregate shift across 1,924 validation clips (0.18 to 0.98), whereas the residual drop (1.00 to 0.48) belongs to the representative exemplar shown in the panel.
-d, Secondary restricted clean-condition check across the four readout families over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
+d, Secondary restricted clean-condition consequence of the overlap-handling rule over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
 
 ## Fig. 5 (5 panels)
 
 **Fig. 5 | Prediction structure stays organized around the measured local band.**
-a, Five-seed SNR sweep across four readout families. The guided solver degrades least as noise increases.
-b, Row-normalized representative confusion display across the four compared families. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
+a, Five-seed SNR sweep for the same four overlap-handling rules. The delayed-commitment rule degrades least as noise increases.
+b, Row-normalized representative confusion display for the same four overlap-handling rules. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
 c, Measured local structure (top) and neighborhood-emphasis map from the guided solver (bottom). The lower map retains a coarse near-diagonal angle ordering similar to the calibrated fingerprints.
 d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage around the same targets.
-e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four readout families on the clean sweep. The guided solver retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
+e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading for the same four overlap-handling rules on the clean sweep. The delayed-commitment rule retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 

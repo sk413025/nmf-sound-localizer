@@ -140,7 +140,7 @@ fig04_ablation:
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
   claim: "The physics-guided solver uses learned local gating within a staged residual-correction scaffold to concentrate nearby overlap into the correct local neighborhood before residual subtraction; panel d then provides a secondary restricted clean-condition check on the same point."
-  legend_summary: "Schematic mechanism strip, data-backed exemplar of local concentration and residual cleanup, and a restricted clean-condition family comparison."
+  legend_summary: "Schematic mechanism strip, data-backed exemplar of local concentration and residual cleanup, and a secondary restricted clean-condition consequence surface."
   panel_order: ["a", "b", "c", "d"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
@@ -227,7 +227,7 @@ fig05_performance_structure:
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
   claim: "Panel c shows that the guided solver's neighborhood-emphasis map remains organized around the near-diagonal local band in H, while panels a, b, d, and e show the performance and prediction consequences of that local organization."
-  legend_summary: "Measured-structure versus guided-neighborhood alignment, representative prediction displays, and sweep-based performance consequences of local-overlap handling."
+  legend_summary: "Measured local structure, representative prediction consequences, and sweep-based stability consequences of the same overlap-handling logic."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
