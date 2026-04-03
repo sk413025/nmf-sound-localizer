@@ -38,6 +38,7 @@ d, Clean-condition comparison across the four benchmarked approaches over the sa
 ## Fig. 5 (5 panels)
 
 **Fig. 5 | Benchmark predictions remain aligned with the measured local structure.**
+Across panels a, b, d, and e, guided solver denotes neighborhood-gated residual correction, router-bypass removes that learned gate, OMP baseline makes an immediate single-choice match, and dense routing spreads evidence broadly across angles.
 a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the readout most aligned with the measured local neighborhood degrades least as noise increases.
 b, Row-normalized benchmark comparison across the four benchmarked approaches. The readout most aligned with the measured local structure stays nearest the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
 c, Correlation structure of the measured template matrix \(H\) (top) and the corresponding neighborhood-emphasis map (bottom), showing that the lower map concentrates weight near the same diagonal angle ordering seen in the measured fingerprints.
@@ -49,6 +50,6 @@ e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 mea
 **Fig. 6 | Matched calibration reveals bounded recurrence across an exploratory five-object screen.**
 a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
-c, Low-rank continuity. Applying the same centered-magnitude SVD view used in Fig. 2 to each object's template matrix again shows early energy capture across the five-object screen.
+c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a compactness comparison for the five calibrated template matrices.
 d, Screening performance across the five objects. All five objects remain above chance under matched calibration, and the energy-versus-accuracy comparison shows that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
 e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects.
