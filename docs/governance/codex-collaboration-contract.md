@@ -29,6 +29,12 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Do not close a child agent solely because elapsed time feels long.
 - For manuscript hardening, editor-scope review, reviewer-routing review, or high-stakes red-team critique, require the supervisor to select the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md` rather than inventing ad hoc reviewer personas.
 - Treat the canonical Nature reviewer stack as a review-lens layer routed through existing roles and skills, not as a parallel workflow system.
+- Require the parent to classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership.
+- Treat reviewer pass, implementation completion, verification completion, and plan completion as separate decisions.
+- Require parent closeout to disclose any scope downgrade or deferred acceptance surface instead of implying full completion.
+- For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, require implementer, reviewer, and verifier separation unless the parent records why the round is not high risk.
+- Parent closeout must cite exact text or exact diff evidence for text-facing claims. Line references and summaries may assist navigation, but they do not replace the underlying evidence.
+- Require independent verification before the parent reports full completion on a high-risk round.
 - For paper-related figures, use Codex multimodal capability on the real asset rather than metadata-only inference.
 - Require image inspection for `jpg` and `png`, and page-by-page PDF-to-PNG conversion before figure interpretation when the asset is a `pdf`.
 - For generated or data-backed figures, require a three-layer check: visual asset, generator or composition code, and upstream evidence or provenance artifact.
@@ -40,6 +46,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - task packets that record `Relevant conversation context` and a `Context mode` decision
 - review plans that name the applicable canonical reviewer roles when manuscript-facing critique is required
 - evidence-backed recommendations
+- closeout that distinguishes exact text evidence from high-level interpretation
 - executable checks where policy is high value and low ambiguity
 - a stable agent operating model for task decomposition, handoff, and review
 
@@ -53,6 +60,10 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - task packets include `Relevant conversation context` and explicit `Context mode`
 - supervision guidance requires child-status checks before interruption or shutdown
 - the canonical Nature reviewer stack is discoverable from the main governance path and routed through existing roles rather than duplicated
+- closeout guidance does not equate reviewer pass with plan completion and requires scope-downgrade disclosure
+- closeout-sensitive rounds are explicitly risk-classified before reviewer and verifier ownership is assigned
+- high-risk coordination requires implementer, reviewer, and verifier separation or an explicit non-high-risk rationale
+- text-facing closeout claims are backed by exact text or diff evidence rather than summary alone
 - governance checks confirm the key files and links exist
 - Codex-native orchestration guidance remains discoverable from the main governance path
 - paper-related figure workflows do not allow metadata-only acceptance when visual inspection or provenance backtrace is required

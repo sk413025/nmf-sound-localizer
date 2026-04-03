@@ -26,6 +26,7 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
 - [manuscript-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/manuscript-contract.md)
 - [submission-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/submission-contract.md)
 - [codex-collaboration-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/codex-collaboration-contract.md)
+- [closeout-integrity-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/closeout-integrity-contract.md)
 - [runtime-substrate-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/runtime-substrate-contract.md)
 - [ASSET_CLASSES.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/ASSET_CLASSES.md)
 
@@ -39,6 +40,12 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use the submission contract
 - Designing or auditing Codex and multi-agent workflows:
   - use the Codex collaboration contract
+- Reporting completion, review outcome, or milestone status:
+  - route through the closeout integrity contract
+  - use it as the governing contract for exact-text evidence, scope-downgrade disclosure, and completion-status reporting
+- Governing a high-risk round that could change claims, governance posture, or acceptance status:
+  - route through the closeout integrity contract
+  - classify the round there and use its owner-separation or compression-rationale rules
 - Changing active runtime code, scripts, tests, or package metadata:
   - use the runtime substrate contract
   - treat only TF + USM + soft-OMP support paths as active by default

@@ -52,6 +52,19 @@ If the task is about converting results into stronger manuscript logic, cross-di
 11. Keep Results interpretive and Methods procedural.
 12. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
 
+## Required output bundle
+
+When this skill proposes or performs a manuscript-facing revision, the output must be verifier-ready.
+
+Include:
+
+- `Exact revised text:` with the exact replacement prose, not a summary
+- `Before anchor:` and `After anchor:` quoting the neighboring manuscript text that brackets the change
+- `Unresolved promised joints:` listing any requested transition, claim linkage, or downstream manuscript connection that remains unfinished
+- `Verifier mode:` stating how the verifier should check the change; use `text-diff` when the task is local prose replacement and name any stronger mode when figure, evidence, or claim support must also be re-checked
+
+If no manuscript text was changed, state that explicitly in `Delivered items:` or `Deferred or dropped items:` instead of implying completion through plan language alone.
+
 ## Reviewer subset and acceptance surface
 
 Use `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.

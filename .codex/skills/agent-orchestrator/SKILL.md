@@ -19,8 +19,10 @@ Open and follow:
 
 - `START_HERE_AGENT.md`
 - `docs/governance/codex-collaboration-contract.md`
+- `docs/governance/closeout-integrity-contract.md`
 - `docs/agent-ops/README.md`
 - `docs/agent-ops/NATURE_REVIEWER_STACK.md`
+- `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`
 - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 - `docs/agent-ops/REVIEW_AND_ESCALATION.md`
@@ -63,6 +65,44 @@ Apply this parent-only rule in both Default mode and Plan mode.
 10. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
 11. Define review, handoff, and escalation requirements.
 12. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+
+## High-risk rounds
+
+Use an explicit `implementer + reviewer + verifier` round when the task can change manuscript claims, review verdicts, closeout state, or any other paper-facing acceptance signal that could be overstated in a final report.
+
+For these rounds, the parent must:
+
+- classify the round explicitly as `high risk` or `not high risk` before closeout
+- assign an implementer responsible for the bounded change
+- name the review owner responsible for critique against the stated acceptance surface, or record an explicit compression rationale if ownership must be compressed
+- name the verifier owner responsible for checking the implemented state against the packet, revised text, anchors, and any required executable or visual evidence, or record an explicit compression rationale if ownership must be compressed
+- require scope-downgrade disclosure when a child cannot complete the requested surface and instead returns a narrower result
+- reject closeout language that upgrades a partial implementation, partial review, or missing verification into full completion
+
+Parent truth-maintenance checks for high-risk rounds:
+
+- verify that the child closeout distinguishes `Plan completion`, `Review verdict`, and `Verification verdict` as separate fields
+- verify that any claimed manuscript change includes the exact revised text or an explicit statement that no text was changed
+- verify that before/after anchors are present when prose or asset content was changed
+- verify that unresolved promised joints are listed when the round leaves any requested linkage, follow-through, or hardening step incomplete
+- verify that the risk classification, named owners, or explicit compression rationale are present
+- verify that a verifier actually ran in verifier mode instead of restating the implementer closeout
+
+Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`:
+
+- `Risk level:`
+- `Plan items owned:`
+- `Plan completion:`
+- `Delivered items:`
+- `Deferred or dropped items:`
+- `Unresolved promised joints:`
+- `Scope-downgrade disclosure:`
+- `Delivery evidence:`
+- `Review verdict:`
+- `Verification verdict:`
+- `Parent closeout statement:`
+
+When `Deferred or dropped items` is non-empty, require an explicit scope downgrade instead of treating the round as fully complete.
 
 ## Reviewer-stack routing
 

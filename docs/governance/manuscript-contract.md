@@ -25,6 +25,8 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
 - If a multi-panel figure changes comparator family, evidence role, or panel-block purpose across panels, the Results prose and figure legend must state that panel logic explicitly rather than relying on the reader to infer it.
+- Manuscript closeout must distinguish exact changed text from high-level interpretation. When claiming that prose was revised, aligned, tightened, or resolved, provide the exact changed language or exact diff evidence rather than summary alone.
+- A manuscript review pass does not by itself establish that every planned manuscript change was implemented. Closeout must distinguish reviewer pass from full plan completion and disclose any deferred or narrowed manuscript surface.
 
 ### Nature Communications prose discipline
 
@@ -97,6 +99,8 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved
+- manuscript closeout claims about textual changes are backed by exact text or diff evidence, with interpretation labeled separately
+- manuscript review pass is not treated as equivalent to full implementation or full plan completion
 - paper-facing checks under `make paper-check` pass
 
 ## Executable gates

@@ -12,6 +12,7 @@ Reviewer involvement is mandatory for:
 - delegation-gate or context-handoff policy changes
 - large rewrites of Results, Discussion, or Abstract
 - paper-figure layout/readability disputes that require paper-asset-review or geometry-audit confirmation
+- closeouts for large rounds when delivered scope may be narrower than planned scope
 
 ## Red-team requirements
 
@@ -21,6 +22,7 @@ Red-team review is mandatory for:
 - changes that increase process complexity
 - changes to parent-only routing or child-context policy
 - proposals that redefine `codex-native` or `agent-native`
+- proposals that blur reviewer and verifier duties or let parent closeout claims outrun landed evidence
 
 ## Standard warning levels
 
@@ -38,6 +40,31 @@ Red-team review is mandatory for:
 - `WARN_SUPERVISION`: the parent interrupted or closed a child agent without first checking current status or latest output
 - `WARN_DUPLICATION`: the output duplicates an existing role, skill, or document path
 - `WARN_EVIDENCE`: claims or recommendations are not tied to files, commands, or artifacts
+- `WARN_SCOPE_DOWNGRADE_CONCEALED`: delivered scope is narrower than planned scope but the closeout implies full completion
+- `WARN_NO_TEXT_EVIDENCE`: the parent closeout lacks the text, file, or artifact evidence required by the packet
+- `WARN_REVIEW_VERIFICATION_CONFUSION`: reviewer approval is being used as delivery verification without the required evidence check
+- `WARN_PARENT_OVERCLAIM`: the parent claims completion beyond the packet's owned plan items or acceptance surface
+- `WARN_MISSING_HIGH_RISK_VERIFIER`: a `high-risk` round does not name a verification owner
+
+## Closeout integrity checks
+
+Before a round is reported as complete, confirm all of the following:
+
+- the closeout names the packet's acceptance surface and out-of-scope surfaces
+- the closeout names the packet's risk level, review owner, and verification owner
+- the closeout accounts for owned plan items as landed, deferred, or dropped
+- any scope downgrade is stated explicitly rather than folded into a broad completion claim
+- delivery evidence required by the packet is cited in text
+- review findings and verification findings are distinguished when both roles exist
+- a `high-risk` round does not omit verifier ownership
+
+Escalate with `ESCALATE_HUMAN` when any of the following persist after one rewrite attempt:
+
+- `WARN_SCOPE_DOWNGRADE_CONCEALED`
+- `WARN_NO_TEXT_EVIDENCE`
+- `WARN_REVIEW_VERIFICATION_CONFUSION`
+- `WARN_PARENT_OVERCLAIM`
+- `WARN_MISSING_HIGH_RISK_VERIFIER`
 
 ## Human gates
 

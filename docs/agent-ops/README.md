@@ -28,6 +28,7 @@ This layer treats:
 - `NATURE_REVIEWER_STACK.md`
 - `TASK_PACKETS.md`
 - `REVIEW_AND_ESCALATION.md`
+- `ROUND_CLOSEOUT_TEMPLATE.md`
 
 ## Relationship to governance
 
@@ -57,5 +58,10 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 5. for manuscript-facing hardening, the parent selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
 6. child specialists work through one of the core skills and one of the unified task packets
 7. reviewer or red-team agents challenge outputs when required, using the canonical reviewer stack instead of ad hoc reviewer personas
-8. the parent supervisor consolidates
-9. the human approves or redirects at milestone boundaries
+8. the packet classifies the round as `high-risk` or `non-high-risk`
+9. for `high-risk` rounds, the packet names both a review owner and a verification owner; compressed ownership requires an explicit compression rationale
+10. for `non-high-risk` rounds, compressed ownership requires a non-high-risk rationale
+11. the parent supervisor consolidates only against the packet's owned plan items, acceptance surface, delivery evidence, and verification target
+12. if delivered scope is narrower than planned scope, the parent discloses the downgrade explicitly rather than closing out the original round as complete
+13. use the closeout-integrity governance contract plus `ROUND_CLOSEOUT_TEMPLATE.md` for dialogue closeouts when a reusable ledger helps, but do not treat the template as a mandatory repo artifact
+14. the human approves or redirects at milestone boundaries

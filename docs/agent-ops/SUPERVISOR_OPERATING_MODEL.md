@@ -32,6 +32,7 @@ The parent may:
 - spawn child agents
 - monitor active child-agent progress and latest outputs
 - review outputs and produce final synthesis
+- assign verifier ownership when delivery evidence must be checked separately from review
 
 The parent must not:
 
@@ -48,12 +49,17 @@ This parent-only rule applies in both Default mode and Plan mode.
 3. decide whether the request is a true single-child task or must be decomposed into multiple child tasks
 4. choose the right child role, specialist skill, and task packet for each child task
 5. write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`
-6. choose `summary-only` or `summary+fork_context`
-7. assign child specialists with explicit outputs and handoff targets
-8. monitor active child agents and inspect status before interrupting, redirecting, or closing them
-9. request review or red-team critique when required
-10. consolidate outputs
-11. escalate to the human approver only at milestone boundaries
+6. define the packet's `Risk level`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
+7. choose `summary-only` or `summary+fork_context`
+8. assign child specialists with explicit outputs and handoff targets
+9. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
+10. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
+11. monitor active child agents and inspect status before interrupting, redirecting, or closing them
+12. request review or red-team critique when required
+13. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
+14. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
+15. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
+16. escalate to the human approver only at milestone boundaries
 
 ## Decomposition threshold
 
@@ -85,6 +91,10 @@ Decompose into multiple child tasks when any of the following are true:
 - Before interrupting or closing a child agent, inspect its current status or latest output first.
 - Close a child agent only when it has completed, the user has cancelled the work, the task has been superseded, or the parent has reviewed the status and decided on an explicit redirect.
 - Do not shut down a child agent solely because elapsed time feels long.
+- Before any parent closeout, reconcile planned items versus landed items and record any omitted or deferred items as a scope downgrade rather than silently collapsing them.
+- Do not close a round as complete without text evidence that the owned acceptance surface landed.
+- Do not let reviewer approval substitute for verifier confirmation when the packet requires distinct evidence checks.
+- Treat missing verifier ownership on a `high-risk` round as a closeout failure, not as an optional omission.
 
 ## Context handoff policy
 
@@ -121,6 +131,8 @@ Escalate to the human when:
 - submission packaging choices affect what belongs in the main paper
 - governance changes redefine roles or non-negotiable policy
 - a red-team review finds a conflict that the supervisor cannot safely resolve
+- scope downgrade concealment, no-text-evidence closeout, reviewer-versus-verifier confusion, or parent overclaim cannot be corrected inside the round without changing role boundaries
+- a `high-risk` round is missing verifier ownership and cannot be repaired without changing the packet or role assignment
 
 ## Outputs the supervisor owns
 
@@ -131,4 +143,5 @@ Escalate to the human when:
 - child-status checks before interruption or shutdown
 - warnings and rewrite requests
 - final synthesis
+- round closeout accuracy
 - milestone summary for the human approver

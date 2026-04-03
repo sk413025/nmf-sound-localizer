@@ -67,6 +67,7 @@ Every paper-facing asset review must include these roles:
 10. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
 11. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
 12. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
+13. For any asset revision round, include a concise `visual delta summary` in the round `Delivery evidence` that states what changed in the visible asset and whether the delta closes the targeted review issue.
 
 ## Reviewer subset and acceptance surface
 

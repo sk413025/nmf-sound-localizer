@@ -41,6 +41,7 @@ When instructions conflict, follow this order:
 - Manuscript writing and claim/evidence discipline: `docs/governance/manuscript-contract.md`
 - Submission packaging and Nature compliance: `docs/governance/submission-contract.md`
 - Codex-native routing, skills, and orchestration: `docs/governance/codex-collaboration-contract.md`
+- Closeout integrity for review, implementation, and parent reporting: `docs/governance/closeout-integrity-contract.md`
 - Canonical Nature reviewer roles and evaluation goals: `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - Active code and package substrate: `docs/governance/runtime-substrate-contract.md`
 - Asset classification: `docs/governance/ASSET_CLASSES.md`
@@ -88,6 +89,12 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
 - Every review request must define its in-scope and out-of-scope acceptance surfaces. Submission metadata placeholders do not fail a scientific-narrative review unless submission packaging is explicitly in scope.
 - The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the manuscript-facing prose rule above where it is in scope.
+- The parent must classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership. Any owner separation or role compression decision must follow that classification and be recorded.
+- Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
+- If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.
+- High-risk rounds that can change manuscript claims, governance posture, or acceptance status must separate implementer, reviewer, and verifier roles. One role may be omitted only when the parent records why the round is not high risk.
+- Parent closeout must distinguish exact text evidence from high-level interpretation. Quote or point to the exact changed language for text claims, summarize interpretation separately, and do not substitute line references or paraphrase for the underlying text evidence.
+- Parent closeout must include an independent verification step for claimed completion. Verification cannot rely only on the implementer's summary or the reviewer's pass.
 
 ## Asset Boundaries
 
