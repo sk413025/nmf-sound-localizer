@@ -10,41 +10,39 @@ e, Frequency-dependent directivity: polar plot of normalized \(|\mathcal H(\thet
 ## Fig. 2 (6 panels)
 
 **Fig. 2 | Calibration fingerprints occupy a compact angle-ordered space.**
-a, Singular-value spectrum of the centered-magnitude fingerprint matrix. The cumulative curve rises quickly across the 37-angle grid: six modes capture 80.3% of the energy and eight capture 85.1%. The overlaid direction-decoding trace follows the same rapid early accumulation.
-b, Frequency-selective spectra \(|u_r(f)|\) for representative Modes 1, 2, and 6. These traces show three reusable spectral patterns in the compressed representation.
-c, Direction-selective half-plane polar patterns \(v_r(\theta)\) for representative Modes 1, 2, and 6, showing how those same modes vary across 0°–180°.
+a, Singular-value spectrum of the centered-magnitude fingerprint matrix. The cumulative curve rises quickly across the 37-angle grid: six components capture 80.3% of the energy and eight capture 85.1%. The overlaid auxiliary angle-ordering proxy, derived from the same decomposition, follows the same rapid early accumulation.
+b, Frequency-selective spectra \(|u_r(f)|\) for representative components 1, 2, and 6. These traces summarize three reusable spectral patterns in the centered-magnitude decomposition.
+c, Direction-selective half-plane polar patterns \(v_r(\theta)\) for representative components 1, 2, and 6, showing how those same components vary across 0°–180°.
 d, Full angle-frequency heatmap of the template matrix \(|H|\) (37 angles × 346 frequency bins), showing structured spectral variation across directions.
-e, All-angle reconstruction fidelity under rank-\(r\) truncation. Per-angle centered-magnitude RMSE falls markedly by the same six-mode regime highlighted in panel a.
+e, All-angle reconstruction fidelity under rank-\(r\) truncation. Per-angle centered-magnitude RMSE falls markedly by the same six-component regime highlighted in panel a.
 f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-similarity band shows that neighboring angles remain close in fingerprint space, revealing a local angle ordering across nearby directions.
 
 ## Fig. 3 (6 panels)
 
-**Fig. 3 | Directional structure persists under speech, but first-choice matching fails.**
+**Fig. 3 | Directional structure persists under speech, but the first correlation-based choice becomes unstable.**
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
-b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); encoding remains significant despite content variation.
+b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); within-angle similarity remains higher than between-angle similarity despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11), shown with light bootstrap uncertainty bands; speech margin is reduced but positive at all angles.
-d, Stacked angle-resolved correlation-based first-choice diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands: the diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
+d, Stacked angle-resolved correlation-based first-choice diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands: the stage-0 diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
 e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (broader local overlap but retained angle ordering), with the diagonal masked to separate the two regimes.
-f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
+f, Dose-response curves for the same correlation-based first-choice diagnostic versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | The physics-guided solver concentrates nearby overlap into the correct neighborhood.**
-a, Sequence summary of broad physical match, guided concentration into the correct local neighborhood, and residual cleanup after one step.
-b, Representative 70° case: support initially spans nearby calibrated directions and is then concentrated into one local neighborhood around 70°.
-c, After one refinement step, less signal remains once that overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-Panel d turns that mechanism into a ranked clean-condition family comparison across the same five-seed sweep: the guided solver is highest, router-bypass drops to an intermediate level, the OMP baseline drops further, and dense routing stays near chance.
-d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
+**Fig. 4 | A physics-guided solver concentrates nearby overlap into the correct neighborhood.**
+a, Sequence summary of broad physical match, learned local gating, and residual cleanup after one step.
+b, Representative 70° validation exemplar: the initial physical match spans nearby calibrated directions, the learned local gate concentrates that support around the correct neighborhood, and the resulting local update remains confined to that band.
+c, Residual profile before and after one refinement step for the same exemplar. The 15° mass callout summarizes the corresponding validation-wide aggregate shift across 1,924 validation clips (0.18 to 0.98), whereas the residual drop (1.00 to 0.48) belongs to the representative exemplar shown in the panel.
+d, Secondary restricted clean-condition check across the four readout families over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
 
 ## Fig. 5 (5 panels)
 
-**Fig. 5 | Guided neighborhood emphasis tracks the measured local structure across the benchmark.**
-Across panels a, b, d, and e, the four readout families are compared by how tightly they keep predictions near the target neighborhood: the guided solver stays most concentrated, router-bypass remains broader around that neighborhood, the OMP baseline shows fractured off-diagonal errors, and dense routing spreads weight more diffusely across angles.
-a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the guided solver, which best follows the measured local neighborhood, degrades least as noise increases.
-b, Row-normalized benchmark comparison across the four benchmarked approaches. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
-c, Measured local structure (top) and Neighborhood-emphasis map (bottom). The lower map concentrates weight near the same diagonal angle ordering seen in the calibrated fingerprints.
+**Fig. 5 | Prediction structure stays organized around the measured local band.**
+a, Five-seed SNR sweep across four readout families. The guided solver degrades least as noise increases.
+b, Row-normalized representative confusion display across the four compared families. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
+c, Measured local structure (top) and neighborhood-emphasis map from the guided solver (bottom). The lower map retains a coarse near-diagonal angle ordering similar to the calibrated fingerprints.
 d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage around the same targets.
-e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The guided solver retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
+e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four readout families on the clean sweep. The guided solver retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 

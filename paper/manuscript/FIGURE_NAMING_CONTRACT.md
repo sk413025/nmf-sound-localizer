@@ -22,18 +22,18 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | Fig. | Manuscript asset | Canonical title | Panels | Layout authority |
 |------|------------------|-----------------|--------|------------------|
 | 1 | `paper/figures/fig01_paradigm-shift.jpg` | Direction-dependent structural filtering revealed by single-point laser vibrometry | a-e | `figures/conf/layout_spec.md` |
-| 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Physical encoding via spectral-spatial modes and construction of a structured dictionary | a-f | `figures/conf/layout_spec.md` |
-| 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Encoding survives content variation but classical decoding fails | a-f | `figures/conf/layout_spec.md` |
-| 4 | `paper/figures/fig04_solver-dynamics.jpg` | Physics-guided deep unrolled network with attention-based gating | a-e | `figures/conf/layout_spec.md` |
-| 5 | `paper/figures/fig05_performance-structure.jpg` | The learned router mirrors physical structure and maintains robust decoding under noise | a-e | `figures/conf/layout_spec.md` |
-| 6 | `paper/figures/fig06_universality.jpg` | Universal physical encoding across diverse materials | a-e | `figures/conf/layout_spec.md` |
+| 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Calibration fingerprints occupy a compact angle-ordered space | a-f | `figures/conf/layout_spec.md` |
+| 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Directional structure persists under speech, but the first correlation-based choice becomes unstable | a-f | `figures/conf/layout_spec.md` |
+| 4 | `paper/figures/fig04_solver-dynamics.jpg` | A physics-guided solver concentrates nearby overlap into the correct neighborhood | a-d | `figures/conf/layout_spec.md` |
+| 5 | `paper/figures/fig05_performance-structure.jpg` | Prediction structure stays organized around the measured local band | a-e | `figures/conf/layout_spec.md` |
+| 6 | `paper/figures/fig06_universality.jpg` | Matched calibration recurs across a bounded five-object screen | a-e | `figures/conf/layout_spec.md` |
 
 ## Canonical Model And Method Terms
 
 | Canonical term | Prose short form | Shared in-panel short label | Use for | Do not use as the default name |
 |----------------|------------------|-----------------------------|---------|--------------------------------|
-| guided solver | guided solver | guided solver | the active learned decoder family on Figs. 4-5; the figure-facing family is backed by `no_type_bias=true` runs and the `No Type Bias` clean sweep key | physics-aware solver, full physics-aware solver, baseline model, bare `No Type Bias` |
-| OMP baseline | OMP baseline | OMP baseline | the soft-OMP classical baseline family on active Figs. 4-5 | fixed heuristic, G-fixed, G-teacher, bare OMP when the paper-facing family is meant |
+| guided solver | guided solver | guided solver | the active learned decoder family on Figs. 4-5; a physics-guided deep-unrolled residual-correction solver with learned local gating, backed by `no_type_bias=true` runs and the `No Type Bias` clean sweep key | physics-aware solver, full physics-aware solver, baseline model, bare `No Type Bias` |
+| OMP baseline | OMP baseline | OMP baseline | the collapsed paper-facing soft-OMP baseline family on active Figs. 4-5; not exact hard OMP by default | fixed heuristic, G-fixed, G-teacher, bare OMP when the paper-facing family is meant |
 | router-bypass ablation | router-bypass ablation | router-bypass | the ablation that bypasses the transformer router | no-transformer, identity model |
 | dense-routing ablation | dense routing | dense routing | the ablation that disables sparse routing and spreads weight across all experts | dense model, uniform router |
 | learned router | learned router | QK learned structure | the routing submodule inside the guided solver | solver, model, attention router as a peer-method name |
@@ -44,6 +44,9 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 - Use `guided solver`, `OMP baseline`, `router-bypass`, and `dense routing` as the only active paper-facing decoder-family names on Figs. 4-5.
 - The figure-facing guided-solver family on Figs. 4-5 is backed by `no_type_bias=true` run artifacts and by the `No Type Bias` clean sweep key in `results/figure4_data.json`; do not display `No Type Bias` as a separate model family.
 - The active Figs. 4-5 `OMP baseline` family collapses the upstream artifact keys `Fixed Heuristic`, `G-Fixed`, and `G-Teacher`; keep those names only in provenance or historical metadata.
+- Treat the active Figs. 4-5 `OMP baseline` label as a collapsed soft-OMP family name, not as a default claim of exact hard OMP. Name exact hard OMP explicitly only when that narrower algorithm is the actual surface under discussion.
+- Treat Fig. 3 as a stage-0 correlation-based first-choice diagnostic surface, not as direct evidence for the full hard-OMP recursion unless that narrower algorithm is explicitly reintroduced.
+- Treat Fig. 4 panel `a` as schematic manuscript support, panels `b-c` as the data-backed mechanism surface, and panel `d` as a secondary clean-condition check.
 - Use `router-bypass ablation` for the family previously referred to by the experiment-facing key `No Transformer`.
 - Treat `figures/conf/model_display_crosswalk.yaml` as the active display-label authority for Fig. 4-6 generators and panel manifests. It maps provenance keys or derived comparison roles to paper-facing labels without renaming upstream artifacts.
 - Treat `H physical structure`, `QK learned structure`, and OMP-selection references as structure or derived-comparison labels rather than peer model names.

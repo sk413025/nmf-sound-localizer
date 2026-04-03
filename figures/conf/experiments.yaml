@@ -71,15 +71,15 @@ fig01_manual:
 fig02_svd:
   figure_id: fig02
   figure: "Fig 2"
-  title: "Structured Physical Dictionary"
+  title: "Calibration fingerprints occupy a compact angle-ordered space"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig02_svd-physical-dictionary.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 2"
-  claim: "The measured response admits a low-rank spectral-spatial decomposition and a structured dictionary."
-  legend_summary: "Singular spectrum, modal decomposition, and the structured physical dictionary."
+  claim: "Calibration fingerprints occupy a compact angle-ordered space with rapid low-rank saturation and strong local continuity across nearby angles."
+  legend_summary: "Singular spectrum, reusable component patterns, and local angle ordering in the calibrated fingerprint space."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
   generator: figures/generators/fig02_svd_spectrum.py
@@ -97,15 +97,15 @@ fig02_svd:
 fig03_discriminability:
   figure_id: fig03
   figure: "Fig 3"
-  title: "Discriminability And Greedy Diagnostic Failure"
+  title: "Directional structure persists under speech, but the first correlation-based choice becomes unstable"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig03_fingerprint-discriminability.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 3"
-  claim: "Directional encoding survives content variation even though analytical OMP decoding fails."
-  legend_summary: "Discriminability, correlation-based greedy diagnostic traces, pairwise similarity, and dose response."
+  claim: "Directional structure persists under speech, but correlation-based first-choice matching becomes unstable once nearby calibrated templates overlap and degrades further under added noise."
+  legend_summary: "Discriminability, stage-0 correlation-based first-choice instability, pairwise similarity, and dose response."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
   generator: figures/generators/fig03_fingerprint_discriminability.py
@@ -132,15 +132,15 @@ fig03_discriminability:
 fig04_ablation:
   figure_id: fig04
   figure: "Fig 4"
-  title: "Physics-Guided Solver Mechanism"
+  title: "A physics-guided solver concentrates nearby overlap into the correct neighborhood"
   type: mixed_composite
   manuscript_asset: paper/figures/fig04_solver-dynamics.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided solver concentrates a broad physical match into one local angle neighborhood before residual subtraction, and that local concentration improves decoder accuracy."
-  legend_summary: "Compact top mechanism strip, stacked exemplar overlays for local concentration and residual cleanup, and a tall clean-condition decoder-family comparison that carries the readout payoff."
+  claim: "The physics-guided solver uses learned local gating within a deep-unrolled residual-correction scaffold to concentrate nearby overlap into the correct local neighborhood before residual subtraction; panel d then provides a secondary restricted clean-condition check on the same point."
+  legend_summary: "Schematic mechanism strip, data-backed exemplar of local concentration and residual cleanup, and a restricted clean-condition family comparison."
   panel_order: ["a", "b", "c", "d"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
@@ -198,7 +198,7 @@ fig04_ablation:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
     d:
-      title: "Decoder-family comparison"
+      title: "Secondary clean-condition check"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf
       evidence_sources:
@@ -219,15 +219,15 @@ fig04_ablation:
 fig05_performance_structure:
   figure_id: fig05
   figure: "Fig 5"
-  title: "Performance And Structure"
+  title: "Prediction structure stays organized around the measured local band"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig05_performance-structure.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
-  claim: "The guided solver follows the measured angle manifold and stabilizes decoding under noise."
-  legend_summary: "Noise robustness benchmark, a unified four-decoder confusion-family block, measured-manifold versus guided-map alignment, representative conditional outputs, and a five-seed clean per-angle benchmark under the unified four-family decoder contract."
+  claim: "Panel c shows that the guided solver's neighborhood-emphasis map remains organized around the near-diagonal local band in H, while panels a, b, d, and e show the performance and prediction consequences of that local organization."
+  legend_summary: "Measured-structure versus guided-neighborhood alignment, representative prediction displays, and sweep-based performance consequences of local-overlap handling."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
@@ -274,7 +274,7 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Physical Encoding Recurs In An Exploratory Five-Object Screen"
+  title: "Matched calibration recurs across a bounded five-object screen"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite

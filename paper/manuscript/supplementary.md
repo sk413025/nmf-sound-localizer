@@ -103,9 +103,9 @@ $$
 
 The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure at this approximate level. This low-rank physical picture motivates the later reduced-order view, and sparsity enters after the discrete angle-grid surrogate introduced in Supplementary Methods 2.
 
-## Supplementary Methods 2. Standardized fingerprints and the Fig. 2 reduced view
+## Supplementary Methods 2. Standardized fingerprints, \(H\), and the Fig. 2 reduced view
 
-The experiments use a standardized fingerprint dictionary built from measured single-point spectra, and Fig. 2 summarizes its centered-magnitude low-rank structure.
+The experiments use a standardized fingerprint dictionary \(H\) built from measured single-point spectra, and Fig. 2 summarizes the centered-magnitude matrix \(H_{\mathrm{fig}}\) derived from that dictionary.
 
 The measured waveform at angle index \(e\) and trial index \(n\) is the single-point LDV velocity signal \(v_{e,n}(t)\). After short-time Fourier transformation, the complex coefficient at frequency bin \(k\) and frame \(t\) is
 
@@ -175,7 +175,7 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. This compact measured structure motivates a local-overlap decoding picture rather than a search over unrelated angle templates.
 
 Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints and carries the local angle ordering into measured space. In the full standardized feature space, a held-out fingerprint can be written as
 
@@ -186,7 +186,7 @@ $$
 \tag{S18}
 $$
 
-where a dominant coefficient marks the source angle and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore expresses the compact modal picture as a local-overlap model on the discrete calibrated angle grid.
+where \(x\) is the surrogate coefficient vector, a dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore expresses the compact modal picture as a discrete local-overlap model on the calibrated angle grid.
 
 Projecting the same local-overlap surrogate into a retained singular subspace gives
 
@@ -206,7 +206,7 @@ z \approx A x,
 \tag{S20}
 $$
 
-This projected form makes the reduced-order geometry behind Eq. 2 explicit. The decoder itself operates in the full \(F=346\) standardized feature space on \(H\) and its grouped descendants rather than the projected pair \((z, A)\).
+This projected form makes the reduced-order geometry behind Eq. 2 explicit. It is a bridge for describing why nearby calibrated directions compete locally, not the implemented inference surface itself. The decoder used in Figs. 4 and 5 operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, rather than on the projected pair \((z, A)\).
 
 ## Supplementary Methods 3. Hard OMP on the reduced-order surrogate
 
@@ -267,11 +267,11 @@ $$
 \tag{S27}
 $$
 
-Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate. Figure 3 summarizes the correlation landscape that drives the first greedy choice on the same calibration dictionary: the plotted score aggregates \(|\langle y,d_{e,m}\rangle|\) within each direction group. When that score concentrates near the matched direction, the current fingerprint remains locally separable; when it spreads across neighboring groups, the fingerprint becomes locally ambiguous and hard OMP is more likely to make an unstable first selection on held-out speech.
+Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Figure 3 does not plot that full recursion. Instead, it isolates the first discrete commitment in the full standardized space: starting from \(r_0=\tilde y\), the plotted stage-0 score aggregates the grouped inner-product magnitudes \(|g_0[e,m]| = |\langle \tilde y,d_{e,m}\rangle|\) within each direction group. When that stage-0 score concentrates near the matched direction, the current fingerprint remains locally separable; when it spreads across neighboring groups, the fingerprint becomes locally ambiguous and an immediate first choice becomes unstable on held-out speech.
 
 ## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
 
-The guided solver turns a broad residual match into a local update without making an immediate one-angle commitment, and it operates directly in the full standardized feature space. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; what changes is the selection rule.
+The guided solver is a physics-guided deep-unrolled residual-correction network. It operates directly in the full standardized feature space and replaces immediate one-angle commitment with learned local gating. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; what changes is the selection rule.
 
 The guided solver uses a grouped dictionary
 
@@ -296,7 +296,7 @@ g_t = D^\top r_t.
 \tag{S30}
 $$
 
-Hard OMP commits to one best atom and refits on the active set, whereas the routed solver distributes weight across a local neighborhood of angle groups before subtraction.
+Unlike the reduced-order hard-OMP recursion in Supplementary Methods 3, the routed solver does not commit to one support element and refit. Instead it distributes weight across a local neighborhood of angle groups before subtraction.
 
 The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the implementation used here, that pooling step is an L2 norm over the per-direction atom scores. The model then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
 

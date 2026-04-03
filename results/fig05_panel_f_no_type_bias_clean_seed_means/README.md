@@ -1,7 +1,7 @@
-## Fig. 5f clean 5-seed means with the unified guided-solver family
+## Fig. 5e clean 5-seed means with the unified guided-readout family
 
 This directory stores the aggregated clean-condition per-angle summary used by
-`Fig. 5f` after unifying the active decoder families across Figs. 4-5.
+`Fig. 5e` after unifying the active decoder families across Figs. 4-5.
 
 ### Artifact
 
@@ -27,9 +27,9 @@ that underlies `results/figure4_data.json`, with one family-level change:
   - `ablate_speech260_disable_sparsity_snrInf_seed{1,2,3,4,42}_ep20_lr1e-3_babble_speech260_full_20260209_011327`
 
 The mean of each per-angle mean curve matches the corresponding clean family
-mean now intended for the active `Fig. 4c` and `Fig. 5a/f` decoder contract:
+mean now intended for the active `Fig. 4d` and `Fig. 5a/e` decoder contract:
 
-- guided solver (`No Type Bias`): `0.975051975051975`
+- guided readout (`No Type Bias`): `0.975051975051975`
 - router-bypass: `0.582016632016632`
 - OMP baseline: `0.4402286902286902`
 - dense routing: `0.02702702702702703`
