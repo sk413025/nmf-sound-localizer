@@ -29,11 +29,11 @@ f, Dose-response curves for stage-0 correlation-based first-choice matching vers
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | A physics-guided solver concentrates nearby overlap into the correct neighborhood.**
-a, Sequence summary of broad physical match, learned local gating, and residual cleanup after one step.
-b, Representative 70° validation exemplar: the initial physical match spans nearby calibrated directions, the learned local gate concentrates that support around the correct neighborhood, and the resulting local update remains confined to that band.
-c, Residual profile before and after one refinement step for the same exemplar. The 15° mass callout summarizes the corresponding validation-wide aggregate shift across 1,924 validation clips (0.18 to 0.98), whereas the residual drop (1.00 to 0.48) belongs to the representative exemplar shown in the panel.
-d, Secondary restricted clean-condition consequence of the overlap-handling rule over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
+**Fig. 4 | Preserving measured local continuity before subtraction stabilizes readout.**
+a, Schematic of the local-continuity hypothesis: a broad physical match is first restricted to the supported angle neighborhood, then subtracted.
+b, Representative 70° validation exemplar: residual-to-dictionary matching initially spans nearby calibrated directions, local gating concentrates that support around the correct neighborhood, and the resulting update remains confined to that band.
+c, Residual profile before and after one refinement step for the same exemplar. The 15° mass callout summarizes the validation-wide shift across 1,924 clips (0.18 to 0.98). The residual trace shown in the panel comes from the representative exemplar and drops from 1.00 to 0.48.
+d, Restricted clean-condition comparison of four overlap-handling rules on the same fixed dictionary (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing, consistent with accurate subtraction requiring preservation of the local angle band.
 
 ## Fig. 5 (5 panels)
 

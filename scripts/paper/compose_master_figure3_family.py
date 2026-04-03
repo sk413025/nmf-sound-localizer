@@ -250,28 +250,35 @@ def _draw_centered_box(
 def _build_fig04_architecture_panel(panel_path: Path) -> None:
     """Generate the manuscript-facing Fig. 4a mechanism strip."""
     width_px = 2784
-    height_px = 420
+    height_px = 560
     canvas = Image.new("RGB", (width_px, height_px), "white")
     draw = ImageDraw.Draw(canvas)
 
-    label_font = _load_font(32)
-    step_font = _load_font(22)
-    transition_font = _load_font(20)
+    label_font = _load_font(34)
+    step_font = _load_font(20)
+    transition_font = _load_font(22)
+    cue_font = _load_font(20)
     arrow_color = "#5A5A5A"
     frame_fill = "#FEFEFD"
     frame_outline = "#D8D8D0"
     baseline_color = "#D9D9D4"
     labels = [
-        ("match broadly", "#1A1A1A"),
-        ("gate locally", "#1A1A1A"),
-        ("clean residual", "#1A1A1A"),
+        ("physical local overlap", "#1A1A1A"),
+        ("supported neighborhood", "#1A1A1A"),
+        ("residual subtraction", "#1A1A1A"),
     ]
-    step_tags = ["1", "2", "3"]
-    transition_tags = ["focus", "subtract"]
+    cues = [
+        "nearby angles contribute to broad overlap",
+        "retain only the measured support band",
+        "subtract the supported component",
+    ]
+    step_tags = ["local overlap", "support", "subtraction"]
+    transition_tags = ["restrict to support", "apply subtraction"]
 
-    frame_top = 72
-    frame_bottom = 252
-    label_y = 286
+    frame_top = 92
+    frame_bottom = 360
+    cue_y = 390
+    label_y = 436
     gap = 118
     usable_width = width_px - 2 * 160
     frame_width = int((usable_width - 2 * gap) / 3)
@@ -309,7 +316,11 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
 
         if idx == 0:
             broad_points = _draw_profile_points(x0, x1, 0.58, 0.52, y_base=baseline_y, y_span=88)
+            broad_polygon = [(broad_points[0][0], baseline_y), *broad_points, (broad_points[-1][0], baseline_y)]
+            draw.polygon(broad_polygon, fill="#F2F1EC")
             draw.line(broad_points, fill=color, width=7, joint="curve")
+            shoulder_points = _draw_profile_points(x0, x1, 0.44, 0.34, y_base=baseline_y, y_span=72)
+            draw.line(shoulder_points, fill="#8F8F8F", width=4, joint="curve")
         elif idx == 1:
             gate_points = _draw_profile_points(x0, x1, 0.88, 0.10, y_base=baseline_y, y_span=112)
             polygon = [(gate_points[0][0], baseline_y), *gate_points, (gate_points[-1][0], baseline_y)]
@@ -344,6 +355,10 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
         label_bbox = draw.textbbox((0, 0), label, font=label_font)
         label_x = x_center - (label_bbox[2] - label_bbox[0]) // 2
         draw.text((label_x, label_y), label, fill=color, font=label_font)
+        cue = cues[idx]
+        cue_bbox = draw.textbbox((0, 0), cue, font=cue_font)
+        cue_x = x_center - (cue_bbox[2] - cue_bbox[0]) // 2
+        draw.text((cue_x, cue_y), cue, fill="#666666", font=cue_font)
 
         if idx < len(x_positions) - 1:
             y_mid = (frame_top + frame_bottom) // 2
@@ -1087,7 +1102,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Decoder-family comparison",
+                "title": "Secondary clean-condition check",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf",
                 "provenance_mode": "data_backed",
             },

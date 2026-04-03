@@ -555,10 +555,8 @@ def _plot_panel_d_ablation(
         0.08,
     )
 
-    ax.axvspan(0.0, chance_level, color="#F3F3F3", zorder=0)
-    ax.axvspan(0.90, 1.0, color="#F4FBF7", zorder=0)
+    ax.axvspan(0.0, chance_level, color="#F5F5F5", zorder=0)
     ax.axvline(chance_level, color="#CFCFCF", linestyle="--", linewidth=0.85, zorder=1)
-    ax.axhspan(row_positions[0] - 0.38, row_positions[0] + 0.38, color="#F4FBF7", zorder=0)
     ax.hlines(row_positions, 0.0, 1.0, color="#ECECEC", linewidth=0.75, zorder=1)
 
     for (variant_key, display_label, color), y_pos in zip(DECODER_VARIANTS, row_positions, strict=False):
@@ -577,8 +575,8 @@ def _plot_panel_d_ablation(
             seed_arr,
             np.full(seed_arr.size, y_pos, dtype=np.float32) + offsets,
             color=color,
-            s=32,
-            alpha=0.78,
+            s=18,
+            alpha=0.58,
             edgecolors="white",
             linewidths=0.4,
             zorder=3,
@@ -589,38 +587,28 @@ def _plot_panel_d_ablation(
             xerr=sem_val,
             fmt="o",
             color=color,
-            markersize=8.8,
+            markersize=5.8,
             capsize=2.2,
-            linewidth=1.35,
+            linewidth=1.2,
             zorder=4,
         )
-        if mean_val <= 0.10:
-            value_x = 0.22
-            value_ha = "left"
-        elif mean_val >= 0.90:
-            value_x = max(mean_val - 0.065, 0.80)
-            value_ha = "right"
-        else:
-            value_x = min(mean_val + 0.075, 0.985)
-            value_ha = "left" if value_x < 0.95 else "right"
         ax.text(
-            value_x,
+            0.99,
             y_pos,
             f"{mean_val:.2f}",
-            fontsize=tick_label_pt + 0.4,
+            fontsize=tick_label_pt - 0.1,
             va="center",
-            ha=value_ha,
-            color=color,
-            fontweight="bold",
+            ha="right",
+            color="#4A4A4A",
         )
         ax.text(
             min(chance_level + 0.03, 0.10),
             y_pos,
             display_label,
-            fontsize=axis_label_pt + 0.05,
+            fontsize=axis_label_pt - 0.3,
             va="center",
             ha="left",
-            color="#303030",
+            color="#404040",
             zorder=2,
         )
 
@@ -629,12 +617,12 @@ def _plot_panel_d_ablation(
     ax.set_xticks([0.0, 0.25, 0.50, 0.75, 1.0])
     ax.tick_params(axis="x", labelsize=tick_label_pt + 0.2, length=2)
     ax.set_yticks([])
-    ax.set_xlabel("Clean Top-1 Accuracy", fontsize=axis_label_pt, labelpad=1.2)
+    ax.set_xlabel("Clean Top-1 Accuracy (restricted)", fontsize=axis_label_pt, labelpad=1.2)
     ax.grid(axis="x", linestyle="--", alpha=0.22)
     ax.text(
         0.02,
         0.98,
-        "chance",
+        "chance floor",
         transform=ax.transAxes,
         fontsize=tick_label_pt - 0.1,
         va="top",
@@ -644,7 +632,7 @@ def _plot_panel_d_ablation(
     ax.text(
         0.98,
         0.98,
-        "5 seeds",
+        "secondary check, 5 seeds",
         transform=ax.transAxes,
         fontsize=tick_label_pt - 0.1,
         va="top",
@@ -831,10 +819,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Decoder-family comparison",
+                "title": "Secondary clean-condition check",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Tall ranked clean-condition comparison of the guided solver, router-bypass, OMP baseline, and dense routing families across the shared five-seed sweep.",
+                "description": "Restricted clean-condition check showing the guided solver, router-bypass, OMP baseline, and dense routing families across the shared five-seed sweep.",
             },
         ],
         typography=typography,

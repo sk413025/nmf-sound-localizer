@@ -42,38 +42,38 @@ figures:
   fig04:
     compose:
       width_mm: 183.0
-      height_mm: 146.0
+      height_mm: 150.0
       outer_margin_mm: 4.0
       panel_a_slot_width_mm: 175.0
-      panel_a_slot_height_mm: 18.0
+      panel_a_slot_height_mm: 32.0
       row_gap_mm: 4.0
       col_gap_mm: 4.0
-      middle_panel_slot_width_mm: 85.5
-      middle_panel_slot_height_mm: 56.0
-      panel_d_slot_width_mm: 85.5
-      panel_d_slot_height_mm: 116.0
+      middle_panel_slot_width_mm: 113.0
+      middle_panel_slot_height_mm: 50.0
+      panel_d_slot_width_mm: 58.0
+      panel_d_slot_height_mm: 104.0
       label_lane_mm: 4.5
       content_inset_x_mm: 1.5
       content_inset_bottom_mm: 1.5
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 116.0
+      composite_height_mm: 114.0
       composite_grid:
         left: 0.085
         right: 0.990
         bottom: 0.08
         top: 0.975
-        hspace: 0.36
-        wspace: 0.22
-        width_ratios: [85.5, 85.5]
-        height_ratios: [56.0, 56.0]
+        hspace: 0.34
+        wspace: 0.21
+        width_ratios: [113.0, 58.0]
+        height_ratios: [50.0, 50.0]
       split:
-        panel_slot_width_mm: {b: 88.0, c: 88.0, d: 88.0}
-        panel_slot_height_mm: {b: 56.0, c: 56.0, d: 116.0}
+        panel_slot_width_mm: {b: 113.0, c: 113.0, d: 58.0}
+        panel_slot_height_mm: {b: 50.0, c: 50.0, d: 104.0}
         standalone_subplots:
           b: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
           c: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
-          d: {left: 0.19, right: 0.990, bottom: 0.08, top: 0.975}
+          d: {left: 0.27, right: 0.993, bottom: 0.08, top: 0.975}
   fig05:
     generator:
       composite_width_mm: 183.0
