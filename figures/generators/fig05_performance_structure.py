@@ -2,7 +2,7 @@
 
 Panel (a): 4-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
 Panel (b): Unified confusion-family block (OMP baseline vs guided solver vs dense routing vs router-bypass)
-Panel (c): Measured manifold vs guided neighborhood structure
+Panel (c): Measured local structure vs neighborhood-emphasis map
 Panel (d): Four-angle conditional output distributions (guided solver vs router-bypass)
 Panel (e): Per-angle decoder accuracy benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
 
@@ -590,7 +590,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
     im_c = ax_c1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c1.set_title("Measured manifold", fontsize=title_pt, pad=6.0)
+    ax_c1.set_title("Measured local structure", fontsize=title_pt, pad=6.0)
     ax_c1.set_xticks(tick_positions)
     ax_c1.set_xticklabels([])
     ax_c1.set_yticks(tick_positions)
@@ -602,7 +602,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         "fig05.panel_c.bottom",
     )
     ax_c2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c2.set_title("Guided map", fontsize=title_pt, pad=6.0)
+    ax_c2.set_title("Neighborhood-emphasis map", fontsize=title_pt, pad=6.0)
     ax_c2.set_xticks(tick_positions)
     ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax_c2.set_yticks(tick_positions)
@@ -1013,7 +1013,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
     im_c = ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax1.set_title("Measured manifold", fontsize=title_pt, fontweight="bold", pad=6.0)
+    ax1.set_title("Measured local structure", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax1.set_xticks(tick_positions)
     ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax1.set_yticks(tick_positions)
@@ -1021,7 +1021,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     add_panel_label(ax1, "c")
     ax2 = fig_c.add_subplot(gs_cs[1, 0])
     ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax2.set_title("Guided map", fontsize=title_pt, fontweight="bold", pad=6.0)
+    ax2.set_title("Neighborhood-emphasis map", fontsize=title_pt, fontweight="bold", pad=6.0)
     ax2.set_xticks(tick_positions)
     ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
     ax2.set_yticks(tick_positions)

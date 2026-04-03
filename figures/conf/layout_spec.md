@@ -85,7 +85,7 @@ figures:
         height_ratios: [66.0, 58.0]
       top_row:
         wspace: 0.095
-        width_ratios: [41.0, 69.0, 54.0]
+        width_ratios: [38.0, 60.0, 66.0]
       bottom_row:
         wspace: 0.088
         width_ratios: [88.0, 76.0]

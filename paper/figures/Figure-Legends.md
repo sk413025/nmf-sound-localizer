@@ -29,27 +29,27 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 
 ## Fig. 4 (4 panels)
 
-**Fig. 4 | Nearby overlap concentrates into the correct neighborhood.**
-a, Sequence summary of broad support, concentration into the correct local neighborhood, and residual cleanup after one step.
+**Fig. 4 | The physics-guided solver concentrates nearby overlap into the correct neighborhood.**
+a, Sequence summary of broad physical match, guided concentration into the correct local neighborhood, and residual cleanup after one step.
 b, Representative 70° case: support initially spans nearby calibrated directions and is then concentrated into one local neighborhood around 70°.
 c, After one refinement step, less signal remains once that overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). In this restricted setting, the readout that stays most concentrated near the correct neighborhood is also the most accurate.
+d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). In this restricted setting, the physics-guided solver, which stays most concentrated near the correct neighborhood, is also the most accurate.
 
 ## Fig. 5 (5 panels)
 
-**Fig. 5 | Benchmark predictions remain aligned with the measured local structure.**
-Across panels a, b, d, and e, guided solver denotes neighborhood-gated residual correction, router-bypass removes that learned gate, OMP baseline makes an immediate single-choice match, and dense routing spreads evidence broadly across angles.
-a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the readout most aligned with the measured local neighborhood degrades least as noise increases.
-b, Row-normalized benchmark comparison across the four benchmarked approaches. The readout most aligned with the measured local structure stays nearest the diagonal, whereas the less locally constrained alternatives show broader off-axis leakage or collapse toward a preferred output mode.
-c, Correlation structure of the measured template matrix \(H\) (top) and the corresponding neighborhood-emphasis map (bottom), showing that the lower map concentrates weight near the same diagonal angle ordering seen in the measured fingerprints.
-d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the readout most aligned with the measured local structure produces tighter local prediction profiles, whereas the less locally constrained alternative shows broader off-axis leakage.
-e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The readout most aligned with the measured local structure retains the highest clean mean accuracy overall, whereas the least locally constrained comparison remains near chance across almost the entire angle set.
+**Fig. 5 | Guided neighborhood emphasis tracks the measured local structure across the benchmark.**
+Across panels a, b, d, and e, guided solver denotes neighborhood-gated residual correction, router-bypass removes that learned gate, OMP baseline makes an immediate single-choice match on the calibrated dictionary, and dense routing distributes weight broadly instead of concentrating it within one local neighborhood.
+a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the guided solver, which best follows the measured local neighborhood, degrades least as noise increases.
+b, Row-normalized benchmark comparison across the four benchmarked approaches. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
+c, Measured local structure (top) and Neighborhood-emphasis map (bottom). The lower map concentrates weight near the same diagonal angle ordering seen in the calibrated fingerprints.
+d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage around the same targets.
+e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading, comparing the four benchmarked approaches. The guided solver retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Matched calibration reveals bounded recurrence across an exploratory five-object screen.**
+**Fig. 6 | Matched calibration can be re-instantiated across a bounded five-object screen.**
 a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
-c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a compactness comparison for the five calibrated template matrices.
-d, Screening performance across the five objects. All five objects remain above chance under matched calibration, and the energy-versus-accuracy comparison shows that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
-e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects.
+c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a supporting compactness comparison for the five calibrated template matrices.
+d, Screening performance across the five objects. All five objects remain above chance under matched object-specific calibration, and the energy-versus-accuracy comparison shows that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
+e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects, so the matched-calibration pathway remains object-conditioned.
