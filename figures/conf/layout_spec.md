@@ -45,33 +45,35 @@ figures:
       height_mm: 146.0
       outer_margin_mm: 4.0
       panel_a_slot_width_mm: 175.0
-      panel_a_slot_height_mm: 28.0
+      panel_a_slot_height_mm: 18.0
       row_gap_mm: 4.0
       col_gap_mm: 4.0
       middle_panel_slot_width_mm: 85.5
-      middle_panel_slot_height_mm: 74.0
-      panel_d_slot_width_mm: 175.0
-      panel_d_slot_height_mm: 28.0
+      middle_panel_slot_height_mm: 56.0
+      panel_d_slot_width_mm: 85.5
+      panel_d_slot_height_mm: 116.0
       label_lane_mm: 4.5
       content_inset_x_mm: 1.5
       content_inset_bottom_mm: 1.5
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 76.0
+      composite_height_mm: 116.0
       composite_grid:
-        left: 0.070
+        left: 0.085
         right: 0.990
         bottom: 0.08
-        top: 0.98
-        wspace: 0.26
-        width_ratios: [61.0, 61.0, 46.0]
+        top: 0.975
+        hspace: 0.36
+        wspace: 0.22
+        width_ratios: [85.5, 85.5]
+        height_ratios: [56.0, 56.0]
       split:
-        panel_slot_width_mm: {b: 88.0, c: 88.0, d: 175.0}
-        panel_slot_height_mm: {b: 82.0, c: 82.0, d: 28.0}
+        panel_slot_width_mm: {b: 88.0, c: 88.0, d: 88.0}
+        panel_slot_height_mm: {b: 56.0, c: 56.0, d: 116.0}
         standalone_subplots:
-          b: {left: 0.11, right: 0.995, bottom: 0.11, top: 0.980}
-          c: {left: 0.11, right: 0.995, bottom: 0.11, top: 0.980}
-          d: {left: 0.12, right: 0.995, bottom: 0.26, top: 0.92}
+          b: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
+          c: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
+          d: {left: 0.19, right: 0.990, bottom: 0.08, top: 0.975}
   fig05:
     generator:
       composite_width_mm: 183.0
@@ -338,33 +340,32 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 
 ## Figure 4 — Solver Mechanism (4 panels)
 
-Composed: a compact physics-first overview `a`, two enlarged mechanism panels
-`b/c`, and a single full-width decoder comparison `d`. The old aggregation
-bridge is removed from the main-paper surface so the figure reads as broad
-physical match -> local concentration -> cleaner residual -> decoder payoff.
-This contract keeps the manuscript collar and dedicated panel-label lane, but
-spends the available width on the physically important panels rather than on
-small bookkeeping axes.
+Composed: a compact physics-first overview `a`, stacked mechanism panels `b/c`
+on the left, and a tall decoder-family payoff panel `d` on the right. The
+design keeps the manuscript collar and dedicated panel-label lane, but it no
+longer hides the clean-condition family comparison in a footer strip. The
+figure should now read as broad physical match -> local concentration ->
+cleaner residual -> readout consequence, with `d` carrying comparable visual
+authority to the mechanism panels.
 
 ```
                          183.0 mm
 ┌──────────────────────────────────────────────────────┐
 │                4.0 mm manuscript collar              │
 │  ┌────────────────────────────────────────────────┐  │
-│  │ (a) Mechanism strip                            │  │ 28.0 mm slot
-│  │              175.0 × 28.0 mm                  │  │
+│  │ (a) Mechanism strip                            │  │ 18.0 mm slot
+│  │              175.0 × 18.0 mm                  │  │
 │  └────────────────────────────────────────────────┘  │
 │                    4.0 mm row gap                    │
 │  ┌────────────────────────┬──────────────────────┐  │
-│  │ (b) Broad match +      │ (c) Residual after   │  │ 74.0 mm
-│  │ local update overlay   │ one local step       │  │
-│  │ 85.5 × 74.0 mm         │ 85.5 × 74.0 mm       │  │
+│  │ (b) Broad match +      │ (d) Decoder-family   │  │
+│  │ local update overlay   │ comparison           │  │ 56.0 mm
+│  │ 85.5 × 56.0 mm         │ 85.5 × 116.0 mm      │  │
+│  ├────────────────────────┤                      │  │
+│  │ (c) Residual after     │                      │  │ 56.0 mm
+│  │ one local step         │                      │  │
+│  │ 85.5 × 56.0 mm         │                      │  │
 │  └────────────────────────┴──────────────────────┘  │
-│                    4.0 mm row gap                    │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ (d) Decoder-family comparison                 │  │ 28.0 mm
-│  │              175.0 × 28.0 mm                  │  │
-│  └────────────────────────────────────────────────┘  │
 │                4.0 mm manuscript collar              │
 └──────────────────────────────────────────────────────┘
                               total = 146.0 mm
@@ -375,10 +376,10 @@ small bookkeeping axes.
 | width_mm       | 183                                    |
 | height_mm      | **146**                                |
 | Outer collar   | **4.0 mm** on all four sides           |
-| Panel (a) slot | **175.0 × 28.0 mm**                    |
+| Panel (a) slot | **175.0 × 18.0 mm**                    |
 | Row gap        | **4.0 mm**                             |
-| Panels (b,c)   | **85.5 × 74.0 mm**                     |
-| Panel (d)      | **175.0 × 28.0 mm**                    |
+| Panels (b,c)   | **85.5 × 56.0 mm**                     |
+| Panel (d)      | **85.5 × 116.0 mm**                    |
 | Column gap     | **4.0 mm** between middle panels       |
 | Label lane     | **4.5 mm** at the top of each slot     |
 | Content inset  | **1.5 mm** left/right/bottom           |

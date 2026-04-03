@@ -900,7 +900,7 @@ def compose_fig03(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig04(paper_dir: Path) -> list[Path]:
-    """Fig 4: thin mechanism strip + enlarged one-axis panels + full-width decoder comparison."""
+    """Fig 4: top mechanism strip + stacked mechanism panels + tall comparator payoff."""
     fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
@@ -915,21 +915,19 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     a_slot_width_px = _mm_to_px(FIG04_PANEL_A_SLOT_WIDTH_MM)
     middle_slot_width_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM)
     d_slot_width_px = _mm_to_px(FIG04_PANEL_D_SLOT_WIDTH_MM)
-    # Reweight the manuscript surface so panel d survives at journal scale.
-    a_slot_height_mm = 20.0
-    middle_slot_height_mm = 68.0
-    d_slot_height_mm = 42.0
-    a_slot_height_px = _mm_to_px(a_slot_height_mm)
-    middle_slot_height_px = _mm_to_px(middle_slot_height_mm)
-    d_slot_height_px = _mm_to_px(d_slot_height_mm)
+    a_slot_height_px = _mm_to_px(FIG04_PANEL_A_SLOT_HEIGHT_MM)
+    middle_slot_height_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM)
+    d_slot_height_px = _mm_to_px(FIG04_PANEL_D_SLOT_HEIGHT_MM)
 
     a_slot_left_px = outer_margin_px
     a_slot_top_px = outer_margin_px
-    middle_slot_top_px = outer_margin_px + a_slot_height_px + row_gap_px
+    block_top_px = outer_margin_px + a_slot_height_px + row_gap_px
     b_slot_left_px = outer_margin_px
-    c_slot_left_px = b_slot_left_px + middle_slot_width_px + col_gap_px
-    d_slot_left_px = outer_margin_px
-    d_slot_top_px = middle_slot_top_px + middle_slot_height_px + row_gap_px
+    c_slot_left_px = b_slot_left_px
+    d_slot_left_px = b_slot_left_px + middle_slot_width_px + col_gap_px
+    b_slot_top_px = block_top_px
+    c_slot_top_px = b_slot_top_px + middle_slot_height_px + row_gap_px
+    d_slot_top_px = block_top_px
 
     def _content_box(
         slot_left_px: int,
@@ -1000,7 +998,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
 
     b_content_left_px, b_content_top_px, b_content_width_px, b_content_height_px = _content_box(
         b_slot_left_px,
-        middle_slot_top_px,
+        b_slot_top_px,
         middle_slot_width_px,
         middle_slot_height_px,
         inset_x_mm=1.2,
@@ -1009,7 +1007,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     )
     c_content_left_px, c_content_top_px, c_content_width_px, c_content_height_px = _content_box(
         c_slot_left_px,
-        middle_slot_top_px,
+        c_slot_top_px,
         middle_slot_width_px,
         middle_slot_height_px,
         inset_x_mm=1.2,
@@ -1058,8 +1056,8 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     label_x_px = _mm_to_px(1.5)
     label_y_px = _mm_to_px(0.6)
     _draw_panel_label(draw, "a", a_slot_left_px + label_x_px, a_slot_top_px + label_y_px)
-    _draw_panel_label(draw, "b", b_slot_left_px + label_x_px, middle_slot_top_px + label_y_px)
-    _draw_panel_label(draw, "c", c_slot_left_px + label_x_px, middle_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "b", b_slot_left_px + label_x_px, b_slot_top_px + label_y_px)
+    _draw_panel_label(draw, "c", c_slot_left_px + label_x_px, c_slot_top_px + label_y_px)
     _draw_panel_label(draw, "d", d_slot_left_px + label_x_px, d_slot_top_px + label_y_px)
 
     _save_composite(canvas, fig04_asset)

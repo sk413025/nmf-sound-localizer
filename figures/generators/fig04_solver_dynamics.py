@@ -558,6 +558,8 @@ def _plot_panel_d_ablation(
     ax.axvspan(0.0, chance_level, color="#F3F3F3", zorder=0)
     ax.axvspan(0.90, 1.0, color="#F4FBF7", zorder=0)
     ax.axvline(chance_level, color="#CFCFCF", linestyle="--", linewidth=0.85, zorder=1)
+    ax.axhspan(row_positions[0] - 0.38, row_positions[0] + 0.38, color="#F4FBF7", zorder=0)
+    ax.hlines(row_positions, 0.0, 1.0, color="#ECECEC", linewidth=0.75, zorder=1)
 
     for (variant_key, display_label, color), y_pos in zip(DECODER_VARIANTS, row_positions, strict=False):
         seeds = ablation_data.get(variant_key, [])
@@ -575,9 +577,10 @@ def _plot_panel_d_ablation(
             seed_arr,
             np.full(seed_arr.size, y_pos, dtype=np.float32) + offsets,
             color=color,
-            s=26,
-            alpha=0.72,
-            edgecolors="none",
+            s=32,
+            alpha=0.78,
+            edgecolors="white",
+            linewidths=0.4,
             zorder=3,
         )
         ax.errorbar(
@@ -586,16 +589,23 @@ def _plot_panel_d_ablation(
             xerr=sem_val,
             fmt="o",
             color=color,
-            markersize=8.2,
+            markersize=8.8,
             capsize=2.2,
             linewidth=1.35,
             zorder=4,
         )
-        value_x = min(mean_val + 0.075, 0.985)
-        value_ha = "left" if value_x < 0.94 else "right"
+        if mean_val <= 0.10:
+            value_x = 0.22
+            value_ha = "left"
+        elif mean_val >= 0.90:
+            value_x = max(mean_val - 0.065, 0.80)
+            value_ha = "right"
+        else:
+            value_x = min(mean_val + 0.075, 0.985)
+            value_ha = "left" if value_x < 0.95 else "right"
         ax.text(
             value_x,
-            y_pos + 0.20,
+            y_pos,
             f"{mean_val:.2f}",
             fontsize=tick_label_pt + 0.4,
             va="center",
@@ -604,13 +614,14 @@ def _plot_panel_d_ablation(
             fontweight="bold",
         )
         ax.text(
-            0.03,
+            min(chance_level + 0.03, 0.10),
             y_pos,
             display_label,
-            fontsize=axis_label_pt + 0.1,
+            fontsize=axis_label_pt + 0.05,
             va="center",
             ha="left",
             color="#303030",
+            zorder=2,
         )
 
     ax.set_xlim(-0.02, 1.02)
@@ -618,16 +629,26 @@ def _plot_panel_d_ablation(
     ax.set_xticks([0.0, 0.25, 0.50, 0.75, 1.0])
     ax.tick_params(axis="x", labelsize=tick_label_pt + 0.2, length=2)
     ax.set_yticks([])
-    ax.set_xlabel("Clean accuracy", fontsize=axis_label_pt, labelpad=1.2)
+    ax.set_xlabel("Clean Top-1 Accuracy", fontsize=axis_label_pt, labelpad=1.2)
     ax.grid(axis="x", linestyle="--", alpha=0.22)
     ax.text(
-        0.015,
-        0.93,
+        0.02,
+        0.98,
         "chance",
         transform=ax.transAxes,
         fontsize=tick_label_pt - 0.1,
         va="top",
         ha="left",
+        color="#6B6B6B",
+    )
+    ax.text(
+        0.98,
+        0.98,
+        "5 seeds",
+        transform=ax.transAxes,
+        fontsize=tick_label_pt - 0.1,
+        va="top",
+        ha="right",
         color="#6B6B6B",
     )
 
@@ -668,10 +689,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         height_mm=FIG04_GENERATOR["composite_height_mm"],
     )
     gs = gridspec.GridSpec(
-        1,
-        3,
+        2,
+        2,
         figure=fig,
         width_ratios=FIG04_GRID["width_ratios"],
+        height_ratios=FIG04_GRID["height_ratios"],
+        hspace=FIG04_GRID["hspace"],
         wspace=FIG04_GRID["wspace"],
         left=FIG04_GRID["left"],
         right=FIG04_GRID["right"],
@@ -690,7 +713,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     _plot_panel_c(
         fig,
-        gs[0, 1],
+        gs[1, 0],
         mechanics,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
@@ -698,7 +721,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         title_pt=title_pt,
         add_label=False,
     )
-    ax_d = fig.add_subplot(gs[0, 2])
+    ax_d = fig.add_subplot(gs[:, 1])
     _plot_panel_d_ablation(
         ax_d,
         ablation_data,
@@ -811,7 +834,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Decoder-family comparison",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Compact clean-condition comparison of the guided solver, router-bypass, OMP baseline, and dense routing families across the shared five-seed sweep.",
+                "description": "Tall ranked clean-condition comparison of the guided solver, router-bypass, OMP baseline, and dense routing families across the shared five-seed sweep.",
             },
         ],
         typography=typography,

@@ -33,12 +33,13 @@ f, Dose-response curves: correlation-based greedy diagnostic accuracy versus SNR
 a, Sequence summary of broad physical match, guided concentration into the correct local neighborhood, and residual cleanup after one step.
 b, Representative 70° case: support initially spans nearby calibrated directions and is then concentrated into one local neighborhood around 70°.
 c, After one refinement step, less signal remains once that overlapping neighborhood has been consolidated. Compact callouts report the same shift numerically: the fraction of the match within 15° of the true direction rises from 0.18 to 0.98, while the residual falls from 1.00 to 0.48.
-d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). In this restricted setting, the physics-guided solver, which stays most concentrated near the correct neighborhood, is also the most accurate.
+Panel d turns that mechanism into a ranked clean-condition family comparison across the same five-seed sweep: the guided solver is highest, router-bypass drops to an intermediate level, the OMP baseline drops further, and dense routing stays near chance.
+d, Clean-condition comparison across the four benchmarked approaches over the same five-seed sweep (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing.
 
 ## Fig. 5 (5 panels)
 
 **Fig. 5 | Guided neighborhood emphasis tracks the measured local structure across the benchmark.**
-Across panels a, b, d, and e, guided solver denotes neighborhood-gated residual correction, router-bypass removes that learned gate, OMP baseline makes an immediate single-choice match on the calibrated dictionary, and dense routing distributes weight broadly instead of concentrating it within one local neighborhood.
+Across panels a, b, d, and e, the four readout families are compared by how tightly they keep predictions near the target neighborhood: the guided solver stays most concentrated, router-bypass remains broader around that neighborhood, the OMP baseline shows fractured off-diagonal errors, and dense routing spreads weight more diffusely across angles.
 a, SNR degradation curves comparing four benchmarked approaches across additive-noise levels; the guided solver, which best follows the measured local neighborhood, degrades least as noise increases.
 b, Row-normalized benchmark comparison across the four benchmarked approaches. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
 c, Measured local structure (top) and Neighborhood-emphasis map (bottom). The lower map concentrates weight near the same diagonal angle ordering seen in the calibrated fingerprints.
@@ -47,7 +48,7 @@ e, Per-angle readout accuracy: five-seed clean mean P(correct) across the 37 mea
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Matched calibration can be re-instantiated across a bounded five-object screen.**
+**Fig. 6 | Matched calibration recurs across a bounded five-object screen.**
 a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
 c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a supporting compactness comparison for the five calibrated template matrices.
