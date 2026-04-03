@@ -19,13 +19,13 @@ f, Inter-angle fingerprint similarity matrix of \(H\). The near-diagonal high-si
 
 ## Fig. 3 (6 panels)
 
-**Fig. 3 | Directional structure persists under speech, but the first correlation-based choice becomes unstable.**
+**Fig. 3 | Speech preserves directional structure while broadening nearby-angle overlap.**
 a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (d = 2.83, within r̄ = 1.000).
 b, Speech stimulus: same analysis (d = 1.95, within r̄ = 0.907); within-angle similarity remains higher than between-angle similarity despite content variation.
 c, Per-angle discriminability margin (within r − between r) for white noise (Δr̄ = 0.28) and speech (Δr̄ = 0.11), shown with light bootstrap uncertainty bands; speech margin is reduced but positive at all angles.
-d, Stacked angle-resolved correlation-based first-choice diagnostic traces for white noise and speech, shown with light clip-level uncertainty bands: the stage-0 diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
+d, Stacked angle-resolved correlation-based first-choice diagnostic traces for white noise and held-out speech, shown with light clip-level uncertainty bands: the stage-0 diagnostic performs strongly on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
 e, Split-triangle pairwise fingerprint similarity map: lower-left = white noise (near-identity), upper-right = speech (broader local overlap but retained angle ordering), with the diagonal masked to separate the two regimes.
-f, Dose-response curves for the same correlation-based first-choice diagnostic versus SNR for white-noise signal (blue, clip-level SEM shading) and speech signal with babble noise (orange, 5-seed mean ± SEM shading), both declining monotonically with increasing noise.
+f, Dose-response curves for stage-0 correlation-based first-choice matching versus SNR. The white-noise signal curve (blue, clip-level SEM shading) is recomputed on synthetic noisy white-noise datasets, whereas the speech-plus-babble curve (orange, 5-seed mean ± SEM shading) comes from a separate five-seed sweep; within those two matched surfaces, both decline monotonically with increasing noise.
 
 ## Fig. 4 (4 panels)
 
@@ -46,9 +46,9 @@ e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured an
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Matched calibration recurs across a bounded five-object screen.**
-a, Five target objects in screening order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
+**Fig. 6 | Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object.**
+a, Five target objects in display order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
 c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a supporting compactness comparison for the five calibrated template matrices.
-d, Screening performance across the five objects. All five objects remain above chance under matched object-specific calibration, and the energy-versus-accuracy comparison shows that Top-1 screening accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize screening uncertainty while preserving that mismatch across objects.
-e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects, so the matched-calibration pathway remains object-conditioned.
+d, Object-conditioned readout across the five objects. All five objects remain above chance under matched object-specific calibration, and the energy-versus-accuracy comparison shows that Top-1 accuracy does not monotonically track overall response energy across this sample. The accompanying Top-1 confidence intervals summarize uncertainty while preserving that mismatch across objects.
+e, Frequency structure across objects. Per-object spectra and directional band profiles indicate that the informative frequency band can shift across objects, so the matched-calibration readout remains object-conditioned.

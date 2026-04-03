@@ -23,10 +23,10 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 |------|------------------|-----------------|--------|------------------|
 | 1 | `paper/figures/fig01_paradigm-shift.jpg` | Direction-dependent structural filtering revealed by single-point laser vibrometry | a-e | `figures/conf/layout_spec.md` |
 | 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Calibration fingerprints occupy a compact angle-ordered space | a-f | `figures/conf/layout_spec.md` |
-| 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Directional structure persists under speech, but the first correlation-based choice becomes unstable | a-f | `figures/conf/layout_spec.md` |
+| 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Speech preserves directional structure while broadening nearby-angle overlap | a-f | `figures/conf/layout_spec.md` |
 | 4 | `paper/figures/fig04_solver-dynamics.jpg` | A physics-guided solver concentrates nearby overlap into the correct neighborhood | a-d | `figures/conf/layout_spec.md` |
 | 5 | `paper/figures/fig05_performance-structure.jpg` | Prediction structure stays organized around the measured local band | a-e | `figures/conf/layout_spec.md` |
-| 6 | `paper/figures/fig06_universality.jpg` | Matched calibration recurs across a bounded five-object screen | a-e | `figures/conf/layout_spec.md` |
+| 6 | `paper/figures/fig06_universality.jpg` | Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object | a-e | `figures/conf/layout_spec.md` |
 
 ## Canonical Model And Method Terms
 
@@ -45,7 +45,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 - The figure-facing guided-solver family on Figs. 4-5 is backed by `no_type_bias=true` run artifacts and by the `No Type Bias` clean sweep key in `results/figure4_data.json`; do not display `No Type Bias` as a separate model family.
 - The active Figs. 4-5 `OMP baseline` family collapses the upstream artifact keys `Fixed Heuristic`, `G-Fixed`, and `G-Teacher`; keep those names only in provenance or historical metadata.
 - Treat the active Figs. 4-5 `OMP baseline` label as a collapsed soft-OMP family name, not as a default claim of exact hard OMP. Name exact hard OMP explicitly only when that narrower algorithm is the actual surface under discussion.
-- Treat Fig. 3 as a stage-0 correlation-based first-choice diagnostic surface, not as direct evidence for the full hard-OMP recursion unless that narrower algorithm is explicitly reintroduced.
+- Treat Fig. 3 as a speech-versus-white-noise local-overlap surface with stage-0 first-choice consequences, not as direct evidence for the full hard-OMP recursion unless that narrower algorithm is explicitly reintroduced.
 - Treat Fig. 4 panel `a` as schematic manuscript support, panels `b-c` as the data-backed mechanism surface, and panel `d` as a secondary clean-condition check.
 - Use `router-bypass ablation` for the family previously referred to by the experiment-facing key `No Transformer`.
 - Treat `figures/conf/model_display_crosswalk.yaml` as the active display-label authority for Fig. 4-6 generators and panel manifests. It maps provenance keys or derived comparison roles to paper-facing labels without renaming upstream artifacts.

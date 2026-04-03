@@ -97,15 +97,15 @@ fig02_svd:
 fig03_discriminability:
   figure_id: fig03
   figure: "Fig 3"
-  title: "Directional structure persists under speech, but the first correlation-based choice becomes unstable"
+  title: "Speech preserves directional structure while broadening nearby-angle overlap"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig03_fingerprint-discriminability.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 3"
-  claim: "Directional structure persists under speech, but correlation-based first-choice matching becomes unstable once nearby calibrated templates overlap and degrades further under added noise."
-  legend_summary: "Discriminability, stage-0 correlation-based first-choice instability, pairwise similarity, and dose response."
+  claim: "Speech preserves directional structure but broadens overlap among nearby calibrated angles; stage-0 first-choice matching then fails on held-out speech, and separate white-noise and speech-plus-babble sweeps show monotonic degradation under added noise."
+  legend_summary: "White-noise versus speech discriminability, nearby-angle overlap, held-out speech first-choice failure, and separate noise-robustness sweeps for the stage-0 diagnostic."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
   generator: figures/generators/fig03_fingerprint_discriminability.py
@@ -274,15 +274,15 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Matched calibration recurs across a bounded five-object screen"
+  title: "Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "Across the tested objects, structured direction-frequency encoding recurs and remains low-dimensional under object-specific calibration; screening differences are not captured by overall response energy alone, and the material-specific frequency-localized interpretation remains exploratory."
-  legend_summary: "Material exemplars, cross-material H breadth, low-rank continuity, a compact exploratory screen summary, and per-material frequency-structure cards."
+  claim: "Using the acrylic plate as a reference object, Fig. 6 asks whether matched calibration reveals analogous object-conditioned directional structure in other passive objects; across five objects, structured H matrices, compactness, and above-chance readout reappear, but the informative band and performance remain object-specific."
+  legend_summary: "Reference-object extension to a five-object comparison, showing object-specific H structure, compactness, above-chance readout, and per-object frequency structure."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
@@ -359,7 +359,7 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
         - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/low_rank_summary.csv
     d:
-      title: "Exploratory screen summary"
+      title: "Object-conditioned readout and energy"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf
       evidence_sources:
@@ -384,4 +384,4 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
-  note: "Panel a remains a manual support asset. Panels b-e are generator-backed against the committed cross-material H-reproduction, support-analysis, and screening bundles."
+  note: "Panel a remains a manual support asset. Panels b-e are generator-backed against the committed cross-material H-reproduction, support-analysis, and readout-comparison bundles."

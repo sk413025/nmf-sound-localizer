@@ -2,7 +2,7 @@
 
 Panel (b): Cross-material H strip across five materials.
 Panel (c): Low-rank continuity summary across materials using Fig. 2-style centered-magnitude SVD.
-Panel (d): Compact response-strength versus Top-1 screen summary.
+Panel (d): Compact response-strength versus Top-1 readout summary.
 Panel (e): Low-emphasis material band/code support strip.
 
 Panel (a) remains a manual support asset and is composed downstream.
@@ -933,7 +933,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Cross-material H",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Shared-normalization H strip for the five screened materials, showing that structured angle-frequency encoding is present across the full object set.",
+                "description": "Shared-normalization H strip for the five compared materials, showing that structured angle-frequency encoding is present across the full object set.",
             },
             {
                 "panel_id": "c",
@@ -944,17 +944,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Exploratory screen summary",
+                "title": "Object-conditioned readout and energy",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Compact normalized-energy versus Top-1 comparison with Top-1 uncertainty, showing that overall response strength alone does not explain the screening ranking.",
+                "description": "Compact normalized-energy versus Top-1 comparison with Top-1 uncertainty, showing that overall response strength alone does not explain the object-level readout ranking.",
             },
             {
                 "panel_id": "e",
                 "title": "Material frequency structure",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Five-row support strip showing the selected frequency band and recovered representative directional code for each screened material.",
+                "description": "Five-row support strip showing the selected frequency band and recovered representative directional code for each compared material.",
             },
         ],
         typography=typography,

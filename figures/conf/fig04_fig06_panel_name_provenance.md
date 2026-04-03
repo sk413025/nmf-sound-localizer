@@ -111,5 +111,5 @@ decisions, not to replace manuscript prose.
   - `a`: retained manual support exemplar strip cropped from the committed legacy support image
   - `b`: isolates the five `Original -> Material` H matrices so breadth of structured angle-frequency encoding reads as its own panel
   - `c`: carries the Fig. 2-aligned centered-magnitude cumulative-energy curves and rank90/rank95 summary so low-rank continuity remains explicit as a separate panel
-  - `d`: combines the normalized energy-versus-Top-1 comparison with Top-1 and MAE summaries so the figure closes on an explicitly exploratory screen summary
+  - `d`: combines the normalized energy-versus-Top-1 comparison with Top-1 and MAE summaries so the figure closes on an object-level readout-versus-energy comparison
   - `e`: turns each material into its own three-level card by pairing the normalized spectral envelope, the angular-contrast curve, and the representative band-limited directional code selected from the committed `H` matrices

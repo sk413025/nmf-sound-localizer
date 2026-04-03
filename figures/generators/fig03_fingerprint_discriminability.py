@@ -3,10 +3,10 @@
 Panel (a): White noise within vs between Pearson r (violin + stats).
 Panel (b): Speech within vs between Pearson r (violin + stats).
 Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech, with bootstrap uncertainty bands.
-Panel (d): Angle-resolved correlation-greedy / OMP-family diagnostic traces
+Panel (d): Angle-resolved stage-0 first-choice traces for white noise and held-out speech.
            (stacked WN and Speech) with clip-level uncertainty bands.
 Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
-Panel (f): Correlation-greedy / OMP-family diagnostic dose-response curve
+Panel (f): Separate stage-0 noise-response curves for white-noise and speech-plus-babble sweeps.
            across SNR levels, with WN clip-level SEM shading and speech
            5-seed mean ± SEM shading.
 
@@ -1034,10 +1034,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Angle-resolved greedy diagnostic traces",
+                "title": "Angle-resolved stage-0 first-choice traces",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_omp_comparison.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Stacked white-noise and speech correlation-based greedy / OMP-family diagnostic traces over the calibrated angle grid with clip-level uncertainty bands.",
+                "description": "Stacked white-noise and held-out-speech stage-0 first-choice traces over the calibrated angle grid with clip-level uncertainty bands.",
             },
             {
                 "panel_id": "e",
@@ -1048,10 +1048,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "f",
-                "title": "Greedy diagnostic dose-response curve",
+                "title": "Stage-0 diagnostic noise-response curves",
                 "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_f_dose_response.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Correlation-based greedy / OMP-family diagnostic match rate vs content variation (SNR sweep from pure WN to speech), with WN clip-level SEM shading and speech 5-seed mean ± SEM shading.",
+                "description": "Separate stage-0 first-choice noise-response curves: white-noise match rate recomputed on synthetic noisy white-noise datasets plus a distinct five-seed speech-plus-babble sweep, with white-noise clip-level SEM shading and speech mean ± SEM shading.",
             },
         ],
     )
