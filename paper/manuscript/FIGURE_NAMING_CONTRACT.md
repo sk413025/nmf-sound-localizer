@@ -26,7 +26,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Speech preserves directional structure while broadening nearby-angle overlap | a-f | `figures/conf/layout_spec.md` |
 | 4 | `paper/figures/fig04_solver-dynamics.jpg` | A physics-guided solver concentrates nearby overlap into the correct neighborhood | a-d | `figures/conf/layout_spec.md` |
 | 5 | `paper/figures/fig05_performance-structure.jpg` | Prediction structure stays organized around the measured local band | a-e | `figures/conf/layout_spec.md` |
-| 6 | `paper/figures/fig06_universality.jpg` | Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object | a-e | `figures/conf/layout_spec.md` |
+| 6 | `paper/figures/fig06_universality.jpg` | Matched calibration extends object-conditioned directional readout beyond the acrylic reference object | a-e | `figures/conf/layout_spec.md` |
 
 ## Canonical Model And Method Terms
 

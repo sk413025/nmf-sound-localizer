@@ -46,7 +46,7 @@ e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured an
 
 ## Fig. 6 (5 panels)
 
-**Fig. 6 | Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object.**
+**Fig. 6 | Matched calibration extends object-conditioned directional readout beyond the acrylic reference object.**
 a, Five target objects in display order: cardboard box, wooden board, acrylic plate, paper cup, and laptop shell.
 b, Per-object template matrices \(H\). Shared-normalization heatmaps show structured angle-frequency encoding across the five objects despite different response patterns.
 c, Centered-magnitude SVD summary across objects. Cumulative centered-\(|H|\) energy and the corresponding rank-90 and rank-95 markers provide a supporting compactness comparison for the five calibrated template matrices.

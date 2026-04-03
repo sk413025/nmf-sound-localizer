@@ -274,15 +274,15 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Matched calibration reveals object-conditioned directional structure beyond the acrylic reference object"
+  title: "Matched calibration extends object-conditioned directional readout beyond the acrylic reference object"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "Using the acrylic plate as a reference object, Fig. 6 asks whether matched calibration reveals analogous object-conditioned directional structure in other passive objects; across five objects, structured H matrices, compactness, and above-chance readout reappear, but the informative band and performance remain object-specific."
-  legend_summary: "Reference-object extension to a five-object comparison, showing object-specific H structure, compactness, above-chance readout, and per-object frequency structure."
+  claim: "Using the acrylic plate as a reference object, Fig. 6 tests whether matched calibration extends object-conditioned directional readout to other passive objects; across five objects, structured H matrices, compactness, and above-chance readout reappear, but the informative band and performance remain object-specific."
+  legend_summary: "Reference-object extension to five ordinary passive objects, showing object-specific H structure, compactness, above-chance readout, and per-object frequency structure."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
