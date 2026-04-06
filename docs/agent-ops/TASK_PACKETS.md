@@ -1,6 +1,6 @@
 # Task Packets
 
-Use these packet templates to turn a high-level request into a bounded child-agent task.
+Use these packet templates to turn a high-level request into a bounded delegated task, or into a checklist for a direct top-level execution round when explicit ownership and acceptance surfaces still need to be recorded.
 
 Every packet should include:
 
@@ -26,11 +26,11 @@ Every packet should include:
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
 If the packet includes manuscript-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
 
-Before issuing any packet, the parent must make a decomposition decision.
-Use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
-Split the request into multiple child packets when it spans multiple skills or roles, mixes execution with separate review work, or contains independent acceptance criteria that can be delegated separately.
-`Plan items owned` must name the exact subset the child is accountable for closing.
-`Delivery evidence required` must identify the text, file, or artifact evidence needed before the parent may claim completion.
+Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
+If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
+If delegation is chosen, split the request into multiple child packets when it spans multiple skills or roles, mixes execution with separate review work, or contains independent acceptance criteria that can be delegated separately.
+`Plan items owned` must name the exact subset the delegated child or direct implementer is accountable for closing.
+`Delivery evidence required` must identify the text, file, or artifact evidence needed before the top-level agent may claim completion.
 `Risk level` must classify the round as `high-risk` or `non-high-risk`.
 For `high-risk` rounds, `Review owner` and `Verification owner` must both be named.
 If ownership is compressed, record either a `non-high-risk rationale` or a `compression rationale`.
@@ -63,7 +63,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Out-of-scope surfaces:
   - neighboring manuscript, figure, or packaging surfaces the child may mention but not claim as completed
 - Plan items owned:
-  - the exact rewrite, audit, or compliance items delegated in this packet
+  - the exact rewrite, audit, or compliance items assigned in this packet, whether to a delegated child or a direct implementer
 - Delivery evidence required:
   - revised text, anchored file locations, and any figure/provenance notes needed to justify closeout
 - Review owner:
@@ -157,7 +157,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Out-of-scope surfaces:
   - broader manuscript rewrites, undelegated panels, or unreviewed assets
 - Plan items owned:
-  - the exact asset-review decisions delegated in this packet
+  - the exact asset-review decisions assigned in this packet, whether to a delegated child or a direct implementer
 - Delivery evidence required:
   - visual inspection confirmation plus any generator, provenance, and review-gate artifacts required for the recommendation
 - Review owner:
@@ -186,7 +186,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Role: `supervisor` or `red-team-reviewer`
 - Skill: `agent-orchestrator`
 - Objective:
-  - frame a task, choose child roles, challenge a workflow proposal, or review a coordinated result set
+  - frame a task, choose direct execution or child roles, challenge a workflow proposal, or review a coordinated result set
 - Relevant conversation context:
   - include the requested workflow, confirmed delegation policy, unresolved governance risks, and any already chosen defaults
 - Source of truth:
@@ -197,7 +197,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - `docs/agent-ops/REVIEW_AND_ESCALATION.md`
   - `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`
 - Constraints:
-  - the top-level agent remains the parent orchestrator, not a worker
+  - the top-level agent must make an explicit execution-or-delegation decision before specialist work begins
   - assume repository-default standing authorization for sub-agent use unless a higher-level constraint blocks delegation
 - Risk level:
   - classify as `high-risk` when the packet can change governance posture, closeout claims, or milestone reporting; otherwise classify as `non-high-risk`
@@ -206,7 +206,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Out-of-scope surfaces:
   - unrelated governance layers, role redesign, or non-requested process rewrites
 - Plan items owned:
-  - the exact orchestration, review, or hardening items delegated in this packet
+  - the exact orchestration, review, or hardening items assigned in this packet, whether to a delegated child or a direct implementer
 - Delivery evidence required:
   - packet text, routing decisions, warning disposition, and any cited status or artifact checks needed for closeout
 - Review owner:
@@ -219,7 +219,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - if the packet lands only a narrowed governance subset, the closeout must name the downgrade and remaining plan items
 - Expected outputs:
   - task framing
-  - role assignments, decomposition decisions, review findings, or `Context mode` decisions
+  - execution-versus-delegation decisions, role assignments, decomposition decisions, review findings, or `Context mode` decisions
   - warnings, rewrites, or milestone summary
 - Escalate when:
   - a proposal introduces new governance layers or duplicate skills

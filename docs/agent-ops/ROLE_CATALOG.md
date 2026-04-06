@@ -5,10 +5,10 @@ This catalog defines the standard roles for agent-first operation in this worktr
 ## supervisor
 
 - Mission: coordinate task framing, routing, review, and synthesis
-- Invocation model: top-level parent orchestrator
+- Invocation model: top-level coordinator with optional direct execution or delegation
 - Required skill: `agent-orchestrator`
-- Allowed decisions: assignment, sequencing, context triage, `Context mode`, `fork_context`, review requirements, consolidation
-- Forbidden decisions: silent scientific claim changes without review; performing specialist execution directly
+- Allowed decisions: assignment, sequencing, context triage, `Context mode`, `fork_context`, review requirements, consolidation, and bounded direct execution when it preserves the round's risk controls
+- Forbidden decisions: silent scientific claim changes without review; collapsing required `high-risk` implementer/reviewer/verifier separation
 
 ## manuscript-reviser
 

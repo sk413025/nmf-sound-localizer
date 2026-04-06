@@ -1,6 +1,6 @@
 ---
 name: agent-orchestrator
-description: Top-level parent orchestration for this repository. Use when Codex is the first agent receiving a task in this branch, or when coordinating child agents, defining role boundaries, choosing task packets, managing review loops, or routing manuscript-first requests to the right child-worker skill. The top-level agent must stay a parent orchestrator, prepare context-aware handoffs, and delegate execution to child agents.
+description: Top-level orchestration for this repository. Use when Codex is the first agent receiving a task in this branch, or when coordinating child agents, defining role boundaries, choosing task packets, managing review loops, or routing manuscript-first requests. The top-level agent must route through orchestration first, then decide whether direct execution or delegation is the better fit.
 ---
 
 # Agent Orchestrator
@@ -27,44 +27,47 @@ Open and follow:
 - `docs/agent-ops/TASK_PACKETS.md`
 - `docs/agent-ops/REVIEW_AND_ESCALATION.md`
 
-## Parent-only rule
+## Execution-or-delegation rule
 
-Act as the top-level parent orchestrator, not a worker.
+Act as the top-level routing authority. Make an explicit execution-or-delegation decision before specialist work begins.
 
 Do:
 
 - classify the task
-- choose the child role, skill, and task packet
-- write `Relevant conversation context`
+- decide whether direct execution or delegation best fits scope, risk, and throughput
+- if delegating, choose the child role, skill, and task packet
+- if delegating, write `Relevant conversation context`
 - choose `Context mode`
 - decide whether `fork_context` is necessary
-- spawn child agents
-- monitor active child-agent progress and latest outputs
+- if delegating, spawn child agents
+- if delegating, monitor active child-agent progress and latest outputs
 - review outputs and synthesize results
+- execute directly when the task is bounded and direct execution does not collapse required review or verification separation
 
 Do not:
 
-- perform the specialist execution step yourself
-- collapse into the child-worker execution step yourself
+- skip the execution-or-delegation decision and drift into an implicit workflow
+- collapse `high-risk` implementer, reviewer, and verifier ownership into one role without an explicit non-high-risk or compression rationale
 - dump irrelevant thread history into a child prompt
 - close a child agent solely because it feels slow
 
-Apply this parent-only rule in both Default mode and Plan mode.
+Apply this execution-or-delegation rule in both Default mode and Plan mode.
 
 ## Workflow
 
 1. Classify the task by manuscript impact and role complexity.
 2. Treat this repository's default operating mode as standing authorization for sub-agent use.
-3. Decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
-4. Choose the right child task packet, role, and core skill for each child task.
-5. Write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`.
-6. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
-7. Summarize only the task-relevant conversation history.
-8. Use `Context mode: summary-only` by default.
-9. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-10. After spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-11. Define review, handoff, and escalation requirements.
-12. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+3. Decide whether direct execution or delegation is the better fit.
+4. If delegating, decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
+5. If delegating, choose the right child task packet, role, and core skill for each child task.
+6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
+7. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
+8. Summarize only the task-relevant conversation history.
+9. Use `Context mode: summary-only` by default.
+10. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+11. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+12. Define review, handoff, and escalation requirements.
+13. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 
@@ -149,12 +152,14 @@ Manuscript-hardening planning and review checklist:
 ## Plan mode
 
 - Keep the same parent-orchestrator routing in Plan mode.
-- Use child agents in Plan mode only for planning, exploration, checking, and review.
-- Keep parent and child work non-mutating and plan-safe until execution mode.
+- The top-level agent may work directly or use child agents in Plan mode for planning, exploration, checking, and review.
+- Keep direct and delegated work non-mutating and plan-safe until execution mode.
 
-## Decomposition decision
+## Delegation decision
 
-Use a single child only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
+Choose direct execution when the work is bounded, delegation would not improve correctness or review separation, and the round's risk controls still remain intact.
+
+If delegating, use a single child only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
 
 Decompose into multiple child tasks when the request:
 
@@ -182,7 +187,8 @@ Quick routing defaults:
 - Do not create new roles when the role catalog already fits.
 - Do not add new governance layers before proving a concrete workflow gap.
 - Prefer manuscript objectives over implementation-centric decomposition.
-- Do not let the parent do child-worker execution.
+- Do not delegate by reflex when direct execution is the simpler bounded path.
+- Do not let direct execution erase required reviewer or verifier separation.
 - Do not omit `Relevant conversation context` from a child handoff.
 - Do not use `summary+fork_context` when `summary-only` is sufficient.
 - Do not interrupt or close a child agent without first checking status or latest output.

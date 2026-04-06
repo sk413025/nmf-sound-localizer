@@ -18,14 +18,14 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Keep collaboration manuscript-first.
 - Make code subordinate to manuscript, evidence, and submission workflows.
 - Distinguish branch-local source of truth from archive material.
-- Route the top-level agent through `agent-orchestrator` and treat it as a parent orchestrator, not a worker.
+- Route the top-level agent through `agent-orchestrator` and require an explicit execution-or-delegation decision before specialist work begins.
 - Multi-agent recommendations must include explicit acceptance criteria and ownership boundaries.
-- The top-level parent must make an explicit decomposition decision before execution: single child only for genuinely single-scope work, otherwise split the request into multiple child tasks.
+- If delegation is chosen, the top-level agent must make an explicit decomposition decision before execution: single child only for genuinely single-scope work, otherwise split the request into multiple child tasks.
 - Require every child-agent handoff to include task framing plus `Relevant conversation context`.
 - Default child-agent handoff to `Context mode: summary-only`; use `summary+fork_context` only when exact task-relevant dialogue cannot be safely compressed.
 - Do not pass irrelevant thread history, hidden reasoning, or expected answers to child agents.
-- In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the top-level parent decide when child agents are needed.
-- Require the top-level parent to monitor active child agents and inspect status before interrupting or closing them.
+- In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the top-level agent decide when child agents are needed.
+- When delegation is used, require the top-level agent to monitor active child agents and inspect status before interrupting or closing them.
 - Do not close a child agent solely because elapsed time feels long.
 - For manuscript hardening, editor-scope review, reviewer-routing review, or high-stakes red-team critique, require the supervisor to select the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md` rather than inventing ad hoc reviewer personas.
 - Treat the canonical Nature reviewer stack as a review-lens layer routed through existing roles and skills, not as a parallel workflow system.
@@ -56,7 +56,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - local skills align with branch governance and stay limited to the core branch workflows
 - top-level routing goes through `agent-orchestrator`
 - task packets and role definitions are discoverable from the main governance path
-- decomposition guidance distinguishes valid single-child tasks from tasks that must be split
+- top-level routing guidance distinguishes direct execution from delegated execution and explains when decomposition is required
 - task packets include `Relevant conversation context` and explicit `Context mode`
 - supervision guidance requires child-status checks before interruption or shutdown
 - the canonical Nature reviewer stack is discoverable from the main governance path and routed through existing roles rather than duplicated

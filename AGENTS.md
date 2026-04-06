@@ -56,10 +56,10 @@ Use only the minimal skill set for repeated work:
 - `experiment-results`
 
 Route top-level work through `agent-orchestrator` first.
-Treat the top-level agent as the parent orchestrator, not a worker.
-Treat `paper-submission`, `paper-asset-review`, and `experiment-results` as specialist child-worker skills.
-In this repository's default operating mode, the human provides standing authorization for sub-agent use and the top-level parent may decide when child agents are needed.
-Apply this parent-orchestrator policy in both Default mode and Plan mode.
+Treat the top-level agent as the routing authority: it may execute directly or delegate to child agents after the top-level routing decision.
+Treat `paper-submission`, `paper-asset-review`, and `experiment-results` as specialist execution skills that may be used through direct top-level work or delegated child work.
+In this repository's default operating mode, the human provides standing authorization for sub-agent use and the top-level agent may decide when delegation is useful.
+Apply this execution-or-delegation policy in both Default mode and Plan mode.
 If a task does not clearly fit one of these skills, route through `agent-orchestrator` first instead of inventing a parallel workflow.
 
 ## Command Surface
@@ -73,16 +73,16 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 ## Current Operating Model
 
 - The human sets direction and approves milestones.
-- The top-level agent is the parent orchestrator and does not execute specialist work directly.
-- The parent orchestrator decomposes work, chooses child roles, and reviews child outputs.
-- The parent must decide whether a request is a true single-child task or must be decomposed into multiple child tasks.
-- The parent writes a task packet with `Relevant conversation context` and `Context mode` before handing work to a child agent.
-- The parent monitors active child agents until completion, explicit redirect, or a justified shutdown.
-- The parent must inspect a child agent's current status or latest output before interrupting or closing it.
-- The parent must not close a child agent solely because it feels slow.
+- The top-level agent first classifies the task and decides whether direct execution or delegation is the better fit for scope and risk.
+- When the top-level agent delegates, it decomposes work, chooses child roles, and reviews child outputs.
+- When the top-level agent delegates, it must decide whether a request is a true single-child task or must be decomposed into multiple child tasks.
+- When the top-level agent delegates, it writes a task packet with `Relevant conversation context` and `Context mode` before handing work to a child agent.
+- When the top-level agent delegates, it monitors active child agents until completion, explicit redirect, or a justified shutdown.
+- When the top-level agent delegates, it must inspect a child agent's current status or latest output before interrupting or closing it.
+- When the top-level agent delegates, it must not close a child agent solely because it feels slow.
 - The default `Context mode` is `summary-only`; escalate to `summary+fork_context` only when exact dialogue history cannot be safely compressed.
-- In Plan mode, parent and child agents may still use this routing model, but all delegated work must remain non-mutating and plan-safe.
-- Specialists execute bounded paper-facing tasks as child agents.
+- In Plan mode, direct and delegated work may still use this routing model, but all work must remain non-mutating and plan-safe.
+- Specialists may execute bounded paper-facing tasks through direct top-level work or as child agents.
 - Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
 - Manuscript-facing hardening, editor-scope review, reviewer-routing review, and high-stakes critique must use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
 - High-stakes manuscript hardening and critique must be adversarial. Reviewers should try to surface rejection-grade objections, not merely confirm adequacy.

@@ -20,7 +20,7 @@ Red-team review is mandatory for:
 
 - new workflows or role systems
 - changes that increase process complexity
-- changes to parent-only routing or child-context policy
+- changes to top-level execution-or-delegation policy or child-context policy
 - proposals that redefine `codex-native` or `agent-native`
 - proposals that blur reviewer and verifier duties or let parent closeout claims outrun landed evidence
 

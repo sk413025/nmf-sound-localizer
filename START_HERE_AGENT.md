@@ -18,7 +18,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
    - orchestration or governance
    - runtime substrate maintenance
 2. At top level, start with `.codex/skills/agent-orchestrator/SKILL.md`.
-3. Let the parent orchestrator choose exactly one specialist skill for each child worker:
+3. Use that top-level routing step to decide whether to execute directly or delegate. If delegating, choose the smallest specialist skill set that fits:
    - `.codex/skills/paper-submission/SKILL.md`
    - `.codex/skills/paper-asset-review/SKILL.md`
    - `.codex/skills/experiment-results/SKILL.md`
@@ -30,9 +30,9 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 
 - Code is substrate. Read code when needed to support a paper task, not as the default starting point.
 - Prefer a task packet and a skill before improvising a workflow.
-- The top-level agent is the parent orchestrator, not a worker.
-- Even a single bounded task should be handed to at least one child agent.
-- Use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts.
+- The top-level agent routes through orchestration first, then may execute directly or delegate.
+- Delegate even a bounded task only when delegation improves scope control, review separation, or execution safety.
+- If delegation is chosen, use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
 - For manuscript-facing review and hardening, use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md` instead of inventing review personas ad hoc.
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
@@ -40,9 +40,9 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Inspect a child agent's current status or latest output before interrupting or closing it.
 - Do not close a child agent just because it feels slow.
 - Context mode: `summary-only` by default; switch to `summary+fork_context` only when task-relevant dialogue history cannot be safely compressed.
-- In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the parent decide when child agents are needed.
-- Apply this parent-orchestrator policy in both Default mode and Plan mode.
-- In Plan mode, delegated child work must stay non-mutating and limited to planning, exploration, checking, or review.
+- In this repository's default operating mode, treat the human as providing standing authorization for sub-agent use and let the top-level agent decide when delegation is needed.
+- Apply this execution-or-delegation policy in both Default mode and Plan mode.
+- In Plan mode, both direct and delegated work must stay non-mutating and limited to planning, exploration, checking, or review.
 - Treat the human as an occasional approver unless the task packet says otherwise.
 - Before making any paper-figure judgment, visually inspect the actual figure asset. If the asset is a PDF, convert every page to PNG previews first.
 - For generated or data-backed paper figures, trace the figure through its generator or composition code and upstream evidence sources before deciding panel identity, lineage, claim support, or Nature suitability.

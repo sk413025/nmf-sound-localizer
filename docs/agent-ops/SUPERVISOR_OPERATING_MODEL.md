@@ -18,13 +18,14 @@ Define `codex-native` from real primitives in this branch:
 
 Do not propose an orchestration layer that duplicates these primitives without a concrete gap.
 
-## Parent-only rule
+## Execution-or-delegation rule
 
-The top-level agent is the parent orchestrator, not a worker.
+The top-level agent is the default coordinator for routed work. It may execute directly or delegate to child specialists after an explicit routing decision.
 
-The parent may:
+The top-level agent may:
 
 - classify the task
+- decide whether direct execution or delegation is the safer and simpler path
 - choose child roles, skills, and sequencing
 - decide review and escalation requirements
 - write task packets and `Relevant conversation context`
@@ -33,37 +34,45 @@ The parent may:
 - monitor active child-agent progress and latest outputs
 - review outputs and produce final synthesis
 - assign verifier ownership when delivery evidence must be checked separately from review
+- execute bounded manuscript, evidence, figure-review, experiment-analysis, or governance work directly when that does not collapse required role separation
 
-The parent must not:
+The top-level agent must not:
 
-- perform manuscript, evidence, figure-review, or experiment-analysis work that belongs to a child specialist
-- collapse into a direct worker when a child specialist should own the execution step
+- skip the execution-or-delegation decision and drift into an implicit workflow
+- collapse a `high-risk` round's implementer, reviewer, and verifier duties into one role without an explicit non-high-risk or compression rationale
 - close a child agent solely because it feels slow
 
-This parent-only rule applies in both Default mode and Plan mode.
+This execution-or-delegation rule applies in both Default mode and Plan mode.
 
 ## Default flow
 
 1. classify the task
 2. treat the repository default as standing authorization for sub-agent use
-3. decide whether the request is a true single-child task or must be decomposed into multiple child tasks
-4. choose the right child role, specialist skill, and task packet for each child task
-5. write a task packet with `Objective`, `Relevant conversation context`, `Source of truth`, `Constraints`, `Expected outputs`, `Escalate when`, and `Context mode`
-6. define the packet's `Risk level`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
-7. choose `summary-only` or `summary+fork_context`
-8. assign child specialists with explicit outputs and handoff targets
-9. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
-10. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
-11. monitor active child agents and inspect status before interrupting, redirecting, or closing them
-12. request review or red-team critique when required
-13. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
-14. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
-15. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
-16. escalate to the human approver only at milestone boundaries
+3. decide whether to execute directly or delegate
+4. if delegating, decide whether the request is a true single-child task or must be decomposed into multiple child tasks
+5. if delegating, choose the right child role, specialist skill, and task packet for each child task
+6. use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout
+7. define the packet's `Risk level`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
+8. choose `summary-only` or `summary+fork_context`
+9. if delegating, assign child specialists with explicit outputs and handoff targets
+10. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
+11. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
+12. if delegating, monitor active child agents and inspect status before interrupting, redirecting, or closing them
+13. request review or red-team critique when required
+14. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
+15. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
+16. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
+17. escalate to the human approver only at milestone boundaries
 
-## Decomposition threshold
+## Execution and decomposition threshold
 
-Use a single child only when all of the following are true:
+Choose direct execution when all of the following are true:
+
+- the work is bounded enough that one top-level agent can carry it without losing acceptance-surface discipline
+- additional delegation would not improve review separation, source-of-truth handling, or throughput
+- any required reviewer and verifier ownership can still remain separate on `high-risk` rounds
+
+If delegation is chosen, use a single child only when all of the following are true:
 
 - the work maps to one core skill
 - the work has one main output bundle
@@ -81,8 +90,8 @@ Decompose into multiple child tasks when any of the following are true:
 ## Plan mode behavior
 
 - Keep the same parent-orchestrator routing in Plan mode.
-- The parent may spawn child agents for planning, exploration, checking, and review.
-- In Plan mode, both parent and child work must remain non-mutating and plan-safe.
+- The top-level agent may work directly or spawn child agents for planning, exploration, checking, and review.
+- In Plan mode, both direct and delegated work must remain non-mutating and plan-safe.
 - Do not use child agents in Plan mode to implement repo-tracked changes.
 
 ## Supervision loop
@@ -114,8 +123,9 @@ Decompose into multiple child tasks when any of the following are true:
 - tasks where evidence, wording, and figures all need to stay aligned
 - task handoffs where losing dialogue history would create execution risk
 
-## When a single child is enough
+## When direct execution or a single child is enough
 
+- a bounded direct implementation or governance edit with a clear acceptance surface
 - a bounded manuscript edit with no claim shift
 - a focused evidence lookup
 - a narrow compliance check
@@ -137,6 +147,7 @@ Escalate to the human when:
 ## Outputs the supervisor owns
 
 - task framing
+- execution-versus-delegation decisions
 - delegation policy checks
 - context triage and `Context mode` decisions
 - agent assignment packets
