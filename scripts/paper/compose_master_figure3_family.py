@@ -7,7 +7,7 @@ from panel-level assets whenever possible:
 - Fig. 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
-- Fig. 4: Solver Mechanism (4 panels: a governed support schematic + b,c,d generated)
+- Fig. 4: Solver Mechanism (4 panels: local band + representative + validation + comparison)
 - Fig. 5: Performance + Structure (5 panels: all generated)
 - Fig. 6: Universality (5 panels: a manual support + b,c,d,e generated)
 """
@@ -37,9 +37,11 @@ from figures.layout_contract import (
     figure_section,
     font_pt,
     font_tokens,
+    stroke_pt,
     pt_to_px,
     source_layout_spec,
 )
+from figures.style import SEMANTIC_PALETTE, STYLE_COLORS
 
 
 DEFAULT_PAPER_DIR = REPO_ROOT / "paper/figures"
@@ -68,31 +70,31 @@ FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 
-# --- Figure 4: Solver Mechanism (4 panels: a governed support schematic + b,c,d generated) ---
+# --- Figure 4: Solver Mechanism (4 panels: local band + representative + validation + comparison) ---
 FIG04_PANEL_A = (
     REPO_ROOT
-    / "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg"
+    / "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_local_band.pdf"
 )
-FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf"
+FIG04_PANEL_B = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_representative_overlay.pdf"
 FIG04_PANEL_C = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf"
 FIG04_PANEL_D = REPO_ROOT / "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf"
 FIG04_COMPOSE = figure_section("fig04", "compose")
 FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
 FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
 FIG04_OUTER_MARGIN_MM = float(FIG04_COMPOSE["outer_margin_mm"])
-FIG04_PANEL_A_SLOT_WIDTH_MM = float(FIG04_COMPOSE["panel_a_slot_width_mm"])
-FIG04_PANEL_A_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_a_slot_height_mm"])
+FIG04_LEFT_COL_WIDTH_MM = float(FIG04_COMPOSE["left_col_width_mm"])
+FIG04_RIGHT_COL_WIDTH_MM = float(FIG04_COMPOSE["right_col_width_mm"])
+FIG04_TOP_ROW_HEIGHT_MM = float(FIG04_COMPOSE["top_row_height_mm"])
+FIG04_BOTTOM_ROW_HEIGHT_MM = float(FIG04_COMPOSE["bottom_row_height_mm"])
 FIG04_ROW_GAP_MM = float(FIG04_COMPOSE["row_gap_mm"])
 FIG04_COL_GAP_MM = float(FIG04_COMPOSE["col_gap_mm"])
-FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM = float(FIG04_COMPOSE["middle_panel_slot_width_mm"])
-FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["middle_panel_slot_height_mm"])
-FIG04_PANEL_D_SLOT_WIDTH_MM = float(FIG04_COMPOSE["panel_d_slot_width_mm"])
-FIG04_PANEL_D_SLOT_HEIGHT_MM = float(FIG04_COMPOSE["panel_d_slot_height_mm"])
-FIG04_LABEL_LANE_MM = float(FIG04_COMPOSE["label_lane_mm"])
-FIG04_CONTENT_INSET_X_MM = float(FIG04_COMPOSE["content_inset_x_mm"])
-FIG04_CONTENT_INSET_BOTTOM_MM = float(FIG04_COMPOSE["content_inset_bottom_mm"])
-FIG04_PANEL_A_CROP = (0.00, 0.00, 1.00, 1.00)
-
+FIG04_CONTENT_BOXES_MM = {
+    panel_id: {
+        key: float(value)
+        for key, value in dict(content_box).items()
+    }
+    for panel_id, content_box in dict(FIG04_COMPOSE["content_boxes_mm"]).items()
+}
 # --- Figure 5: Performance + Structure (5 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
@@ -159,6 +161,19 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     return ImageFont.load_default()
 
 
+def _load_regular_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    font_candidates = [
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+        "/Library/Fonts/Arial.ttf",
+    ]
+    for candidate in font_candidates:
+        path = Path(candidate)
+        if path.exists():
+            return ImageFont.truetype(str(path), size=size)
+    return ImageFont.load_default()
+
+
 def _load_unicode_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     font_candidates = [
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
@@ -177,113 +192,35 @@ def _trim_white_border(img: Image.Image, padding: int = 8) -> Image.Image:
     return trimmed
 
 
-def _draw_arrow(
-    draw: ImageDraw.ImageDraw,
-    start: tuple[int, int],
-    end: tuple[int, int],
-    *,
-    fill: str = "#4A4A4A",
-    width: int = 7,
-    head_size: int = 18,
-) -> None:
-    draw.line([start, end], fill=fill, width=width)
-    if start == end:
-        return
-    if abs(end[0] - start[0]) >= abs(end[1] - start[1]):
-        direction = 1 if end[0] >= start[0] else -1
-        points = [
-            end,
-            (end[0] - direction * head_size, end[1] - head_size // 2),
-            (end[0] - direction * head_size, end[1] + head_size // 2),
-        ]
-    else:
-        direction = 1 if end[1] >= start[1] else -1
-        points = [
-            end,
-            (end[0] - head_size // 2, end[1] - direction * head_size),
-            (end[0] + head_size // 2, end[1] - direction * head_size),
-        ]
-    draw.polygon(points, fill=fill)
-
-
-def _draw_centered_box(
-    draw: ImageDraw.ImageDraw,
-    box: tuple[int, int, int, int],
-    *,
-    title: str,
-    body: str | None = None,
-    fill: str = "#F7F7F3",
-    outline: str = "#C8C8C0",
-    title_font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
-    body_font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
-    text_fill: str = "#1A1A1A",
-) -> None:
-    x0, y0, x1, y1 = box
-    draw.rounded_rectangle(box, radius=26, fill=fill, outline=outline, width=4)
-    lines = [title] if body is None else [title, body]
-    fonts = [title_font] if body is None else [title_font, body_font]
-    spacings = [10] if body is None else [10, 8]
-    total_height = 0
-    block_metrics: list[tuple[str, ImageFont.FreeTypeFont | ImageFont.ImageFont, tuple[int, int, int, int]]] = []
-    for idx, (line, font) in enumerate(zip(lines, fonts)):
-        bbox = draw.multiline_textbbox((0, 0), line, font=font, align="center", spacing=spacings[idx])
-        block_metrics.append((line, font, bbox))
-        total_height += bbox[3] - bbox[1]
-        if idx < len(lines) - 1:
-            total_height += 18
-    cursor_y = y0 + (y1 - y0 - total_height) / 2
-    for idx, (line, font, bbox) in enumerate(block_metrics):
-        width = bbox[2] - bbox[0]
-        height = bbox[3] - bbox[1]
-        cursor_x = x0 + (x1 - x0 - width) / 2
-        draw.multiline_text(
-            (cursor_x, cursor_y),
-            line,
-            font=font,
-            fill=text_fill,
-            align="center",
-            spacing=spacings[idx],
-        )
-        cursor_y += height + 18
-
-
 def _build_fig04_architecture_panel(panel_path: Path) -> None:
-    """Generate the manuscript-facing Fig. 4a mechanism strip."""
-    width_px = 2784
-    height_px = 560
+    """Generate the manuscript-facing Fig. 4a orienting micro-strip."""
+    render_scale = 2
+    render_dpi = COMPOSE_DPI * render_scale
+    strip_width_mm = FIG04_WIDTH_MM - 2.0 * FIG04_OUTER_MARGIN_MM
+    width_px = max(1, _mm_to_px(strip_width_mm) * render_scale)
+    height_px = max(1, _mm_to_px(FIG04_TOP_ROW_HEIGHT_MM) * render_scale)
     canvas = Image.new("RGB", (width_px, height_px), "white")
     draw = ImageDraw.Draw(canvas)
 
-    label_font = _load_font(34)
-    step_font = _load_font(20)
-    transition_font = _load_font(22)
-    cue_font = _load_font(20)
-    arrow_color = "#5A5A5A"
-    frame_fill = "#FEFEFD"
-    frame_outline = "#D8D8D0"
-    baseline_color = "#D9D9D4"
-    labels = [
-        ("physical local overlap", "#1A1A1A"),
-        ("supported neighborhood", "#1A1A1A"),
-        ("residual subtraction", "#1A1A1A"),
-    ]
-    cues = [
-        "nearby angles contribute to broad overlap",
-        "retain only the measured support band",
-        "subtract the supported component",
-    ]
-    step_tags = ["local overlap", "support", "subtraction"]
-    transition_tags = ["restrict to support", "apply subtraction"]
+    label_font = _load_regular_font(pt_to_px(font_pt("tick_label") - 1.4, render_dpi))
+    baseline_color = STYLE_COLORS["guide_line"]
+    broad_color = SEMANTIC_PALETTE["physics"]
+    support_color = SEMANTIC_PALETTE["learned"]
+    highlight_fill = STYLE_COLORS["highlight_fill"]
+    baseline_width_px = _stroke_px("base", render_dpi)
+    broad_width_px = _stroke_px("data", render_dpi)
+    support_width_px = _stroke_px("emphasis", render_dpi)
+    step_labels = ("broad", "gate", "after")
 
-    frame_top = 92
-    frame_bottom = 360
-    cue_y = 390
-    label_y = 436
-    gap = 118
-    usable_width = width_px - 2 * 160
-    frame_width = int((usable_width - 2 * gap) / 3)
-    x_positions = [160 + idx * (frame_width + gap) for idx in range(3)]
-    highlight_fill = (248, 236, 189)
+    outer_pad_x = int(round(width_px * 0.045))
+    outer_pad_top = int(round(height_px * 0.08))
+    outer_pad_bottom = int(round(height_px * 0.15))
+    title_band = int(round(height_px * 0.08))
+    col_gap = int(round(width_px * 0.04))
+    tile_width = int(round((width_px - 2 * outer_pad_x - 2 * col_gap) / 3))
+    trace_top = outer_pad_top + title_band
+    trace_bottom = height_px - outer_pad_bottom
+    band_half_width = max(2, int(round(width_px * 0.003)))
 
     def _draw_profile_points(
         x0: int,
@@ -294,100 +231,83 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
         y_base: int,
         y_span: int,
     ) -> list[tuple[int, int]]:
-        xs = np.linspace(x0 + 30, x1 - 30, 96)
+        xs = np.linspace(x0 + 14, x1 - 14, 96)
         norm_x = np.linspace(-1.0, 1.0, xs.size)
         curve = np.exp(-0.5 * (norm_x / max(width_scale, 1e-3)) ** 2)
         ys = y_base - center_strength * curve * y_span
         return [(int(round(x)), int(round(y))) for x, y in zip(xs, ys, strict=False)]
 
-    for idx, ((label, color), x0) in enumerate(zip(labels, x_positions, strict=False)):
-        x1 = x0 + frame_width
-        draw.rounded_rectangle(
-            (x0, frame_top, x1, frame_bottom),
-            radius=20,
-            fill=frame_fill,
-            outline=frame_outline,
-            width=4,
+    for idx, label in enumerate(step_labels):
+        tile_left = outer_pad_x + idx * (tile_width + col_gap)
+        tile_right = tile_left + tile_width
+        tile_top = trace_top
+        tile_bottom = trace_bottom
+        baseline_y = trace_bottom - int(round((trace_bottom - trace_top) * 0.18))
+        x_center = (tile_left + tile_right) // 2
+        label_bbox = draw.textbbox((0, 0), label, font=label_font)
+        label_x = tile_left + (tile_width - (label_bbox[2] - label_bbox[0])) / 2
+        draw.text(
+            (label_x, outer_pad_top - label_bbox[1]),
+            label,
+            fill=STYLE_COLORS["muted_text"],
+            font=label_font,
         )
-        x_center = (x0 + x1) // 2
-        draw.rectangle((x_center - 7, frame_top + 18, x_center + 7, frame_bottom - 18), fill=highlight_fill)
-        baseline_y = frame_bottom - 30
-        draw.line((x0 + 24, baseline_y, x1 - 24, baseline_y), fill=baseline_color, width=3)
+        draw.rectangle(
+            (x_center - band_half_width, trace_top, x_center + band_half_width, baseline_y),
+            fill=highlight_fill,
+        )
+        draw.line(
+            (tile_left, baseline_y, tile_right, baseline_y),
+            fill=baseline_color,
+            width=baseline_width_px,
+        )
 
         if idx == 0:
-            broad_points = _draw_profile_points(x0, x1, 0.58, 0.52, y_base=baseline_y, y_span=88)
-            broad_polygon = [(broad_points[0][0], baseline_y), *broad_points, (broad_points[-1][0], baseline_y)]
-            draw.polygon(broad_polygon, fill="#F2F1EC")
-            draw.line(broad_points, fill=color, width=7, joint="curve")
-            shoulder_points = _draw_profile_points(x0, x1, 0.44, 0.34, y_base=baseline_y, y_span=72)
-            draw.line(shoulder_points, fill="#8F8F8F", width=4, joint="curve")
+            broad_points = _draw_profile_points(
+                tile_left,
+                tile_right,
+                0.32,
+                0.62,
+                y_base=baseline_y,
+                y_span=int((trace_bottom - trace_top) * 0.42),
+            )
+            draw.line(
+                broad_points,
+                fill=broad_color,
+                width=broad_width_px,
+                joint="curve",
+            )
         elif idx == 1:
-            gate_points = _draw_profile_points(x0, x1, 0.88, 0.10, y_base=baseline_y, y_span=112)
-            polygon = [(gate_points[0][0], baseline_y), *gate_points, (gate_points[-1][0], baseline_y)]
-            draw.polygon(polygon, fill="#D8F0E5")
-            draw.line(gate_points, fill=color, width=7, joint="curve")
+            gate_points = _draw_profile_points(
+                tile_left,
+                tile_right,
+                0.70,
+                0.13,
+                y_base=baseline_y,
+                y_span=int((trace_bottom - trace_top) * 0.50),
+            )
+            draw.line(
+                gate_points,
+                fill=support_color,
+                width=support_width_px,
+                joint="curve",
+            )
         else:
-            before_points = _draw_profile_points(x0, x1, 0.52, 0.48, y_base=baseline_y, y_span=82)
-            draw.line(before_points[::2], fill="#9A9A9A", width=4)
-            xs = np.linspace(x0 + 30, x1 - 30, 96)
+            xs = np.linspace(tile_left + 14, tile_right - 14, 96)
             norm_x = np.linspace(-1.0, 1.0, xs.size)
-            broad = 0.36 * np.exp(-0.5 * (norm_x / 0.62) ** 2)
-            notch = 0.28 * np.exp(-0.5 * (norm_x / 0.12) ** 2)
-            cleaned = np.clip(broad - notch + 0.03, 0.04, None)
+            broad = 0.34 * np.exp(-0.5 * (norm_x / 0.66) ** 2)
+            notch = 0.20 * np.exp(-0.5 * (norm_x / 0.15) ** 2)
+            cleaned = np.clip(broad - notch + 0.04, 0.05, None)
             cleaned_points = [
-                (int(round(x)), int(round(baseline_y - value * 120.0)))
+                (int(round(x)), int(round(baseline_y - value * (trace_bottom - trace_top) * 0.58)))
                 for x, value in zip(xs, cleaned, strict=False)
             ]
-            draw.line(cleaned_points, fill=color, width=7, joint="curve")
-
-        step_bbox = draw.textbbox((0, 0), step_tags[idx], font=step_font)
-        step_x = x0 + 26
-        step_y = frame_top + 16
-        step_box = (
-            step_x - 10,
-            step_y - 4,
-            step_x + (step_bbox[2] - step_bbox[0]) + 10,
-            step_y + (step_bbox[3] - step_bbox[1]) + 4,
-        )
-        draw.rounded_rectangle(step_box, radius=10, fill="#F4F4EF", outline=None)
-        draw.text((step_x, step_y), step_tags[idx], fill="#5E5E5E", font=step_font)
-
-        label_bbox = draw.textbbox((0, 0), label, font=label_font)
-        label_x = x_center - (label_bbox[2] - label_bbox[0]) // 2
-        draw.text((label_x, label_y), label, fill=color, font=label_font)
-        cue = cues[idx]
-        cue_bbox = draw.textbbox((0, 0), cue, font=cue_font)
-        cue_x = x_center - (cue_bbox[2] - cue_bbox[0]) // 2
-        draw.text((cue_x, cue_y), cue, fill="#666666", font=cue_font)
-
-        if idx < len(x_positions) - 1:
-            y_mid = (frame_top + frame_bottom) // 2
-            arrow_start = (x1 + 18, y_mid)
-            arrow_end = (x1 + gap - 24, y_mid)
-            _draw_arrow(
-                draw,
-                arrow_start,
-                arrow_end,
-                fill=arrow_color,
-                width=5,
-                head_size=14,
+            draw.line(
+                cleaned_points,
+                fill=support_color,
+                width=support_width_px,
+                joint="curve",
             )
-            transition = transition_tags[idx]
-            transition_bbox = draw.textbbox((0, 0), transition, font=transition_font)
-            transition_x = (arrow_start[0] + arrow_end[0] - (transition_bbox[2] - transition_bbox[0])) // 2
-            transition_y = y_mid - 34
-            draw.rounded_rectangle(
-                (
-                    transition_x - 8,
-                    transition_y - 4,
-                    transition_x + (transition_bbox[2] - transition_bbox[0]) + 8,
-                    transition_y + (transition_bbox[3] - transition_bbox[1]) + 4,
-                ),
-                radius=10,
-                fill="#F7F7F3",
-                outline=None,
-            )
-            draw.text((transition_x, transition_y), transition, fill="#5A5A5A", font=transition_font)
 
     _ensure_parent(panel_path)
     canvas.save(panel_path, quality=95)
@@ -517,6 +437,10 @@ def _reorder_strip_tiles(img: Image.Image, order: list[int]) -> Image.Image:
 
 def _mm_to_px(mm: float) -> int:
     return int(round(mm / MM_PER_INCH * COMPOSE_DPI))
+
+
+def _stroke_px(token_name: str, dpi: int, *, minimum: int = 1) -> int:
+    return max(minimum, pt_to_px(stroke_pt(token_name), dpi))
 
 
 def _normalize_figure_ids(raw: str | None) -> list[str]:
@@ -915,34 +839,39 @@ def compose_fig03(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig04(paper_dir: Path) -> list[Path]:
-    """Fig 4: top mechanism strip + stacked mechanism panels + tall comparator payoff."""
+    """Fig. 4: balanced 2x2 composite built from panel assets."""
     fig04_asset = paper_dir / "fig04_solver-dynamics.jpg"
     fig04_layout_asset = fig04_asset.with_suffix(".layout.json")
 
-    _build_fig04_architecture_panel(FIG04_PANEL_A)
-    panel_a = _trim_white_border(Image.open(FIG04_PANEL_A).convert("RGB"), padding=0)
-    panel_a = _crop_relative(panel_a, *FIG04_PANEL_A_CROP)
     figure_width_px = _mm_to_px(FIG04_WIDTH_MM)
     figure_height_px = _mm_to_px(FIG04_HEIGHT_MM)
     outer_margin_px = _mm_to_px(FIG04_OUTER_MARGIN_MM)
     row_gap_px = _mm_to_px(FIG04_ROW_GAP_MM)
     col_gap_px = _mm_to_px(FIG04_COL_GAP_MM)
-    a_slot_width_px = _mm_to_px(FIG04_PANEL_A_SLOT_WIDTH_MM)
-    middle_slot_width_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_WIDTH_MM)
-    d_slot_width_px = _mm_to_px(FIG04_PANEL_D_SLOT_WIDTH_MM)
-    a_slot_height_px = _mm_to_px(FIG04_PANEL_A_SLOT_HEIGHT_MM)
-    middle_slot_height_px = _mm_to_px(FIG04_MIDDLE_PANEL_SLOT_HEIGHT_MM)
-    d_slot_height_px = _mm_to_px(FIG04_PANEL_D_SLOT_HEIGHT_MM)
+    left_col_width_px = _mm_to_px(FIG04_LEFT_COL_WIDTH_MM)
+    right_col_width_px = _mm_to_px(FIG04_RIGHT_COL_WIDTH_MM)
+    top_row_height_px = _mm_to_px(FIG04_TOP_ROW_HEIGHT_MM)
+    bottom_row_height_px = _mm_to_px(FIG04_BOTTOM_ROW_HEIGHT_MM)
 
     a_slot_left_px = outer_margin_px
     a_slot_top_px = outer_margin_px
-    block_top_px = outer_margin_px + a_slot_height_px + row_gap_px
-    b_slot_left_px = outer_margin_px
-    c_slot_left_px = b_slot_left_px
-    d_slot_left_px = b_slot_left_px + middle_slot_width_px + col_gap_px
-    b_slot_top_px = block_top_px
-    c_slot_top_px = b_slot_top_px + middle_slot_height_px + row_gap_px
-    d_slot_top_px = block_top_px
+    a_slot_width_px = left_col_width_px
+    a_slot_height_px = top_row_height_px
+
+    b_slot_left_px = a_slot_left_px + left_col_width_px + col_gap_px
+    b_slot_top_px = outer_margin_px
+    b_slot_width_px = right_col_width_px
+    b_slot_height_px = top_row_height_px
+
+    c_slot_left_px = outer_margin_px
+    c_slot_top_px = a_slot_top_px + top_row_height_px + row_gap_px
+    c_slot_width_px = left_col_width_px
+    c_slot_height_px = bottom_row_height_px
+
+    d_slot_left_px = b_slot_left_px
+    d_slot_top_px = c_slot_top_px
+    d_slot_width_px = right_col_width_px
+    d_slot_height_px = bottom_row_height_px
 
     def _content_box(
         slot_left_px: int,
@@ -995,48 +924,56 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
 
+    a_content_box = FIG04_CONTENT_BOXES_MM["panel_a"]
+    b_content_box = FIG04_CONTENT_BOXES_MM["panel_b"]
+    c_content_box = FIG04_CONTENT_BOXES_MM["panel_c"]
+    d_content_box = FIG04_CONTENT_BOXES_MM["panel_d"]
+
     a_content_left_px, a_content_top_px, a_content_width_px, a_content_height_px = _content_box(
         a_slot_left_px,
         a_slot_top_px,
         a_slot_width_px,
         a_slot_height_px,
-        inset_x_mm=1.0,
-        label_lane_mm=2.0,
-        inset_bottom_mm=0.8,
+        inset_x_mm=a_content_box["inset_x"],
+        label_lane_mm=a_content_box["label_lane"],
+        inset_bottom_mm=a_content_box["inset_bottom"],
     )
-    panel_a, panel_a_geometry = _contain_in_box_with_geometry(
-        panel_a,
-        a_content_width_px,
-        a_content_height_px,
+    panel_a, panel_a_axes = _paste_panel_pdf(
+        FIG04_PANEL_A,
+        padding=6,
+        content_left_px=a_content_left_px,
+        content_top_px=a_content_top_px,
+        content_width_px=a_content_width_px,
+        content_height_px=a_content_height_px,
     )
     canvas.paste(panel_a, (a_content_left_px, a_content_top_px))
 
     b_content_left_px, b_content_top_px, b_content_width_px, b_content_height_px = _content_box(
         b_slot_left_px,
         b_slot_top_px,
-        middle_slot_width_px,
-        middle_slot_height_px,
-        inset_x_mm=1.2,
-        label_lane_mm=3.4,
-        inset_bottom_mm=1.0,
+        b_slot_width_px,
+        b_slot_height_px,
+        inset_x_mm=b_content_box["inset_x"],
+        label_lane_mm=b_content_box["label_lane"],
+        inset_bottom_mm=b_content_box["inset_bottom"],
     )
     c_content_left_px, c_content_top_px, c_content_width_px, c_content_height_px = _content_box(
         c_slot_left_px,
         c_slot_top_px,
-        middle_slot_width_px,
-        middle_slot_height_px,
-        inset_x_mm=1.2,
-        label_lane_mm=3.4,
-        inset_bottom_mm=1.0,
+        c_slot_width_px,
+        c_slot_height_px,
+        inset_x_mm=c_content_box["inset_x"],
+        label_lane_mm=c_content_box["label_lane"],
+        inset_bottom_mm=c_content_box["inset_bottom"],
     )
     d_content_left_px, d_content_top_px, d_content_width_px, d_content_height_px = _content_box(
         d_slot_left_px,
         d_slot_top_px,
         d_slot_width_px,
         d_slot_height_px,
-        inset_x_mm=0.8,
-        label_lane_mm=3.2,
-        inset_bottom_mm=0.8,
+        inset_x_mm=d_content_box["inset_x"],
+        label_lane_mm=d_content_box["label_lane"],
+        inset_bottom_mm=d_content_box["inset_bottom"],
     )
 
     panel_b, panel_b_axes = _paste_panel_pdf(
@@ -1084,77 +1021,32 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         panels=[
             {
                 "panel_id": "a",
-                "title": "Mechanism strip",
-                "asset_path": "figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg",
-                "provenance_mode": "manual_support",
+                "title": "Local band in H",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_local_band.pdf",
+                "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "b",
-                "title": "Broad match, local gate, and local update",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf",
+                "title": "Representative exemplar",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_representative_overlay.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "c",
-                "title": "Residual after one local step",
+                "title": "Validation set",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "d",
-                "title": "Secondary clean-condition check",
+                "title": "Clean decoder family",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf",
                 "provenance_mode": "data_backed",
             },
         ],
     )
-    a_bbox = _bbox_payload_from_canvas_px(
-        a_content_left_px + int(panel_a_geometry["offset_x_px"]),
-        a_content_top_px + int(panel_a_geometry["offset_y_px"]),
-        int(panel_a_geometry["resized_width_px"]),
-        int(panel_a_geometry["resized_height_px"]),
-        canvas_width_px=figure_width_px,
-        canvas_height_px=figure_height_px,
-        figure_width_mm=FIG04_WIDTH_MM,
-        figure_height_mm=FIG04_HEIGHT_MM,
-    )
-    a_slot_bbox = _bbox_payload_from_canvas_px(
-        a_slot_left_px,
-        a_slot_top_px,
-        a_slot_width_px,
-        a_slot_height_px,
-        canvas_width_px=figure_width_px,
-        canvas_height_px=figure_height_px,
-        figure_width_mm=FIG04_WIDTH_MM,
-        figure_height_mm=FIG04_HEIGHT_MM,
-    )
-    axes_payload: list[dict[str, Any]] = [
-        {
-            "index": 0,
-            "panel_id": "a",
-            "gid": "fig04.panel_a.main",
-            "kind": "manual",
-            "has_data": False,
-            "title": "Mechanism strip",
-            **a_bbox,
-            "decorated_bbox_norm": a_slot_bbox["bbox_norm"],
-            "decorated_bbox_mm": a_slot_bbox["bbox_mm"],
-            "title_bbox_norm": None,
-            "title_bbox_mm": None,
-            "xlabel": None,
-            "xlabel_bbox_norm": None,
-            "xlabel_bbox_mm": None,
-            "ylabel": None,
-            "ylabel_bbox_norm": None,
-            "ylabel_bbox_mm": None,
-            "xticklabels_bbox_norm": None,
-            "xticklabels_bbox_mm": None,
-            "yticklabels_bbox_norm": None,
-            "yticklabels_bbox_mm": None,
-            "legend_bbox_norm": None,
-            "legend_bbox_mm": None,
-        }
-    ]
+    axes_payload: list[dict[str, Any]] = []
+    axes_payload.extend(panel_a_axes)
     axes_payload.extend(panel_b_axes)
     axes_payload.extend(panel_c_axes)
     axes_payload.extend(panel_d_axes)

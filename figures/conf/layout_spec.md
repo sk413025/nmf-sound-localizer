@@ -38,42 +38,74 @@ fonts:
   annotation: 6.5
   colorbar_tick: 5.5
   colorbar_label: 5.5
+semantic_palette:
+  physics: "#0072B2"
+  learned: "#009E73"
+  ablation: "#D55E00"
+  highlight: "#E69F00"
+  classical: "#E69F00"
+stroke_tokens:
+  base: 0.9
+  data: 1.0
+  emphasis: 1.1
+  grid: 0.5
+  annotation: 0.7
+family_style:
+  compact_marker_pt: 2.5
+  standard_marker_pt: 3.0
+  compact_capsize_pt: 1.8
+  fill_alpha_primary: 0.12
+  fill_alpha_secondary: 0.10
+  fill_alpha_tertiary: 0.08
+  summary_stem_alpha: 0.30
+  summary_point_alpha: 0.68
+  grid_alpha: 0.28
+style_colors:
+  neutral_text: "#1A1A1A"
+  muted_text: "#666666"
+  dense_routing: "#4A4A4A"
+  guide_line: "#8F8F8F"
+  guide_fill: "#E7E7E7"
+  chance_fill: "#F5F5F5"
+  chance_line: "#CFCFCF"
+  highlight_fill: "#F7E8AD"
 figures:
   fig04:
     compose:
       width_mm: 183.0
-      height_mm: 150.0
+      height_mm: 126.0
       outer_margin_mm: 4.0
-      panel_a_slot_width_mm: 175.0
-      panel_a_slot_height_mm: 32.0
-      row_gap_mm: 4.0
-      col_gap_mm: 4.0
-      middle_panel_slot_width_mm: 113.0
-      middle_panel_slot_height_mm: 50.0
-      panel_d_slot_width_mm: 58.0
-      panel_d_slot_height_mm: 104.0
-      label_lane_mm: 4.5
-      content_inset_x_mm: 1.5
-      content_inset_bottom_mm: 1.5
+      top_row_height_mm: 55.0
+      bottom_row_height_mm: 55.0
+      left_col_width_mm: 84.5
+      right_col_width_mm: 84.5
+      row_gap_mm: 8.0
+      col_gap_mm: 6.0
+      content_boxes_mm:
+        panel_a: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
+        panel_b: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
+        panel_c: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
+        panel_d: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 114.0
+      composite_height_mm: 118.0
       composite_grid:
-        left: 0.085
-        right: 0.990
-        bottom: 0.08
-        top: 0.975
-        hspace: 0.34
-        wspace: 0.21
-        width_ratios: [113.0, 58.0]
-        height_ratios: [50.0, 50.0]
+        left: 0.055
+        right: 0.992
+        bottom: 0.085
+        top: 0.965
+        hspace: 0.28
+        wspace: 0.24
+        width_ratios: [84.5, 84.5]
+        height_ratios: [55.0, 55.0]
       split:
-        panel_slot_width_mm: {b: 113.0, c: 113.0, d: 58.0}
-        panel_slot_height_mm: {b: 50.0, c: 50.0, d: 104.0}
+        panel_slot_width_mm: {a: 84.5, b: 84.5, c: 84.5, d: 84.5}
+        panel_slot_height_mm: {a: 55.0, b: 55.0, c: 55.0, d: 55.0}
         standalone_subplots:
-          b: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
-          c: {left: 0.13, right: 0.995, bottom: 0.16, top: 0.975}
-          d: {left: 0.27, right: 0.993, bottom: 0.08, top: 0.975}
+          a: {left: 0.125, right: 0.985, bottom: 0.190, top: 0.900}
+          b: {left: 0.095, right: 0.985, bottom: 0.190, top: 0.900}
+          c: {left: 0.115, right: 0.985, bottom: 0.190, top: 0.900}
+          d: {left: 0.145, right: 0.985, bottom: 0.190, top: 0.900}
   fig05:
     generator:
       composite_width_mm: 183.0

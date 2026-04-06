@@ -30,10 +30,10 @@ f, Dose-response curves for stage-0 correlation-based first-choice matching vers
 ## Fig. 4 (4 panels)
 
 **Fig. 4 | Preserving measured local continuity before subtraction stabilizes readout.**
-a, Schematic of the local-continuity hypothesis: a broad physical match is first restricted to the supported angle neighborhood, then subtracted.
+a, Measured local-overlap structure from the fixed dictionary \(H\), shown as an angle-by-angle similarity map around the representative 70° target.
 b, Representative 70° validation exemplar: residual-to-dictionary matching initially spans nearby calibrated directions, local gating concentrates that support around the correct neighborhood, and the resulting update remains confined to that band.
-c, Residual profile before and after one refinement step for the same exemplar. The 15° mass callout summarizes the validation-wide shift across 1,924 clips (0.18 to 0.98). The residual trace shown in the panel comes from the representative exemplar and drops from 1.00 to 0.48.
-d, Restricted clean-condition comparison of four overlap-handling rules on the same fixed dictionary (individual seeds shown as dots; points with horizontal bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing, consistent with accurate subtraction requiring preservation of the local angle band.
+c, Validation-wide cumulative update mass within radius before and after one local step across 1,924 clips. The mass within 15° rises from 0.18 to 0.98, showing that the local step concentrates the update inside the supported neighborhood.
+d, Clean-condition comparison of four overlap-handling rules on the same fixed dictionary (individual seeds shown as dots; large markers and error bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing, consistent with accurate subtraction requiring preservation of the local angle band.
 
 ## Fig. 5 (5 panels)
 
