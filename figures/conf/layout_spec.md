@@ -149,15 +149,15 @@ figures:
   fig06:
     compose:
       width_mm: 183.0
-      height_mm: 156.0
+      height_mm: 165.0
       outer_margin_x_mm: 6.0
       outer_margin_top_mm: 4.0
       outer_margin_bottom_mm: 4.0
-      panel_a_height_mm: 17.0
-      panel_b_height_mm: 28.0
+      panel_a_height_mm: 28.0
+      panel_b_height_mm: 29.0
       row_cd_height_mm: 48.0
-      panel_d_width_mm: 79.0
-      panel_e_height_mm: 46.0
+      panel_d_width_mm: 83.0
+      panel_e_height_mm: 43.0
       col_gap_mm: 4.0
       row_gap_mm: 3.0
     typography:
@@ -170,37 +170,41 @@ figures:
       colorbar_label: 5.5
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 131.0
+      composite_height_mm: 165.0
       composite_grid:
         left: 0.055
         right: 0.945
         bottom: 0.065
         top: 0.955
-        hspace: 0.22
+        hspace: 0.24
         wspace: 0.0
         width_ratios: [1.0]
-        height_ratios: [28.0, 48.0, 46.0]
+        height_ratios: [28.0, 29.0, 48.0, 43.0]
       middle_row:
         wspace: 0.18
-        width_ratios: [88.0, 79.0]
+        width_ratios: [84.0, 83.0]
       split:
         standalone:
-          b:
+          a:
             width_mm: 171.0
             height_mm: 28.0
+            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.26, top: 0.88}
+          b:
+            width_mm: 171.0
+            height_mm: 29.0
             subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.18, top: 0.92}
           c:
-            width_mm: 88.0
+            width_mm: 84.0
             height_mm: 48.0
             subplots_adjust: {left: 0.11, right: 0.985, bottom: 0.17, top: 0.92}
           d:
-            width_mm: 79.0
+            width_mm: 83.0
             height_mm: 48.0
             subplots_adjust: {left: 0.12, right: 0.985, bottom: 0.20, top: 0.92}
           e:
             width_mm: 171.0
-            height_mm: 46.0
-            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.16, top: 0.92}
+            height_mm: 43.0
+            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.18, top: 0.92}
 ```
 <!-- runtime-layout-contract:end -->
 
@@ -481,9 +485,9 @@ intentional and exists to prevent decorated text from colliding across rows.
 
 ## Figure 6 — Universality (5 panels)
 
-Composed: a cropped manual exemplar strip `a` on top, a full-width generated `H` row `b`, then a shared row with low-rank continuity `c` on the left and an exploratory screen summary `e` on the right, followed by a full-width material-frequency mechanism row `d`.
-Panel `a` remains a manual support asset and must stay tightly cropped to suppress the oversized slide-style title and bracket text from the legacy source image.
-Panels `b-e` are data-backed and generated at their final manuscript slot sizes.
+Composed: a full-width measured response-regime map `a`, a full-width generated `H` row `b`, then a shared row with local-ordering decay `c` on the left and readout-versus-overlap summary `d` on the right, followed by a full-width object-conditioned contrast-band row `e`.
+Panel `a` is rebuilt through the governed generator path rather than passed through a cropped legacy support strip.
+Panels `a-e` are generated at their final manuscript slot sizes.
 
 ```
                          183.0 mm
@@ -491,30 +495,29 @@ Panels `b-e` are data-backed and generated at their final manuscript slot sizes.
 ┌──────────────────────────────────────────────────────┐ ─┬─
 │                outer top margin 4 mm                │  │
 ├──────────────────────────────────────────────────────┤ ─┼─
-│      (a) 171.0 × 32.0 mm exemplar strip             │  │ 32.0 mm
+│   (a) 171.0 × 28.0 mm response-regime map           │  │ 28.0 mm
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
-│      (b) 171.0 × 32.0 mm cross-material H row       │  │ 32.0 mm
+│      (b) 171.0 × 29.0 mm cross-material H row       │  │ 29.0 mm
 ├───────────────────────────────┬──────────────────────┤ ─┼─ 4.0 mm
-│ (c) 112.0 × 56.0 mm           │ (e) 54.0 × 56.0 mm  │  │ 56.0 mm
-│ Low-rank continuity           │ Exploratory summary  │  │
+│ (c) 84.0 × 48.0 mm            │ (d) 83.0 × 48.0 mm  │  │ 48.0 mm
+│ Local-ordering decay          │ Readout summary      │  │
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
-│      (d) 171.0 × 62.0 mm material mechanism row     │  │ 62.0 mm
+│ (e) 171.0 × 43.0 mm contrast-band + code row        │  │ 43.0 mm
 └───────────────────────────────┴──────────────────────┘ ─┼─
-                  5.0 mm gap                           │  │
                                                         ─┴─ 4.0 mm bottom margin
 ```
 
 | Parameter         | Value                       |
 |------------------|-----------------------------|
 | width_mm         | 183                         |
-| height_mm        | **202**                     |
+| height_mm        | **165**                     |
 | outer_margin_x   | **6.0 mm** each side        |
 | outer_margin_top | **4.0 mm**                  |
 | outer_margin_bot | **4.0 mm**                  |
-| Panel (a)        | **171.0 × 32.0 mm**         |
-| Panel (b)        | **171.0 × 32.0 mm**         |
-| Panel (c)        | **112.0 × 56.0 mm**         |
-| Panel (d)        | **171.0 × 62.0 mm**         |
-| Panel (e)        | **54.0 × 56.0 mm**          |
+| Panel (a)        | **171.0 × 28.0 mm**         |
+| Panel (b)        | **171.0 × 29.0 mm**         |
+| Panel (c)        | **84.0 × 48.0 mm**          |
+| Panel (d)        | **83.0 × 48.0 mm**          |
+| Panel (e)        | **171.0 × 43.0 mm**         |
 | row_gap          | **4.0 mm**                  |
-| col_gap          | **5.0 mm**                  |
+| col_gap          | **4.0 mm**                  |

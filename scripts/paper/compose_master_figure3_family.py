@@ -9,7 +9,7 @@ from panel-level assets whenever possible:
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
 - Fig. 4: Solver Mechanism (4 panels: local band + representative + validation + comparison)
 - Fig. 5: Performance + Structure (5 panels: all generated)
-- Fig. 6: Universality (5 panels: a manual support + b,c,d,e generated)
+- Fig. 6: Universality (5 panels: all generated under governed layout)
 """
 
 from __future__ import annotations
@@ -100,8 +100,10 @@ FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
 FIG05_WIDTH_MM = 183.0
 
-# --- Figure 6: Universality (5 panels: a manual support + b,c,d,e generated) ---
-FIG06_PANEL_A = REPO_ROOT / "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png"
+# --- Figure 6: Universality (5 panels: all generated under governed layout) ---
+FIG06_COMPOSITE = REPO_ROOT / "figures/output/fig06_universality.pdf"
+FIG06_COMPOSITE_LAYOUT = FIG06_COMPOSITE.with_suffix(".layout.json")
+FIG06_PANEL_A = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_a_response_regime.pdf"
 FIG06_PANEL_B = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf"
 FIG06_PANEL_C = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf"
 FIG06_PANEL_D = REPO_ROOT / "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf"
@@ -129,18 +131,10 @@ except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06
     FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_ROW_CD_HEIGHT_MM = FIG06_PANEL_E_HEIGHT_MM = 0.0
     FIG06_PANEL_D_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
     FIG06_ROW_GAP_MM = 0.0
-FIG06_PANEL_A_CROP = (0.015, 0.405, 0.985, 0.755)
 FIG06_TYPOGRAPHY_PT = {
     **font_tokens(),
     **figure_section("fig06", "typography"),
 }
-FIG06_SCREENING_STRIP_LABELS = (
-    "1 Cardboard",
-    "2 Wood",
-    "3 Acrylic",
-    "4 Cup",
-    "5 Laptop",
-)
 
 
 def _ensure_parent(path: Path) -> None:
@@ -311,39 +305,6 @@ def _build_fig04_architecture_panel(panel_path: Path) -> None:
     _ensure_parent(panel_path)
     canvas.save(panel_path, quality=95)
 
-
-def _annotate_fig06_screening_strip(panel_a: Image.Image) -> Image.Image:
-    annotated = panel_a.copy()
-    draw = ImageDraw.Draw(annotated)
-    tag_font = _load_font(24)
-    n_tiles = len(FIG06_SCREENING_STRIP_LABELS)
-    tile_width = annotated.width / n_tiles
-    top_pad = max(int(round(annotated.height * 0.08)), 10)
-    left_pad = max(int(round(tile_width * 0.04)), 12)
-
-    for idx, label in enumerate(FIG06_SCREENING_STRIP_LABELS):
-        text_bbox = draw.textbbox((0, 0), label, font=tag_font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        x0 = int(round(idx * tile_width)) + left_pad
-        y0 = top_pad
-        draw.rounded_rectangle(
-            (
-                x0 - 10,
-                y0 - 6,
-                x0 + text_width + 12,
-                y0 + text_height + 8,
-            ),
-            radius=12,
-            fill="#F7F7F3",
-            outline="#D8D8D0",
-            width=2,
-        )
-        draw.text((x0, y0), label, fill="#1F1F1F", font=tag_font)
-
-    return annotated
-
-
 def _trim_white_border_with_bbox(img: Image.Image, padding: int = 8) -> tuple[Image.Image, tuple[int, int, int, int]]:
     rgb = ImageOps.exif_transpose(img).convert("RGB")
     bg = Image.new("RGB", rgb.size, "white")
@@ -396,42 +357,6 @@ def _contain_in_box_with_geometry(
         "resized_height_px": target_height,
         "scale": scale,
     }
-
-
-def _crop_relative(
-    img: Image.Image,
-    left: float,
-    top: float,
-    right: float,
-    bottom: float,
-) -> Image.Image:
-    width, height = img.size
-    box = (
-        int(round(width * left)),
-        int(round(height * top)),
-        int(round(width * right)),
-        int(round(height * bottom)),
-    )
-    return img.crop(box)
-
-
-def _reorder_strip_tiles(img: Image.Image, order: list[int]) -> Image.Image:
-    if not order:
-        return img
-    n_tiles = len(order)
-    tile_width = img.width // n_tiles
-    tiles = []
-    for idx in range(n_tiles):
-        left = idx * tile_width
-        right = img.width if idx == n_tiles - 1 else (idx + 1) * tile_width
-        tiles.append(img.crop((left, 0, right, img.height)))
-    canvas = Image.new("RGB", img.size, "white")
-    x = 0
-    for idx in order:
-        tile = tiles[idx]
-        canvas.paste(tile, (x, 0))
-        x += tile.width
-    return canvas
 
 
 def _mm_to_px(mm: float) -> int:
@@ -1109,7 +1034,7 @@ def compose_fig05(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig06(paper_dir: Path) -> list[Path]:
-    """Fig 6: manual exemplar strip + H breadth + low-rank + mechanism + consequence."""
+    """Fig 6: governed generated composite promoted to the paper-facing JPG asset."""
     if FIG06_LAYOUT_ERROR is not None:
         raise RuntimeError(
             "Fig. 6 compose contract is invalid in the current worktree; "
@@ -1119,80 +1044,10 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     fig06_asset = paper_dir / "fig06_universality.jpg"
     fig06_layout_asset = fig06_asset.with_suffix(".layout.json")
     manuscript_panel_dir = REPO_ROOT / "figures/output/fig06_universality_manuscript_panels"
-    panel_a_manuscript_asset = manuscript_panel_dir / "fig06_panel_a_material_exemplars.png"
-
-    if not FIG06_PANEL_A.exists():
-        raise FileNotFoundError(f"Missing Fig. 6 panel a support asset: {FIG06_PANEL_A}")
-    panel_a = Image.open(FIG06_PANEL_A).convert("RGB")
-    panel_a = _trim_white_border(panel_a, padding=0)
-    panel_a = _crop_relative(panel_a, *FIG06_PANEL_A_CROP)
-    panel_a = _reorder_strip_tiles(panel_a, [3, 2, 0, 1, 4])
-    panel_b = _trim_white_border(_render_pdf(FIG06_PANEL_B, scale=4.0), padding=4)
-    panel_c = _trim_white_border(_render_pdf(FIG06_PANEL_C, scale=4.0), padding=4)
-    panel_d = _trim_white_border(_render_pdf(FIG06_PANEL_D, scale=4.0), padding=4)
-    panel_e = _trim_white_border(_render_pdf(FIG06_PANEL_E, scale=4.0), padding=4)
-    figure_width_px = _mm_to_px(FIG06_WIDTH_MM)
-    figure_height_px = _mm_to_px(FIG06_HEIGHT_MM)
-    outer_margin_x_px = _mm_to_px(FIG06_OUTER_MARGIN_X_MM)
-    outer_margin_top_px = _mm_to_px(FIG06_OUTER_MARGIN_TOP_MM)
-    outer_margin_bottom_px = _mm_to_px(FIG06_OUTER_MARGIN_BOTTOM_MM)
-    col_gap_px = _mm_to_px(FIG06_COL_GAP_MM)
-    row_gap_px = _mm_to_px(FIG06_ROW_GAP_MM)
-    a_height_mm = FIG06_A_HEIGHT_MM
-    b_height_mm = FIG06_B_HEIGHT_MM
-    row_cd_height_mm = FIG06_ROW_CD_HEIGHT_MM
-    panel_e_height_mm = FIG06_PANEL_E_HEIGHT_MM
-    panel_d_width_mm = FIG06_PANEL_D_WIDTH_MM
-    panel_c_width_mm = (
-        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM - FIG06_COL_GAP_MM - panel_d_width_mm
-    )
-    a_height_px = _mm_to_px(a_height_mm)
-    b_height_px = _mm_to_px(b_height_mm)
-    row_cd_height_px = _mm_to_px(row_cd_height_mm)
-    panel_e_height_px = _mm_to_px(panel_e_height_mm)
-    panel_c_width_px = _mm_to_px(panel_c_width_mm)
-    inner_width_px = figure_width_px - 2 * outer_margin_x_px
-    panel_d_width_px = inner_width_px - panel_c_width_px - col_gap_px
-    if panel_d_width_px <= 0:
-        raise RuntimeError(
-            "Fig. 6 compose contract is inconsistent after px rounding: "
-            f"{inner_width_px=}, {panel_c_width_px=}, {panel_d_width_px=}, {col_gap_px=}"
-        )
-
-    panel_a = _contain_in_box(panel_a, inner_width_px, a_height_px)
-    panel_a = _annotate_fig06_screening_strip(panel_a)
-    panel_b = _contain_in_box(panel_b, inner_width_px, b_height_px)
-    panel_c = _contain_in_box(panel_c, panel_c_width_px, row_cd_height_px)
-    panel_d = _contain_in_box(panel_d, panel_d_width_px, row_cd_height_px)
-    panel_e = _contain_in_box(panel_e, inner_width_px, panel_e_height_px)
-    _save_composite(panel_a, panel_a_manuscript_asset)
-
-    canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
-    draw = ImageDraw.Draw(canvas)
-    row_a_y = outer_margin_top_px
-    row_b_y = row_a_y + a_height_px + row_gap_px
-    row_cd_y = row_b_y + b_height_px + row_gap_px
-    row_e_y = row_cd_y + row_cd_height_px + row_gap_px
-    panel_a_x = outer_margin_x_px
-    panel_b_x = outer_margin_x_px
-    panel_c_x = outer_margin_x_px
-    panel_d_x = panel_c_x + panel_c_width_px + col_gap_px
-    panel_e_x = outer_margin_x_px
-
-    canvas.paste(panel_a, (panel_a_x, row_a_y))
-    canvas.paste(panel_b, (panel_b_x, row_b_y))
-    canvas.paste(panel_c, (panel_c_x, row_cd_y))
-    canvas.paste(panel_d, (panel_d_x, row_cd_y))
-    canvas.paste(panel_e, (panel_e_x, row_e_y))
-
-    _draw_panel_label(
-        draw,
-        "a",
-        panel_a_x + _mm_to_px(2.0),
-        row_a_y + _mm_to_px(1.5),
-    )
-
-    _save_composite(canvas, fig06_asset)
+    if not FIG06_COMPOSITE.exists():
+        raise FileNotFoundError(f"Missing Fig. 6 composite asset: {FIG06_COMPOSITE}")
+    rendered = _render_pdf(FIG06_COMPOSITE, scale=4.0)
+    _save_composite(rendered, fig06_asset)
     manuscript_manifest = manuscript_panel_dir / "fig06_panel_manifest.json"
     _write_reference_panel_manifest(
         manuscript_manifest,
@@ -1201,9 +1056,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
         panels=[
             {
                 "panel_id": "a",
-                "title": "Material exemplars",
-                "asset_path": "figures/output/fig06_universality_manuscript_panels/fig06_panel_a_material_exemplars.png",
-                "provenance_mode": "manual_support",
+                "title": "Measured response regime",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_a_response_regime.pdf",
+                "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "b",
@@ -1213,108 +1068,28 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "c",
-                "title": "Low-rank continuity",
+                "title": "Local-ordering decay",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "d",
-                "title": "Energy versus readout accuracy",
+                "title": "Readout versus overlap burden",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "e",
-                "title": "Object-conditioned band structure",
+                "title": "Object-conditioned contrast band",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
             },
         ],
     )
-    _write_layout_metadata(
-        fig06_layout_asset,
-        {
-            "contract_version": contract_version(),
-            "figure_mm": {"width": FIG06_WIDTH_MM, "height": FIG06_HEIGHT_MM},
-            "axes": [
-                {
-                    "index": 0,
-                    "panel_id": "a",
-                    "kind": "manual",
-                    "has_data": False,
-                    "title": "Material exemplars",
-                    **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_HEIGHT_MM - FIG06_OUTER_MARGIN_TOP_MM - a_height_mm,
-                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        a_height_mm,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 1,
-                    "panel_id": "b",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Cross-material H",
-                    **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM
-                        + panel_e_height_mm
-                        + row_cd_height_mm
-                        + 2 * FIG06_ROW_GAP_MM,
-                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        b_height_mm,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 2,
-                    "panel_id": "c",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Low-rank continuity",
-                    **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + panel_e_height_mm + FIG06_ROW_GAP_MM,
-                        panel_c_width_mm,
-                        row_cd_height_mm,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 3,
-                    "panel_id": "d",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Energy versus readout accuracy",
-                    **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM + panel_c_width_mm + FIG06_COL_GAP_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + panel_e_height_mm + FIG06_ROW_GAP_MM,
-                        panel_d_width_mm,
-                        row_cd_height_mm,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-                {
-                    "index": 4,
-                    "panel_id": "e",
-                    "kind": "rectilinear",
-                    "has_data": True,
-                    "title": "Object-conditioned band structure",
-                    **_bbox_payload(
-                        FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM,
-                        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        panel_e_height_mm,
-                        FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
-                    ),
-                },
-            ],
-            "source_layout_spec": source_layout_spec(),
-            "typography_pt": TYPOGRAPHY_PT,
-        },
-    )
+    if not FIG06_COMPOSITE_LAYOUT.exists():
+        raise FileNotFoundError(f"Missing Fig. 6 composite layout sidecar: {FIG06_COMPOSITE_LAYOUT}")
+    composite_layout = json.loads(FIG06_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
+    _write_layout_metadata(fig06_layout_asset, composite_layout)
     return [fig06_asset, fig06_layout_asset, manuscript_manifest]
 
 

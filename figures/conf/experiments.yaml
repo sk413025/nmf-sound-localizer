@@ -274,15 +274,15 @@ fig05_performance_structure:
 fig06_universality:
   figure_id: fig06
   figure: "Fig 6"
-  title: "Matched calibration extends object-conditioned directional readout beyond the acrylic reference object"
+  title: "A finite locally ordered directional code recurs across passive objects under matched calibration"
   type: mixed_composite
   manuscript_asset: paper/figures/fig06_universality.jpg
   asset_layer: manuscript_composite
   provenance_mode: mixed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 6"
-  claim: "Using the acrylic plate as a reference object, Fig. 6 tests whether matched calibration extends object-conditioned directional readout to other passive objects; across five objects, structured H matrices, compactness, and above-chance readout reappear, but the informative band and performance remain object-specific."
-  legend_summary: "Reference-object extension to five ordinary passive objects, showing object-specific H structure, compactness, above-chance readout, and per-object frequency structure."
+  claim: "Fig. 6 asks whether the finite locally ordered neighborhood identified in the acrylic analysis recurs across passive objects under matched calibration; across five objects, structured H matrices, finite correlation-decay widths, object-conditioned contrast bands, and above-chance readout reappear, while overlap burden and informative frequency remain object-specific."
+  legend_summary: "Five-object recurrence analysis showing measured response regimes, local-ordering decay, descriptive readout-versus-overlap comparison, and object-conditioned contrast bands under matched calibration."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json
   generator: figures/generators/fig06_universality.py
@@ -328,15 +328,21 @@ fig06_universality:
     - path: results/fig06_cross_material_stat_tests_20260331_173907/stats_report.md
       type: md
       description: "Manuscript-facing statistical summary for the current Fig. 6 screening and heterogeneity claims."
-    - path: figures/output/fig06_universality_manuscript_panels/fig06_panel_a_material_exemplars.png
-      type: png
-      description: "Committed support asset for the material exemplars strip."
+    - path: figures/output/fig06_universality_panels/fig06_panel_a_response_regime.pdf
+      type: pdf
+      description: "Measured response-regime map used as the Fig. 6 orienting panel."
   panel_provenance:
     a:
-      title: "Material exemplars"
-      provenance_mode: manual_support
-      asset_path: figures/output/fig06_universality_manuscript_panels/fig06_panel_a_material_exemplars.png
-      note: "Committed support asset retained as the manuscript-facing exemplar strip."
+      title: "Measured response regime"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig06_universality_panels/fig06_panel_a_response_regime.pdf
+      evidence_sources:
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_a.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_p.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
+        - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
+        - results/fig06_universal_equation_factor_audit_20260327_173647/angle_feature_table.csv
     b:
       title: "Cross-material H"
       provenance_mode: data_backed
@@ -348,7 +354,7 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
     c:
-      title: "Low-rank continuity"
+      title: "Local-ordering decay"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf
       evidence_sources:
@@ -357,9 +363,9 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
-        - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/low_rank_summary.csv
+        - results/fig06_universal_equation_factor_audit_20260327_173647/angle_feature_table.csv
     d:
-      title: "Object-conditioned readout and energy"
+      title: "Readout versus overlap burden"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf
       evidence_sources:
@@ -371,11 +377,12 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/comparison_report.json
         - ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916/selection_summary.json
         - ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051/material_performance_summary.csv
+        - results/fig06_universal_equation_factor_audit_20260327_173647/angle_feature_table.csv
         - results/fig06_cross_material_stat_tests_20260331_173907/per_material_above_chance_tests.csv
         - results/fig06_cross_material_stat_tests_20260331_173907/cross_material_heterogeneity.csv
         - results/fig06_cross_material_stat_tests_20260331_173907/stats_report.md
     e:
-      title: "Material frequency structure"
+      title: "Object-conditioned contrast band"
       provenance_mode: data_backed
       asset_path: figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf
       evidence_sources:
@@ -384,4 +391,4 @@ fig06_universality:
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_w.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_b.pth
         - ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841/h_matrix_normalized_original_to_m.pth
-  note: "Panel a remains a manual support asset. Panels b-e are generator-backed against the committed cross-material H-reproduction, support-analysis, and readout-comparison bundles."
+  note: "Panels a-e are generator-backed against the committed cross-material H-reproduction, support-analysis, angle-feature audit, and readout-comparison bundles."

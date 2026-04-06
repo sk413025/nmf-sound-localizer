@@ -1,11 +1,10 @@
 """Figure 6 — Cross-material recurrence under object-specific calibration.
 
-Panel (b): Cross-material H strip across five materials.
-Panel (c): Low-rank continuity summary across materials using a single Fig. 2-style cumulative-energy axis.
-Panel (d): Object-level normalized-energy versus Top-1 summary.
-Panel (e): Cross-object band-selectivity and representative-code summary.
-
-Panel (a) remains a manual support asset and is composed downstream.
+Panel (a): Measured response-regime map across materials.
+Panel (b): Cross-material H strip with the object-specific informative-band window.
+Panel (c): Inter-angle correlation-decay summary across materials.
+Panel (d): Readout summary against overlap-width and response-energy descriptors.
+Panel (e): Object-specific informative-band windows and their recovered directional codes.
 """
 
 from __future__ import annotations
@@ -18,6 +17,8 @@ from typing import Any
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PIL import Image
 
 from figures.layout_contract import (
     contract_version,
@@ -71,6 +72,12 @@ MATERIAL_PANEL_STYLES = {
 FIG06_GENERATOR = figure_section("fig06", "generator")
 FIG06_GRID = dict(FIG06_GENERATOR["composite_grid"])
 FIG06_SPLIT = dict(FIG06_GENERATOR["split"]["standalone"])
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PANEL_A_SOURCE = (
+    REPO_ROOT
+    / "figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png"
+)
+PANEL_A_SOURCE_ORDER = ("a", "p", "w", "b", "m")
 FIG06_MIDDLE_WIDTH_RATIOS = [
     float(FIG06_SPLIT["c"]["width_mm"]),
     float(FIG06_SPLIT["d"]["width_mm"]),
@@ -130,6 +137,57 @@ def _panel_c_material_style(material: str) -> dict[str, str]:
     return MATERIAL_PANEL_STYLES[material]
 
 
+def _trim_white_rgb(tile: np.ndarray, *, pad_px: int = 6) -> np.ndarray:
+    if tile.ndim != 3 or tile.shape[2] < 3:
+        return tile
+    mask = np.any(tile[:, :, :3] < 245, axis=2)
+    if not mask.any():
+        return tile
+    ys, xs = np.where(mask)
+    y0 = max(int(ys.min()) - pad_px, 0)
+    y1 = min(int(ys.max()) + pad_px + 1, tile.shape[0])
+    x0 = max(int(xs.min()) - pad_px, 0)
+    x1 = min(int(xs.max()) + pad_px + 1, tile.shape[1])
+    return tile[y0:y1, x0:x1]
+
+
+def _load_panel_a_thumbnails() -> dict[str, np.ndarray]:
+    if not PANEL_A_SOURCE.exists():
+        raise FileNotFoundError(f"Missing Fig. 6 panel-a source asset: {PANEL_A_SOURCE}")
+    src = np.asarray(Image.open(PANEL_A_SOURCE).convert("RGB"))
+    h, w, _ = src.shape
+    photo_strip = src[int(round(h * 0.32)) : int(round(h * 0.90)), int(round(w * 0.01)) : int(round(w * 0.99))]
+    tile_w = photo_strip.shape[1] // 5
+    thumbs: dict[str, np.ndarray] = {}
+    for idx, material in enumerate(PANEL_A_SOURCE_ORDER):
+        left = idx * tile_w
+        right = photo_strip.shape[1] if idx == 4 else (idx + 1) * tile_w
+        tile = photo_strip[:, left:right]
+        thumbs[material] = _trim_white_rgb(tile, pad_px=4)
+    return thumbs
+
+
+def _correlation_decay(centered_mag: np.ndarray, angle_step_deg: float) -> tuple[np.ndarray, np.ndarray, float]:
+    angle_vectors = centered_mag.T.astype(float)
+    angle_vectors = angle_vectors - angle_vectors.mean(axis=1, keepdims=True)
+    norms = np.linalg.norm(angle_vectors, axis=1, keepdims=True) + 1e-12
+    normalized = angle_vectors / norms
+    corr = normalized @ normalized.T
+    n_angles = corr.shape[0]
+    separations = np.arange(n_angles, dtype=float) * angle_step_deg
+    mean_corr = np.empty(n_angles, dtype=float)
+    for lag in range(n_angles):
+        vals = [corr[i, i + lag] for i in range(n_angles - lag)]
+        if lag > 0:
+            vals.extend(corr[i + lag, i] for i in range(n_angles - lag))
+        mean_corr[lag] = float(np.mean(vals))
+    nonzero = mean_corr[1:]
+    sep_nonzero = separations[1:]
+    crossing = np.where(nonzero <= 0.0)[0]
+    zero_cross_deg = float(sep_nonzero[crossing[0]]) if crossing.size else float(sep_nonzero[-1])
+    return separations, mean_corr, zero_cross_deg
+
+
 def _save_panel_manifest(
     panel_dir: Path,
     panel_specs: list[dict[str, Any]],
@@ -182,6 +240,7 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
     cumulative_energy: dict[str, np.ndarray] = {}
     rank90: dict[str, int] = {}
     rank95: dict[str, int] = {}
+    effective_rank: dict[str, float] = {}
     spectral_envelopes: dict[str, np.ndarray] = {}
     angular_contrast_smooth: dict[str, np.ndarray] = {}
     representative_band_freq_hz: dict[str, float] = {}
@@ -189,6 +248,9 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
     representative_band_hi_khz: dict[str, float] = {}
     representative_directivity: dict[str, np.ndarray] = {}
     overall_energy: dict[str, float] = {}
+    corr_decay_deg: np.ndarray | None = None
+    corr_decay_by_material: dict[str, np.ndarray] = {}
+    corr_zero_cross_deg: dict[str, float] = {}
 
     for material in ranking:
         h_path = h_run_dir / f"h_matrix_normalized_original_to_{material}.pth"
@@ -241,11 +303,21 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
             )
         rank90[material] = computed_rank90
         rank95[material] = computed_rank95
+        effective_rank[material] = float(low_rank_row["effective_rank"])
 
         magnitude = np.abs(h_matrix).astype(float)
         overall_energy[material] = float((magnitude**2).mean())
         envelope = magnitude.mean(axis=1)
         spectral_envelopes[material] = envelope / (envelope.max() + 1e-12)
+
+        separations, mean_corr, zero_cross_deg = _correlation_decay(
+            _centered_magnitude_matrix(h_matrix),
+            angle_step_deg=float(np.median(np.diff(angles))),
+        )
+        if corr_decay_deg is None:
+            corr_decay_deg = separations
+        corr_decay_by_material[material] = mean_corr
+        corr_zero_cross_deg[material] = zero_cross_deg
 
         contrast = magnitude.std(axis=1) / (magnitude.mean(axis=1) + 1e-12)
         smoothed = _smooth_1d(contrast, window=3)
@@ -281,6 +353,11 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
 
     normalized_energy = _normalize_across_materials(energy_values)
     normalized_top1 = _normalize_across_materials(top1_values)
+    zero_cross_values = np.asarray([corr_zero_cross_deg[material] for material in ranking], dtype=float)
+    normalized_zero_cross = _normalize_across_materials(zero_cross_values)
+
+    if corr_decay_deg is None:
+        raise RuntimeError("No correlation-decay curves were computed for Fig. 6.")
 
     return {
         "comparison_report": comparison_report,
@@ -298,18 +375,26 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
         "cumulative_energy": cumulative_energy,
         "rank90": rank90,
         "rank95": rank95,
+        "effective_rank": effective_rank,
         "spectral_envelopes": spectral_envelopes,
         "angular_contrast_smooth": angular_contrast_smooth,
         "representative_band_freq_hz": representative_band_freq_hz,
         "representative_band_lo_khz": representative_band_lo_khz,
         "representative_band_hi_khz": representative_band_hi_khz,
         "representative_directivity": representative_directivity,
+        "corr_decay_deg": corr_decay_deg,
+        "corr_decay_by_material": corr_decay_by_material,
+        "corr_zero_cross_deg": corr_zero_cross_deg,
         "normalized_energy": {
             material: float(normalized_energy[idx])
             for idx, material in enumerate(ranking)
         },
         "normalized_top1": {
             material: float(normalized_top1[idx])
+            for idx, material in enumerate(ranking)
+        },
+        "normalized_zero_cross": {
+            material: float(normalized_zero_cross[idx])
             for idx, material in enumerate(ranking)
         },
     }
@@ -414,6 +499,14 @@ def _plot_panel_b(
         ax.set_xticks([0, 45, 90, 135, 180])
         ax.set_yticks(y_ticks)
         ax.tick_params(axis="both", labelsize=tick_label_pt, length=2)
+        ax.axhspan(
+            data["representative_band_lo_khz"][material],
+            data["representative_band_hi_khz"][material],
+            facecolor="none",
+            edgecolor=_screening_material_style(material)["color"],
+            linewidth=STROKE_TOKENS["annotation"],
+            linestyle="--",
+        )
         if idx == 0:
             ax.set_ylabel("Freq. (kHz)", fontsize=axis_label_pt)
         else:
@@ -424,6 +517,101 @@ def _plot_panel_b(
     cbar.ax.tick_params(labelsize=colorbar_tick_pt, length=2)
     cbar.set_label(r"$\log_{10}|H|$", fontsize=colorbar_label_pt, labelpad=2)
     return [ax_block, *heatmap_axes, cax]
+
+
+def _plot_panel_a(
+    fig: plt.Figure,
+    slot_spec,
+    data: dict[str, Any],
+    *,
+    axis_label_pt: float,
+    tick_label_pt: float,
+    title_pt: float,
+    add_label: bool,
+) -> list[plt.Axes]:
+    ranking = data["ranking"]
+    ax_block = _make_panel_block(
+        fig,
+        slot_spec,
+        label="a",
+        title=None,
+        title_pt=title_pt,
+        add_label=add_label,
+    )
+    ax = fig.add_subplot(slot_spec)
+    thumbs = _load_panel_a_thumbnails()
+
+    x_vals = np.asarray([data["corr_zero_cross_deg"][material] for material in ranking], dtype=float)
+    y_vals = np.asarray([data["effective_rank"][material] for material in ranking], dtype=float)
+    x_pad = max(3.0, 0.18 * float(x_vals.max() - x_vals.min() + 1e-9))
+    y_pad = max(1.3, 0.18 * float(y_vals.max() - y_vals.min() + 1e-9))
+    ax.set_xlim(float(x_vals.min() - x_pad), float(x_vals.max() + x_pad))
+    ax.set_ylim(max(0.0, float(y_vals.min() - y_pad)), float(y_vals.max() + y_pad))
+    ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+
+    label_offsets = {
+        "b": (-26, 17),
+        "w": (0, -24),
+        "a": (22, 16),
+        "p": (0, 18),
+        "m": (22, -18),
+    }
+    for material in ranking:
+        style = _screening_material_style(material)
+        x = float(data["corr_zero_cross_deg"][material])
+        y = float(data["effective_rank"][material])
+        ax.scatter(
+            [x],
+            [y],
+            s=58,
+            marker=style["marker"],
+            color=style["color"],
+            edgecolors="white",
+            linewidths=STROKE_TOKENS["base"],
+            zorder=3,
+        )
+        thumb = OffsetImage(thumbs[material], zoom=0.075)
+        ab = AnnotationBbox(
+            thumb,
+            (x, y),
+            xybox=(0, 0),
+            boxcoords="offset points",
+            frameon=True,
+            bboxprops={
+                "edgecolor": style["color"],
+                "linewidth": STROKE_TOKENS["base"],
+                "boxstyle": "round,pad=0.08",
+            },
+            pad=0.02,
+            zorder=2,
+        )
+        ax.add_artist(ab)
+        dx, dy = label_offsets.get(material, (0, 16))
+        ax.annotate(
+            MATERIAL_SHORT_LABELS[material],
+            (x, y),
+            xytext=(dx, dy),
+            textcoords="offset points",
+            ha="center",
+            va="bottom" if dy >= 0 else "top",
+            fontsize=max(tick_label_pt - 0.2, 5.4),
+            color=style["color"],
+        )
+
+    ax.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt)
+    ax.set_ylabel(r"Eff. rank of centered $|H|$", fontsize=axis_label_pt)
+    ax.tick_params(axis="both", labelsize=tick_label_pt, length=2)
+    ax.text(
+        0.02,
+        0.96,
+        "measured response descriptors",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=max(tick_label_pt - 0.35, 5.0),
+        color=STYLE_COLORS["muted_text"],
+    )
+    return [ax_block, ax]
 
 
 def _plot_panel_c(
@@ -448,70 +636,74 @@ def _plot_panel_c(
     )
     ax_curve = fig.add_subplot(slot_spec)
 
-    max_modes = 8
-    x = np.arange(1, max_modes + 1)
+    x = data["corr_decay_deg"]
+    focus_mask = x <= 90.0
+    x_focus = x[focus_mask]
     for material in ranking:
         style = _panel_c_material_style(material)
-        curve = data["cumulative_energy"][material][: len(x)]
+        curve = _smooth_1d(data["corr_decay_by_material"][material], window=3)[focus_mask]
         ax_curve.plot(
-            x,
+            x_focus,
             curve,
             marker=style["marker"],
             linewidth=STROKE_TOKENS["data"],
-            markersize=FAMILY_STYLE["standard_marker_pt"],
+            markersize=FAMILY_STYLE["compact_marker_pt"],
             color=style["color"],
             label=MATERIAL_SHORT_LABELS[material],
         )
-        for threshold, marker, face in (
-            (float(data["rank90"][material]), "o", "white"),
-            (float(data["rank95"][material]), "s", style["color"]),
-        ):
-            rank_idx = int(threshold) - 1
-            if 0 <= rank_idx < len(curve):
-                ax_curve.scatter(
-                    threshold,
-                    curve[rank_idx],
-                    s=26,
-                    marker=marker,
-                    facecolors=face,
-                    edgecolors=style["color"],
-                    linewidths=STROKE_TOKENS["base"],
-                    zorder=4,
-                )
-    for threshold in (0.90, 0.95):
-        ax_curve.axhline(
-            threshold,
-            color=GRID_COLOR,
-            linestyle="--",
-            linewidth=STROKE_TOKENS["annotation"],
-            zorder=0,
-        )
-    ax_curve.set_xlim(1.0, max_modes + 0.2)
-    ax_curve.set_ylim(0.0, 1.02)
-    ax_curve.set_xticks(x)
-    ax_curve.set_ylabel(r"Cumul. centered-$|H|$ energy", fontsize=axis_label_pt)
-    ax_curve.set_xlabel("Modes kept", fontsize=axis_label_pt)
+        zero_cross = float(data["corr_zero_cross_deg"][material])
+        if zero_cross <= float(x_focus.max()):
+            idx = int(np.argmin(np.abs(x_focus - zero_cross)))
+            ax_curve.scatter(
+                [zero_cross],
+                [curve[idx]],
+                s=22,
+                marker="o",
+                facecolors="white",
+                edgecolors=style["color"],
+                linewidths=STROKE_TOKENS["base"],
+                zorder=4,
+            )
+    ax_curve.axhline(
+        0.0,
+        color=GRID_COLOR,
+        linestyle="--",
+        linewidth=STROKE_TOKENS["annotation"],
+        zorder=0,
+    )
+    ax_curve.axvspan(
+        0.0,
+        15.0,
+        color=STYLE_COLORS["highlight_fill"],
+        alpha=0.55,
+        zorder=-1,
+    )
+    ax_curve.text(
+        0.04,
+        0.08,
+        "shaded = nearest-angle regime",
+        transform=ax_curve.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=max(tick_label_pt - 0.45, 5.0),
+        color=STYLE_COLORS["muted_text"],
+    )
+    ax_curve.set_xlim(0.0, float(x_focus.max()))
+    ax_curve.set_ylim(-0.42, 1.02)
+    ax_curve.set_xticks([0, 15, 30, 45, 60, 75, 90])
+    ax_curve.set_ylabel(r"Mean centered-$|H|$ corr.", fontsize=axis_label_pt)
+    ax_curve.set_xlabel(r"Angular separation $|\Delta\theta|$ (deg)", fontsize=axis_label_pt)
     ax_curve.tick_params(axis="both", labelsize=tick_label_pt, length=2)
     ax_curve.grid(True, alpha=FAMILY_STYLE["grid_alpha"])
     ax_curve.legend(
         frameon=False,
         fontsize=legend_pt - 0.5,
-        loc="lower right",
+        loc="upper right",
         ncol=2,
         handlelength=1.4,
         borderpad=0.1,
         labelspacing=0.15,
         columnspacing=0.8,
-    )
-    ax_curve.text(
-        0.03,
-        0.06,
-        "open marker = 90%, filled square = 95%",
-        transform=ax_curve.transAxes,
-        ha="left",
-        va="bottom",
-        fontsize=max(tick_label_pt - 0.5, 5.0),
-        color=STYLE_COLORS["muted_text"],
     )
     return [ax_block, ax_curve]
 
@@ -535,12 +727,13 @@ def _plot_panel_d(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.45, 0.80], hspace=0.18)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.45, 0.9], hspace=0.20)
     ax_top = fig.add_subplot(grid[0, 0])
-    ax_bottom = fig.add_subplot(grid[1, 0], sharex=ax_top)
+    ax_bottom = fig.add_subplot(grid[1, 0])
 
     x = np.arange(len(ranking), dtype=float)
     energy = np.asarray([data["normalized_energy"][material] for material in ranking], dtype=float)
+    overlap_width = np.asarray([data["corr_zero_cross_deg"][material] for material in ranking], dtype=float)
     top1 = np.asarray(
         [float(data["performance_by_material"][material]["top1_acc"]) for material in ranking],
         dtype=float,
@@ -588,19 +781,6 @@ def _plot_panel_d(
         linewidth=STROKE_TOKENS["data"],
         zorder=3,
     )
-    ax_bottom.plot(
-        x,
-        energy,
-        color=energy_color,
-        linewidth=STROKE_TOKENS["annotation"],
-        marker="o",
-        markersize=FAMILY_STYLE["standard_marker_pt"],
-        markerfacecolor="white",
-        markeredgecolor=energy_color,
-        label=r"Norm. $|H|$ energy",
-        zorder=2,
-    )
-
     for ax in (ax_top, ax_bottom):
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
@@ -627,18 +807,60 @@ def _plot_panel_d(
         color=STYLE_COLORS["muted_text"],
     )
 
-    ax_bottom.set_ylim(-0.02, 1.02)
-    ax_bottom.set_yticks([0.0, 0.5, 1.0])
-    ax_bottom.set_xticks(x)
-    ax_bottom.set_xticklabels(["Card", "Wood", "Acry.", "Cup", "Laptop"], rotation=20, ha="right")
-    ax_bottom.set_xlabel("Matched object", fontsize=axis_label_pt, labelpad=1.0)
-    ax_bottom.set_ylabel(r"Norm. $|H|$", fontsize=axis_label_pt, labelpad=1.0)
+    marker_sizes = 28.0 + 56.0 * energy
+    for idx, material in enumerate(ranking):
+        style = _screening_material_style(material)
+        ax_bottom.errorbar(
+            [overlap_width[idx]],
+            [top1[idx]],
+            yerr=[[top1[idx] - top1_lo[idx]], [top1_hi[idx] - top1[idx]]],
+            fmt="none",
+            ecolor=top1_color,
+            linewidth=STROKE_TOKENS["data"],
+            capsize=FAMILY_STYLE["compact_capsize_pt"],
+            zorder=2,
+        )
+        ax_bottom.scatter(
+            [overlap_width[idx]],
+            [top1[idx]],
+            s=float(marker_sizes[idx]),
+            marker=style["marker"],
+            color=style["color"],
+            edgecolors="white",
+            linewidths=STROKE_TOKENS["base"],
+            zorder=3,
+        )
+        ax_bottom.annotate(
+            MATERIAL_SHORT_LABELS[material],
+            (overlap_width[idx], top1[idx]),
+            xytext=(0, 7 if idx % 2 == 0 else -9),
+            textcoords="offset points",
+            ha="center",
+            va="bottom" if idx % 2 == 0 else "top",
+            fontsize=max(tick_label_pt - 0.4, 5.0),
+            color=style["color"],
+        )
+    ax_bottom.scatter(
+        [],
+        [],
+        s=52.0,
+        marker="o",
+        facecolors="white",
+        edgecolors=energy_color,
+        linewidths=STROKE_TOKENS["base"],
+        label=r"marker area $\propto$ norm. $|H|$ energy",
+    )
+    ax_bottom.set_xlim(float(overlap_width.min()) - 4.0, float(overlap_width.max()) + 4.0)
+    ax_bottom.set_ylim(0.60, 0.88)
+    ax_bottom.set_yticks([0.65, 0.75, 0.85])
+    ax_bottom.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_bottom.set_ylabel("Top-1 mean", fontsize=axis_label_pt, labelpad=1.0)
     ax_bottom.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
     ax_bottom.legend(
         frameon=False,
-        fontsize=max(tick_label_pt - 0.25, 5.2),
-        loc="upper left",
-        handlelength=1.4,
+        fontsize=max(tick_label_pt - 0.35, 5.0),
+        loc="lower right",
+        handlelength=1.1,
         borderpad=0.1,
         labelspacing=0.2,
     )
@@ -665,29 +887,41 @@ def _plot_panel_e(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 1, hspace=0.24)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[0.85, 1.15], hspace=0.28)
     ax_band = fig.add_subplot(grid[0, 0])
     ax_code = fig.add_subplot(grid[1, 0])
-    freqs_khz = data["freqs_khz"]
 
-    contrast_ymax = max(float(data["angular_contrast_smooth"][material].max()) for material in ranking)
-    contrast_ymax = max(contrast_ymax, 1e-6)
-
-    for material in ranking:
+    y_pos = np.arange(len(ranking), dtype=float)
+    short_labels = {
+        "b": "Card",
+        "w": "Wood",
+        "a": "Acry.",
+        "p": "Cup",
+        "m": "Laptop",
+    }
+    for idx, material in enumerate(ranking):
         style = _screening_material_style(material)
-        contrast = data["angular_contrast_smooth"][material] / contrast_ymax
-        band_center_khz = data["representative_band_freq_hz"][material] / 1000.0
-        band_idx = int(np.argmin(np.abs(freqs_khz - band_center_khz)))
-
-        ax_band.plot(
-            freqs_khz,
-            contrast,
+        lo = data["representative_band_lo_khz"][material]
+        hi = data["representative_band_hi_khz"][material]
+        center = data["representative_band_freq_hz"][material] / 1000.0
+        ax_band.barh(
+            idx,
+            hi - lo,
+            left=lo,
+            height=0.50,
             color=style["color"],
+            alpha=0.35,
+            edgecolor=style["color"],
+            linewidth=max(STROKE_TOKENS["base"] * 1.4, 1.0),
+        )
+        ax_band.plot(
+            [center],
+            [idx],
             marker=style["marker"],
-            markevery=[band_idx],
-            linewidth=STROKE_TOKENS["data"],
-            markersize=FAMILY_STYLE["compact_marker_pt"],
-            label=MATERIAL_SHORT_LABELS[material],
+            color=style["color"],
+            markersize=FAMILY_STYLE["standard_marker_pt"],
+            linewidth=0.0,
+            zorder=3,
         )
         ax_code.plot(
             data["angles"][material],
@@ -697,6 +931,7 @@ def _plot_panel_e(
             marker=style["marker"],
             markersize=FAMILY_STYLE["compact_marker_pt"],
             markevery=6,
+            label=MATERIAL_SHORT_LABELS[material],
         )
 
     for ax in (ax_band, ax_code):
@@ -710,10 +945,31 @@ def _plot_panel_e(
         ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
 
     ax_band.set_xlim(0.3, 3.0)
-    ax_band.set_ylim(0.0, 1.02)
-    ax_band.set_xticks([0.5, 1.5, 2.5])
-    ax_band.set_ylabel("Norm. band selectivity", fontsize=axis_label_pt, labelpad=1.0)
-    ax_band.legend(
+    ax_band.set_ylim(-0.6, len(ranking) - 0.4)
+    ax_band.set_yticks(y_pos)
+    ax_band.set_yticklabels([short_labels[material] for material in ranking])
+    for label, material in zip(ax_band.get_yticklabels(), ranking, strict=False):
+        label.set_color(_screening_material_style(material)["color"])
+    ax_band.set_xlabel("Contrast band (kHz)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_band.set_ylabel("")
+    ax_band.tick_params(axis="y", labelsize=tick_label_pt, length=0, pad=1)
+    ax_band.text(
+        0.99,
+        0.08,
+        "segment = selected band, marker = band center",
+        transform=ax_band.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=max(tick_label_pt - 0.4, 5.0),
+        color=STYLE_COLORS["muted_text"],
+    )
+
+    ax_code.set_xlim(0.0, 180.0)
+    ax_code.set_ylim(0.0, 1.02)
+    ax_code.set_xticks([0, 90, 180])
+    ax_code.set_ylabel("Norm. band code", fontsize=axis_label_pt, labelpad=1.0)
+    ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_code.legend(
         frameon=False,
         fontsize=legend_pt - 0.5,
         loc="upper right",
@@ -723,13 +979,6 @@ def _plot_panel_e(
         labelspacing=0.15,
         columnspacing=0.8,
     )
-    ax_band.tick_params(axis="x", bottom=False, labelbottom=False)
-
-    ax_code.set_xlim(0.0, 180.0)
-    ax_code.set_ylim(0.0, 1.02)
-    ax_code.set_xticks([0, 90, 180])
-    ax_code.set_ylabel("Norm. band code", fontsize=axis_label_pt, labelpad=1.0)
-    ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
 
     return [ax_block, ax_band, ax_code]
 
@@ -752,7 +1001,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         height_mm=FIG06_GENERATOR["composite_height_mm"],
     )
     outer = gridspec.GridSpec(
-        3,
+        4,
         1,
         figure=fig,
         left=FIG06_GRID["left"],
@@ -765,9 +1014,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         height_ratios=FIG06_GRID["height_ratios"],
     )
 
-    _plot_panel_b(
+    _plot_panel_a(
         fig,
         outer[0, 0],
+        data,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        title_pt=title_pt,
+        add_label=True,
+    )
+    _plot_panel_b(
+        fig,
+        outer[1, 0],
         data,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
@@ -776,7 +1034,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         colorbar_label_pt=colorbar_label_pt,
         add_label=True,
     )
-    middle = outer[1, 0].subgridspec(
+    middle = outer[2, 0].subgridspec(
         1,
         2,
         width_ratios=FIG06_MIDDLE_WIDTH_RATIOS,
@@ -803,7 +1061,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     _plot_panel_e(
         fig,
-        outer[2, 0],
+        outer[3, 0],
         data,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
@@ -823,6 +1081,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_dir.mkdir(parents=True, exist_ok=True)
 
     standalone_specs = [
+        (
+            "a",
+            "a",
+            _plot_panel_a,
+            "fig06_panel_a_response_regime",
+            {
+                "axis_label_pt": axis_label_pt,
+                "tick_label_pt": tick_label_pt,
+                "title_pt": title_pt,
+                "add_label": True,
+            },
+        ),
         (
             "b",
             "b",
@@ -892,32 +1162,39 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         panel_dir,
         [
             {
+                "panel_id": "a",
+                "title": "Measured response regime",
+                "asset_path": "figures/output/fig06_universality_panels/fig06_panel_a_response_regime.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Measured response-descriptor map across the five objects, placing each material by its centered-|H| correlation-decay width and effective rank while retaining object exemplars.",
+            },
+            {
                 "panel_id": "b",
                 "title": "Cross-material H",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_b_cross_material_h.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Shared-normalization H strip for the five compared materials, showing that structured angle-frequency encoding is present across the full object set.",
+                "description": "Shared-normalization H strip for the five compared materials, with the selected informative-band window overlaid on each object to show where directional contrast concentrates.",
             },
             {
                 "panel_id": "c",
-                "title": "Low-rank continuity",
+                "title": "Local-ordering decay",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Fig. 2-aligned centered-magnitude cumulative-energy curves with rank-90 and rank-95 markers, showing that the directional fingerprints remain compact across materials.",
+                "description": "Mean centered-|H| correlation versus angular separation for each object, showing that directional fingerprints remain locally ordered across materials but over object-specific correlation-decay widths.",
             },
             {
                 "panel_id": "d",
-                "title": "Energy versus readout accuracy",
+                "title": "Readout versus overlap burden",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Object-level scatter of normalized overall |H| energy versus Top-1 accuracy with confidence intervals, showing that stronger overall response energy does not by itself determine matched-calibration readout quality.",
+                "description": "Per-angle Top-1 distributions together with an object-level Top-1-versus-overlap scatter whose marker area tracks normalized response energy, showing descriptively that vibration amplitude alone does not order the five objects and that overlap width provides a more informative comparison axis.",
             },
             {
                 "panel_id": "e",
-                "title": "Object-conditioned band structure",
+                "title": "Object-conditioned contrast band",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Overlaid band-selectivity curves and representative directional codes across objects, showing that the informative band and recovered code remain object-conditioned.",
+                "description": "Per-object informative-band windows together with their band-limited directional codes, showing that one shared contrast-selection rule picks different frequency windows across passive structures and recovers different directional codes from those object-specific windows.",
             },
         ],
         typography=typography,
