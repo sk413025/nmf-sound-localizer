@@ -1,9 +1,9 @@
 """Figure 6 — Cross-material recurrence under object-specific calibration.
 
 Panel (b): Cross-material H strip across five materials.
-Panel (c): Low-rank continuity summary across materials using Fig. 2-style centered-magnitude SVD.
-Panel (d): Compact response-strength versus Top-1 readout summary.
-Panel (e): Low-emphasis material band/code support strip.
+Panel (c): Low-rank continuity summary across materials using a single Fig. 2-style cumulative-energy axis.
+Panel (d): Object-level normalized-energy versus Top-1 summary.
+Panel (e): Cross-object band-selectivity and representative-code summary.
 
 Panel (a) remains a manual support asset and is composed downstream.
 """
@@ -26,7 +26,10 @@ from figures.layout_contract import (
     source_layout_spec,
 )
 from figures.style import (
+    FAMILY_STYLE,
     SEMANTIC_PALETTE,
+    STROKE_TOKENS,
+    STYLE_COLORS,
     add_panel_label,
     load_paths,
     make_figure,
@@ -56,17 +59,13 @@ MATERIAL_SCREENING_LABELS = {
     "b": "Card",
     "m": "Laptop",
 }
-OTHER_COLOR = "#7A7A7A"
-BACKUP_COLOR = SEMANTIC_PALETTE["learned"]
-PRIMARY_COLOR = SEMANTIC_PALETTE["physics"]
-RANK95_COLOR = "#CC7A00"
-GRID_COLOR = "#D8D8D8"
-PANEL_C_MATERIAL_STYLES = {
-    "b": {"color": PRIMARY_COLOR, "marker": "o"},
-    "w": {"color": BACKUP_COLOR, "marker": "^"},
-    "a": {"color": SEMANTIC_PALETTE["highlight"], "marker": "s"},
+GRID_COLOR = STYLE_COLORS["chance_line"]
+MATERIAL_PANEL_STYLES = {
+    "a": {"color": SEMANTIC_PALETTE["physics"], "marker": "s"},
+    "b": {"color": SEMANTIC_PALETTE["learned"], "marker": "o"},
+    "w": {"color": SEMANTIC_PALETTE["highlight"], "marker": "^"},
     "p": {"color": SEMANTIC_PALETTE["ablation"], "marker": "D"},
-    "m": {"color": "#CC79A7", "marker": "v"},
+    "m": {"color": STYLE_COLORS["dense_routing"], "marker": "v"},
 }
 
 FIG06_GENERATOR = figure_section("fig06", "generator")
@@ -74,8 +73,9 @@ FIG06_GRID = dict(FIG06_GENERATOR["composite_grid"])
 FIG06_SPLIT = dict(FIG06_GENERATOR["split"]["standalone"])
 FIG06_MIDDLE_WIDTH_RATIOS = [
     float(FIG06_SPLIT["c"]["width_mm"]),
-    float(FIG06_SPLIT["e"]["width_mm"]),
+    float(FIG06_SPLIT["d"]["width_mm"]),
 ]
+FIG06_MIDDLE_ROW = dict(FIG06_GENERATOR["middle_row"])
 FIG06_TYPOGRAPHY = {
     **font_tokens(),
     **figure_section("fig06", "typography"),
@@ -127,7 +127,7 @@ def _rank_for_energy(cumulative_energy: np.ndarray, threshold: float) -> int:
 
 
 def _panel_c_material_style(material: str) -> dict[str, str]:
-    return PANEL_C_MATERIAL_STYLES[material]
+    return MATERIAL_PANEL_STYLES[material]
 
 
 def _save_panel_manifest(
@@ -158,12 +158,14 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
     h_run_dir = (data_root / paths_cfg["fig06_cross_material_h_run"]).resolve()
     selection_run_dir = (data_root / paths_cfg["fig06_cross_material_selection_run"]).resolve()
     support_run_dir = (data_root / paths_cfg["fig06_cross_material_support_run"]).resolve()
+    angle_table_path = (data_root / paths_cfg["fig06_cross_material_angle_table"]).resolve()
 
     comparison_report = _load_json(selection_run_dir / "comparison_report.json")
     selection_summary = _load_json(selection_run_dir / "selection_summary.json")
     support_report = _load_json(support_run_dir / "support_report.json")
     performance_rows = _read_csv(support_run_dir / "material_performance_summary.csv")
     low_rank_rows = _read_csv(support_run_dir / "low_rank_summary.csv")
+    angle_rows = _read_csv(angle_table_path)
 
     ranking = tuple(selection_summary["ranking"])
     primary_material = selection_summary["primary_material"]
@@ -171,6 +173,7 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
 
     low_rank_by_material = {row["material_code"]: row for row in low_rank_rows}
     performance_by_material = {row["material_code"]: row for row in performance_rows}
+    angle_top1_by_material: dict[str, np.ndarray] = {}
 
     config = comparison_report["config"]
     n_freq = None
@@ -196,6 +199,14 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
             n_freq = h_matrix.shape[0]
         h_matrices[material] = h_matrix
         angle_map[material] = angles
+        material_angle_rows = sorted(
+            (row for row in angle_rows if row["material_code"] == material),
+            key=lambda row: float(row["angle_deg"]),
+        )
+        angle_top1_by_material[material] = np.asarray(
+            [float(row["angle_top1_acc"]) for row in material_angle_rows],
+            dtype=float,
+        )
 
     if n_freq is None:
         raise RuntimeError("No H matrices were loaded for Fig. 6.")
@@ -277,6 +288,7 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
         "support_report": support_report,
         "performance_rows": performance_rows,
         "performance_by_material": performance_by_material,
+        "angle_top1_by_material": angle_top1_by_material,
         "ranking": ranking,
         "primary_material": primary_material,
         "backup_material": backup_material,
@@ -303,16 +315,11 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
     }
 
 
-def _material_color(material: str, *, primary: str, backup: str | None) -> str:
-    if material == primary:
-        return PRIMARY_COLOR
-    if material == backup:
-        return BACKUP_COLOR
-    return OTHER_COLOR
-
-
 def _screening_material_style(material: str) -> dict[str, str]:
-    return PANEL_C_MATERIAL_STYLES.get(material, {"color": OTHER_COLOR, "marker": "o"})
+    return MATERIAL_PANEL_STYLES.get(
+        material,
+        {"color": STYLE_COLORS["dense_routing"], "marker": "o"},
+    )
 
 
 def _make_panel_block(
@@ -439,35 +446,56 @@ def _plot_panel_c(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(1, 2, width_ratios=[1.18, 0.82], wspace=0.18)
-    ax_curve = fig.add_subplot(grid[0, 0])
-    ax_rank = fig.add_subplot(grid[0, 1])
+    ax_curve = fig.add_subplot(slot_spec)
 
     max_modes = 8
     x = np.arange(1, max_modes + 1)
     for material in ranking:
         style = _panel_c_material_style(material)
+        curve = data["cumulative_energy"][material][: len(x)]
         ax_curve.plot(
             x,
-            data["cumulative_energy"][material][: len(x)],
+            curve,
             marker=style["marker"],
-            linewidth=1.45,
-            markersize=3.0,
+            linewidth=STROKE_TOKENS["data"],
+            markersize=FAMILY_STYLE["standard_marker_pt"],
             color=style["color"],
             label=MATERIAL_SHORT_LABELS[material],
         )
+        for threshold, marker, face in (
+            (float(data["rank90"][material]), "o", "white"),
+            (float(data["rank95"][material]), "s", style["color"]),
+        ):
+            rank_idx = int(threshold) - 1
+            if 0 <= rank_idx < len(curve):
+                ax_curve.scatter(
+                    threshold,
+                    curve[rank_idx],
+                    s=26,
+                    marker=marker,
+                    facecolors=face,
+                    edgecolors=style["color"],
+                    linewidths=STROKE_TOKENS["base"],
+                    zorder=4,
+                )
     for threshold in (0.90, 0.95):
-        ax_curve.axhline(threshold, color=GRID_COLOR, linestyle="--", linewidth=0.9, zorder=0)
+        ax_curve.axhline(
+            threshold,
+            color=GRID_COLOR,
+            linestyle="--",
+            linewidth=STROKE_TOKENS["annotation"],
+            zorder=0,
+        )
     ax_curve.set_xlim(1.0, max_modes + 0.2)
     ax_curve.set_ylim(0.0, 1.02)
     ax_curve.set_xticks(x)
     ax_curve.set_ylabel(r"Cumul. centered-$|H|$ energy", fontsize=axis_label_pt)
     ax_curve.set_xlabel("Modes kept", fontsize=axis_label_pt)
     ax_curve.tick_params(axis="both", labelsize=tick_label_pt, length=2)
-    ax_curve.grid(True, alpha=0.18)
+    ax_curve.grid(True, alpha=FAMILY_STYLE["grid_alpha"])
     ax_curve.legend(
         frameon=False,
-        fontsize=legend_pt - 0.4,
+        fontsize=legend_pt - 0.5,
         loc="lower right",
         ncol=2,
         handlelength=1.4,
@@ -475,220 +503,20 @@ def _plot_panel_c(
         labelspacing=0.15,
         columnspacing=0.8,
     )
-
-    y = np.arange(len(ranking))
-    for idx, material in enumerate(ranking):
-        style = _panel_c_material_style(material)
-        ax_rank.hlines(
-            idx,
-            float(data["rank90"][material]),
-            float(data["rank95"][material]),
-            color="#C8C8C8",
-            linewidth=2.2,
-            zorder=1,
-        )
-        ax_rank.scatter(
-            data["rank90"][material],
-            idx,
-            s=24,
-            color=style["color"],
-            zorder=3,
-            label="Rank90" if idx == 0 else None,
-        )
-        ax_rank.scatter(
-            data["rank95"][material],
-            idx,
-            s=26,
-            marker="s",
-            color=RANK95_COLOR,
-            zorder=4,
-            label="Rank95" if idx == 0 else None,
-        )
-    ax_rank.set_title("Modes needed", fontsize=title_pt - 0.15, pad=2)
-    ax_rank.set_xlim(0.5, max(max(data["rank90"].values()), max(data["rank95"].values())) + 1.0)
-    ax_rank.set_yticks(y)
-    ax_rank.set_yticklabels([MATERIAL_SHORT_LABELS[m] for m in ranking], fontsize=tick_label_pt)
-    for label, material in zip(ax_rank.get_yticklabels(), ranking):
-        label.set_color(_panel_c_material_style(material)["color"])
-    ax_rank.invert_yaxis()
-    ax_rank.set_xlabel("Modes", fontsize=axis_label_pt)
-    ax_rank.tick_params(axis="x", labelsize=tick_label_pt, length=2)
-    ax_rank.grid(axis="x", linestyle="--", alpha=0.20)
-    ax_rank.legend(
-        frameon=False,
-        fontsize=legend_pt - 0.4,
-        loc="upper right",
-        handletextpad=0.25,
-        borderpad=0.1,
+    ax_curve.text(
+        0.03,
+        0.06,
+        "open marker = 90%, filled square = 95%",
+        transform=ax_curve.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=max(tick_label_pt - 0.5, 5.0),
+        color=STYLE_COLORS["muted_text"],
     )
-    return [ax_block, ax_curve, ax_rank]
+    return [ax_block, ax_curve]
 
 
 def _plot_panel_d(
-    fig: plt.Figure,
-    slot_spec,
-    data: dict[str, Any],
-    *,
-    axis_label_pt: float,
-    tick_label_pt: float,
-    title_pt: float,
-    add_label: bool,
-) -> list[plt.Axes]:
-    ranking = data["ranking"]
-    freqs_khz = data["freqs_khz"]
-    ax_block = _make_panel_block(
-        fig,
-        slot_spec,
-        label="e",
-        title=None,
-        title_pt=title_pt,
-        add_label=add_label,
-    )
-    grid = slot_spec.subgridspec(
-        len(ranking),
-        3,
-        width_ratios=[0.58, 1.60, 0.94],
-        hspace=0.26,
-        wspace=0.16,
-    )
-    axes: list[plt.Axes] = []
-    row_axes: list[tuple[plt.Axes, plt.Axes, plt.Axes]] = []
-    column_headers = ("Selected band", "Recovered code")
-    contrast_ymax = max(float(data["angular_contrast_smooth"][material].max()) for material in ranking)
-    contrast_ymax = max(contrast_ymax, 1e-6)
-
-    def _style_row_axis(ax: plt.Axes, *, bottom_row: bool) -> None:
-        ax.set_facecolor("white")
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color("#C6C6C6")
-        ax.spines["bottom"].set_color("#C6C6C6")
-        ax.spines["left"].set_linewidth(0.55)
-        ax.spines["bottom"].set_linewidth(0.55)
-        ax.tick_params(axis="y", left=False, labelleft=False)
-        if bottom_row:
-            ax.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
-        else:
-            ax.tick_params(axis="x", bottom=False, labelbottom=False)
-
-    for row_idx, material in enumerate(ranking):
-        tint = _material_color(
-            material,
-            primary=data["primary_material"],
-            backup=data["backup_material"],
-        )
-        ax_label = fig.add_subplot(grid[row_idx, 0])
-        ax_freq = fig.add_subplot(grid[row_idx, 1])
-        ax_code = fig.add_subplot(grid[row_idx, 2])
-
-        band_lo = data["representative_band_lo_khz"][material]
-        band_hi = data["representative_band_hi_khz"][material]
-        freq_hz = data["representative_band_freq_hz"][material]
-        angles = data["angles"][material]
-        band_center_khz = freq_hz / 1000.0
-        bottom_row = row_idx == len(ranking) - 1
-        support_alpha = 0.42 if material in {data["primary_material"], data["backup_material"]} else 0.30
-        support = data["spectral_envelopes"][material]
-        contrast = data["angular_contrast_smooth"][material] / contrast_ymax
-
-        ax_label.set_axis_off()
-        ax_label.text(
-            0.98,
-            0.5,
-            MATERIAL_LABELS[material],
-            transform=ax_label.transAxes,
-            ha="right",
-            va="center",
-            fontsize=max(axis_label_pt - 0.4, 5.4),
-            color="#4A4A4A",
-        )
-
-        ax_freq.axvspan(band_lo, band_hi, color=tint, alpha=0.14, zorder=0)
-        ax_freq.fill_between(freqs_khz, 0, support, color="#BFC4C7", alpha=0.16)
-        ax_freq.plot(
-            freqs_khz,
-            support,
-            color="#8B8F93",
-            alpha=max(support_alpha, 0.36),
-            linewidth=0.9,
-        )
-        ax_freq.plot(
-            freqs_khz,
-            contrast,
-            color="#3A3D40",
-            linewidth=1.15,
-        )
-        ax_freq.axvline(band_center_khz, color=tint, linewidth=0.9, linestyle="--", alpha=0.55)
-        ax_freq.set_xlim(0.3, 3.0)
-        ax_freq.set_ylim(0.0, 1.02)
-        ax_freq.set_xticks([0.5, 1.5, 2.5])
-        ax_freq.text(
-            0.98,
-            0.80,
-            f"{band_center_khz:.2f} kHz",
-            transform=ax_freq.transAxes,
-            ha="right",
-            va="center",
-            fontsize=max(tick_label_pt - 0.2, 5.0),
-            color="black",
-            bbox={"boxstyle": "round,pad=0.14", "facecolor": "white", "edgecolor": "none", "alpha": 0.82},
-        )
-        _style_row_axis(ax_freq, bottom_row=bottom_row)
-
-        ax_code.fill_between(angles, 0, data["representative_directivity"][material], color=tint, alpha=0.10)
-        ax_code.plot(
-            angles,
-            data["representative_directivity"][material],
-            color="#3A3D40",
-            linewidth=1.25,
-        )
-        ax_code.set_xlim(float(angles.min()), float(angles.max()))
-        ax_code.set_ylim(-0.02, 1.02)
-        ax_code.set_xticks([0, 90, 180])
-        _style_row_axis(ax_code, bottom_row=bottom_row)
-
-        if bottom_row:
-            ax_freq.set_xlabel("Freq. (kHz)", fontsize=axis_label_pt, labelpad=1.5)
-            ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.5)
-
-        axes.extend([ax_label, ax_freq, ax_code])
-        row_axes.append((ax_label, ax_freq, ax_code))
-
-    block_bbox = ax_block.get_position()
-    x_left = (row_axes[0][0].get_position().x0 - block_bbox.x0) / block_bbox.width
-    x_right = (row_axes[0][2].get_position().x1 - block_bbox.x0) / block_bbox.width
-    for col_idx, header in enumerate(column_headers):
-        axis_bbox = row_axes[0][col_idx + 1].get_position()
-        x_center = ((axis_bbox.x0 + axis_bbox.x1) * 0.5 - block_bbox.x0) / block_bbox.width
-        ax_block.text(
-            x_center,
-            1.015,
-            header,
-            transform=ax_block.transAxes,
-            ha="center",
-            va="bottom",
-            fontsize=max(title_pt - 0.35, 5.6),
-            color="#2A2A2A",
-        )
-
-    for row_idx in range(len(row_axes) - 1):
-        upper_bbox = row_axes[row_idx][1].get_position()
-        lower_bbox = row_axes[row_idx + 1][1].get_position()
-        y_sep = ((upper_bbox.y0 + lower_bbox.y1) * 0.5 - block_bbox.y0) / block_bbox.height
-        ax_block.plot(
-            [x_left, x_right],
-            [y_sep, y_sep],
-            transform=ax_block.transAxes,
-            color="#E1E1E1",
-            linewidth=0.85,
-            zorder=0,
-            clip_on=False,
-        )
-
-    return [ax_block, *axes]
-
-
-def _plot_panel_e(
     fig: plt.Figure,
     slot_spec,
     data: dict[str, Any],
@@ -706,76 +534,204 @@ def _plot_panel_e(
         title=None,
         title_pt=title_pt,
         add_label=add_label,
-        label_y=1.018,
     )
-    ax = fig.add_subplot(slot_spec)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.45, 0.80], hspace=0.18)
+    ax_top = fig.add_subplot(grid[0, 0])
+    ax_bottom = fig.add_subplot(grid[1, 0], sharex=ax_top)
 
-    y = np.arange(len(ranking))
-    for idx, material in enumerate(ranking):
-        style = _screening_material_style(material)
-        tint = style["color"]
-        marker = style["marker"]
-        if material in {data["primary_material"], data["backup_material"]}:
-            ax.axhspan(idx - 0.48, idx + 0.48, color=tint, alpha=0.06, zorder=0)
-
-        row = data["performance_by_material"][material]
-        energy_x = data["normalized_energy"][material]
-        top1 = float(row["top1_acc"])
-        top1_lo = float(row["top1_ci_low"])
-        top1_hi = float(row["top1_ci_high"])
-        ax.plot([energy_x, top1], [idx, idx], color="#B5B5B5", linewidth=1.25, zorder=1)
-        ax.errorbar(
-            top1,
-            idx,
-            xerr=[[top1 - top1_lo], [top1_hi - top1]],
-            fmt="none",
-            capsize=2.3,
-            ecolor=tint,
-            linewidth=1.0,
-            zorder=2,
-        )
-        ax.scatter(
-            energy_x,
-            idx,
-            s=72,
-            facecolors="white",
-            edgecolors=tint,
-            linewidths=1.45,
-            marker=marker,
-            zorder=3,
-        )
-        ax.scatter(top1, idx, s=80, color=tint, marker=marker, zorder=4)
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_color("#AFAFAF")
-    ax.spines["bottom"].set_color("#AFAFAF")
-    ax.spines["left"].set_linewidth(0.75)
-    ax.spines["bottom"].set_linewidth(0.75)
-
-    compact_tick_pt = max(tick_label_pt - 0.25, 5.0)
-    ax.set_xlim(-0.02, 1.02)
-    ax.set_xticks([0.0, 0.5, 1.0])
-    ax.set_xlabel("Norm. energy and Top-1", fontsize=axis_label_pt, labelpad=1.0)
-    ax.set_yticks(y)
-    ax.set_yticklabels(
-        [MATERIAL_SCREENING_LABELS[m] for m in ranking],
-        fontsize=compact_tick_pt,
+    x = np.arange(len(ranking), dtype=float)
+    energy = np.asarray([data["normalized_energy"][material] for material in ranking], dtype=float)
+    top1 = np.asarray(
+        [float(data["performance_by_material"][material]["top1_acc"]) for material in ranking],
+        dtype=float,
     )
-    ax.invert_yaxis()
-    ax.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1)
-    ax.tick_params(axis="y", length=0, pad=1)
-    ax.grid(axis="x", linestyle="--", alpha=0.22)
-    ax.text(
+    top1_lo = np.asarray(
+        [float(data["performance_by_material"][material]["top1_ci_low"]) for material in ranking],
+        dtype=float,
+    )
+    top1_hi = np.asarray(
+        [float(data["performance_by_material"][material]["top1_ci_high"]) for material in ranking],
+        dtype=float,
+    )
+
+    energy_color = STYLE_COLORS["guide_line"]
+    top1_color = SEMANTIC_PALETTE["physics"]
+    violin = ax_top.violinplot(
+        [data["angle_top1_by_material"][material] for material in ranking],
+        positions=x,
+        widths=0.72,
+        showmeans=False,
+        showmedians=False,
+        showextrema=False,
+    )
+    for body in violin["bodies"]:
+        body.set_facecolor(top1_color)
+        body.set_edgecolor("none")
+        body.set_alpha(0.12)
+
+    ax_top.plot(
+        x,
+        top1,
+        color=top1_color,
+        linewidth=STROKE_TOKENS["annotation"],
+        marker="o",
+        markersize=FAMILY_STYLE["standard_marker_pt"],
+        zorder=3,
+    )
+    ax_top.errorbar(
+        x,
+        top1,
+        yerr=[top1 - top1_lo, top1_hi - top1],
+        fmt="none",
+        capsize=FAMILY_STYLE["compact_capsize_pt"],
+        ecolor=top1_color,
+        linewidth=STROKE_TOKENS["data"],
+        zorder=3,
+    )
+    ax_bottom.plot(
+        x,
+        energy,
+        color=energy_color,
+        linewidth=STROKE_TOKENS["annotation"],
+        marker="o",
+        markersize=FAMILY_STYLE["standard_marker_pt"],
+        markerfacecolor="white",
+        markeredgecolor=energy_color,
+        label=r"Norm. $|H|$ energy",
+        zorder=2,
+    )
+
+    for ax in (ax_top, ax_bottom):
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color(STYLE_COLORS["guide_line"])
+        ax.spines["bottom"].set_color(STYLE_COLORS["guide_line"])
+        ax.spines["left"].set_linewidth(STROKE_TOKENS["base"])
+        ax.spines["bottom"].set_linewidth(STROKE_TOKENS["base"])
+        ax.set_xlim(-0.35, len(ranking) - 0.65)
+        ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+
+    ax_top.set_ylim(0.0, 1.02)
+    ax_top.set_yticks([0.0, 0.5, 1.0])
+    ax_top.set_ylabel("Top-1", fontsize=axis_label_pt, labelpad=1.0)
+    ax_top.tick_params(axis="y", labelsize=tick_label_pt, length=2, pad=1)
+    ax_top.tick_params(axis="x", bottom=False, labelbottom=False)
+    ax_top.text(
         0.98,
-        1.02,
-        "open = energy, filled = Top-1 ± CI",
-        transform=ax.transAxes,
+        0.05,
+        "violin = per-angle Top-1 distribution",
+        transform=ax_top.transAxes,
         ha="right",
         va="bottom",
-        fontsize=compact_tick_pt,
+        fontsize=max(tick_label_pt - 0.45, 5.0),
+        color=STYLE_COLORS["muted_text"],
     )
-    return [ax_block, ax]
+
+    ax_bottom.set_ylim(-0.02, 1.02)
+    ax_bottom.set_yticks([0.0, 0.5, 1.0])
+    ax_bottom.set_xticks(x)
+    ax_bottom.set_xticklabels(["Card", "Wood", "Acry.", "Cup", "Laptop"], rotation=20, ha="right")
+    ax_bottom.set_xlabel("Matched object", fontsize=axis_label_pt, labelpad=1.0)
+    ax_bottom.set_ylabel(r"Norm. $|H|$", fontsize=axis_label_pt, labelpad=1.0)
+    ax_bottom.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
+    ax_bottom.legend(
+        frameon=False,
+        fontsize=max(tick_label_pt - 0.25, 5.2),
+        loc="upper left",
+        handlelength=1.4,
+        borderpad=0.1,
+        labelspacing=0.2,
+    )
+    return [ax_block, ax_top, ax_bottom]
+
+
+def _plot_panel_e(
+    fig: plt.Figure,
+    slot_spec,
+    data: dict[str, Any],
+    *,
+    axis_label_pt: float,
+    tick_label_pt: float,
+    legend_pt: float,
+    title_pt: float,
+    add_label: bool,
+) -> list[plt.Axes]:
+    ranking = data["ranking"]
+    ax_block = _make_panel_block(
+        fig,
+        slot_spec,
+        label="e",
+        title=None,
+        title_pt=title_pt,
+        add_label=add_label,
+    )
+    grid = slot_spec.subgridspec(2, 1, hspace=0.24)
+    ax_band = fig.add_subplot(grid[0, 0])
+    ax_code = fig.add_subplot(grid[1, 0])
+    freqs_khz = data["freqs_khz"]
+
+    contrast_ymax = max(float(data["angular_contrast_smooth"][material].max()) for material in ranking)
+    contrast_ymax = max(contrast_ymax, 1e-6)
+
+    for material in ranking:
+        style = _screening_material_style(material)
+        contrast = data["angular_contrast_smooth"][material] / contrast_ymax
+        band_center_khz = data["representative_band_freq_hz"][material] / 1000.0
+        band_idx = int(np.argmin(np.abs(freqs_khz - band_center_khz)))
+
+        ax_band.plot(
+            freqs_khz,
+            contrast,
+            color=style["color"],
+            marker=style["marker"],
+            markevery=[band_idx],
+            linewidth=STROKE_TOKENS["data"],
+            markersize=FAMILY_STYLE["compact_marker_pt"],
+            label=MATERIAL_SHORT_LABELS[material],
+        )
+        ax_code.plot(
+            data["angles"][material],
+            data["representative_directivity"][material],
+            color=style["color"],
+            linewidth=STROKE_TOKENS["data"],
+            marker=style["marker"],
+            markersize=FAMILY_STYLE["compact_marker_pt"],
+            markevery=6,
+        )
+
+    for ax in (ax_band, ax_code):
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color(STYLE_COLORS["guide_line"])
+        ax.spines["bottom"].set_color(STYLE_COLORS["guide_line"])
+        ax.spines["left"].set_linewidth(STROKE_TOKENS["base"])
+        ax.spines["bottom"].set_linewidth(STROKE_TOKENS["base"])
+        ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
+        ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+
+    ax_band.set_xlim(0.3, 3.0)
+    ax_band.set_ylim(0.0, 1.02)
+    ax_band.set_xticks([0.5, 1.5, 2.5])
+    ax_band.set_ylabel("Norm. band selectivity", fontsize=axis_label_pt, labelpad=1.0)
+    ax_band.legend(
+        frameon=False,
+        fontsize=legend_pt - 0.5,
+        loc="upper right",
+        ncol=3,
+        handlelength=1.4,
+        borderpad=0.1,
+        labelspacing=0.15,
+        columnspacing=0.8,
+    )
+    ax_band.tick_params(axis="x", bottom=False, labelbottom=False)
+
+    ax_code.set_xlim(0.0, 180.0)
+    ax_code.set_ylim(0.0, 1.02)
+    ax_code.set_xticks([0, 90, 180])
+    ax_code.set_ylabel("Norm. band code", fontsize=axis_label_pt, labelpad=1.0)
+    ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
+
+    return [ax_block, ax_band, ax_code]
 
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
@@ -820,7 +776,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         colorbar_label_pt=colorbar_label_pt,
         add_label=True,
     )
-    middle = outer[1, 0].subgridspec(1, 2, width_ratios=FIG06_MIDDLE_WIDTH_RATIOS, wspace=0.16)
+    middle = outer[1, 0].subgridspec(
+        1,
+        2,
+        width_ratios=FIG06_MIDDLE_WIDTH_RATIOS,
+        wspace=float(FIG06_MIDDLE_ROW["wspace"]),
+    )
     _plot_panel_c(
         fig,
         middle[0, 0],
@@ -831,7 +792,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         title_pt=title_pt,
         add_label=True,
     )
-    _plot_panel_e(
+    _plot_panel_d(
         fig,
         middle[0, 1],
         data,
@@ -840,12 +801,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         title_pt=title_pt,
         add_label=True,
     )
-    _plot_panel_d(
+    _plot_panel_e(
         fig,
         outer[2, 0],
         data,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
+        legend_pt=legend_pt,
         title_pt=title_pt,
         add_label=True,
     )
@@ -890,8 +852,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ),
         (
             "d",
-            "e",
-            _plot_panel_e,
+            "d",
+            _plot_panel_d,
             "fig06_panel_d_screening_consequence",
             {
                 "axis_label_pt": axis_label_pt,
@@ -902,12 +864,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         ),
         (
             "e",
-            "d",
-            _plot_panel_d,
+            "e",
+            _plot_panel_e,
             "fig06_panel_e_material_frequency_structure",
             {
                 "axis_label_pt": axis_label_pt,
                 "tick_label_pt": tick_label_pt,
+                "legend_pt": legend_pt,
                 "title_pt": title_pt,
                 "add_label": True,
             },
@@ -940,21 +903,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Low-rank continuity",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_c_low_rank_continuity.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Fig. 2-aligned centered-magnitude cumulative-energy curves and rank90/rank95 summaries showing that the encoder remains low-dimensional across materials.",
+                "description": "Fig. 2-aligned centered-magnitude cumulative-energy curves with rank-90 and rank-95 markers, showing that the directional fingerprints remain compact across materials.",
             },
             {
                 "panel_id": "d",
-                "title": "Object-conditioned readout and energy",
+                "title": "Energy versus readout accuracy",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Compact normalized-energy versus Top-1 comparison with Top-1 uncertainty, showing that overall response strength alone does not explain the object-level readout ranking.",
+                "description": "Object-level scatter of normalized overall |H| energy versus Top-1 accuracy with confidence intervals, showing that stronger overall response energy does not by itself determine matched-calibration readout quality.",
             },
             {
                 "panel_id": "e",
-                "title": "Material frequency structure",
+                "title": "Object-conditioned band structure",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Five-row support strip showing the selected frequency band and recovered representative directional code for each compared material.",
+                "description": "Overlaid band-selectivity curves and representative directional codes across objects, showing that the informative band and recovered code remain object-conditioned.",
             },
         ],
         typography=typography,

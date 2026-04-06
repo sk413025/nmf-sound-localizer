@@ -116,10 +116,9 @@ try:
     FIG06_OUTER_MARGIN_BOTTOM_MM = float(FIG06_COMPOSE["outer_margin_bottom_mm"])
     FIG06_A_HEIGHT_MM = float(FIG06_COMPOSE["panel_a_height_mm"])
     FIG06_B_HEIGHT_MM = float(FIG06_COMPOSE["panel_b_height_mm"])
-    FIG06_C_HEIGHT_MM = float(FIG06_COMPOSE["panel_c_height_mm"])
-    FIG06_D_HEIGHT_MM = float(FIG06_COMPOSE["panel_d_height_mm"])
-    FIG06_PANEL_C_WIDTH_MM = float(FIG06_COMPOSE["panel_c_width_mm"])
-    FIG06_PANEL_E_WIDTH_MM = float(FIG06_COMPOSE["panel_e_width_mm"])
+    FIG06_ROW_CD_HEIGHT_MM = float(FIG06_COMPOSE["row_cd_height_mm"])
+    FIG06_PANEL_D_WIDTH_MM = float(FIG06_COMPOSE["panel_d_width_mm"])
+    FIG06_PANEL_E_HEIGHT_MM = float(FIG06_COMPOSE["panel_e_height_mm"])
     FIG06_COL_GAP_MM = float(FIG06_COMPOSE["col_gap_mm"])
     FIG06_ROW_GAP_MM = float(FIG06_COMPOSE["row_gap_mm"])
 except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06 contract drift
@@ -127,8 +126,8 @@ except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06
     FIG06_COMPOSE = {}
     FIG06_WIDTH_MM = FIG06_HEIGHT_MM = 0.0
     FIG06_OUTER_MARGIN_X_MM = FIG06_OUTER_MARGIN_TOP_MM = FIG06_OUTER_MARGIN_BOTTOM_MM = 0.0
-    FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_C_HEIGHT_MM = FIG06_D_HEIGHT_MM = 0.0
-    FIG06_PANEL_C_WIDTH_MM = FIG06_PANEL_E_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
+    FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_ROW_CD_HEIGHT_MM = FIG06_PANEL_E_HEIGHT_MM = 0.0
+    FIG06_PANEL_D_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
     FIG06_ROW_GAP_MM = 0.0
 FIG06_PANEL_A_CROP = (0.015, 0.405, 0.985, 0.755)
 FIG06_TYPOGRAPHY_PT = {
@@ -1139,52 +1138,52 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     outer_margin_bottom_px = _mm_to_px(FIG06_OUTER_MARGIN_BOTTOM_MM)
     col_gap_px = _mm_to_px(FIG06_COL_GAP_MM)
     row_gap_px = _mm_to_px(FIG06_ROW_GAP_MM)
-    # Reweight Fig. 6 toward recurrence/early-energy-capture and away from the
-    # lower exploratory dashboard layer.
-    a_height_mm = 17.0
-    b_height_mm = 29.0
-    c_height_mm = 64.0
-    d_height_mm = 42.0
-    panel_e_width_mm = 52.0
-    panel_c_width_mm = FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM - FIG06_COL_GAP_MM - panel_e_width_mm
+    a_height_mm = FIG06_A_HEIGHT_MM
+    b_height_mm = FIG06_B_HEIGHT_MM
+    row_cd_height_mm = FIG06_ROW_CD_HEIGHT_MM
+    panel_e_height_mm = FIG06_PANEL_E_HEIGHT_MM
+    panel_d_width_mm = FIG06_PANEL_D_WIDTH_MM
+    panel_c_width_mm = (
+        FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM - FIG06_COL_GAP_MM - panel_d_width_mm
+    )
     a_height_px = _mm_to_px(a_height_mm)
     b_height_px = _mm_to_px(b_height_mm)
-    c_height_px = _mm_to_px(c_height_mm)
-    d_height_px = _mm_to_px(d_height_mm)
+    row_cd_height_px = _mm_to_px(row_cd_height_mm)
+    panel_e_height_px = _mm_to_px(panel_e_height_mm)
     panel_c_width_px = _mm_to_px(panel_c_width_mm)
     inner_width_px = figure_width_px - 2 * outer_margin_x_px
-    panel_e_width_px = inner_width_px - panel_c_width_px - col_gap_px
-    if panel_e_width_px <= 0:
+    panel_d_width_px = inner_width_px - panel_c_width_px - col_gap_px
+    if panel_d_width_px <= 0:
         raise RuntimeError(
             "Fig. 6 compose contract is inconsistent after px rounding: "
-            f"{inner_width_px=}, {panel_c_width_px=}, {panel_e_width_px=}, {col_gap_px=}"
+            f"{inner_width_px=}, {panel_c_width_px=}, {panel_d_width_px=}, {col_gap_px=}"
         )
 
     panel_a = _contain_in_box(panel_a, inner_width_px, a_height_px)
     panel_a = _annotate_fig06_screening_strip(panel_a)
     panel_b = _contain_in_box(panel_b, inner_width_px, b_height_px)
-    panel_c = _contain_in_box(panel_c, panel_c_width_px, c_height_px)
-    panel_d = _contain_in_box(panel_d, panel_e_width_px, c_height_px)
-    panel_e = _contain_in_box(panel_e, inner_width_px, d_height_px)
+    panel_c = _contain_in_box(panel_c, panel_c_width_px, row_cd_height_px)
+    panel_d = _contain_in_box(panel_d, panel_d_width_px, row_cd_height_px)
+    panel_e = _contain_in_box(panel_e, inner_width_px, panel_e_height_px)
     _save_composite(panel_a, panel_a_manuscript_asset)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
     row_a_y = outer_margin_top_px
     row_b_y = row_a_y + a_height_px + row_gap_px
-    row_ce_y = row_b_y + b_height_px + row_gap_px
-    row_d_y = row_ce_y + c_height_px + row_gap_px
+    row_cd_y = row_b_y + b_height_px + row_gap_px
+    row_e_y = row_cd_y + row_cd_height_px + row_gap_px
     panel_a_x = outer_margin_x_px
     panel_b_x = outer_margin_x_px
     panel_c_x = outer_margin_x_px
-    panel_e_x = panel_c_x + panel_c_width_px + col_gap_px
-    panel_d_x = outer_margin_x_px
+    panel_d_x = panel_c_x + panel_c_width_px + col_gap_px
+    panel_e_x = outer_margin_x_px
 
     canvas.paste(panel_a, (panel_a_x, row_a_y))
     canvas.paste(panel_b, (panel_b_x, row_b_y))
-    canvas.paste(panel_c, (panel_c_x, row_ce_y))
-    canvas.paste(panel_d, (panel_e_x, row_ce_y))
-    canvas.paste(panel_e, (panel_d_x, row_d_y))
+    canvas.paste(panel_c, (panel_c_x, row_cd_y))
+    canvas.paste(panel_d, (panel_d_x, row_cd_y))
+    canvas.paste(panel_e, (panel_e_x, row_e_y))
 
     _draw_panel_label(
         draw,
@@ -1220,13 +1219,13 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Exploratory screen summary",
+                "title": "Energy versus readout accuracy",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "e",
-                "title": "Material frequency structure",
+                "title": "Object-conditioned band structure",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
             },
@@ -1260,7 +1259,10 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "title": "Cross-material H",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + c_height_mm + 2 * FIG06_ROW_GAP_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM
+                        + panel_e_height_mm
+                        + row_cd_height_mm
+                        + 2 * FIG06_ROW_GAP_MM,
                         FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
                         b_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
@@ -1274,9 +1276,9 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "title": "Low-rank continuity",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + FIG06_ROW_GAP_MM,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + panel_e_height_mm + FIG06_ROW_GAP_MM,
                         panel_c_width_mm,
-                        c_height_mm,
+                        row_cd_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1285,12 +1287,12 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "d",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Exploratory screen summary",
+                    "title": "Energy versus readout accuracy",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM + panel_c_width_mm + FIG06_COL_GAP_MM,
-                        FIG06_OUTER_MARGIN_BOTTOM_MM + d_height_mm + FIG06_ROW_GAP_MM,
-                        panel_e_width_mm,
-                        c_height_mm,
+                        FIG06_OUTER_MARGIN_BOTTOM_MM + panel_e_height_mm + FIG06_ROW_GAP_MM,
+                        panel_d_width_mm,
+                        row_cd_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },
@@ -1299,12 +1301,12 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
                     "panel_id": "e",
                     "kind": "rectilinear",
                     "has_data": True,
-                    "title": "Material frequency structure",
+                    "title": "Object-conditioned band structure",
                     **_bbox_payload(
                         FIG06_OUTER_MARGIN_X_MM,
                         FIG06_OUTER_MARGIN_BOTTOM_MM,
                         FIG06_WIDTH_MM - 2 * FIG06_OUTER_MARGIN_X_MM,
-                        d_height_mm,
+                        panel_e_height_mm,
                         FIG06_WIDTH_MM, FIG06_HEIGHT_MM,
                     ),
                 },

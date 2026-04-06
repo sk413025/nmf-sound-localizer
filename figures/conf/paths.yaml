@@ -12,6 +12,7 @@ h_matrix: h_matrix_normalized_original_to_box.pth
 fig06_cross_material_h_run: ../ldv-master-reference-audio/results/h_matrix_repro_original_to_cross_materials_20260324_220841
 fig06_cross_material_selection_run: ../ldv-master-reference-audio/results/cross_materials_material_selection_20260324_221916
 fig06_cross_material_support_run: ../ldv-master-reference-audio/results/cross_materials_fig06_support_20260325_164051
+fig06_cross_material_angle_table: results/fig06_universal_equation_factor_audit_20260327_173647/angle_feature_table.csv
 
 # Ablation sweep data (Fig 4)
 ablation_sweep:
