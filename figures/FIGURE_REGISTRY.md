@@ -27,7 +27,7 @@ Retired material:
 | Fig 1 | `paper/figures/fig01_paradigm-shift.jpg` | `fig01_paradigm_data.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig01_manual` |
 | Fig 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | `fig02_svd_spectrum.py` | data-backed | `experiments.yaml → fig02_svd` |
 | Fig 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | `fig03_fingerprint_discriminability.py` | data-backed | `experiments.yaml → fig03_discriminability` |
-| Fig 4 | `paper/figures/fig04_solver-dynamics.jpg` | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig04_ablation` |
+| Fig 4 | `paper/figures/fig04_solver-dynamics.jpg` | `fig04_solver_dynamics.py` + `compose_master_figure3_family.py` | direct generator composite | `experiments.yaml → fig04_ablation` |
 | Fig 5 | `paper/figures/fig05_performance-structure.jpg` | `fig05_performance_structure.py` | data-backed | `experiments.yaml → fig05_performance_structure` |
 | Fig 6 | `paper/figures/fig06_universality.jpg` | `fig06_universality.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig06_universality` |
 
@@ -58,7 +58,7 @@ Retired material:
 
 - Manuscript asset: `paper/figures/fig04_solver-dynamics.jpg`
 - Generator / composer: `figures/generators/fig04_solver_dynamics.py` + `scripts/paper/compose_master_figure3_family.py`
-- Manual support panel `a`: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg`
+- Composite asset: `figures/output/fig04_solver_dynamics.pdf`
 - Active panel manifest: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig04_ablation`
 - Active panel logic: physics-first mechanism overview + broad-match-to-local-update exemplar + residual-cleanup summary + clean decoder-family comparison

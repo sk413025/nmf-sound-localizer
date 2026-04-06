@@ -53,9 +53,9 @@ fig01_manual:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
     d:
-      title: "Trial repeatability"
+      title: "Angle-frequency heatmap"
       provenance_mode: data_backed
-      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_repeatability.pdf
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
@@ -133,15 +133,15 @@ fig04_ablation:
   figure_id: fig04
   figure: "Fig 4"
   title: "A physics-guided solver concentrates nearby overlap into the correct neighborhood"
-  type: mixed_composite
+  type: data_backed_composite
   manuscript_asset: paper/figures/fig04_solver-dynamics.jpg
   asset_layer: manuscript_composite
-  provenance_mode: mixed_composite
+  provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided solver uses learned local gating within a staged residual-correction scaffold to concentrate nearby overlap into the correct local neighborhood before residual subtraction; panel d then provides a secondary restricted clean-condition check on the same point."
-  legend_summary: "Schematic mechanism strip, data-backed exemplar of local concentration and residual cleanup, and a secondary restricted clean-condition consequence surface."
-  panel_order: ["a", "b", "c", "d"]
+  claim: "The physics-guided solver delays commitment inside the measured local band: panel a aligns the measured local structure with the staged broad-match, gate, and update views; panels b-c show the representative narrowing of support; panel d shows residual purification and validation-wide local concentration; panel e shows the clean-condition consequence when that local pooling is removed."
+  legend_summary: "Data-backed architecture/physics correspondence, representative broad-match and gate-convergence views, residual purification, and clean-condition ablation consequence."
+  panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
   compose_script: scripts/paper/compose_master_figure3_family.py
@@ -177,30 +177,37 @@ fig04_ablation:
       description: "Governed derived artifact containing the stage-0 g_t/w_t/Δx_t summaries for panel b and the shared 70-degree residual-cleanup summaries for panel c."
   panel_provenance:
     a:
-      title: "Mechanism strip"
-      provenance_mode: manual_support
-      asset_path: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_a_architecture.jpg
-      note: "Generator-built manuscript support strip that reduces the mechanism to a schematic broad-match -> local-concentration -> cleaner-residual sequence; no run-generated evidence."
-    b:
-      title: "Broad match, local gate, and local update"
+      title: "Architecture and physics correspondence"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_gate_qk.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_architecture_physics.pdf
+      evidence_sources:
+        - results/fig04_stepwise_mechanics.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+    b:
+      title: "Broad initial match"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_broad_match.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Residual after one local step"
+      title: "Local gate convergence"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_update_residual.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_local_gate.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/model_best.pth
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/preprocessing.pth
     d:
-      title: "Secondary clean-condition check"
+      title: "Residual purification"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_ablation.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_residual_purification.pdf
+      evidence_sources:
+        - results/fig04_stepwise_mechanics.npz
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
+    e:
+      title: "Ablation consequence"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf
       evidence_sources:
         - results/figure4_data.json
   sweep:

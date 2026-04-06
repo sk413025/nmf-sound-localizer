@@ -35,15 +35,19 @@ decisions, not to replace manuscript prose.
   - `results/fig04_stepwise_mechanics.npz`
     - governed derived artifact rebuilt from the active primary run
 - Panel notes:
-  - `a`: manual mechanism-strip asset, no run-variant label logic
-  - `b`: broad-to-local exemplar overlay; it places the stage-0 physical match
-    `g_t(θ)`, the local gate `w_t(θ)`, and the localized update `Δx_t(θ)` on
-    one shared axis for the active 70° interior exemplar
-  - `c`: residual-cleanup overlay; it shows the first residual-step change from
-    `g_t = D^Tr_t` to `g_{t+1} = D^Tr_{t+1}` and carries the validation-wide
-    inward-mass and residual-drop summaries as compact callouts rather than as
-    separate stacked subplots
-  - `d`: clean decoder-comparison panel; the upstream sweep still stores the
+  - `a`: generator-produced architecture/physics correspondence panel; it pairs
+    the measured local band in `H` with the staged broad-match, local-gate,
+    and local-update profiles on the same angle frame
+  - `b`: representative broad-match panel; it shows the active 70° exemplar
+    before local pooling, with the nearby co-active atoms displayed explicitly
+    inside the measured local neighborhood
+  - `c`: local-gate convergence panel; it overlays the broad match, local gate,
+    and localized update for the same 70° exemplar so the delayed-commitment
+    narrowing is visible on one shared axis
+  - `d`: residual-purification panel; left = exemplar residual-norm drop across
+    the guided steps, right = validation-wide local-mass concentration before
+    versus after the guided local step
+  - `e`: clean decoder-comparison panel; the upstream sweep still stores the
     artifact keys `Baseline`, `No Type Bias`, `No Transformer`,
     `Fixed Heuristic`, `G-Fixed`, `G-Teacher`, and `Dense Routing`, but the
     active paper-facing panel collapses them to four families:

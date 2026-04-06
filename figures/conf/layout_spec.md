@@ -73,39 +73,34 @@ figures:
   fig04:
     compose:
       width_mm: 183.0
-      height_mm: 126.0
-      outer_margin_mm: 4.0
-      top_row_height_mm: 55.0
-      bottom_row_height_mm: 55.0
-      left_col_width_mm: 84.5
-      right_col_width_mm: 84.5
-      row_gap_mm: 8.0
-      col_gap_mm: 6.0
-      content_boxes_mm:
-        panel_a: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
-        panel_b: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
-        panel_c: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
-        panel_d: {inset_x: 1.0, label_lane: 3.0, inset_bottom: 0.8}
+      height_mm: 148.0
+      outer_margin_x_mm: 4.0
+      outer_margin_y_mm: 4.0
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 118.0
+      composite_height_mm: 148.0
       composite_grid:
-        left: 0.055
-        right: 0.992
-        bottom: 0.085
+        left: 0.045
+        right: 0.985
+        bottom: 0.075
         top: 0.965
-        hspace: 0.28
-        wspace: 0.24
-        width_ratios: [84.5, 84.5]
-        height_ratios: [55.0, 55.0]
+        hspace: 0.46
+        height_ratios: [34.0, 47.0, 47.0]
+      middle_row:
+        wspace: 0.22
+        width_ratios: [89.0, 89.0]
+      bottom_row:
+        wspace: 0.22
+        width_ratios: [89.0, 89.0]
       split:
-        panel_slot_width_mm: {a: 84.5, b: 84.5, c: 84.5, d: 84.5}
-        panel_slot_height_mm: {a: 55.0, b: 55.0, c: 55.0, d: 55.0}
+        panel_slot_width_mm: {a: 171.0, b: 84.0, c: 84.0, d: 84.0, e: 84.0}
+        panel_slot_height_mm: {a: 34.0, b: 47.0, c: 47.0, d: 47.0, e: 47.0}
         standalone_subplots:
-          a: {left: 0.125, right: 0.985, bottom: 0.190, top: 0.900}
-          b: {left: 0.095, right: 0.985, bottom: 0.190, top: 0.900}
-          c: {left: 0.115, right: 0.985, bottom: 0.190, top: 0.900}
-          d: {left: 0.145, right: 0.985, bottom: 0.190, top: 0.900}
+          a: {left: 0.055, right: 0.985, bottom: 0.165, top: 0.920}
+          b: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
+          c: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
+          d: {left: 0.085, right: 0.985, bottom: 0.180, top: 0.920}
+          e: {left: 0.145, right: 0.985, bottom: 0.180, top: 0.920}
   fig05:
     generator:
       composite_width_mm: 183.0
