@@ -150,13 +150,13 @@ figures:
       width_mm: 183.0
       height_mm: 170.0
       outer_margin_x_mm: 6.0
-      outer_margin_top_mm: 4.0
-      outer_margin_bottom_mm: 4.0
-      panel_a_height_mm: 28.0
-      panel_b_height_mm: 29.0
-      row_cd_height_mm: 49.0
+      outer_margin_top_mm: 3.0
+      outer_margin_bottom_mm: 3.0
+      panel_a_height_mm: 29.0
+      panel_b_height_mm: 24.0
+      row_cd_height_mm: 47.0
       panel_d_width_mm: 83.0
-      panel_e_height_mm: 47.0
+      panel_e_height_mm: 55.0
       col_gap_mm: 4.0
       row_gap_mm: 3.0
     typography:
@@ -175,10 +175,10 @@ figures:
         right: 0.945
         bottom: 0.065
         top: 0.955
-        hspace: 0.24
+        hspace: 0.34
         wspace: 0.0
         width_ratios: [1.0]
-        height_ratios: [28.0, 29.0, 49.0, 47.0]
+        height_ratios: [29.0, 24.0, 47.0, 55.0]
       middle_row:
         wspace: 0.18
         width_ratios: [84.0, 83.0]
@@ -186,24 +186,24 @@ figures:
         standalone:
           a:
             width_mm: 171.0
-            height_mm: 28.0
+            height_mm: 29.0
             subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.26, top: 0.88}
           b:
             width_mm: 171.0
-            height_mm: 29.0
+            height_mm: 24.0
             subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.18, top: 0.92}
           c:
             width_mm: 84.0
-            height_mm: 49.0
+            height_mm: 47.0
             subplots_adjust: {left: 0.11, right: 0.985, bottom: 0.17, top: 0.92}
           d:
             width_mm: 83.0
-            height_mm: 49.0
+            height_mm: 47.0
             subplots_adjust: {left: 0.12, right: 0.985, bottom: 0.18, top: 0.92}
           e:
             width_mm: 171.0
-            height_mm: 47.0
-            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.14, top: 0.94}
+            height_mm: 55.0
+            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.13, top: 0.94}
 ```
 <!-- runtime-layout-contract:end -->
 

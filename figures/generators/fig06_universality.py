@@ -3,7 +3,7 @@
 Panel (a): Measured response-regime map across materials.
 Panel (b): Cross-material H strip with the object-specific informative-band window.
 Panel (c): Inter-angle correlation-decay summary across materials.
-Panel (d): Readout summary against overlap-width and response-energy descriptors.
+Panel (d): Readout summary against subspace-overlap burden and response-energy descriptors.
 Panel (e): Object-specific informative-band windows and their recovered directional codes.
 """
 
@@ -251,6 +251,7 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
     corr_decay_deg: np.ndarray | None = None
     corr_decay_by_material: dict[str, np.ndarray] = {}
     corr_zero_cross_deg: dict[str, float] = {}
+    mean_top3_overlap_by_material: dict[str, float] = {}
 
     for material in ranking:
         h_path = h_run_dir / f"h_matrix_normalized_original_to_{material}.pth"
@@ -268,6 +269,9 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
         angle_top1_by_material[material] = np.asarray(
             [float(row["angle_top1_acc"]) for row in material_angle_rows],
             dtype=float,
+        )
+        mean_top3_overlap_by_material[material] = float(
+            np.mean([float(row["mean_top3_subspace_overlap_to_others"]) for row in material_angle_rows])
         )
 
     if n_freq is None:
@@ -385,6 +389,7 @@ def _prepare_fig06_data(data_root: Path) -> dict[str, Any]:
         "corr_decay_deg": corr_decay_deg,
         "corr_decay_by_material": corr_decay_by_material,
         "corr_zero_cross_deg": corr_zero_cross_deg,
+        "mean_top3_overlap_by_material": mean_top3_overlap_by_material,
         "normalized_energy": {
             material: float(normalized_energy[idx])
             for idx, material in enumerate(ranking)
@@ -519,7 +524,7 @@ def _plot_panel_b(
 
     cbar = fig.colorbar(image, cax=cax)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt, length=2)
-    cbar.set_label(r"$\log_{10}|H|$", fontsize=colorbar_label_pt, labelpad=2)
+    cbar.set_label(r"$\log_{10}|H|$", fontsize=colorbar_label_pt, labelpad=0.6)
     return [ax_block, *heatmap_axes, cax]
 
 
@@ -538,9 +543,11 @@ def _plot_panel_a(
         fig,
         slot_spec,
         label="a",
-        title=None,
+        title="Measured response-regime map",
         title_pt=title_pt,
         add_label=add_label,
+        title_x=0.03,
+        title_y=1.03,
     )
     ax = fig.add_subplot(slot_spec)
     thumbs = _load_panel_a_thumbnails()
@@ -556,16 +563,16 @@ def _plot_panel_a(
     thumb_offsets = {
         "b": (18, -2),
         "w": (0, 18),
-        "a": (-24, 0),
-        "p": (-24, 0),
-        "m": (22, 0),
+        "a": (-22, -2),
+        "p": (-22, 0),
+        "m": (20, 0),
     }
     label_offsets = {
         "b": (14, -14),
         "w": (0, -18),
-        "a": (22, 8),
-        "p": (-12, -14),
-        "m": (12, -14),
+        "a": (24, 8),
+        "p": (-14, -14),
+        "m": (14, -14),
     }
     for material in ranking:
         style = _screening_material_style(material)
@@ -581,7 +588,7 @@ def _plot_panel_a(
             linewidths=STROKE_TOKENS["base"],
             zorder=3,
         )
-        thumb = OffsetImage(thumbs[material], zoom=0.075)
+        thumb = OffsetImage(thumbs[material], zoom=0.068)
         thumb_dx, thumb_dy = thumb_offsets.get(material, (18, 0))
         ab = AnnotationBbox(
             thumb,
@@ -610,8 +617,19 @@ def _plot_panel_a(
             color=style["color"],
         )
 
-    ax.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt, labelpad=0.2)
-    ax.set_ylabel(r"Eff. rank of centered $|H|$", fontsize=axis_label_pt)
+    ax.text(
+        0.99,
+        0.08,
+        "descriptor axes, not material constants",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=max(tick_label_pt - 0.45, 4.9),
+        color=STYLE_COLORS["muted_text"],
+    )
+
+    ax.set_xlabel("Correlation-decay width (deg)", fontsize=axis_label_pt, labelpad=0.2)
+    ax.set_ylabel("Effective rank", fontsize=axis_label_pt)
     ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=0.8)
     return [ax_block, ax]
 
@@ -729,13 +747,17 @@ def _plot_panel_d(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.45, 0.9], hspace=0.20)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.10, 1.25], hspace=0.14)
     ax_top = fig.add_subplot(grid[0, 0])
     ax_bottom = fig.add_subplot(grid[1, 0])
 
     x = np.arange(len(ranking), dtype=float)
     energy = np.asarray([data["normalized_energy"][material] for material in ranking], dtype=float)
     overlap_width = np.asarray([data["corr_zero_cross_deg"][material] for material in ranking], dtype=float)
+    overlap_burden = np.asarray(
+        [data["mean_top3_overlap_by_material"][material] for material in ranking],
+        dtype=float,
+    )
     top1 = np.asarray(
         [float(data["performance_by_material"][material]["top1_acc"]) for material in ranking],
         dtype=float,
@@ -820,7 +842,7 @@ def _plot_panel_d(
     for idx, material in enumerate(ranking):
         style = _screening_material_style(material)
         ax_bottom.errorbar(
-            [overlap_width[idx]],
+            [overlap_burden[idx]],
             [top1[idx]],
             yerr=[[top1[idx] - top1_lo[idx]], [top1_hi[idx] - top1[idx]]],
             fmt="none",
@@ -830,7 +852,7 @@ def _plot_panel_d(
             zorder=2,
         )
         ax_bottom.scatter(
-            [overlap_width[idx]],
+            [overlap_burden[idx]],
             [top1[idx]],
             s=float(marker_sizes[idx]),
             marker=style["marker"],
@@ -841,7 +863,7 @@ def _plot_panel_d(
         )
         ax_bottom.annotate(
             MATERIAL_SHORT_LABELS[material],
-            (overlap_width[idx], top1[idx]),
+            (overlap_burden[idx], top1[idx]),
             xytext=label_offsets[material],
             textcoords="offset points",
             ha="center",
@@ -859,10 +881,10 @@ def _plot_panel_d(
         linewidths=STROKE_TOKENS["base"],
         label=r"marker area $\propto$ norm. $|H|$ energy",
     )
-    ax_bottom.set_xlim(float(overlap_width.min()) - 4.0, float(overlap_width.max()) + 4.0)
+    ax_bottom.set_xlim(float(overlap_burden.min()) - 0.005, float(overlap_burden.max()) + 0.005)
     ax_bottom.set_ylim(0.60, 0.88)
     ax_bottom.set_yticks([0.65, 0.75, 0.85])
-    ax_bottom.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_bottom.set_xlabel("Mean top-3 subspace overlap burden", fontsize=axis_label_pt, labelpad=1.0)
     ax_bottom.set_ylabel("Top-1 mean", fontsize=axis_label_pt, labelpad=1.0)
     ax_bottom.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
     ax_bottom.legend(
@@ -892,11 +914,13 @@ def _plot_panel_e(
         fig,
         slot_spec,
         label="e",
-        title=None,
+        title="Selected bands and recovered codes",
         title_pt=title_pt,
         add_label=add_label,
+        title_x=0.03,
+        title_y=0.94,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.0, 1.2], hspace=0.58)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[0.70, 1.66], hspace=0.40)
     ax_band = fig.add_subplot(grid[0, 0])
     ax_code = fig.add_subplot(grid[1, 0])
 
@@ -917,7 +941,7 @@ def _plot_panel_e(
             idx,
             hi - lo,
             left=lo,
-            height=0.50,
+            height=0.58,
             color=style["color"],
             alpha=0.35,
             edgecolor=style["color"],
@@ -928,19 +952,27 @@ def _plot_panel_e(
             [idx],
             marker=style["marker"],
             color=style["color"],
-            markersize=FAMILY_STYLE["standard_marker_pt"],
+            markersize=FAMILY_STYLE["standard_marker_pt"] + 0.6,
             linewidth=0.0,
             zorder=3,
+        )
+        ax_band.axvline(
+            center,
+            color=style["color"],
+            linewidth=STROKE_TOKENS["annotation"],
+            alpha=0.30,
+            ymin=max(0.0, (idx - 0.25) / max(len(ranking) - 0.5, 1.0)),
+            ymax=min(1.0, (idx + 0.25) / max(len(ranking) - 0.5, 1.0)),
+            zorder=1,
         )
         ax_code.plot(
             data["angles"][material],
             data["representative_directivity"][material],
             color=style["color"],
-            linewidth=STROKE_TOKENS["data"],
+            linewidth=STROKE_TOKENS["emphasis"],
             marker=style["marker"],
-            markersize=FAMILY_STYLE["compact_marker_pt"],
+            markersize=FAMILY_STYLE["compact_marker_pt"] + 0.3,
             markevery=6,
-            label=MATERIAL_SHORT_LABELS[material],
         )
 
     for ax in (ax_band, ax_code):
@@ -960,14 +992,16 @@ def _plot_panel_e(
     for label, material in zip(ax_band.get_yticklabels(), ranking, strict=False):
         label.set_color(_screening_material_style(material)["color"])
     ax_band.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
-    ax_band.tick_params(axis="x", labeltop=False, top=False, labelbottom=True, bottom=True, pad=0.8)
-    ax_band.set_xlabel("Contrast band (kHz)", fontsize=axis_label_pt, labelpad=0.8)
+    ax_band.xaxis.set_label_position("bottom")
+    ax_band.xaxis.tick_bottom()
+    ax_band.tick_params(axis="x", labeltop=False, top=False, labelbottom=True, bottom=True, pad=1.0)
+    ax_band.set_xlabel("Selected contrast band (kHz)", fontsize=axis_label_pt, labelpad=2.8)
     ax_band.set_ylabel("")
     ax_band.tick_params(axis="y", labelsize=tick_label_pt, length=0, pad=1)
     ax_band.text(
         0.99,
-        0.08,
-        "segment = selected band, marker = band center",
+        0.12,
+        "segment = band, marker = center",
         transform=ax_band.transAxes,
         ha="right",
         va="bottom",
@@ -975,21 +1009,35 @@ def _plot_panel_e(
         color=STYLE_COLORS["muted_text"],
     )
 
-    ax_code.set_xlim(0.0, 180.0)
+    ax_code.set_xlim(0.0, 186.0)
     ax_code.set_ylim(0.0, 1.02)
     ax_code.set_xticks([0, 30, 60, 90, 120, 150, 180])
-    ax_code.set_ylabel("Norm. band code", fontsize=axis_label_pt, labelpad=1.0)
+    ax_code.set_ylabel("Recovered band code", fontsize=axis_label_pt, labelpad=1.0)
     ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
-    ax_code.legend(
-        frameon=False,
-        fontsize=legend_pt - 0.5,
-        loc="upper right",
-        ncol=3,
-        handlelength=1.4,
-        borderpad=0.1,
-        labelspacing=0.15,
-        columnspacing=0.8,
-    )
+    end_label_x = 182.0
+    y_targets: list[tuple[str, float]] = []
+    for material in ranking:
+        y_tail = float(np.mean(data["representative_directivity"][material][-3:]))
+        y_targets.append((material, y_tail))
+    y_targets.sort(key=lambda item: item[1])
+    adjusted_y: dict[str, float] = {}
+    min_gap = 0.08
+    prev_y: float | None = None
+    for material, y_val in y_targets:
+        placed = y_val if prev_y is None else max(y_val, prev_y + min_gap)
+        adjusted_y[material] = min(placed, 0.98)
+        prev_y = adjusted_y[material]
+    for material in ranking:
+        style = _screening_material_style(material)
+        ax_code.annotate(
+            MATERIAL_SHORT_LABELS[material],
+            (end_label_x, adjusted_y[material]),
+            ha="left",
+            va="center",
+            fontsize=max(legend_pt - 0.6, 5.0),
+            color=style["color"],
+            annotation_clip=False,
+        )
 
     return [ax_block, ax_band, ax_code]
 
@@ -1198,11 +1246,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Readout versus overlap burden",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_d_screening_consequence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Per-angle Top-1 distributions together with an object-level Top-1-versus-overlap scatter whose marker area tracks normalized response energy, showing descriptively that vibration amplitude alone does not order the five objects and that overlap width provides a more informative comparison axis.",
+                "description": "Per-angle Top-1 distributions together with an object-level Top-1-versus-overlap scatter whose marker area tracks normalized response energy, showing descriptively that vibration amplitude alone does not order the five objects and that the mean top-3 subspace overlap burden provides a more informative comparison axis.",
             },
             {
                 "panel_id": "e",
-                "title": "Object-conditioned contrast band",
+                "title": "Selected contrast band",
                 "asset_path": "figures/output/fig06_universality_panels/fig06_panel_e_material_frequency_structure.pdf",
                 "provenance_mode": "data_backed",
                 "description": "Per-object informative-band windows together with their band-limited directional codes, showing that one shared contrast-selection rule picks different frequency windows across passive structures and recovers different directional codes from those object-specific windows.",
