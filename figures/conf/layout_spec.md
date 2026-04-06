@@ -84,19 +84,19 @@ figures:
         right: 0.985
         bottom: 0.075
         top: 0.965
-        hspace: 0.46
-        height_ratios: [34.0, 47.0, 47.0]
+        hspace: 0.38
+        height_ratios: [38.0, 45.0, 45.0]
       middle_row:
-        wspace: 0.22
+        wspace: 0.16
         width_ratios: [89.0, 89.0]
       bottom_row:
-        wspace: 0.22
+        wspace: 0.16
         width_ratios: [89.0, 89.0]
       split:
         panel_slot_width_mm: {a: 171.0, b: 84.0, c: 84.0, d: 84.0, e: 84.0}
-        panel_slot_height_mm: {a: 34.0, b: 47.0, c: 47.0, d: 47.0, e: 47.0}
+        panel_slot_height_mm: {a: 38.0, b: 45.0, c: 45.0, d: 45.0, e: 45.0}
         standalone_subplots:
-          a: {left: 0.055, right: 0.985, bottom: 0.165, top: 0.920}
+          a: {left: 0.050, right: 0.985, bottom: 0.150, top: 0.925}
           b: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
           c: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
           d: {left: 0.085, right: 0.985, bottom: 0.180, top: 0.920}

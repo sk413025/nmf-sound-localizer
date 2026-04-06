@@ -155,7 +155,7 @@ def _configure_profile_axis(
     else:
         x_min, x_max = local_focus
         ax.set_xlim(x_min, x_max)
-        ax.set_xticks(np.arange(x_min, x_max + 1.0, 10.0))
+        ax.set_xticks([45, 60, 75, 90])
     ax.set_ylim(0.0, 1.05)
     if show_yticks:
         ax.set_yticks([0.0, 0.5, 1.0])
@@ -241,6 +241,25 @@ def _plot_trace(
     )
 
 
+def _fill_trace(
+    ax: plt.Axes,
+    angles_deg: np.ndarray,
+    values: np.ndarray,
+    *,
+    color: str,
+    alpha: float,
+) -> None:
+    ax.fill_between(
+        angles_deg,
+        np.zeros_like(values),
+        values,
+        color=color,
+        alpha=alpha,
+        linewidth=0.0,
+        zorder=2,
+    )
+
+
 def _plot_panel_a(
     fig: plt.Figure,
     slot_spec,
@@ -253,7 +272,7 @@ def _plot_panel_a(
     legend_pt: float,
     add_label: bool,
 ) -> list[plt.Axes]:
-    outer = slot_spec.subgridspec(1, 2, width_ratios=[1.05, 1.55], wspace=0.18)
+    outer = slot_spec.subgridspec(1, 2, width_ratios=[0.92, 1.68], wspace=0.14)
     left_ax = fig.add_subplot(outer[0, 0])
     left_ax.set_gid("fig04.panel_a.main")
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
@@ -302,12 +321,12 @@ def _plot_panel_a(
         color="white",
     )
 
-    right = outer[0, 1].subgridspec(1, 3, wspace=0.14)
+    right = outer[0, 1].subgridspec(1, 3, wspace=0.08)
     local_band = _local_band_profile(h_similarity, mechanics["angles_deg"], target_angle)
     stage_specs = [
-        ("broad match", _normalize_1d(mechanics["stage0_g_norm_mean"][0]), SEMANTIC_PALETTE["physics"], "--", FIG04_BASE_LINEWIDTH, "fig04.panel_a.stage_broad"),
-        ("local gate", _normalize_1d(mechanics["stage0_w_theta_norm_mean"][0]), SEMANTIC_PALETTE["ablation"], ":", FIG04_LIGHT_LINEWIDTH, "fig04.panel_a.stage_gate"),
-        ("local update", _normalize_1d(mechanics["stage0_delta_norm_mean"][0]), SEMANTIC_PALETTE["learned"], "-", FIG04_HEAVY_LINEWIDTH, "fig04.panel_a.stage_update"),
+        ("match", _normalize_1d(mechanics["stage0_g_norm_mean"][0]), SEMANTIC_PALETTE["physics"], "--", FIG04_BASE_LINEWIDTH, "fig04.panel_a.stage_broad"),
+        ("gate", _normalize_1d(mechanics["stage0_w_theta_norm_mean"][0]), SEMANTIC_PALETTE["ablation"], ":", FIG04_LIGHT_LINEWIDTH, "fig04.panel_a.stage_gate"),
+        ("update", _normalize_1d(mechanics["stage0_delta_norm_mean"][0]), SEMANTIC_PALETTE["learned"], "-", FIG04_HEAVY_LINEWIDTH, "fig04.panel_a.stage_update"),
     ]
     stage_axes: list[plt.Axes] = []
     focus = (45.0, 95.0)
@@ -328,15 +347,24 @@ def _plot_panel_a(
             linestyle=linestyle,
             linewidth=linewidth,
         )
+        _fill_trace(
+            ax,
+            mechanics["angles_deg"],
+            values,
+            color=color,
+            alpha=0.08 if idx < 2 else 0.12,
+        )
         _configure_profile_axis(
             ax,
             tick_label_pt=tick_label_pt - 0.2,
             show_yticks=(idx == 0),
             local_focus=focus,
         )
-        ax.set_title(title, fontsize=title_pt - 0.5, pad=1.4, color=STYLE_COLORS["muted_text"])
+        ax.set_title(title, fontsize=title_pt - 0.35, pad=1.2, color=STYLE_COLORS["muted_text"])
         if idx == 0:
             ax.set_ylabel("Normalized support", fontsize=axis_label_pt - 0.3)
+        else:
+            ax.set_xlabel("")
         stage_axes.append(ax)
 
     if add_label:
@@ -389,6 +417,13 @@ def _plot_panel_b(
         linewidth=FIG04_BASE_LINEWIDTH,
         label="broad match",
     )
+    _fill_trace(
+        ax,
+        angles_deg,
+        broad,
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.10,
+    )
     ax.vlines(
         local_angles,
         0.0,
@@ -413,22 +448,12 @@ def _plot_panel_b(
     ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
     ax.text(
         0.03,
-        0.89,
-        "representative validation clip\nbefore local pooling",
+        0.94,
+        "representative clip",
         transform=ax.transAxes,
         fontsize=legend_pt - 0.2,
         va="top",
         ha="left",
-        color=STYLE_COLORS["muted_text"],
-    )
-    ax.text(
-        0.98,
-        0.89,
-        "nearby atoms remain co-active",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.2,
-        va="top",
-        ha="right",
         color=STYLE_COLORS["muted_text"],
     )
     ax.legend(frameon=False, fontsize=legend_pt - 0.2, loc="upper center")
@@ -483,20 +508,12 @@ def _plot_panel_c(
     _plot_trace(ax, angles_deg, broad, color=SEMANTIC_PALETTE["physics"], linestyle="--", linewidth=FIG04_BASE_LINEWIDTH, label="broad match")
     _plot_trace(ax, angles_deg, gate, color=SEMANTIC_PALETTE["ablation"], linestyle=":", linewidth=FIG04_LIGHT_LINEWIDTH, label="local gate")
     _plot_trace(ax, angles_deg, update, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH, label="local update")
+    _fill_trace(ax, angles_deg, gate, color=SEMANTIC_PALETTE["ablation"], alpha=0.06)
+    _fill_trace(ax, angles_deg, update, color=SEMANTIC_PALETTE["learned"], alpha=0.10)
     _configure_profile_axis(ax, tick_label_pt=tick_label_pt, local_focus=(x_min, x_max))
     ax.set_title("Local gate convergence", fontsize=title_pt, pad=2.0)
     ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
     ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
-    ax.text(
-        0.03,
-        0.89,
-        "gate suppresses neighboring support;\nupdate collapses to the target angle",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.2,
-        va="top",
-        ha="left",
-        color=STYLE_COLORS["muted_text"],
-    )
     ax.legend(frameon=False, fontsize=legend_pt - 0.2, loc="upper right", handlelength=2.0)
     if add_label:
         add_panel_label(ax, "c", x=0.02, y=1.01)
