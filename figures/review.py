@@ -26,6 +26,20 @@ ROLE_EXPECTATIONS = {
     "extended": {"supp", "extended"},
 }
 REQUIRED_REVIEW_ROLES = ("visual-reviewer", "manuscript-fit-reviewer", "supervisor")
+REVIEW_CHECKLIST = (
+    ("C1", "Panel hierarchy matches claim importance."),
+    ("C2", "Panel a reads as a low-burden support strip rather than a foreign explainer sidebar."),
+    ("C3", "Panel c has one scientific job and does not mix multiple semantics."),
+    ("C4", "Line weights and stroke grammar are consistent with governed tokens and the surrounding figure family."),
+    ("C5", "Typography scale is consistent with branch type rules and nearby main-paper figures."),
+    ("C6", "Semantic colors are consistent with the paper-wide visual grammar and do not drift into local ad hoc choices."),
+    ("C7", "Whitespace and density are efficient for a Nature Communications main-paper figure."),
+    ("C8", "The local manuscript text and legend accurately describe the current visible figure."),
+    ("C9", "The manuscript page placement is clean and readable at proof scale."),
+    ("C10", "The current figure is visually consistent with Figs. 2, 3, 5, and 6."),
+    ("G1", "Governance contract paths were inspected directly against the current figure and code."),
+    ("G2", "No active figure path still relies on raw local style bypasses such as ad hoc hex colors or non-token line widths."),
+)
 
 
 @dataclass
@@ -196,6 +210,19 @@ def _render_image_preview(image_path: Path, out_path: Path, max_width_px: int = 
         img.save(out_path)
 
 
+def _checklist_template() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": checklist_id,
+            "criterion": criterion,
+            "verdict": "pass|fail|n/a",
+            "reason": "",
+            "evidence": [],
+        }
+        for checklist_id, criterion in REVIEW_CHECKLIST
+    ]
+
+
 def _geometry_for_asset(asset_path: Path, width_mm: float) -> dict[str, Any]:
     if asset_path.suffix.lower() == ".pdf":
         if fitz is None:
@@ -336,7 +363,12 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "reviewer_role": "visual-reviewer",
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
+            "checklist_results": _checklist_template(),
             "inspection_complete": False,
+            "governance_contract_paths_inspected": [],
+            "governance_bypass_checks_complete": False,
+            "governance_bypass_issues": [],
+            "bypass_removal_required": False,
             "visual_assets_inspected": [],
             "pdf_pages_converted_and_inspected": [],
             "generator_paths_inspected": [],
@@ -358,7 +390,12 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "reviewer_role": "manuscript-fit-reviewer",
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
+            "checklist_results": _checklist_template(),
             "inspection_complete": False,
+            "governance_contract_paths_inspected": [],
+            "governance_bypass_checks_complete": False,
+            "governance_bypass_issues": [],
+            "bypass_removal_required": False,
             "visual_assets_inspected": [],
             "pdf_pages_converted_and_inspected": [],
             "generator_paths_inspected": [],
@@ -377,7 +414,12 @@ def _write_role_templates(bundle_dir: Path, bundle_hash: str, canonical_rel: str
             "overall_verdict": "pass|fail",
             "paper_role_fit": "main|supp|extended|neither",
             "consolidated_from_roles": ["visual-reviewer", "manuscript-fit-reviewer"],
+            "checklist_results": _checklist_template(),
             "inspection_complete": False,
+            "governance_contract_paths_inspected": [],
+            "governance_bypass_checks_complete": False,
+            "governance_bypass_issues": [],
+            "bypass_removal_required": False,
             "visual_assets_inspected": [],
             "pdf_pages_converted_and_inspected": [],
             "generator_paths_inspected": [],
@@ -423,6 +465,7 @@ def _write_workflow(bundle_dir: Path, target: ReviewTarget, canonical_rel: str, 
             "metadata_only_inference_forbidden": True,
             "all_pdf_pages_must_be_converted_before_review": True,
             "generated_figures_require_code_and_provenance_backtrace": True,
+            "governance_bypass_requires_removal_and_rewrite": True,
         },
         "target": {
             "figure_id": target.figure_id,
@@ -462,13 +505,21 @@ Required roles:
    - inspect the actual visual asset first; do not infer content from filenames, manuscript prose, or registry text
    - if any reviewed asset is a PDF, inspect the generated PNG previews for every page before drawing conclusions
    - inspect visual readability, hierarchy, spacing, overload, typography compliance, semantic color consistency, and narration restraint
+   - inspect whether the figure or any of its code paths bypass the governed visual grammar; if so, report that as a failure and require removal of the bypass-causing implementation rather than a local exception
+   - compare the current target directly against the current manuscript assets for Figs. 2, 3, 5, and 6 when judging family consistency
+   - inspect the active generator and composition paths for raw local style bypasses such as ad hoc hex colors, non-token line-width literals, or manual panel styling that does not flow through the governed contract
+   - fill every checklist item in `checklist_results` with `pass`, `fail`, or `n/a`, plus a concrete reason and concrete evidence anchors
    - write `reviews/visual-reviewer.json`
 2. `manuscript-fit-reviewer`
    - inspect manuscript fit, claim support, caption delegation, and whether the asset belongs in the intended paper role
    - reconcile the figure's visual content with its generator or composition code and its evidence or provenance sources before concluding what the figure means
+   - inspect whether any manuscript-facing acceptance claim depends on a governance bypass in the figure, generator, composition path, or review path; if so, fail the review until that bypass is removed and the asset is rewritten through the governed path
+   - fill every checklist item in `checklist_results` with `pass`, `fail`, or `n/a`, plus a concrete reason and concrete evidence anchors
    - write `reviews/manuscript-fit-reviewer.json`
 3. `supervisor`
    - reject reviews that skip visual inspection, PDF page conversion, or code/provenance reconciliation
+   - reject reviews that do not explicitly audit governance-bypass risk and whether bypass-causing implementation was removed
+   - reject reviews that leave checklist items without a verdict, reason, and concrete evidence anchors
    - consolidate both role reports
    - write final `review.json`
 
@@ -480,6 +531,10 @@ Asset model reminder:
 - For `data_backed_*` provenance modes, judge the final manuscript asset as the release candidate, but use the upstream evidence references to detect provenance gaps or slide-style recomposition mistakes.
 - If the final asset appears to discard or distort the data-backed upstream figure, call that out explicitly in the role reports.
 - Apply the branch visual grammar: panel labels about 8 pt, most other figure text within 5–7 pt, restrained internal narration, and stable semantic colors across the paper.
+- Apply the governance-bypass rule: if a figure, panel, generator, composition path, or review path bypasses the governed visual grammar or review contract, require removal of the bypass-causing implementation and a rewrite through the governed path before the figure can pass.
+
+Checklist items that must be answered with concrete evidence:
+{chr(10).join(f"- `{item_id}` {criterion}" for item_id, criterion in REVIEW_CHECKLIST)}
 
 Bundle hash:
 
@@ -607,6 +662,40 @@ def gate_all(repo_root: Path | None = None) -> bool:
             role_report = bundle_dir / "reviews" / f"{role}.json"
             if not role_report.exists():
                 issues.append(f"Missing reviews/{role}.json.")
+                continue
+            role_payload = json.loads(role_report.read_text(encoding="utf-8"))
+            checklist = role_payload.get("checklist_results")
+            if not isinstance(checklist, list) or not checklist:
+                issues.append(f"reviews/{role}.json is missing checklist_results.")
+            else:
+                checklist_ids = {item.get("id") for item in checklist if isinstance(item, dict)}
+                expected_ids = {item_id for item_id, _criterion in REVIEW_CHECKLIST}
+                missing_checklist = sorted(expected_ids - checklist_ids)
+                if missing_checklist:
+                    issues.append(
+                        f"reviews/{role}.json is missing checklist items: {', '.join(missing_checklist)}."
+                    )
+                for item in checklist:
+                    if not isinstance(item, dict):
+                        issues.append(f"reviews/{role}.json has a non-object checklist entry.")
+                        continue
+                    item_id = item.get("id", "<unknown>")
+                    verdict = str(item.get("verdict", "")).lower()
+                    if verdict not in {"pass", "fail", "n/a"}:
+                        issues.append(f"reviews/{role}.json checklist {item_id} has invalid verdict {verdict!r}.")
+                    if not str(item.get("reason", "")).strip():
+                        issues.append(f"reviews/{role}.json checklist {item_id} is missing reason.")
+                    evidence = item.get("evidence")
+                    if not isinstance(evidence, list) or not evidence:
+                        issues.append(f"reviews/{role}.json checklist {item_id} is missing evidence anchors.")
+            if "governance_bypass_checks_complete" not in role_payload:
+                issues.append(f"reviews/{role}.json is missing governance_bypass_checks_complete.")
+            elif not role_payload.get("governance_bypass_checks_complete"):
+                issues.append(f"reviews/{role}.json does not complete the governance-bypass audit.")
+            if "governance_bypass_issues" not in role_payload:
+                issues.append(f"reviews/{role}.json is missing governance_bypass_issues.")
+            if role_payload.get("bypass_removal_required"):
+                issues.append(f"reviews/{role}.json says bypass_removal_required=true.")
 
         if not review_path.exists():
             issues.append("Missing review.json; the supervisor has not published a final decision.")
@@ -621,6 +710,10 @@ def gate_all(repo_root: Path | None = None) -> bool:
                 "overall_verdict",
                 "paper_role_fit",
                 "primary_reason",
+                "checklist_results",
+                "governance_bypass_checks_complete",
+                "governance_bypass_issues",
+                "bypass_removal_required",
             )
             missing = [field for field in required_fields if field not in review]
             if missing:
@@ -637,6 +730,29 @@ def gate_all(repo_root: Path | None = None) -> bool:
                 issues.append("review.json does not declare skill_used=paper-asset-review.")
             if review.get("overall_verdict") != "pass":
                 issues.append("Final review verdict is not pass.")
+            checklist = review.get("checklist_results")
+            if not isinstance(checklist, list) or not checklist:
+                issues.append("Final review is missing checklist_results.")
+            else:
+                for item in checklist:
+                    if not isinstance(item, dict):
+                        issues.append("Final review has a non-object checklist entry.")
+                        continue
+                    item_id = item.get("id", "<unknown>")
+                    verdict = str(item.get("verdict", "")).lower()
+                    if verdict == "fail":
+                        issues.append(f"Final review checklist {item_id} still fails.")
+                    if not str(item.get("reason", "")).strip():
+                        issues.append(f"Final review checklist {item_id} is missing reason.")
+                    evidence = item.get("evidence")
+                    if not isinstance(evidence, list) or not evidence:
+                        issues.append(f"Final review checklist {item_id} is missing evidence anchors.")
+            if not review.get("governance_bypass_checks_complete"):
+                issues.append("Final review does not complete the governance-bypass audit.")
+            if review.get("governance_bypass_issues"):
+                issues.append("Final review still reports unresolved governance-bypass issues.")
+            if review.get("bypass_removal_required"):
+                issues.append("Final review says bypass-causing implementation still requires removal/rewrite.")
             fit = review.get("paper_role_fit")
             if fit not in ROLE_EXPECTATIONS.get(target.role, {target.role}):
                 issues.append(f"Review says role fit is {fit!r}, expected one of {sorted(ROLE_EXPECTATIONS.get(target.role, {target.role}))}.")

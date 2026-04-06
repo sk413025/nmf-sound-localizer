@@ -59,6 +59,62 @@ def font_tokens() -> dict[str, float]:
     }
 
 
+def semantic_palette() -> dict[str, str]:
+    return {
+        key: str(value)
+        for key, value in dict(load_layout_contract()["semantic_palette"]).items()
+    }
+
+
+def semantic_color(name: str) -> str:
+    palette = semantic_palette()
+    if name not in palette:
+        raise KeyError(f"Unknown semantic color token: {name}")
+    return palette[name]
+
+
+def stroke_tokens() -> dict[str, float]:
+    return {
+        key: float(value)
+        for key, value in dict(load_layout_contract()["stroke_tokens"]).items()
+    }
+
+
+def stroke_pt(name: str) -> float:
+    strokes = stroke_tokens()
+    if name not in strokes:
+        raise KeyError(f"Unknown stroke token: {name}")
+    return strokes[name]
+
+
+def family_style() -> dict[str, float]:
+    return {
+        key: float(value)
+        for key, value in dict(load_layout_contract()["family_style"]).items()
+    }
+
+
+def family_style_value(name: str) -> float:
+    profile = family_style()
+    if name not in profile:
+        raise KeyError(f"Unknown family style token: {name}")
+    return profile[name]
+
+
+def style_colors() -> dict[str, str]:
+    return {
+        key: str(value)
+        for key, value in dict(load_layout_contract()["style_colors"]).items()
+    }
+
+
+def style_color(name: str) -> str:
+    colors = style_colors()
+    if name not in colors:
+        raise KeyError(f"Unknown style color token: {name}")
+    return colors[name]
+
+
 def font_pt(name: str) -> float:
     fonts = font_tokens()
     if name not in fonts:

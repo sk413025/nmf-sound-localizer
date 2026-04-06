@@ -21,6 +21,7 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
   - panel labels about `8 pt` bold
   - most other figure text within `5–7 pt`
 - Figure color must follow paper-wide semantic roles rather than ad hoc per-figure choices, unless the figure is encoding a genuinely local scientific variable such as mode identity.
+- If a figure, panel, generator, or composition path is found to bypass the governed visual grammar or semantic-color contract, remove the bypass-causing implementation rather than documenting an exception around it. Rebuild that asset through the governed contract path before the figure can pass review.
 - In-figure narration must stay restrained; slide-style master titles, oversized internal headers, and colored explanatory text are not acceptable defaults.
 - Multi-panel layouts should minimize white space and size panels by claim importance rather than force equal-size symmetry when the content does not warrant it.
 - Every multi-panel figure must preserve one final paper-facing composite plus a set of split top-level panel assets and a panel manifest under `figures/output/`.
@@ -51,6 +52,7 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - canonical Nature requirements remain reachable from main entrypoints
 - main-paper figures do not rely on oversized internal headers or presentation-board narration
 - typography and semantic colors are consistent with the branch visual grammar
+- no accepted figure or review path still depends on a bypass around the governed style or review contract
 - every multi-panel figure has a matching panel manifest whose panel order agrees with the composite
 - realized layout sidecars exist where the figure workflow requires them
 - geometry and clearance checks pass where the figure workflow requires them

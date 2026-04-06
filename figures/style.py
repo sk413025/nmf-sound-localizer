@@ -20,9 +20,13 @@ import yaml
 
 from figures.layout_contract import (
     contract_version,
+    family_style,
     font_pt,
     font_tokens,
+    semantic_palette,
     source_layout_spec,
+    stroke_tokens,
+    style_colors,
 )
 
 # ---------------------------------------------------------------------------
@@ -58,13 +62,10 @@ PALETTE_VIRIDIS_8 = [
 ]
 
 # Semantic role palette — consistent colors across restructured figures
-SEMANTIC_PALETTE = {
-    "physics": "#0072B2",    # blue — physical/H-based quantities
-    "learned": "#009E73",    # green — learned/AI quantities
-    "ablation": "#D55E00",   # vermilion — ablation/baseline comparisons
-    "highlight": "#E69F00",  # orange — highlighted ablation variant
-    "classical": "#E69F00",  # orange — classical analytical references (OMP)
-}
+SEMANTIC_PALETTE = semantic_palette()
+STROKE_TOKENS = stroke_tokens()
+FAMILY_STYLE = family_style()
+STYLE_COLORS = style_colors()
 
 
 # ---------------------------------------------------------------------------
@@ -103,11 +104,11 @@ def set_nature_rcparams(base_fontsize: int = 8) -> None:
             "ytick.labelsize": base_fontsize,
             "legend.fontsize": base_fontsize,
             # Line widths (pt).
-            "axes.linewidth": 0.8,
-            "lines.linewidth": 0.8,
-            "grid.linewidth": 0.5,
-            "xtick.major.width": 0.8,
-            "ytick.major.width": 0.8,
+            "axes.linewidth": STROKE_TOKENS["base"],
+            "lines.linewidth": STROKE_TOKENS["base"],
+            "grid.linewidth": STROKE_TOKENS["grid"],
+            "xtick.major.width": STROKE_TOKENS["base"],
+            "ytick.major.width": STROKE_TOKENS["base"],
             "xtick.minor.width": 0.6,
             "ytick.minor.width": 0.6,
             "xtick.major.size": 3.0,

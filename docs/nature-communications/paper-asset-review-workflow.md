@@ -116,3 +116,6 @@ If code and governance diverge, governance wins:
 - then update code to match
 
 Do not allow a new figure-review code path to bypass these contracts.
+
+If review discovers a governance bypass, do not accept a local patch that merely papers over the symptom.
+Remove the bypass-causing implementation and rewrite the affected figure, panel, generator, or composition path so it again flows through the governed style and review contract.
