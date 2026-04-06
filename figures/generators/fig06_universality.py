@@ -495,10 +495,10 @@ def _plot_panel_b(
             vmin=vmin,
             vmax=vmax,
         )
-        ax.set_title(MATERIAL_SHORT_LABELS[material], fontsize=title_pt - 0.2, pad=2)
+        ax.set_title(MATERIAL_SHORT_LABELS[material], fontsize=title_pt - 0.2, pad=1.2)
         ax.set_xticks([0, 45, 90, 135, 180])
         ax.set_yticks(y_ticks)
-        ax.tick_params(axis="both", labelsize=tick_label_pt, length=2)
+        ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=0.8)
         ax.axhspan(
             data["representative_band_lo_khz"][material],
             data["representative_band_hi_khz"][material],
@@ -511,7 +511,11 @@ def _plot_panel_b(
             ax.set_ylabel("Freq. (kHz)", fontsize=axis_label_pt)
         else:
             ax.set_yticklabels([])
-    heatmap_axes[len(heatmap_axes) // 2].set_xlabel("Angle (deg)", fontsize=axis_label_pt)
+    heatmap_axes[len(heatmap_axes) // 2].set_xlabel(
+        "Angle (deg)",
+        fontsize=axis_label_pt,
+        labelpad=0.4,
+    )
 
     cbar = fig.colorbar(image, cax=cax)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt, length=2)
@@ -544,17 +548,24 @@ def _plot_panel_a(
     x_vals = np.asarray([data["corr_zero_cross_deg"][material] for material in ranking], dtype=float)
     y_vals = np.asarray([data["effective_rank"][material] for material in ranking], dtype=float)
     x_pad = max(3.0, 0.18 * float(x_vals.max() - x_vals.min() + 1e-9))
-    y_pad = max(1.3, 0.18 * float(y_vals.max() - y_vals.min() + 1e-9))
+    y_pad = max(1.8, 0.22 * float(y_vals.max() - y_vals.min() + 1e-9))
     ax.set_xlim(float(x_vals.min() - x_pad), float(x_vals.max() + x_pad))
     ax.set_ylim(max(0.0, float(y_vals.min() - y_pad)), float(y_vals.max() + y_pad))
     ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
 
+    thumb_offsets = {
+        "b": (18, -2),
+        "w": (0, 18),
+        "a": (-24, 0),
+        "p": (-24, 0),
+        "m": (22, 0),
+    }
     label_offsets = {
-        "b": (-26, 17),
-        "w": (0, -24),
-        "a": (22, 16),
-        "p": (0, 18),
-        "m": (22, -18),
+        "b": (14, -14),
+        "w": (0, -18),
+        "a": (22, 8),
+        "p": (-12, -14),
+        "m": (12, -14),
     }
     for material in ranking:
         style = _screening_material_style(material)
@@ -571,10 +582,11 @@ def _plot_panel_a(
             zorder=3,
         )
         thumb = OffsetImage(thumbs[material], zoom=0.075)
+        thumb_dx, thumb_dy = thumb_offsets.get(material, (18, 0))
         ab = AnnotationBbox(
             thumb,
             (x, y),
-            xybox=(0, 0),
+            xybox=(thumb_dx, thumb_dy),
             boxcoords="offset points",
             frameon=True,
             bboxprops={
@@ -598,19 +610,9 @@ def _plot_panel_a(
             color=style["color"],
         )
 
-    ax.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt)
+    ax.set_xlabel("Corr.-decay width (deg)", fontsize=axis_label_pt, labelpad=0.2)
     ax.set_ylabel(r"Eff. rank of centered $|H|$", fontsize=axis_label_pt)
-    ax.tick_params(axis="both", labelsize=tick_label_pt, length=2)
-    ax.text(
-        0.02,
-        0.96,
-        "measured response descriptors",
-        transform=ax.transAxes,
-        ha="left",
-        va="top",
-        fontsize=max(tick_label_pt - 0.35, 5.0),
-        color=STYLE_COLORS["muted_text"],
-    )
+    ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=0.8)
     return [ax_block, ax]
 
 
@@ -808,6 +810,13 @@ def _plot_panel_d(
     )
 
     marker_sizes = 28.0 + 56.0 * energy
+    label_offsets = {
+        "b": (-12, 9),
+        "w": (-18, -10),
+        "a": (8, 12),
+        "p": (10, -10),
+        "m": (0, 11),
+    }
     for idx, material in enumerate(ranking):
         style = _screening_material_style(material)
         ax_bottom.errorbar(
@@ -833,10 +842,10 @@ def _plot_panel_d(
         ax_bottom.annotate(
             MATERIAL_SHORT_LABELS[material],
             (overlap_width[idx], top1[idx]),
-            xytext=(0, 7 if idx % 2 == 0 else -9),
+            xytext=label_offsets[material],
             textcoords="offset points",
             ha="center",
-            va="bottom" if idx % 2 == 0 else "top",
+            va="bottom" if label_offsets[material][1] >= 0 else "top",
             fontsize=max(tick_label_pt - 0.4, 5.0),
             color=style["color"],
         )
@@ -887,7 +896,7 @@ def _plot_panel_e(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[0.85, 1.15], hspace=0.28)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.0, 1.2], hspace=0.58)
     ax_band = fig.add_subplot(grid[0, 0])
     ax_code = fig.add_subplot(grid[1, 0])
 
@@ -950,7 +959,9 @@ def _plot_panel_e(
     ax_band.set_yticklabels([short_labels[material] for material in ranking])
     for label, material in zip(ax_band.get_yticklabels(), ranking, strict=False):
         label.set_color(_screening_material_style(material)["color"])
-    ax_band.set_xlabel("Contrast band (kHz)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_band.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
+    ax_band.tick_params(axis="x", labeltop=False, top=False, labelbottom=True, bottom=True, pad=0.8)
+    ax_band.set_xlabel("Contrast band (kHz)", fontsize=axis_label_pt, labelpad=0.8)
     ax_band.set_ylabel("")
     ax_band.tick_params(axis="y", labelsize=tick_label_pt, length=0, pad=1)
     ax_band.text(
@@ -966,7 +977,7 @@ def _plot_panel_e(
 
     ax_code.set_xlim(0.0, 180.0)
     ax_code.set_ylim(0.0, 1.02)
-    ax_code.set_xticks([0, 90, 180])
+    ax_code.set_xticks([0, 30, 60, 90, 120, 150, 180])
     ax_code.set_ylabel("Norm. band code", fontsize=axis_label_pt, labelpad=1.0)
     ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
     ax_code.legend(
