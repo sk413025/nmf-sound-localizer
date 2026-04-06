@@ -36,14 +36,15 @@ c, Local gate convergence for the same representative clip. Learned local poolin
 d, Residual purification. Left, relative residual norm across the guided steps for the representative clip. Right, validation-wide cumulative update mass within radius before and after one local step across 1,924 clips; the mass within 15° rises from 0.18 to 0.98.
 e, Clean-condition Top-1 comparison of four overlap-handling rules on the same fixed dictionary (individual seeds shown as dots; large markers and error bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing, consistent with accurate subtraction requiring preservation of the local angle band.
 
-## Fig. 5 (5 panels)
+## Fig. 5 (6 panels)
 
 **Fig. 5 | Prediction structure stays organized around the measured local band.**
 a, Five-seed SNR sweep for the same four overlap-handling rules. The delayed-commitment rule degrades least as noise increases.
-b, Row-normalized representative confusion display for the same four overlap-handling rules. The guided solver stays nearest the diagonal, whereas the OMP baseline shows fractured off-diagonal leakage, router-bypass remains broader around the target neighborhood, and dense routing collapses toward a preferred output mode.
-c, Measured local structure with the corresponding neighborhood-emphasis map from the guided solver. The guided map retains a coarse near-diagonal angle ordering similar to the calibrated fingerprints.
-d, Angle-specific prediction profiles at four representative directions (55°, 70°, 95°, and 100°): the guided solver produces tighter local prediction profiles, whereas router-bypass shows broader off-axis leakage around the same targets.
-e, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured angles, shown as a 3-angle centered moving-average display with light +/-1 s.e.m. shading for the same four overlap-handling rules on the clean sweep. The delayed-commitment rule retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
+b, Per-angle clean accuracy: five-seed mean P(correct) across the 37 measured angles, displayed as a 3-angle centered moving-average view with light +/-1 s.e.m. shading for the same four overlap-handling rules on the clean sweep. The delayed-commitment rule retains the highest clean mean accuracy overall, whereas dense routing remains near chance across almost the entire angle set.
+c, Row-normalized clean confusion comparison of the OMP baseline and guided solver. Guided decoding stays concentrated near the diagonal, whereas the OMP baseline shows broader off-diagonal fracture after early commitment.
+d, Measured local structure in the calibrated fingerprint space. The near-diagonal band summarizes the physical neighborhood that nearby angles share.
+e, Guided-solver neighborhood-emphasis map on the same angle frame and correlation scale as panel d. The learned map retains a similar coarse near-diagonal ordering rather than dispersing weight broadly across the grid.
+f, Quantitative structure alignment. Top, min-max normalized local-band profiles from the measured and learned maps across angle. Bottom, concordance scatter of the same per-angle local-band scores. The full-matrix agreement remains positive (r = 0.47), and the per-angle local-band profiles remain positively aligned (r = 0.46; mean absolute gap = 0.23).
 
 ## Fig. 6 (5 panels)
 

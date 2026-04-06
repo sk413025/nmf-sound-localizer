@@ -120,24 +120,24 @@ figures:
           Dense Routing: dense_routing_ablation
       b:
         bindings:
-          omp_side: analytical_omp_baseline
-          learned_side: full_solver
-          dense_side: dense_routing_ablation
-          no_transformer_side: no_transformer_ablation
-      c:
-        bindings:
-          physical_matrix: h_physical_structure
-          learned_matrix: qk_learned_structure
-      d:
-        bindings:
-          baseline_dist: full_solver
-          no_transformer_dist: no_transformer_ablation
-      e:
-        bindings:
           baseline_line: full_solver
           no_transformer_line: no_transformer_ablation
           omp_line: analytical_omp_baseline
           dense_line: dense_routing_ablation
+      c:
+        bindings:
+          omp_side: analytical_omp_baseline
+          learned_side: full_solver
+      d:
+        bindings:
+          physical_matrix: h_physical_structure
+      e:
+        bindings:
+          learned_matrix: qk_learned_structure
+      f:
+        bindings:
+          physical_profile: h_physical_structure
+          learned_profile: qk_learned_structure
 
   fig06:
     panels:

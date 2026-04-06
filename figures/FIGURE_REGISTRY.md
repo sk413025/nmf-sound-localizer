@@ -69,6 +69,7 @@ Retired material:
 - Generator: `figures/generators/fig05_performance_structure.py`
 - Active panel manifest: `figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig05_performance_structure`
+- Active panel logic: robustness benchmark + clean decoder accuracy + prediction locality + measured local structure + learned neighborhood-emphasis map + quantitative structure-alignment closure
 
 ### Fig 6 — Universality
 

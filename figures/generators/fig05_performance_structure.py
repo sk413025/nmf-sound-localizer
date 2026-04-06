@@ -1,10 +1,11 @@
-"""Figure 5 — Performance + manifold alignment + decoding behavior (5 panels).
+"""Figure 5 — Prediction structure + learned alignment + decoding behavior (6 panels).
 
 Panel (a): 4-line SNR sweep benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
-Panel (b): Unified confusion-family block (OMP baseline vs guided solver vs dense routing vs router-bypass)
-Panel (c): Measured local structure vs neighborhood-emphasis map
-Panel (d): Four-angle conditional output distributions (guided solver vs router-bypass)
-Panel (e): Per-angle decoder accuracy benchmark (guided solver vs router-bypass vs OMP baseline vs dense routing)
+Panel (b): Per-angle clean decoder accuracy benchmark
+Panel (c): Prediction-locality confusion comparison (OMP baseline vs guided solver)
+Panel (d): Measured local structure
+Panel (e): Learned neighborhood-emphasis map
+Panel (f): Quantitative structure-alignment closure
 
 Data: figure4_data.json + modal_routing_val.npz + dictionary.npz + confusion metrics.
 """
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.ticker import FormatStrFormatter
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from figures.style import (
     set_nature_rcparams,
@@ -27,6 +29,7 @@ from figures.style import (
     add_panel_label,
     load_paths,
     SEMANTIC_PALETTE,
+    STYLE_COLORS,
 )
 from figures.naming import get_bound_label
 from figures.layout_contract import (
@@ -55,10 +58,9 @@ FIG05_GENERATOR = figure_section("fig05", "generator")
 FIG05_COMPOSITE_GRID = dict(FIG05_GENERATOR["composite_grid"])
 FIG05_TOP_ROW = dict(FIG05_GENERATOR["top_row"])
 FIG05_BOTTOM_ROW = dict(FIG05_GENERATOR["bottom_row"])
-FIG05_HEATMAP_STACK = dict(FIG05_GENERATOR["heatmap_stack"])
-FIG05_ROUTING_STACK = dict(FIG05_GENERATOR["routing_stack"])
+FIG05_CONFUSION_PAIR = dict(FIG05_GENERATOR["confusion_pair"])
+FIG05_QUANT_STACK = dict(FIG05_GENERATOR["quantitative_stack"])
 FIG05_STANDALONE = dict(FIG05_GENERATOR["standalone"])
-FIG05_ROUTING_ANGLES = [55.0, 70.0, 95.0, 100.0]
 FIG05_CORR_NORM = TwoSlopeNorm(vmin=-0.15, vcenter=0.0, vmax=1.0)
 FIG05_CORR_TICKS = [-0.1, 0.0, 0.5, 1.0]
 
@@ -87,6 +89,26 @@ def _compute_global_correlation(
     H_corr = np.corrcoef(H.T)
     structure_corr = np.corrcoef(H_corr.flatten(), expert_corr.flatten())[0, 1]
     return expert_corr, H_corr, structure_corr
+
+
+def _local_band_scores(matrix: np.ndarray, angles: np.ndarray, radius_deg: float = 15.0) -> np.ndarray:
+    """Mean local-band score at each angle, excluding the self-diagonal."""
+    scores = []
+    for idx, angle in enumerate(np.asarray(angles, dtype=float)):
+        dist = np.abs(angles - angle)
+        mask = (dist <= radius_deg) & (dist > 0)
+        scores.append(float(np.asarray(matrix[idx, mask], dtype=float).mean()))
+    return np.asarray(scores, dtype=float)
+
+
+def _minmax_normalize(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=float)
+    lo = float(values.min())
+    hi = float(values.max())
+    span = hi - lo
+    if span <= 0:
+        raise ValueError("min-max normalization requires non-constant values")
+    return (values - lo) / span
 
 
 def _row_normalize_matrix(matrix: np.ndarray) -> np.ndarray:
@@ -302,46 +324,22 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     colorbar_tick_pt = typography["colorbar_tick"]
     colorbar_label_pt = typography["colorbar_label"]
 
-    panel_b_omp_full = get_bound_label("fig05", "b", "omp_side", label_type="full")
-    panel_b_solver_full = get_bound_label(
-        "fig05", "b", "learned_side", label_type="full"
-    )
-    panel_b_omp_short = get_bound_label("fig05", "b", "omp_side", label_type="short")
-    panel_b_solver_short = get_bound_label(
-        "fig05", "b", "learned_side", label_type="short"
-    )
-    panel_b_dense_short = get_bound_label("fig05", "b", "dense_side", label_type="short")
+    conf_omp_full = get_bound_label("fig05", "c", "omp_side", label_type="full")
+    conf_solver_full = get_bound_label("fig05", "c", "learned_side", label_type="full")
+    conf_omp_short = get_bound_label("fig05", "c", "omp_side", label_type="short")
+    conf_solver_short = get_bound_label("fig05", "c", "learned_side", label_type="short")
+    panel_b_solver_short = get_bound_label("fig05", "b", "baseline_line", label_type="short")
     panel_b_no_transformer_short = get_bound_label(
-        "fig05", "b", "no_transformer_side", label_type="short"
+        "fig05", "b", "no_transformer_line", label_type="short"
     )
-    panel_b_dense_full = get_bound_label("fig05", "b", "dense_side", label_type="full")
+    panel_b_omp_short = get_bound_label("fig05", "b", "omp_line", label_type="short")
+    panel_b_dense_short = get_bound_label("fig05", "b", "dense_line", label_type="short")
+    panel_b_solver_full = get_bound_label("fig05", "b", "baseline_line", label_type="full")
     panel_b_no_transformer_full = get_bound_label(
-        "fig05", "b", "no_transformer_side", label_type="full"
+        "fig05", "b", "no_transformer_line", label_type="full"
     )
-    routing_solver_short = get_bound_label(
-        "fig05", "d", "baseline_dist", label_type="short"
-    )
-    routing_no_transformer_short = get_bound_label(
-        "fig05", "d", "no_transformer_dist", label_type="short"
-    )
-    routing_solver_full = get_bound_label(
-        "fig05", "d", "baseline_dist", label_type="full"
-    )
-    routing_no_transformer_full = get_bound_label(
-        "fig05", "d", "no_transformer_dist", label_type="full"
-    )
-    diag_solver_short = get_bound_label("fig05", "e", "baseline_line", label_type="short")
-    diag_no_transformer_short = get_bound_label(
-        "fig05", "e", "no_transformer_line", label_type="short"
-    )
-    diag_omp_short = get_bound_label("fig05", "e", "omp_line", label_type="short")
-    diag_dense_short = get_bound_label("fig05", "e", "dense_line", label_type="short")
-    diag_solver_full = get_bound_label("fig05", "e", "baseline_line", label_type="full")
-    diag_no_transformer_full = get_bound_label(
-        "fig05", "e", "no_transformer_line", label_type="full"
-    )
-    diag_omp_full = get_bound_label("fig05", "e", "omp_line", label_type="full")
-    diag_dense_full = get_bound_label("fig05", "e", "dense_line", label_type="full")
+    panel_b_omp_full = get_bound_label("fig05", "b", "omp_line", label_type="full")
+    panel_b_dense_full = get_bound_label("fig05", "b", "dense_line", label_type="full")
     snr_solver_full = get_bound_label("fig05", "a", "No Type Bias", label_type="full")
     snr_no_transformer_full = get_bound_label(
         "fig05", "a", "No Transformer", label_type="full"
@@ -371,6 +369,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     angles = dict_data["angles"]
 
     expert_corr, H_corr, pearson_r = _compute_global_correlation(routing_data, dict_data)
+    band_h = _local_band_scores(H_corr, angles)
+    band_expert = _local_band_scores(expert_corr, angles)
+    band_h_norm = _minmax_normalize(band_h)
+    band_expert_norm = _minmax_normalize(band_expert)
+    profile_corr = float(np.corrcoef(band_h_norm, band_expert_norm)[0, 1])
+    profile_mae = float(np.mean(np.abs(band_h_norm - band_expert_norm)))
 
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels = [f"{int(angles[i])}" for i in tick_positions]
@@ -407,6 +411,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             f"Required Fig. 5 per-angle summary artifact not found: {panel_f_summary_path}"
         )
     panel_f_summary = dict(np.load(panel_f_summary_path, allow_pickle=True))
+    f_angles = np.asarray(panel_f_summary["angles"], dtype=float)
+    if not np.array_equal(np.asarray(angles, dtype=float), f_angles):
+        raise ValueError("Fig. 5 per-angle summary angle grid does not match the figure angle grid")
+    guided_mean, guided_sem = _smoothed_mean_and_sem(panel_f_summary, "guided")
+    router_bypass_mean, router_bypass_sem = _smoothed_mean_and_sem(panel_f_summary, "router_bypass")
+    omp_mean, omp_sem = _smoothed_mean_and_sem(panel_f_summary, "omp")
+    dense_mean, dense_sem = _smoothed_mean_and_sem(panel_f_summary, "dense")
 
     omp_baseline_cm_norm = None
     baseline_cm_norm = None
@@ -422,9 +433,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         dense_cm_norm = _row_normalize_matrix(dense_cm)
 
     # -----------------------------------------------------------------------
-    # Build composite figure as a 5-panel, two-row journal layout:
-    # top row = benchmark + unified confusion family + structure anchor;
-    # bottom row = four-angle conditional outputs + per-angle benchmark.
+    # Build composite figure as a 6-panel, two-row journal layout:
+    # top row = robustness benchmark + clean decoder accuracy + prediction locality;
+    # bottom row = measured structure + learned neighborhood map + quantitative closure.
     # -----------------------------------------------------------------------
     fig = make_figure(
         width_mm=FIG05_GENERATOR["composite_width_mm"],
@@ -450,7 +461,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     gs_bottom = gridspec.GridSpecFromSubplotSpec(
         1,
-        2,
+        3,
         subplot_spec=gs_outer[1, 0],
         width_ratios=FIG05_BOTTOM_ROW["width_ratios"],
         wspace=FIG05_BOTTOM_ROW["wspace"],
@@ -469,290 +480,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_a.set_title("Noise robustness", fontsize=title_pt)
     add_panel_label(ax_a, "a", x=-0.15, y=1.02)
 
-    # Panel (b): unified confusion-family block
-    if (
-        omp_baseline_cm_norm is None
-        or baseline_cm_norm is None
-        or dense_cm_norm is None
-        or no_trans_cm_norm is None
-    ):
-        raise FileNotFoundError(
-            "Fig. 5b requires OMP-baseline, guided-solver, dense-routing, and "
-            "router-bypass confusion metrics."
-        )
-    ax_b_panel = _set_gid(fig.add_subplot(gs_top[0, 1]), "fig05.panel_b.block")
-    ax_b_panel.set_axis_off()
-    ax_b_panel.set_xticks([])
-    ax_b_panel.set_yticks([])
-    gs_b = gridspec.GridSpecFromSubplotSpec(
-        2,
-        3,
-        subplot_spec=gs_top[0, 1],
-        width_ratios=[1.0, 1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
-        hspace=FIG05_HEATMAP_STACK["hspace"],
-        wspace=FIG05_HEATMAP_STACK["wspace"],
-    )
-
-    ax_b1 = _set_gid(fig.add_subplot(gs_b[0, 0]), "fig05.b.top_left")
-    im_b = _plot_confusion_matrix(
-        ax_b1,
-        omp_baseline_cm_norm,
-        _titlecase_short_label(panel_b_omp_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        show_xticklabels=False,
-        show_yticklabels=False,
-        fontweight=None,
-    )
-    _annotate_left_axis_values(
-        ax_b1,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        tick_label_pt=tick_label_pt,
-    )
-
-    ax_b2 = _set_gid(fig.add_subplot(gs_b[0, 1], sharex=ax_b1, sharey=ax_b1), "fig05.b.top_right")
-    _plot_confusion_matrix(
-        ax_b2,
-        baseline_cm_norm,
-        _titlecase_short_label(panel_b_solver_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        show_xticklabels=False,
-        show_yticklabels=False,
-    )
-
-    ax_b3 = _set_gid(fig.add_subplot(gs_b[1, 0], sharex=ax_b1, sharey=ax_b1), "fig05.b.bottom_left")
-    _plot_confusion_matrix(
-        ax_b3,
-        dense_cm_norm,
-        _titlecase_short_label(panel_b_dense_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        show_yticklabels=False,
-    )
-    _annotate_left_axis_values(
-        ax_b3,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        tick_label_pt=tick_label_pt,
-    )
-
-    ax_b4 = _set_gid(fig.add_subplot(gs_b[1, 1], sharex=ax_b1, sharey=ax_b1), "fig05.b.bottom_right")
-    _plot_confusion_matrix(
-        ax_b4,
-        no_trans_cm_norm,
-        _titlecase_short_label(panel_b_no_transformer_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        show_yticklabels=False,
-    )
-
-    cax_b = _set_gid(fig.add_subplot(gs_b[:, 2]), "fig05.b.colorbar")
-    cbar = plt.colorbar(im_b, cax=cax_b)
-    cbar.ax.tick_params(labelsize=colorbar_tick_pt)
-    add_panel_label(ax_b_panel, "b", x=-0.04, y=1.02)
-    ax_b_panel.text(
-        0.50,
-        -0.08,
-        "Predicted DOA",
-        va="center",
-        ha="center",
-        transform=ax_b_panel.transAxes,
-        fontsize=axis_label_pt,
-    )
-
-    # Panel (c): measured manifold vs guided neighborhood map
-    ax_c_panel = _set_gid(fig.add_subplot(gs_top[0, 2]), "fig05.panel_c.block")
-    ax_c_panel.set_axis_off()
-    ax_c_panel.set_xticks([])
-    ax_c_panel.set_yticks([])
-    gs_c = gridspec.GridSpecFromSubplotSpec(
-        2,
-        2,
-        subplot_spec=gs_top[0, 2],
-        width_ratios=[1.0, FIG05_HEATMAP_STACK["colorbar_ratio"]],
-        hspace=0.38,
-        wspace=0.10,
-    )
-
-    ax_c1 = _set_gid(fig.add_subplot(gs_c[0, 0]), "fig05.panel_c.top")
-    im_c = ax_c1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c1.set_title("Measured local structure", fontsize=title_pt, pad=6.0)
-    ax_c1.set_xticks(tick_positions)
-    ax_c1.set_xticklabels([])
-    ax_c1.set_yticks(tick_positions)
-    ax_c1.set_yticklabels([])
-    ax_c1.tick_params(axis="both", length=2)
-
-    ax_c2 = _set_gid(
-        fig.add_subplot(gs_c[1, 0], sharex=ax_c1, sharey=ax_c1),
-        "fig05.panel_c.bottom",
-    )
-    ax_c2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax_c2.set_title("Neighborhood-emphasis map", fontsize=title_pt, pad=6.0)
-    ax_c2.set_xticks(tick_positions)
-    ax_c2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-    ax_c2.set_yticks(tick_positions)
-    ax_c2.set_yticklabels([])
-    ax_c2.tick_params(axis="both", length=2)
-    ax_c2.text(
-        0.03,
-        0.05,
-        f"r = {pearson_r:.3f}",
-        transform=ax_c2.transAxes,
-        fontsize=annotation_pt,
-        style="italic",
-    )
-    cax_c = _set_gid(fig.add_subplot(gs_c[:, 1]), "fig05.panel_c.colorbar")
-    cbar_c = plt.colorbar(im_c, cax=cax_c)
-    cbar_c.set_ticks(FIG05_CORR_TICKS)
-    cbar_c.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
-    cbar_c.ax.tick_params(labelsize=colorbar_tick_pt)
-    cbar_c.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
-    add_panel_label(ax_c_panel, "c", x=-0.005, y=1.02)
-    ax_c_panel.text(
-        0.40,
-        -0.08,
-        "Angle (\u00b0)",
-        va="center",
-        ha="center",
-        transform=ax_c_panel.transAxes,
-        fontsize=axis_label_pt,
-    )
-
-    # Panel (d): Conditional output profiles at 4 representative angles
-    if baseline_cm is not None and no_trans_cm is not None:
-        ax_d_panel = _set_gid(fig.add_subplot(gs_bottom[0, 0]), "fig05.panel_d.block")
-        ax_d_panel.set_axis_off()
-        ax_d_panel.set_xticks([])
-        ax_d_panel.set_yticks([])
-        gs_d = gridspec.GridSpecFromSubplotSpec(
-            2,
-            2,
-            subplot_spec=gs_bottom[0, 0],
-            hspace=FIG05_ROUTING_STACK["hspace"],
-            wspace=FIG05_ROUTING_STACK["wspace"],
-        )
-        profile_rows, profile_ymax = _prepare_conditional_output_profiles(
-            baseline_cm,
-            no_trans_cm,
-            angles,
-            FIG05_ROUTING_ANGLES,
-        )
-
-        first_ax = None
-        for idx, (target_idx, bl_probs, nt_probs) in enumerate(profile_rows):
-            row_idx, col_idx = divmod(idx, 2)
-            inner_gid = (
-                "fig05.d.top_left" if idx == 0 else
-                "fig05.d.top_right" if idx == 1 else
-                "fig05.d.bottom_left" if idx == 2 else
-                "fig05.d.bottom_right"
-            )
-            if first_ax is None:
-                ax_d = _set_gid(fig.add_subplot(gs_d[row_idx, col_idx]), inner_gid)
-                first_ax = ax_d
-            else:
-                ax_d = _set_gid(
-                    fig.add_subplot(gs_d[row_idx, col_idx], sharex=first_ax, sharey=first_ax),
-                    inner_gid,
-                )
-
-            ax_d.plot(
-                angles,
-                bl_probs,
-                "-o",
-                markersize=2.5,
-                linewidth=0.9,
-                color=SEMANTIC_PALETTE["learned"],
-                label=routing_solver_short,
-                zorder=3,
-            )
-            ax_d.plot(
-                angles,
-                nt_probs,
-                "--s",
-                markersize=2.3,
-                linewidth=0.9,
-                color=SEMANTIC_PALETTE["ablation"],
-                label=routing_no_transformer_short,
-                zorder=2,
-            )
-            ax_d.axvline(
-                float(angles[target_idx]),
-                color=SEMANTIC_PALETTE["physics"],
-                linewidth=0.8,
-                linestyle="--",
-                alpha=0.8,
-            )
-            ax_d.set_title(
-                f"{angles[target_idx]:.0f}\u00b0",
-                fontsize=title_pt,
-                pad=2.0,
-            )
-            ax_d.set_xticks(angles[tick_positions])
-            if row_idx == 0:
-                ax_d.set_xticklabels([])
-            else:
-                ax_d.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-                ax_d.set_xlabel(
-                    "Predicted angle (\u00b0)",
-                    fontsize=axis_label_pt,
-                    labelpad=-0.2,
-                )
-            ax_d.set_xlim(float(angles[0]), float(angles[-1]))
-            ax_d.set_ylim(0, profile_ymax)
-            ax_d.tick_params(axis="both", labelsize=tick_label_pt)
-            ax_d.grid(axis="y", linestyle="--", alpha=0.25)
-            if col_idx == 1:
-                ax_d.tick_params(labelleft=False)
-            if idx == 0:
-                ax_d.legend(
-                    fontsize=legend_pt,
-                    frameon=False,
-                    loc="upper right",
-                    bbox_to_anchor=(0.98, 0.98),
-                    borderaxespad=0.0,
-                )
-        add_panel_label(ax_d_panel, "d", x=-0.04, y=1.02)
-    else:
-        ax_d_placeholder = fig.add_subplot(gs_bottom[0, 0])
-        ax_d_placeholder.text(
-            0.5,
-            0.5,
-            "Angle routing\ndata unavailable",
-            transform=ax_d_placeholder.transAxes,
-            ha="center",
-            va="center",
-            fontsize=annotation_pt,
-        )
-        ax_d_placeholder.set_axis_off()
-        add_panel_label(ax_d_placeholder, "d", x=-0.1, y=1.06)
-
-    # Panel (e): Per-angle decoder accuracy benchmark
-    if panel_f_summary is not None:
-        f_angles = np.asarray(panel_f_summary["angles"], dtype=float)
-        if not np.array_equal(np.asarray(angles, dtype=float), f_angles):
-            raise ValueError("Fig. 5e summary angle grid does not match the figure angle grid")
-        guided_mean, guided_sem = _smoothed_mean_and_sem(panel_f_summary, "guided")
-        router_bypass_mean, router_bypass_sem = _smoothed_mean_and_sem(panel_f_summary, "router_bypass")
-        omp_mean, omp_sem = _smoothed_mean_and_sem(panel_f_summary, "omp")
-        dense_mean, dense_sem = _smoothed_mean_and_sem(panel_f_summary, "dense")
-        ax_e = _set_gid(fig.add_subplot(gs_bottom[0, 1]), "fig05.panel_e.main")
-        ax_e.fill_between(
+    # Panel (b): per-angle clean decoder accuracy
+    ax_b = _set_gid(fig.add_subplot(gs_top[0, 1]), "fig05.panel_b.main")
+    ax_b.fill_between(
             angles,
             np.clip(guided_mean - guided_sem, 0.0, 1.0),
             np.clip(guided_mean + guided_sem, 0.0, 1.0),
@@ -760,8 +490,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             alpha=0.12,
             linewidth=0,
             zorder=0,
-        )
-        ax_e.fill_between(
+    )
+    ax_b.fill_between(
             angles,
             np.clip(router_bypass_mean - router_bypass_sem, 0.0, 1.0),
             np.clip(router_bypass_mean + router_bypass_sem, 0.0, 1.0),
@@ -769,8 +499,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             alpha=0.10,
             linewidth=0,
             zorder=0,
-        )
-        ax_e.fill_between(
+    )
+    ax_b.fill_between(
             angles,
             np.clip(omp_mean - omp_sem, 0.0, 1.0),
             np.clip(omp_mean + omp_sem, 0.0, 1.0),
@@ -778,8 +508,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             alpha=0.08,
             linewidth=0,
             zorder=0,
-        )
-        ax_e.fill_between(
+    )
+    ax_b.fill_between(
             angles,
             np.clip(dense_mean - dense_sem, 0.0, 1.0),
             np.clip(dense_mean + dense_sem, 0.0, 1.0),
@@ -787,71 +517,238 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             alpha=0.06,
             linewidth=0,
             zorder=0,
-        )
-        ax_e.plot(
+    )
+    ax_b.plot(
             angles,
             guided_mean,
             "-",
             linewidth=1.15,
             color=SEMANTIC_PALETTE["learned"],
-            label=diag_solver_short,
+            label=panel_b_solver_short,
             zorder=4,
-        )
-        ax_e.plot(
+    )
+    ax_b.plot(
             angles,
             router_bypass_mean,
             "-",
             linewidth=1.05,
             color=SEMANTIC_PALETTE["ablation"],
-            label=diag_no_transformer_short,
+            label=panel_b_no_transformer_short,
             zorder=3,
-        )
-        ax_e.plot(
+    )
+    ax_b.plot(
             angles,
             omp_mean,
             "-",
             linewidth=1.05,
             color=SEMANTIC_PALETTE["classical"],
-            label=diag_omp_short,
+            label=panel_b_omp_short,
             zorder=2,
-        )
-        ax_e.plot(
+    )
+    ax_b.plot(
             angles,
             dense_mean,
             ":",
             linewidth=1.05,
             color=DENSE_COLOR,
-            label=diag_dense_short,
+            label=panel_b_dense_short,
             zorder=1,
+    )
+    ax_b.set_title("Clean decoder accuracy", fontsize=title_pt)
+    ax_b.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt, labelpad=-0.2)
+    ax_b.set_ylim(0, 1.05)
+    ax_b.legend(
+        fontsize=legend_pt,
+        frameon=False,
+        loc="lower right",
+        bbox_to_anchor=(0.98, 0.02),
+        ncol=1,
+        columnspacing=0.6,
+        handletextpad=0.4,
+    )
+    ax_b.tick_params(axis="both", labelsize=tick_label_pt)
+    ax_b.grid(axis="y", linestyle="--", alpha=0.3)
+    add_panel_label(ax_b, "b", x=-0.12, y=1.02)
+
+    # Panel (c): prediction locality comparison (guided vs OMP)
+    if omp_baseline_cm_norm is None or baseline_cm_norm is None:
+        raise FileNotFoundError(
+            "Fig. 5c requires guided-solver and OMP-baseline confusion metrics."
         )
-        ax_e.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt, labelpad=-0.2)
-        ax_e.set_title("Decoder accuracy", fontsize=title_pt)
-        ax_e.set_ylim(0, 1.05)
-        ax_e.legend(
-            fontsize=legend_pt,
-            frameon=False,
-            loc="lower right",
-            bbox_to_anchor=(0.98, 0.02),
-            ncol=1,
-            columnspacing=0.6,
-            handletextpad=0.4,
-        )
-        ax_e.tick_params(axis="both", labelsize=tick_label_pt)
-        ax_e.grid(axis="y", linestyle="--", alpha=0.3)
-        add_panel_label(ax_e, "e", x=-0.02, y=1.01)
-    else:
-        ax_e_placeholder = fig.add_subplot(gs_bottom[0, 2])
-        ax_e_placeholder.text(
-            0.5,
-            0.5,
-            "Per-angle data\nunavailable",
-            transform=ax_e_placeholder.transAxes,
-            ha="center",
-            va="center",
-            fontsize=annotation_pt,
-        )
-        ax_e_placeholder.set_axis_off()
-        add_panel_label(ax_e_placeholder, "e", x=-0.1, y=1.06)
+    ax_c_panel = _set_gid(fig.add_subplot(gs_top[0, 2]), "fig05.panel_c.block")
+    ax_c_panel.set_axis_off()
+    ax_c_panel.set_xticks([])
+    ax_c_panel.set_yticks([])
+    ax_c_panel.text(
+        0.46,
+        1.005,
+        "Prediction locality",
+        transform=ax_c_panel.transAxes,
+        ha="center",
+        va="bottom",
+        fontsize=title_pt,
+    )
+    ax_c_panel.text(
+        0.46,
+        0.972,
+        "Row-normalized clean confusion",
+        transform=ax_c_panel.transAxes,
+        ha="center",
+        va="top",
+        fontsize=max(annotation_pt - 0.2, 5.8),
+        color=STYLE_COLORS["muted_text"],
+    )
+    ax_c1 = ax_c_panel.inset_axes([0.01, 0.095, 0.445, 0.79])
+    im_c = _plot_confusion_matrix(
+        ax_c1,
+        omp_baseline_cm_norm,
+        _titlecase_short_label(conf_omp_short),
+        title_pt=title_pt,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        tick_positions=tick_positions,
+        tick_labels=tick_labels,
+        ylabel="True DOA",
+        show_xticklabels=True,
+        show_yticklabels=False,
+        fontweight="bold",
+    )
+    _annotate_left_axis_values(
+        ax_c1,
+        tick_positions=tick_positions,
+        tick_labels=tick_labels,
+        tick_label_pt=tick_label_pt,
+    )
+    ax_c2 = ax_c_panel.inset_axes([0.475, 0.095, 0.445, 0.79], sharex=ax_c1, sharey=ax_c1)
+    _plot_confusion_matrix(
+        ax_c2,
+        baseline_cm_norm,
+        _titlecase_short_label(conf_solver_short),
+        title_pt=title_pt,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        tick_positions=tick_positions,
+        tick_labels=tick_labels,
+        xlabel="Predicted DOA",
+        show_yticklabels=False,
+        fontweight="bold",
+    )
+    cax_c = ax_c_panel.inset_axes([0.94, 0.095, 0.014, 0.79])
+    cbar_c = plt.colorbar(im_c, cax=cax_c)
+    cbar_c.ax.tick_params(labelsize=colorbar_tick_pt)
+    add_panel_label(ax_c_panel, "c", x=-0.005, y=1.02)
+
+    # Panel (d): measured local structure
+    ax_d = _set_gid(fig.add_subplot(gs_bottom[0, 0]), "fig05.panel_d.main")
+    im_d = ax_d.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax_d.set_title("Measured local structure", fontsize=title_pt)
+    ax_d.set_xticks(tick_positions)
+    ax_d.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_d.set_yticks(tick_positions)
+    ax_d.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_d.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax_d.set_ylabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax_d.tick_params(axis="both", length=2)
+    add_panel_label(ax_d, "d", x=-0.12, y=1.02)
+
+    # Panel (e): learned neighborhood-emphasis map
+    ax_e = _set_gid(fig.add_subplot(gs_bottom[0, 1]), "fig05.panel_e.main")
+    ax_e.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax_e.set_title("Guided-solver neighborhood-emphasis", fontsize=title_pt)
+    ax_e.set_xticks(tick_positions)
+    ax_e.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_e.set_yticks(tick_positions)
+    ax_e.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax_e.set_xlabel("Angle (\u00b0)", fontsize=axis_label_pt)
+    ax_e.tick_params(axis="both", length=2)
+    cax_e = inset_axes(ax_e, width="3.6%", height="88%", loc="center right", borderpad=1.2)
+    cbar_e = plt.colorbar(im_d, cax=cax_e)
+    cbar_e.set_ticks(FIG05_CORR_TICKS)
+    cbar_e.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    cbar_e.ax.tick_params(labelsize=colorbar_tick_pt)
+    cbar_e.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
+    add_panel_label(ax_e, "e", x=-0.12, y=1.02)
+
+    # Panel (f): quantitative structure-alignment closure
+    ax_f_panel = _set_gid(fig.add_subplot(gs_bottom[0, 2]), "fig05.panel_f.block")
+    ax_f_panel.set_axis_off()
+    ax_f_panel.set_xticks([])
+    ax_f_panel.set_yticks([])
+    gs_f = gridspec.GridSpecFromSubplotSpec(
+        2,
+        1,
+        subplot_spec=gs_bottom[0, 2],
+        hspace=FIG05_QUANT_STACK["hspace"],
+    )
+    ax_f1 = _set_gid(fig.add_subplot(gs_f[0, 0]), "fig05.panel_f.top")
+    ax_f1.plot(
+        angles,
+        band_h_norm,
+        color=SEMANTIC_PALETTE["physics"],
+        linewidth=1.10,
+        label="Measured local-band score",
+    )
+    ax_f1.plot(
+        angles,
+        band_expert_norm,
+        color=SEMANTIC_PALETTE["learned"],
+        linewidth=1.10,
+        label="Learned local-band score",
+    )
+    ax_f1.set_title("Quantitative structure alignment", fontsize=title_pt)
+    ax_f1.set_xlim(float(angles[0]), float(angles[-1]))
+    ax_f1.set_ylim(-0.02, 1.02)
+    ax_f1.set_xticks(angles[tick_positions])
+    ax_f1.set_xticklabels([])
+    ax_f1.set_yticks([0.0, 0.5, 1.0])
+    ax_f1.tick_params(axis="both", labelsize=tick_label_pt)
+    ax_f1.grid(axis="y", linestyle="--", alpha=0.25)
+    ax_f1.legend(
+        fontsize=max(legend_pt - 0.4, 5.8),
+        frameon=False,
+        loc="lower left",
+        handlelength=1.4,
+        handletextpad=0.35,
+        borderaxespad=0.2,
+    )
+    ax_f1.text(
+        0.03,
+        0.96,
+        f"matrix r = {pearson_r:.3f}",
+        transform=ax_f1.transAxes,
+        ha="left",
+        va="top",
+        fontsize=annotation_pt,
+        color=SEMANTIC_PALETTE["physics"],
+    )
+
+    ax_f2 = _set_gid(fig.add_subplot(gs_f[1, 0]), "fig05.panel_f.bottom")
+    ax_f2.scatter(
+        band_h_norm,
+        band_expert_norm,
+        s=24,
+        color=STYLE_COLORS["dense_routing"],
+        alpha=0.86,
+    )
+    ax_f2.plot([0.0, 1.0], [0.0, 1.0], color=STYLE_COLORS["guide_line"], linewidth=0.85, linestyle="--")
+    ax_f2.set_xlim(-0.02, 1.02)
+    ax_f2.set_ylim(-0.02, 1.02)
+    ax_f2.set_xticks([0.0, 0.5, 1.0])
+    ax_f2.set_yticks([0.0, 0.5, 1.0])
+    ax_f2.set_xlabel("Measured score", fontsize=axis_label_pt)
+    ax_f2.tick_params(axis="both", labelsize=tick_label_pt)
+    ax_f2.grid(axis="both", linestyle="--", alpha=0.20)
+    ax_f2.text(
+        0.03,
+        0.96,
+        f"profile r = {profile_corr:.3f}; MAE = {profile_mae:.3f}",
+        transform=ax_f2.transAxes,
+        ha="left",
+        va="top",
+        fontsize=annotation_pt,
+        color=STYLE_COLORS["neutral_text"],
+    )
+    add_panel_label(ax_f_panel, "f", x=-0.005, y=1.02)
 
     # Save composite
     all_paths = save_outputs(
@@ -892,119 +789,80 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     plt.close(fig_a)
 
-    # Panel b standalone (unified confusion family)
+    # Panel b standalone (per-angle clean decoder accuracy)
     fig_b = make_figure(
         width_mm=FIG05_STANDALONE["b"]["width_mm"],
         height_mm=FIG05_STANDALONE["b"]["height_mm"],
     )
-    fig_b_grid = FIG05_STANDALONE["b"]["grid"]
-    gs_bs = gridspec.GridSpec(
-        2,
-        3,
-        figure=fig_b,
-        width_ratios=[1.0, 1.0, fig_b_grid["colorbar_ratio"]],
-        hspace=fig_b_grid["hspace"],
-        wspace=fig_b_grid["wspace"],
-        left=fig_b_grid["left"],
-        right=fig_b_grid["right"],
-        bottom=fig_b_grid["bottom"],
-        top=fig_b_grid["top"],
+    ax = fig_b.add_subplot(111)
+    ax.fill_between(
+        angles,
+        np.clip(guided_mean - guided_sem, 0.0, 1.0),
+        np.clip(guided_mean + guided_sem, 0.0, 1.0),
+        color=SEMANTIC_PALETTE["learned"],
+        alpha=0.12,
+        linewidth=0,
+        zorder=0,
     )
-    ax1 = fig_b.add_subplot(gs_bs[0, 0])
-    im_b = _plot_confusion_matrix(
-        ax1,
-        omp_baseline_cm_norm,
-        _titlecase_short_label(panel_b_omp_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        ylabel="True DOA",
-        show_xticklabels=False,
-        show_yticklabels=False,
-        fontweight="bold",
+    ax.fill_between(
+        angles,
+        np.clip(router_bypass_mean - router_bypass_sem, 0.0, 1.0),
+        np.clip(router_bypass_mean + router_bypass_sem, 0.0, 1.0),
+        color=SEMANTIC_PALETTE["ablation"],
+        alpha=0.10,
+        linewidth=0,
+        zorder=0,
     )
-    _annotate_left_axis_values(
-        ax1,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        tick_label_pt=tick_label_pt,
+    ax.fill_between(
+        angles,
+        np.clip(omp_mean - omp_sem, 0.0, 1.0),
+        np.clip(omp_mean + omp_sem, 0.0, 1.0),
+        color=SEMANTIC_PALETTE["classical"],
+        alpha=0.08,
+        linewidth=0,
+        zorder=0,
     )
-    add_panel_label(ax1, "b")
-    ax2 = fig_b.add_subplot(gs_bs[0, 1], sharex=ax1, sharey=ax1)
-    _plot_confusion_matrix(
-        ax2,
-        baseline_cm_norm,
-        _titlecase_short_label(panel_b_solver_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        show_xticklabels=False,
-        show_yticklabels=False,
-        fontweight="bold",
+    ax.fill_between(
+        angles,
+        np.clip(dense_mean - dense_sem, 0.0, 1.0),
+        np.clip(dense_mean + dense_sem, 0.0, 1.0),
+        color=DENSE_COLOR,
+        alpha=0.06,
+        linewidth=0,
+        zorder=0,
     )
-    ax3 = fig_b.add_subplot(gs_bs[1, 0], sharex=ax1, sharey=ax1)
-    _plot_confusion_matrix(
-        ax3,
-        dense_cm_norm,
-        _titlecase_short_label(panel_b_dense_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        xlabel="Predicted DOA",
-        ylabel="True DOA",
-        show_yticklabels=False,
-        fontweight="bold",
-    )
-    _annotate_left_axis_values(
-        ax3,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        tick_label_pt=tick_label_pt,
-    )
-    ax4 = fig_b.add_subplot(gs_bs[1, 1], sharex=ax1, sharey=ax1)
-    _plot_confusion_matrix(
-        ax4,
-        no_trans_cm_norm,
-        _titlecase_short_label(panel_b_no_transformer_short),
-        title_pt=title_pt,
-        axis_label_pt=axis_label_pt,
-        tick_label_pt=tick_label_pt,
-        tick_positions=tick_positions,
-        tick_labels=tick_labels,
-        xlabel="Predicted DOA",
-        show_yticklabels=False,
-        fontweight="bold",
-    )
-    cax = fig_b.add_subplot(gs_bs[:, 2])
-    cbar = plt.colorbar(im_b, cax=cax)
-    cbar.ax.tick_params(labelsize=colorbar_tick_pt)
+    ax.plot(angles, guided_mean, "-", linewidth=1.15, color=SEMANTIC_PALETTE["learned"], label=panel_b_solver_short, zorder=4)
+    ax.plot(angles, router_bypass_mean, "-", linewidth=1.05, color=SEMANTIC_PALETTE["ablation"], label=panel_b_no_transformer_short, zorder=3)
+    ax.plot(angles, omp_mean, "-", linewidth=1.05, color=SEMANTIC_PALETTE["classical"], label=panel_b_omp_short, zorder=2)
+    ax.plot(angles, dense_mean, ":", linewidth=1.05, color=DENSE_COLOR, label=panel_b_dense_short, zorder=1)
+    ax.set_xlabel("Angle (\u00b0)", labelpad=-0.2)
+    ax.set_title("Clean decoder accuracy", fontsize=title_pt, fontweight="bold")
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=legend_pt, frameon=False, loc="lower right", ncol=1, columnspacing=0.6, handletextpad=0.4)
+    ax.tick_params(axis="both", labelsize=tick_label_pt)
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    add_panel_label(ax, "b")
+    fig_b.subplots_adjust(**FIG05_STANDALONE["b"]["subplots_adjust"])
     all_paths.extend(
         save_outputs(
             fig_b,
-            panel_dir / "fig05_panel_b_confusion_family",
+            panel_dir / "fig05_panel_b_decoder_accuracy",
             typography=typography,
         )
     )
     plt.close(fig_b)
 
-    # Panel c standalone (structure alignment)
+    # Panel c standalone (prediction locality comparison)
     fig_c = make_figure(
         width_mm=FIG05_STANDALONE["c"]["width_mm"],
         height_mm=FIG05_STANDALONE["c"]["height_mm"],
     )
     fig_c_grid = FIG05_STANDALONE["c"]["grid"]
     gs_cs = gridspec.GridSpec(
-        2,
-        2,
+        1,
+        3,
         figure=fig_c,
-        width_ratios=[1.0, fig_c_grid["colorbar_ratio"]],
-        hspace=fig_c_grid["hspace"],
+        width_ratios=[1.0, 1.0, fig_c_grid["colorbar_ratio"]],
         wspace=fig_c_grid["wspace"],
         left=fig_c_grid["left"],
         right=fig_c_grid["right"],
@@ -1012,210 +870,154 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         top=fig_c_grid["top"],
     )
     ax1 = fig_c.add_subplot(gs_cs[0, 0])
-    im_c = ax1.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax1.set_title("Measured local structure", fontsize=title_pt, fontweight="bold", pad=6.0)
-    ax1.set_xticks(tick_positions)
-    ax1.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-    ax1.set_yticks(tick_positions)
-    ax1.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    im_c = _plot_confusion_matrix(
+        ax1,
+        omp_baseline_cm_norm,
+        _titlecase_short_label(conf_omp_short),
+        title_pt=title_pt,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        tick_positions=tick_positions,
+        tick_labels=tick_labels,
+        ylabel="True DOA",
+        show_xticklabels=True,
+        show_yticklabels=False,
+        fontweight="bold",
+    )
+    _annotate_left_axis_values(ax1, tick_positions=tick_positions, tick_labels=tick_labels, tick_label_pt=tick_label_pt)
     add_panel_label(ax1, "c")
-    ax2 = fig_c.add_subplot(gs_cs[1, 0])
-    ax2.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
-    ax2.set_title("Neighborhood-emphasis map", fontsize=title_pt, fontweight="bold", pad=6.0)
-    ax2.set_xticks(tick_positions)
-    ax2.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-    ax2.set_yticks(tick_positions)
-    ax2.set_yticklabels(tick_labels, fontsize=tick_label_pt)
-    ax2.text(0.5, -0.22, f"r = {pearson_r:.3f}",
-             transform=ax2.transAxes, fontsize=annotation_pt, ha="center", style="italic")
-    cax = fig_c.add_subplot(gs_cs[:, 1])
+    ax2 = fig_c.add_subplot(gs_cs[0, 1], sharex=ax1, sharey=ax1)
+    _plot_confusion_matrix(
+        ax2,
+        baseline_cm_norm,
+        _titlecase_short_label(conf_solver_short),
+        title_pt=title_pt,
+        axis_label_pt=axis_label_pt,
+        tick_label_pt=tick_label_pt,
+        tick_positions=tick_positions,
+        tick_labels=tick_labels,
+        xlabel="Predicted DOA",
+        show_yticklabels=False,
+        fontweight="bold",
+    )
+    cax = fig_c.add_subplot(gs_cs[0, 2])
     cbar = plt.colorbar(im_c, cax=cax)
-    cbar.set_ticks(FIG05_CORR_TICKS)
-    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
-    cbar.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt)
     all_paths.extend(
         save_outputs(
             fig_c,
-            panel_dir / "fig05_panel_c_structure_alignment",
+            panel_dir / "fig05_panel_c_prediction_locality",
             typography=typography,
         )
     )
     plt.close(fig_c)
 
-    # Panel d standalone (four-angle conditional output profiles)
-    if baseline_cm is not None and no_trans_cm is not None:
-        fig_d = make_figure(
-            width_mm=FIG05_STANDALONE["d"]["width_mm"],
-            height_mm=FIG05_STANDALONE["d"]["height_mm"],
+    # Panel d standalone (measured local structure)
+    fig_d = make_figure(
+        width_mm=FIG05_STANDALONE["d"]["width_mm"],
+        height_mm=FIG05_STANDALONE["d"]["height_mm"],
+    )
+    ax = fig_d.add_subplot(111)
+    im_d = ax.imshow(H_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax.set_title("Measured local structure", fontsize=title_pt, fontweight="bold")
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+    ax.set_yticks(tick_positions)
+    ax.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax.set_xlabel("Angle (\u00b0)")
+    ax.set_ylabel("Angle (\u00b0)")
+    add_panel_label(ax, "d")
+    fig_d.subplots_adjust(**FIG05_STANDALONE["d"]["subplots_adjust"])
+    all_paths.extend(
+        save_outputs(
+            fig_d,
+            panel_dir / "fig05_panel_d_measured_structure",
+            typography=typography,
         )
-        fig_d_grid = FIG05_STANDALONE["d"]["grid"]
-        ax_panel = fig_d.add_subplot(111)
-        ax_panel.set_axis_off()
-        gs_ds = gridspec.GridSpec(
-            2,
-            2,
-            figure=fig_d,
-            hspace=fig_d_grid["hspace"],
-            wspace=fig_d_grid["wspace"],
-            left=fig_d_grid["left"],
-            right=fig_d_grid["right"],
-            bottom=fig_d_grid["bottom"],
-            top=fig_d_grid["top"],
-        )
-        profile_rows, profile_ymax = _prepare_conditional_output_profiles(
-            baseline_cm,
-            no_trans_cm,
-            angles,
-            FIG05_ROUTING_ANGLES,
-        )
+    )
+    plt.close(fig_d)
 
-        first_ax = None
-        for idx, (target_idx, bl_probs, nt_probs) in enumerate(profile_rows):
-            row_idx, col_idx = divmod(idx, 2)
-            if first_ax is None:
-                ax = fig_d.add_subplot(gs_ds[row_idx, col_idx])
-                first_ax = ax
-            else:
-                ax = fig_d.add_subplot(gs_ds[row_idx, col_idx], sharex=first_ax, sharey=first_ax)
-            ax.plot(
-                angles,
-                bl_probs,
-                "-o",
-                markersize=2.8,
-                linewidth=0.95,
-                color=SEMANTIC_PALETTE["learned"],
-                label=routing_solver_short,
-            )
-            ax.plot(
-                angles,
-                nt_probs,
-                "--s",
-                markersize=2.5,
-                linewidth=0.95,
-                color=SEMANTIC_PALETTE["ablation"],
-                label=routing_no_transformer_short,
-            )
-            ax.axvline(float(angles[target_idx]), color=SEMANTIC_PALETTE["physics"], linewidth=0.8, linestyle="--")
-            ax.set_title(
-                f"{angles[target_idx]:.0f}\u00b0",
-                fontsize=title_pt,
-                pad=2.0,
-            )
-            ax.set_xticks(angles[tick_positions])
-            if row_idx == 0:
-                ax.set_xticklabels([])
-            else:
-                ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
-                ax.set_xlabel(
-                    "Predicted angle (\u00b0)",
-                    fontsize=axis_label_pt,
-                    labelpad=-0.2,
-                )
-            ax.set_xlim(float(angles[0]), float(angles[-1]))
-            ax.set_ylim(0, profile_ymax)
-            ax.tick_params(axis="both", labelsize=tick_label_pt)
-            ax.grid(axis="y", linestyle="--", alpha=0.25)
-            if col_idx == 1:
-                ax.tick_params(labelleft=False)
-            if idx == 0:
-                ax.legend(
-                    fontsize=legend_pt,
-                    frameon=False,
-                    loc="upper right",
-                    bbox_to_anchor=(0.98, 0.98),
-                    borderaxespad=0.0,
-                )
-        add_panel_label(ax_panel, "d")
-        all_paths.extend(
-            save_outputs(
-                fig_d,
-                panel_dir / "fig05_panel_d_conditional_outputs",
-                typography=typography,
-            )
+    # Panel e standalone (learned neighborhood-emphasis map)
+    fig_e = make_figure(
+        width_mm=FIG05_STANDALONE["e"]["width_mm"],
+        height_mm=FIG05_STANDALONE["e"]["height_mm"],
+    )
+    ax = fig_e.add_subplot(111)
+    im_e = ax.imshow(expert_corr, cmap="RdBu_r", aspect="equal", norm=FIG05_CORR_NORM)
+    ax.set_title("Guided-solver neighborhood-emphasis", fontsize=title_pt, fontweight="bold")
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels, fontsize=tick_label_pt)
+    ax.set_yticks(tick_positions)
+    ax.set_yticklabels(tick_labels, fontsize=tick_label_pt)
+    ax.set_xlabel("Angle (\u00b0)")
+    cax = inset_axes(ax, width="3.6%", height="88%", loc="center right", borderpad=1.2)
+    cbar = plt.colorbar(im_e, cax=cax)
+    cbar.set_ticks(FIG05_CORR_TICKS)
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    cbar.ax.set_title("Corr", fontsize=colorbar_label_pt, pad=2.0)
+    cbar.ax.tick_params(labelsize=colorbar_tick_pt)
+    add_panel_label(ax, "e")
+    fig_e.subplots_adjust(**FIG05_STANDALONE["e"]["subplots_adjust"])
+    all_paths.extend(
+        save_outputs(
+            fig_e,
+            panel_dir / "fig05_panel_e_neighborhood_map",
+            typography=typography,
         )
-        plt.close(fig_d)
+    )
+    plt.close(fig_e)
 
-    # Panel e standalone (per-angle decoder benchmark)
-    if panel_f_summary is not None:
-        f_angles = np.asarray(panel_f_summary["angles"], dtype=float)
-        guided_mean, guided_sem = _smoothed_mean_and_sem(panel_f_summary, "guided")
-        router_bypass_mean, router_bypass_sem = _smoothed_mean_and_sem(panel_f_summary, "router_bypass")
-        omp_mean, omp_sem = _smoothed_mean_and_sem(panel_f_summary, "omp")
-        dense_mean, dense_sem = _smoothed_mean_and_sem(panel_f_summary, "dense")
-        fig_e = make_figure(
-            width_mm=FIG05_STANDALONE["e"]["width_mm"],
-            height_mm=FIG05_STANDALONE["e"]["height_mm"],
+    # Panel f standalone (quantitative structure-alignment closure)
+    fig_f = make_figure(
+        width_mm=FIG05_STANDALONE["f"]["width_mm"],
+        height_mm=FIG05_STANDALONE["f"]["height_mm"],
+    )
+    fig_f_grid = FIG05_STANDALONE["f"]["grid"]
+    gs_fs = gridspec.GridSpec(
+        2,
+        1,
+        figure=fig_f,
+        hspace=fig_f_grid["hspace"],
+        left=fig_f_grid["left"],
+        right=fig_f_grid["right"],
+        bottom=fig_f_grid["bottom"],
+        top=fig_f_grid["top"],
+    )
+    ax1 = fig_f.add_subplot(gs_fs[0, 0])
+    ax1.plot(angles, band_h_norm, color=SEMANTIC_PALETTE["physics"], linewidth=1.15, label="Measured local-band score")
+    ax1.plot(angles, band_expert_norm, color=SEMANTIC_PALETTE["learned"], linewidth=1.15, label="Learned local-band score")
+    ax1.set_title("Quantitative structure alignment", fontsize=title_pt, fontweight="bold")
+    ax1.set_xlim(float(angles[0]), float(angles[-1]))
+    ax1.set_ylim(-0.02, 1.02)
+    ax1.set_xticks(angles[tick_positions])
+    ax1.set_xticklabels([])
+    ax1.set_yticks([0.0, 0.5, 1.0])
+    ax1.set_ylabel("Normalized score", fontsize=axis_label_pt)
+    ax1.tick_params(axis="both", labelsize=tick_label_pt)
+    ax1.grid(axis="y", linestyle="--", alpha=0.25)
+    ax1.legend(fontsize=max(legend_pt - 0.4, 5.8), frameon=False, loc="lower left")
+    ax1.text(0.03, 0.96, f"matrix r = {pearson_r:.3f}", transform=ax1.transAxes, ha="left", va="top", fontsize=annotation_pt)
+    add_panel_label(ax1, "f")
+    ax2 = fig_f.add_subplot(gs_fs[1, 0])
+    ax2.scatter(band_h_norm, band_expert_norm, s=24, color=STYLE_COLORS["dense_routing"], alpha=0.86)
+    ax2.plot([0.0, 1.0], [0.0, 1.0], color=STYLE_COLORS["guide_line"], linewidth=0.85, linestyle="--")
+    ax2.set_xlim(-0.02, 1.02)
+    ax2.set_ylim(-0.02, 1.02)
+    ax2.set_xticks([0.0, 0.5, 1.0])
+    ax2.set_yticks([0.0, 0.5, 1.0])
+    ax2.set_xlabel("Measured score")
+    ax2.set_ylabel("Learned score")
+    ax2.tick_params(axis="both", labelsize=tick_label_pt)
+    ax2.grid(axis="both", linestyle="--", alpha=0.20)
+    ax2.text(0.03, 0.96, f"profile r = {profile_corr:.3f}; MAE = {profile_mae:.3f}", transform=ax2.transAxes, ha="left", va="top", fontsize=annotation_pt)
+    all_paths.extend(
+        save_outputs(
+            fig_f,
+            panel_dir / "fig05_panel_f_quant_alignment",
+            typography=typography,
         )
-        ax = fig_e.add_subplot(111)
-        ax.fill_between(
-            f_angles,
-            np.clip(guided_mean - guided_sem, 0.0, 1.0),
-            np.clip(guided_mean + guided_sem, 0.0, 1.0),
-            color=SEMANTIC_PALETTE["learned"],
-            alpha=0.12,
-            linewidth=0,
-            zorder=0,
-        )
-        ax.fill_between(
-            f_angles,
-            np.clip(router_bypass_mean - router_bypass_sem, 0.0, 1.0),
-            np.clip(router_bypass_mean + router_bypass_sem, 0.0, 1.0),
-            color=SEMANTIC_PALETTE["ablation"],
-            alpha=0.10,
-            linewidth=0,
-            zorder=0,
-        )
-        ax.fill_between(
-            f_angles,
-            np.clip(omp_mean - omp_sem, 0.0, 1.0),
-            np.clip(omp_mean + omp_sem, 0.0, 1.0),
-            color=SEMANTIC_PALETTE["classical"],
-            alpha=0.08,
-            linewidth=0,
-            zorder=0,
-        )
-        ax.fill_between(
-            f_angles,
-            np.clip(dense_mean - dense_sem, 0.0, 1.0),
-            np.clip(dense_mean + dense_sem, 0.0, 1.0),
-            color=DENSE_COLOR,
-            alpha=0.06,
-            linewidth=0,
-            zorder=0,
-        )
-        ax.plot(f_angles, guided_mean, "-", linewidth=1.2,
-                color=SEMANTIC_PALETTE["learned"], label=diag_solver_short, zorder=4)
-        ax.plot(f_angles, router_bypass_mean, "-", linewidth=1.1,
-                color=SEMANTIC_PALETTE["ablation"], label=diag_no_transformer_short, zorder=3)
-        ax.plot(f_angles, omp_mean, "-", linewidth=1.1,
-                color=SEMANTIC_PALETTE["classical"], label=diag_omp_short, zorder=2)
-        ax.plot(f_angles, dense_mean, ":", linewidth=1.1,
-                color=DENSE_COLOR, label=diag_dense_short, zorder=1)
-        ax.set_xlabel("Angle (\u00b0)", labelpad=-0.2)
-        ax.set_ylabel("Mean P(correct)")
-        ax.set_title("Decoder accuracy", fontsize=title_pt, fontweight="bold")
-        ax.set_ylim(0, 1.05)
-        ax.legend(
-            fontsize=legend_pt,
-            frameon=False,
-            loc="lower right",
-            ncol=1,
-            columnspacing=0.6,
-            handletextpad=0.4,
-        )
-        ax.tick_params(axis="both", labelsize=tick_label_pt)
-        ax.grid(axis="y", linestyle="--", alpha=0.3)
-        add_panel_label(ax, "e")
-        fig_e.subplots_adjust(**FIG05_STANDALONE["e"]["subplots_adjust"])
-        all_paths.extend(
-            save_outputs(
-                fig_e,
-                panel_dir / "fig05_panel_e_decoder_accuracy",
-                typography=typography,
-            )
-        )
-        plt.close(fig_e)
+    )
+    plt.close(fig_f)
 
     # Panel manifest
     manifest = _save_panel_manifest(
@@ -1230,34 +1032,38 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "b",
-                "title": "Unified confusion family",
-                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_b_confusion_family.pdf",
+                "title": "Clean decoder accuracy",
+                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_b_decoder_accuracy.pdf",
                 "provenance_mode": "data_backed",
-                "description": (
-                    f"Unified row-normalized confusion-family block comparing {panel_b_omp_full}, "
-                    f"{panel_b_solver_full}, {panel_b_dense_full}, and {panel_b_no_transformer_full}."
-                ),
+                "description": f"Five-seed clean mean P(correct) comparison across {panel_b_solver_full}, {panel_b_no_transformer_full}, {panel_b_omp_full}, and {panel_b_dense_full}, shown as a 3-angle centered moving-average display with light ±1 s.e.m. shading.",
             },
             {
                 "panel_id": "c",
-                "title": "Structure alignment",
-                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_c_structure_alignment.pdf",
+                "title": "Prediction locality",
+                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_c_prediction_locality.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Correlation heatmaps showing that the guided neighborhood map follows the measured angle manifold rather than replacing it with an arbitrary classifier pattern.",
+                "description": f"Row-normalized clean confusion comparison showing that {conf_solver_full} remains locally concentrated around the target neighborhood, whereas {conf_omp_full} shows broader off-diagonal fracture.",
             },
             {
                 "panel_id": "d",
-                "title": "Four-angle conditional outputs",
-                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_d_conditional_outputs.pdf",
+                "title": "Measured local structure",
+                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_d_measured_structure.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Conditional output distributions at 55, 70, 95, and 100 degrees comparing {routing_solver_full} vs {routing_no_transformer_full}.",
+                "description": "Measured correlation matrix of the calibrated fingerprint space, showing the near-diagonal local band that defines the physical neighborhood structure.",
             },
             {
                 "panel_id": "e",
-                "title": "Per-angle decoder accuracy",
-                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_decoder_accuracy.pdf",
+                "title": "Neighborhood-emphasis map",
+                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_e_neighborhood_map.pdf",
                 "provenance_mode": "data_backed",
-                "description": f"Five-seed clean mean P(correct) comparison across {diag_solver_full}, {diag_no_transformer_full}, {diag_omp_full}, and {diag_dense_full}, shown as a 3-angle centered moving-average display with light ±1 s.e.m. shading.",
+                "description": "Guided neighborhood-emphasis correlation map derived from the routed-score matrix, displayed on the same angle frame and correlation scale as panel d.",
+            },
+            {
+                "panel_id": "f",
+                "title": "Quantitative alignment",
+                "asset_path": "figures/output/fig05_performance_structure_panels/fig05_panel_f_quant_alignment.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Quantitative closure comparing measured and learned local-band structure through normalized profile overlays and concordance scatter, with full-matrix and per-angle correlation summaries.",
             },
         ],
         typography=typography,

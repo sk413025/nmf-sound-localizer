@@ -104,22 +104,22 @@ figures:
   fig05:
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 164.0
+      composite_height_mm: 168.0
       composite_grid:
         left: 0.034
-        right: 0.966
-        bottom: 0.040
-        top: 0.960
-        hspace: 0.220
-        height_ratios: [66.0, 58.0]
+        right: 0.970
+        bottom: 0.046
+        top: 0.966
+        hspace: 0.280
+        height_ratios: [80.0, 80.0]
       top_row:
-        wspace: 0.095
-        width_ratios: [38.0, 60.0, 66.0]
+        wspace: 0.170
+        width_ratios: [50.0, 50.0, 72.0]
       bottom_row:
-        wspace: 0.088
-        width_ratios: [88.0, 76.0]
-      heatmap_stack: {hspace: 0.44, wspace: 0.05, colorbar_ratio: 0.06}
-      routing_stack: {hspace: 0.34, wspace: 0.16}
+        wspace: 0.190
+        width_ratios: [51.0, 51.0, 70.0]
+      confusion_pair: {wspace: 0.10, colorbar_ratio: 0.065}
+      quantitative_stack: {hspace: 0.30}
       standalone:
         a:
           width_mm: 183.0
@@ -127,20 +127,24 @@ figures:
           subplots_adjust: {left: 0.10, right: 0.95, bottom: 0.15, top: 0.92}
         b:
           width_mm: 183.0
-          height_mm: 120.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.10, top: 0.93, hspace: 0.30, wspace: 0.08, colorbar_ratio: 0.06}
-        c:
-          width_mm: 183.0
-          height_mm: 120.0
-          grid: {left: 0.08, right: 0.95, bottom: 0.08, top: 0.94, hspace: 0.30, wspace: 0.06, colorbar_ratio: 0.08}
-        d:
-          width_mm: 183.0
-          height_mm: 118.0
-          grid: {left: 0.08, right: 0.96, bottom: 0.12, top: 0.91, hspace: 0.40, wspace: 0.18}
-        e:
-          width_mm: 183.0
           height_mm: 70.0
           subplots_adjust: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.92}
+        c:
+          width_mm: 183.0
+          height_mm: 96.0
+          grid: {left: 0.07, right: 0.965, bottom: 0.11, top: 0.93, wspace: 0.08, colorbar_ratio: 0.040}
+        d:
+          width_mm: 183.0
+          height_mm: 78.0
+          subplots_adjust: {left: 0.11, right: 0.96, bottom: 0.13, top: 0.90}
+        e:
+          width_mm: 183.0
+          height_mm: 78.0
+          subplots_adjust: {left: 0.11, right: 0.96, bottom: 0.13, top: 0.90}
+        f:
+          width_mm: 183.0
+          height_mm: 96.0
+          grid: {left: 0.10, right: 0.95, bottom: 0.12, top: 0.92, hspace: 0.30}
   fig06:
     compose:
       width_mm: 183.0
