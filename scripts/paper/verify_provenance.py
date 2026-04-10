@@ -127,9 +127,9 @@ def check_file_existence(repo: Path, report: AuditReport) -> None:
         else:
             report.add("WARN", "file_existence", "figures/conf/experiments.yaml not found — using only static required files")
     except ImportError:
-        report.add("WARN", "file_existence", "PyYAML not installed — manuscript asset list not loaded from experiments.yaml")
+        report.add("WARN", "file_existence", "PyYAML not installed — paper-facing asset list not loaded from experiments.yaml")
     except Exception as exc:
-        report.add("WARN", "file_existence", f"Failed to parse experiments.yaml for manuscript assets — {exc}")
+        report.add("WARN", "file_existence", f"Failed to parse experiments.yaml for paper-facing assets — {exc}")
 
     required = [
         "h_matrix_normalized_original_to_box.pth",

@@ -1,6 +1,6 @@
-# Primary machine-readable figure contract for the active six-figure manuscript.
+# Primary machine-readable figure contract for the active six-figure paper.
 # Each figure entry owns the executable metadata needed to:
-# - resolve the manuscript-facing asset
+# - resolve the canonical paper-facing asset
 # - trace the generator or composition path
 # - define panel order and manifests
 # - track panel-level provenance where panels are mixed or partially manual
@@ -254,7 +254,7 @@ fig05_performance_structure:
       type: npz
     - path: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
       type: npz
-      description: "Clean seed42 g-routing confusion metrics used by panel b as the manuscript-facing OMP baseline."
+      description: "Clean seed42 g-routing confusion metrics used by panel b as the paper-facing OMP baseline."
     - path: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
       type: npz
       description: "Representative clean dense-routing confusion metrics used by panel b."

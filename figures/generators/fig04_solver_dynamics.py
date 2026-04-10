@@ -1,6 +1,6 @@
 """Figure 4 — Physics-guided delayed commitment under local overlap.
 
-This generator produces the five manuscript-facing, governed panels:
+This generator produces the five paper-facing, governed panels:
 
 - (a) architecture and physics correspondence
 - (b) broad initial match
@@ -828,7 +828,7 @@ def _build_composite(
 
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 4 manuscript-facing data-backed panels."""
+    """Generate Figure 4 paper-facing data-backed panels."""
     typography = font_tokens()
     set_nature_rcparams(base_fontsize=int(round(typography["title"])))
     axis_label_pt = typography["axis_label"]

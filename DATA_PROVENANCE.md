@@ -12,9 +12,9 @@ Derived evidence artifacts:
 - `figures/output/*_panel_manifest.json`
 - `paper/figures/*.layout.json`
 
-Manuscript surface rule:
+Paper-facing asset rule:
 
-- `paper/figures/` contains only final manuscript assets, layout sidecars, and figure-facing docs
+- `paper/figures/` contains only final paper-facing assets, layout sidecars, and figure-facing docs
 - committed manual support panels live under `figures/output/*_panels/`
 
 Workflow-only config:

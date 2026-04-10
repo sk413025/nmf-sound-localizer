@@ -1,6 +1,6 @@
 # Paper-facing figure assets that require Codex multimodal review.
 # This file is review-orchestration only. Figure identity, panel metadata,
-# evidence sources, and manuscript-facing claims live in
+# evidence sources, and the linked main-manuscript claims live in
 # figures/conf/experiments.yaml.
 
 review_dir: figures/review_artifacts

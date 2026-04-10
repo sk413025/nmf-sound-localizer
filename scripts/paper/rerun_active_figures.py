@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the active six manuscript figures from the unified figure contract."""
+"""Rebuild the active six paper-facing figures from the unified figure contract."""
 
 from __future__ import annotations
 
@@ -179,7 +179,7 @@ def _stage_paper_assets(contracts: list[dict[str, Any]], stage_paper_dir: Path, 
         rel_asset = Path(contract["manuscript_asset"])
         staged_asset = stage_paper_dir / rel_asset.name
         if not staged_asset.exists():
-            raise FileNotFoundError(f"Missing staged manuscript asset: {staged_asset}")
+            raise FileNotFoundError(f"Missing staged paper-facing asset: {staged_asset}")
 
         live_asset = REPO_ROOT / rel_asset
         destination = live_asset if promote else staged_asset
@@ -192,11 +192,11 @@ def _stage_paper_assets(contracts: list[dict[str, Any]], stage_paper_dir: Path, 
             shutil.copy2(stage_layout, live_layout)
 
     if promote:
-        print(f"Promoted staged manuscript assets into {live_paper_dir}")
+        print(f"Promoted staged paper-facing assets into {live_paper_dir}")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Rebuild the active six manuscript figures under the unified figure contract.")
+    parser = argparse.ArgumentParser(description="Rebuild the active six paper-facing figures under the unified figure contract.")
     parser.add_argument(
         "--baseline-ref",
         default="HEAD",

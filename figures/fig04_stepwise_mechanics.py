@@ -1,7 +1,7 @@
 """Build the governed stepwise-mechanics artifact for Fig. 4.
 
 The artifact is derived from the active primary run and stores only the
-manuscript-facing quantities needed by the mechanism-first Fig. 4 generator:
+paper-facing quantities needed by the mechanism-first Fig. 4 generator:
 
 - angle-conditioned stage-0 physics, QK, and routing summaries for panel b
 - a single shared exemplar plus population summaries for the gated update

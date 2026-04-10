@@ -52,7 +52,7 @@ decisions, not to replace manuscript prose.
     `Fixed Heuristic`, `G-Fixed`, `G-Teacher`, and `Dense Routing`, but the
     active paper-facing panel collapses them to four families:
     `No Type Bias -> guided solver`, `No Transformer -> router-bypass`,
-    `Fixed Heuristic/G-Fixed/G-Teacher -> OMP baseline`, and
+    `Fixed Heuristic/G-Fixed/G-Teacher -> paper-facing OMP baseline`, and
     `Dense Routing -> dense routing`
 
 ## Fig. 5
