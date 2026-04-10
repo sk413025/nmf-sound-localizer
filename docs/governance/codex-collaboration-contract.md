@@ -15,6 +15,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 
 - Define `codex-native` from actual Codex capabilities and local repository primitives, not from taste alone.
 - Prefer existing repository primitives such as `AGENTS.md`, local skills, and `scripts/paper/` over parallel systems.
+- Prefer simplification over accretion. New governance fields, verdicts, or artifacts must clear an anti-duplication bar rather than being added by default.
 - Keep collaboration manuscript-first.
 - Make code subordinate to manuscript, evidence, and submission workflows.
 - Keep agent stance aligned with Nature-facing scientific writing: rigorous, editor-legible, and claim-forward rather than reflexively defensive.
@@ -23,6 +24,13 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Require paper-facing workflow to optimize for reader-first scientific explanation, not only for contract compliance or hedge removal.
 - Treat narrative architecture as part of scientific rigor. The branch must optimize for one primary cognitive shift with one stable protagonist, and when the evidence supports broader significance it must also express one endogenous second-layer discovery rather than only a list of applications.
 - Treat broader significance as a governed promotion ladder rather than an intuition call. The only allowed statuses are `core-only`, `second-layer earned`, `branch earned`, and `leaf allowed`.
+- Do not let one concept acquire multiple canonical homes. If a schema, ladder, or field inventory is machine-readable in one place, other docs should reference it rather than re-implement it.
+- Do not let the checker over-model reviewer judgment. Executable gates should enforce consistency and ownership boundaries, not infer higher-level paper verdicts that belong to review.
+- Any governance expansion must answer four questions before landing:
+  - why existing primitives were insufficient
+  - what duplicated surface was removed
+  - what remains canonical after the change
+  - what complexity risk stays open
 - Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
 - Require paper-facing workflow to identify `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
 - Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, discovery-versus-tool weight budget, second-layer discovery, broader-implication trunk, and downstream-consequence branch before local sentence polishing begins.
@@ -62,7 +70,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - reusable skills and unified task packets for repeated work
 - task packets that record `Relevant conversation context` and a `Context mode` decision
 - review plans that name the applicable canonical reviewer roles when paper-facing critique is required
-- packet, review, and closeout surfaces that record broader-significance status, promotion rationale, and demotion triggers when broader significance is in scope
+- packet, review, and closeout surfaces that record broader-significance status coherently and defer machine-readable status mechanics to the canonical schema
+- one canonical machine-readable field inventory for `high-risk` broader-significance rounds, referenced rather than recopied across packet, reviewer, and closeout docs
 - a canonical `governance_round.yaml` artifact plus executable semantic validation for `high-risk` broader-significance rounds
 - evidence-backed recommendations
 - closeout that distinguishes exact text evidence from high-level interpretation
@@ -92,6 +101,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - paper-facing workflow exposes whether broader significance landed as a second-layer discovery, whether downstream consequences stayed bounded, and whether the `no-bolt-on` test passed
 - paper-facing workflow also exposes whether broader significance earned its current promotion level or should be demoted
 - `high-risk` broader-significance rounds cannot close out as landed without a passing `governance_round.yaml` semantic gate
+- governance changes that add a field, verdict, or artifact also remove or collapse an older duplicated surface
 
 ## Executable gates
 

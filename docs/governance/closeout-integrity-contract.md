@@ -25,6 +25,7 @@ Use this contract when reporting task completion, review status, acceptance stat
 - When a round claims broader significance landed, the closeout must distinguish the `second-layer discovery` from any downstream consequence and must report whether the `broader-implication trunk` and `no-bolt-on test` landed.
 - When a round claims broader significance landed, the closeout must also report the earned promotion level and any demotion that review or verification required.
 - For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, the closeout must be backed by `results/<round_name>/governance_round.yaml` and a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` run.
+- For governance-changing rounds, closeout must also state the complexity risk, why existing primitives were insufficient, what duplicated surface was removed, and what remains canonical after the round.
 - Classify each closeout-sensitive round as high risk or not high risk before assigning reviewer and verifier ownership.
 - For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, separate implementer, reviewer, and verifier roles.
 - In a high-risk round, a reviewer pass is advisory to acceptance until an independent verifier confirms that the implemented state matches the claimed closeout.
@@ -53,3 +54,4 @@ Use this contract when reporting task completion, review status, acceptance stat
 - final completion claims are backed by independent verification rather than a single actor's summary
 - broader-significance closeout distinguishes `second-layer discovery` from `downstream consequence` rather than collapsing them into one vague implication claim
 - `high-risk` broader-significance closeout is backed by a machine-readable `governance_round.yaml` artifact whose final status and demotion outcome match review and verification
+- governance-changing closeout does not claim simplification without naming what duplicate surface was actually removed

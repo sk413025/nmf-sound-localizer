@@ -22,7 +22,14 @@ Every packet should include:
 - `Escalate when`
 - `Context mode`
 
-For any paper-facing explanation packet whose outputs may be promoted into manuscript, supplementary, legend, caption, review-note, or analysis-summary prose, also include:
+Use packet fields to record decisions, not to recreate a second schema.
+
+`Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
+`Context mode: summary-only` is the default.
+Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+If the packet includes paper-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+
+For any paper-facing explanation packet whose outputs may be promoted into manuscript, supplementary, legend, caption, review-note, or analysis-summary prose, the minimum human-facing additions are:
 
 - `Claim floor`
 - `Claim ceiling`
@@ -30,98 +37,29 @@ For any paper-facing explanation packet whose outputs may be promoted into manus
 - `Editor readout sentence`
 - `Relevant voice exemplar(s)`
 - `Bridge question`
-- `Defensive phrasings to remove`
-- `Sentence-friction hotspots`
-- `Causal glue to add`
-- `Diction to normalize`
-- `Second-layer discovery`
-- `Broader-significance status`
-- `Broader-implication trunk`
-- `Downstream-consequence branch`
-- `Optional leaf consequence`
-- `Front-door preload sentence`
-- `No-bolt-on test`
-- `Two-takeaway editor readout`
 
-For any local high-salience main-manuscript packet, also include:
+Add sentence-friction, diction, or local cleanup notes only when they are genuinely part of the owned acceptance surface.
 
-- `Old-world belief`
-- `New-world belief`
-- `Paper protagonist`
-- `Supporting actors`
-- `Pivot section`
-- `Pivot sentence`
-- `Tool role`
-- `Reference-object role`
-- `Worldview-shift sentence`
+For any local high-salience, `cross-section`, or `whole-manuscript` manuscript round, carry the architecture bundle required by `docs/governance/manuscript-contract.md` and `docs/governance/scientific-voice-guide.md` instead of restating the full field inventory here.
 
-For any packet with `Architecture scope: cross-section` or `Architecture scope: whole-manuscript`, also include:
+For any `high-risk` round with broader significance or cross-disciplinary consequence in scope:
 
-- `Old-world belief`
-- `New-world belief`
-- `Paper protagonist`
-- `Supporting actors`
-- `Paper spine map`
-- `Results section jobs`
-- `Pivot section`
-- `Pivot sentence`
-- `Discovery cash-out section`
-- `Tool role`
-- `Reference-object role`
-- `Discovery-vs-tool weight budget`
-- `Second-layer discovery`
-- `Broader-significance status`
-- `Broader-implication trunk`
-- `Downstream-consequence branch`
-- `Optional leaf consequence`
-- `Redundancy / breathing risks`
-- `Worldview-shift sentence`
+- create `results/<round_name>/governance_round.yaml`
+- treat `governance_round.yaml` as the only machine-readable source of truth for proposed, reviewed, final, and verified status
+- use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` as the canonical field inventory
+- include a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` run in `Delivery evidence required`
 
-`Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
-`Context mode: summary-only` is the default.
-Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-If the packet includes paper-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
-`Claim floor` must state the strongest supported discovery sentence for the in-scope surface.
-`Claim ceiling` must state the stronger statement that must not be implied.
-`Evidence boundary` must name the real scope limit or transfer condition instead of embedding that limit inside self-diminishing prose.
-`Editor readout sentence` must state, in one sentence, what an editor should remember after a first pass over the in-scope surface.
-`Relevant voice exemplar(s)` must cite the closest `SV#` pair or pairs from `docs/governance/scientific-voice-guide.md` for title, abstract, Results opening, transition, section-title, or Discussion-opening rewrites.
-`Bridge question` must state why the next section, figure, or paragraph logically follows from the current one.
-`Defensive phrasings to remove` should list local wording patterns such as `without upgrading`, `descriptive rather than`, or other prophylactic negation that lowers the claim floor without adding scientific precision.
-`Sentence-friction hotspots` should identify sentences or local passages where noun stacks, fact clustering, or syntax density make the science harder to parse than necessary.
-`Causal glue to add` should identify where number-heavy or comparison-heavy sentences still need `because`, `which means`, `confirming that`, `so`, or equivalent scientific consequence language.
-`Diction to normalize` should identify phrases that are formally correct but unnaturally compressed, governance-shaped, or unlike natural lab-meeting scientific English.
-`Second-layer discovery` must state the paper-level inference that broadens the discovery without becoming a free-standing application claim.
-`Broader-significance status` must classify the current promotion level as `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`.
-`Broader-implication trunk` must state the shortest defensible sentence that expresses that second-layer discovery.
-`Downstream-consequence branch` must name the nearest bounded consequence that follows from the trunk.
-`Optional leaf consequence` must name any weaker, more distant implication that can be removed without harming the trunk.
-For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, the packet must also name the canonical round artifact path as `results/<round_name>/governance_round.yaml`.
-For the same rounds, the packet must treat `governance_round.yaml` as the machine-readable source of truth for proposed status, reviewed status, final closeout status, verification confirmation, and any status-change note.
-For the same rounds, `Delivery evidence required` must include a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` run before the parent may report that broader significance landed.
-`Front-door preload sentence` must name the Abstract-tail or Introduction-ending sentence that plants the broader-implication trunk before Discussion.
-`No-bolt-on test` must specify how the parent or child will check that the downstream branch depends on the trunk, not the other way around.
-`Two-takeaway editor readout` must state the two sentences a skimming editor should remember: one core discovery sentence and one second-layer discovery sentence.
-`Old-world belief` must name the intuition, field habit, or standard framing the in-scope high-salience manuscript surface needs to replace.
-`New-world belief` must name what the reader should understand differently after that high-salience surface lands.
-`Paper protagonist` must identify the discovery, organizing principle, or physical phenomenon that the round keeps at center.
-`Supporting actors` must identify which tools, assays, reference objects, or comparators serve the protagonist rather than replace it.
-`Paper spine map` must summarize the whole primary-cognitive-shift architecture for the in-scope surface rather than listing isolated local edits.
-`Results section jobs` must classify each in-scope Results section as phenomenon-establishing, mechanism-defining, tool-diagnostic, tool-validation, or discovery cash-out.
-`Pivot section` must name the Results section or transition where the reader's model should change.
-`Pivot sentence` must state the one sentence that makes that change explicit.
-`Discovery cash-out section` must name where the paper-level discovery becomes unavoidable rather than optional.
-`Tool role` must say what bounded scientific job the tool is allowed to do in the story.
-`Reference-object role` must say how any reference object serves the broader discovery.
-`Discovery-vs-tool weight budget` must explain how the round keeps discovery weight higher than tool-validation weight and where compression or merging is required if tool sections are overweight.
-`Second-layer discovery` must be explicit for any packet that claims broader significance or cross-disciplinary consequence.
-`Broader-implication trunk` must be stable across Abstract tail, Introduction ending, discovery cash-out, and Discussion whenever those surfaces are in scope.
-`Downstream-consequence branch` must stay subordinate to the trunk rather than becoming a parallel protagonist.
-`Optional leaf consequence` must remain clearly weaker than the branch and removable without collapsing the paper-level implication.
-`Redundancy / breathing risks` must identify repeated explanations, uniformly dense passages, or missing reset sentences that keep the paper from feeling like one primary cognitive shift.
-`Worldview-shift sentence` must state how the Discussion opening will upgrade the paper's meaning rather than recap Results.
-`Broader-significance status` must be explicit for any packet that claims broader significance or cross-disciplinary consequence.
-For `high-risk` broader-significance rounds, keep the packet short and put the machine-readable details in `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` rather than retyping a second field inventory inside the packet.
+Anti-complexity rule:
+
+- do not add a new packet field, verdict, or artifact unless you can first explain why the existing canonical surfaces are insufficient
+- any governance expansion should also name what duplicated surface is removed or collapsed in exchange
+
+For governance-changing rounds, also record:
+
+- `Complexity risk`
+- `Why existing primitives were insufficient`
+- `What duplicated surface was removed`
+- `What remains canonical after this round`
 
 Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
 If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
@@ -179,13 +117,11 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
 - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
-- explicit `Second-layer discovery`, `Broader-significance status`, `Broader-implication trunk`, `Downstream-consequence branch`, `Optional leaf consequence`, `Front-door preload sentence`, `No-bolt-on test`, and `Two-takeaway editor readout` entries whenever broader significance or cross-disciplinary consequence is in scope
-- explicit `Old-world belief`, `New-world belief`, `Paper protagonist`, `Pivot section`, `Pivot sentence`, `Tool role`, `Reference-object role`, and `Worldview-shift sentence` entries for any local high-salience manuscript hardening round
-- explicit `Old-world belief`, `New-world belief`, `Paper protagonist`, `Paper spine map`, `Results section jobs`, `Pivot section`, `Pivot sentence`, `Discovery cash-out section`, `Tool role`, `Reference-object role`, `Discovery-vs-tool weight budget`, `Second-layer discovery`, `Broader-significance status`, `Broader-implication trunk`, `Downstream-consequence branch`, `Optional leaf consequence`, `Redundancy / breathing risks`, and `Worldview-shift sentence` entries for any `cross-section` or `whole-manuscript` manuscript hardening round
-- explicit `Relevant voice exemplar(s)` entries for any high-salience rewrite
-- explicit `Sentence-friction hotspots`, `Causal glue to add`, and `Diction to normalize` entries for any main-manuscript hardening round or other paper-facing explanation round
+- the architecture bundle required by `manuscript-contract.md` for the chosen `Architecture scope`
+- `Relevant voice exemplar(s)` for any high-salience rewrite
+- local sentence-friction, causal-glue, or diction notes only when those are part of the owned acceptance surface
 - figure and Methods anchors for every claim-level change
-- `results/<round_name>/governance_round.yaml` for any `high-risk` broader-significance packet
+- `results/<round_name>/governance_round.yaml` for any `high-risk` broader-significance packet, using `ROUND_GOVERNANCE_SCHEMA.md` as the canonical field inventory
   - coherence or terminology notes when surrounding transitions had to change to keep the manuscript natural
   - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
   - explicit unresolved issues if evidence is weak

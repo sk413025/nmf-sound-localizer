@@ -39,6 +39,7 @@ Red-team review is mandatory for:
 - `WARN_DECOMPOSITION`: the parent kept a multi-scope request in one child task without a valid single-child rationale
 - `WARN_SUPERVISION`: the parent interrupted or closed a child agent without first checking current status or latest output
 - `WARN_DUPLICATION`: the output duplicates an existing role, skill, or document path
+- `WARN_OVERMODELED_GOVERNANCE`: the change introduces a field, verdict, artifact, or checker rule that duplicates an existing canonical surface or hard-codes reviewer judgment into the machine layer
 - `WARN_EVIDENCE`: claims or recommendations are not tied to files, commands, or artifacts
 - `WARN_SCOPE_DOWNGRADE_CONCEALED`: delivered scope is narrower than planned scope but the closeout implies full completion
 - `WARN_NO_TEXT_EVIDENCE`: the parent closeout lacks the text, file, or artifact evidence required by the packet
@@ -54,6 +55,16 @@ Red-team review is mandatory for:
 - `WARN_WORLDVIEW_RECAP`: the Discussion opening restates Results instead of saying what understanding has changed
 - `WARN_SECTION_JOB_DRIFT`: Results sections have local findings but no stable whole-paper job map
 - `WARN_DISCOVERY_CASHOUT_BURIED`: the paper-level discovery appears only as a late extension rather than as the story's cash-out
+- `WARN_SECOND_LAYER_DISCOVERY_MISSING`: broader significance appears only as applications or Discussion add-on language rather than as an evidence-earned second-layer discovery
+- `WARN_SECOND_LAYER_NOT_EARNED`: the round promotes a second-layer discovery that is not yet strong enough to survive conservative rewrite or reviewer routing
+- `WARN_BRANCH_NOT_EARNED`: the round promotes a downstream branch that the evidence does not yet support as a bounded consequence
+- `WARN_TRUNK_BRANCH_COLLAPSE`: downstream consequence has become more prominent than the broader-implication trunk that should support it
+- `WARN_BOLT_ON_IMPLICATION`: a broader implication reads like a newly introduced topic or literature thread rather than a consequence of the paper's own discovery actor
+- `WARN_FRONT_DOOR_PRELOAD_MISSING`: the second-layer discovery appears in Discussion or late Results only, without an Abstract-tail or Introduction-ending preload
+- `WARN_TWO_TAKEAWAY_FAILURE`: the paper supports two takeaways in principle but the broader one is not memorable enough for a skimming editor to retain
+- `WARN_OPTIONAL_LEAF_OVERWEIGHT`: a weaker optional consequence is competing with the trunk or branch instead of remaining visibly subordinate
+- `WARN_LEAF_SHOULD_DROP`: a leaf consequence is not worth the added literature thread or reader burden and should be removed
+- `WARN_NO_BOLT_ON_TEST_MISSING`: the round claims broader significance landed but never checks whether the branch collapses when the trunk is removed
 - `WARN_BREATHING_COLLAPSE`: repeated dense explanation leaves no reset sentence or memorable take-home shift
 - `WARN_ARCHITECTURE_SCOPE_MISROUTED`: the round changes section order, section bridges, discovery-versus-tool weight, or jointly reframes title/abstract/introduction/discussion but is still routed as `local-salience`
 - `WARN_NOUN_STACK`: the sentence asks the reader to decode a dense technical noun chain before seeing the scientific action
@@ -61,7 +72,7 @@ Red-team review is mandatory for:
 - `WARN_FORMAL_REGISTER`: the wording is formally correct but unnatural for broad scientific prose
 - `WARN_STATIC_VERB_DRAG`: low-energy holding verbs flatten a stronger scientific action that the evidence already supports
 
-When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_PROTAGONIST_DRIFT`, `WARN_MISSING_PIVOT`, `WARN_TOOL_OVERWEIGHT`, `WARN_WORLDVIEW_RECAP`, `WARN_SECTION_JOB_DRIFT`, `WARN_DISCOVERY_CASHOUT_BURIED`, `WARN_BREATHING_COLLAPSE`, `WARN_ARCHITECTURE_SCOPE_MISROUTED`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
+When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_PROTAGONIST_DRIFT`, `WARN_MISSING_PIVOT`, `WARN_TOOL_OVERWEIGHT`, `WARN_WORLDVIEW_RECAP`, `WARN_SECTION_JOB_DRIFT`, `WARN_DISCOVERY_CASHOUT_BURIED`, `WARN_SECOND_LAYER_DISCOVERY_MISSING`, `WARN_SECOND_LAYER_NOT_EARNED`, `WARN_BRANCH_NOT_EARNED`, `WARN_TRUNK_BRANCH_COLLAPSE`, `WARN_BOLT_ON_IMPLICATION`, `WARN_FRONT_DOOR_PRELOAD_MISSING`, `WARN_TWO_TAKEAWAY_FAILURE`, `WARN_OPTIONAL_LEAF_OVERWEIGHT`, `WARN_LEAF_SHOULD_DROP`, `WARN_NO_BOLT_ON_TEST_MISSING`, `WARN_BREATHING_COLLAPSE`, `WARN_ARCHITECTURE_SCOPE_MISROUTED`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
 
 ## Closeout integrity checks
 
@@ -76,7 +87,9 @@ Before a round is reported as complete, confirm all of the following:
 - a `high-risk` round does not omit verifier ownership
 - any round that changes section order, section bridges, discovery-versus-tool weight, or title/abstract/introduction/discussion together is not still classified as `local-salience`
 - any `cross-section` or `whole-manuscript` round that claims architecture landed includes an `Architecture evidence map`
-- whole-paper architecture remains open when reviewer findings still flag protagonist drift, missing pivot, tool overweight, buried discovery cash-out, or breathing collapse
+- whole-paper architecture remains open when reviewer findings still flag protagonist drift, missing pivot, tool overweight, buried discovery cash-out, missing second-layer discovery, trunk/branch collapse, bolt-on implication, or breathing collapse
+- whole-paper broader-significance promotion remains open when review still flags unearned trunk promotion, unearned branch promotion, or a leaf that should be dropped
+- governance simplification remains open when review still flags duplicated schema surfaces, checker semantic overreach, or a missing statement of what now remains canonical
 
 Escalate with `ESCALATE_HUMAN` when any of the following persist after one rewrite attempt:
 

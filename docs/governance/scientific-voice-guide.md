@@ -3,6 +3,7 @@
 Use this guide as the canonical positive-style reference for paper-facing explanation in this branch.
 
 It exists to keep paper voice distinct from review, governance, and closeout voice, and to make the paper's supported discovery legible without overclaiming.
+It is not a second schema for `governance_round.yaml`; machine-readable field mechanics belong only in `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`.
 
 Use these surface definitions across the active branch:
 

@@ -58,7 +58,7 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 1. human gives a goal
 2. the top-level supervisor routes through `agent-orchestrator` and decides whether to execute directly or delegate
 3. for paper-facing work, the top-level supervisor first classifies `Architecture scope` as `local-salience`, `cross-section`, or `whole-manuscript`
-4. `cross-section` and `whole-manuscript` rounds must carry the full drafting-time bundle in the packet: `Old-world belief`, `New-world belief`, `Paper protagonist`, `Supporting actors`, `Paper spine map`, `Results section jobs`, `Pivot section`, `Pivot sentence`, `Discovery cash-out section`, `Tool role`, `Reference-object role`, `Discovery-vs-tool weight budget`, `Second-layer discovery`, `Broader-implication trunk`, `Downstream-consequence branch`, `Optional leaf consequence`, `Redundancy / breathing risks`, and `Worldview-shift sentence`
+4. `cross-section` and `whole-manuscript` rounds must carry the drafting-time architecture bundle required by `TASK_PACKETS.md`, `manuscript-contract.md`, and `scientific-voice-guide.md`
 5. when a `cross-section` or `whole-manuscript` round claims architecture landed, the closeout must carry an `Architecture evidence map`
 6. when delegating, the top-level supervisor chooses the child role, specialist skill, and unified task packet
 7. the round records `Relevant conversation context`, `Context mode`, risk level, and ownership boundaries
@@ -74,6 +74,4 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 17. the human approves or redirects at milestone boundaries
 
 For broader-significance manuscript rounds, treat `second-layer discovery` as the mandatory bridge between core discovery and any downstream application. Applications that do not descend from that bridge are out of scope for Nature-facing hardening in this branch.
-The same rounds should also name the `Front-door preload sentence`, apply the `No-bolt-on test`, and verify a `Two-takeaway editor readout` so the broader consequence is preloaded, not merely added in Discussion.
-The same rounds must now also classify the broader-significance promotion level as `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`, record why that level is earned, and name the demotion trigger that would force it lower.
-For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, the round must also create `results/<round_name>/governance_round.yaml` and pass `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout may report that broader significance landed.
+Use `ROUND_GOVERNANCE_SCHEMA.md` as the only canonical machine-readable field inventory for `high-risk` broader-significance rounds, and require `results/<round_name>/governance_round.yaml` plus a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout may report that broader significance landed.

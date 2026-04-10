@@ -196,23 +196,19 @@ Reviewer outputs should name:
 - the sentence-friction type when applicable: `noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, or `static-verb`
 - the architecture verdicts when applicable: `paper protagonist`, `pivot`, `tool-vs-discovery weight`, and `worldview shift`
 - the whole-paper architecture verdicts when applicable: `Results section jobs`, `discovery cash-out`, `second-layer discovery`, `broader-implication trunk`, and `redundancy / breathing risks`
-- the broader-significance verdicts when applicable: `Reviewed status`, `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed`
+- the broader-significance verdicts when applicable: `Reviewed status`, `Status change note`, `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed`
 - a short `status_change_note` whenever review demotes the packet below its proposed status
 - whether those broader-significance verdicts are recorded coherently enough to populate `results/<round_name>/governance_round.yaml` without free-text interpretation drift
 - any required rewrite, evidence, or routing follow-up
 
 ## Promotion and demotion verdicts
 
-When broader significance is in scope, reviewers should report these explicit verdicts:
+When broader significance is in scope, treat `Reviewed status` as the only machine-relevant level decision: `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`.
 
-- `Reviewed status`: `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`
-- `Status change note`: `none` when review keeps the packet status, otherwise one short explanation of why review demoted it
-- `Front-door preload sentence landed`: `yes`, `no`, or `not required`
-- `Downstream consequence bounded`: `yes`, `no`, or `not required`
-- `No-bolt-on test passed`: `yes`, `no`, or `not required`
-
-Use these verdicts to force a level decision rather than leaving broader significance at vague “improved but risky” language.
-For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, these verdicts must be mirrored into `results/<round_name>/governance_round.yaml` so closeout can be gated semantically rather than by memo prose alone.
+- use `Status change note` only when review demotes the packet below its proposed status
+- keep `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed` as reviewer judgments, not as a second status ladder
+- for any `high-risk` round with broader significance or cross-disciplinary consequence in scope, mirror only `Reviewed status` and any required `Status change note` into `results/<round_name>/governance_round.yaml`
+- keep the remaining reviewer judgments in review prose or closeout prose; they are not canonical YAML fields
 
 ## Mandatory reviewer subsets for architecture-sensitive prose rounds
 

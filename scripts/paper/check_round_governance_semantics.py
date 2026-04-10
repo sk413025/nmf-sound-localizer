@@ -27,7 +27,6 @@ ARCHITECTURE_SCOPES = {
 
 ROLE_MODES = {"separated", "compressed"}
 YES_NO = {"yes", "no"}
-YES_NO_NOT_REQUIRED = {"yes", "no", "not required"}
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -168,9 +167,6 @@ def _validate_review_verdict(review: dict[str, Any], errors: list[str]) -> None:
     if "status_change_note" not in review:
         errors.append(f"{context}.status_change_note must be present")
 
-    for key in ["front_door_landed", "consequence_bounded", "no_bolt_on_passed"]:
-        _expect_enum(errors, review, key, YES_NO_NOT_REQUIRED, context)
-
 
 def _validate_verification(verifier: dict[str, Any], errors: list[str]) -> None:
     context = "verification_verdict"
@@ -186,8 +182,6 @@ def _validate_closeout(closeout: dict[str, Any], errors: list[str]) -> None:
     _expect_enum(errors, closeout, "final_status", STATUSES, context)
     if "status_change_note" not in closeout:
         errors.append(f"{context}.status_change_note must be present")
-    for key in ["second_layer_explicit", "branch_retained", "leaf_retained"]:
-        _expect_enum(errors, closeout, key, YES_NO, context)
     if "remaining_gap_disclosed" not in closeout:
         errors.append(f"{context}.remaining_gap_disclosed must be present")
 
@@ -258,50 +252,6 @@ def _validate_cross_field_consistency(data: dict[str, Any], errors: list[str]) -
         errors.append("verification_verdict.independent_verification_complete must be 'yes'")
     if _normalized_value(verifier["closeout_ready"]) != "yes":
         errors.append("verification_verdict.closeout_ready must be 'yes'")
-
-    if final == "core-only":
-        if _normalized_value(closeout["second_layer_explicit"]) != "no":
-            errors.append("closeout.second_layer_explicit must be 'no' for core-only")
-        if _normalized_value(closeout["branch_retained"]) != "no":
-            errors.append("closeout.branch_retained must be 'no' for core-only")
-        if _normalized_value(closeout["leaf_retained"]) != "no":
-            errors.append("closeout.leaf_retained must be 'no' for core-only")
-    elif final == "second-layer earned":
-        if _normalized_value(closeout["second_layer_explicit"]) != "yes":
-            errors.append("closeout.second_layer_explicit must be 'yes' above core-only")
-        if _normalized_value(closeout["branch_retained"]) != "no":
-            errors.append("closeout.branch_retained must be 'no' for second-layer earned")
-        if _normalized_value(closeout["leaf_retained"]) != "no":
-            errors.append("closeout.leaf_retained must be 'no' for second-layer earned")
-    elif final == "branch earned":
-        if _normalized_value(closeout["second_layer_explicit"]) != "yes":
-            errors.append("closeout.second_layer_explicit must be 'yes' above core-only")
-        if _normalized_value(closeout["branch_retained"]) != "yes":
-            errors.append("closeout.branch_retained must be 'yes' for branch earned")
-        if _normalized_value(closeout["leaf_retained"]) != "no":
-            errors.append("closeout.leaf_retained must be 'no' for branch earned")
-    else:
-        if _normalized_value(closeout["second_layer_explicit"]) != "yes":
-            errors.append("closeout.second_layer_explicit must be 'yes' above core-only")
-        if _normalized_value(closeout["branch_retained"]) != "yes":
-            errors.append("closeout.branch_retained must be 'yes' for leaf allowed")
-        if _normalized_value(closeout["leaf_retained"]) != "yes":
-            errors.append("closeout.leaf_retained must be 'yes' for leaf allowed")
-
-    review_front_door = _normalized_value(review["front_door_landed"])
-    review_consequence = _normalized_value(review["consequence_bounded"])
-    review_no_bolt = _normalized_value(review["no_bolt_on_passed"])
-    if reviewed == "core-only":
-        expected = ("not required", "not required", "not required")
-    elif reviewed == "second-layer earned":
-        expected = ("yes", "not required", "not required")
-    else:
-        expected = ("yes", "yes", "yes")
-    actual = (review_front_door, review_consequence, review_no_bolt)
-    labels = ("front_door_landed", "consequence_bounded", "no_bolt_on_passed")
-    for label, got, want in zip(labels, actual, expected):
-        if got != want:
-            errors.append(f"review_verdict.{label} must be {want!r} for reviewed_status {reviewed!r}")
 
 
 def validate_round(round_dir: Path) -> list[str]:

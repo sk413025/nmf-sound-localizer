@@ -43,6 +43,8 @@ When instructions conflict, follow this order:
 - Keep fail-fast behavior. Do not add silent fallbacks, coercions, or best-effort recovery to experiment-critical paths.
 - Keep all project-tracked content in English.
 - Prefer simplification. Remove redundant files, skills, and documents before adding new process.
+- Do not create a second governance vocabulary when one canonical artifact or schema already exists.
+- Treat governance complexity as a branch-level failure mode. New fields, verdicts, or artifacts must justify why existing primitives are insufficient and what duplication will be removed in exchange.
 
 ## Canonical Entry Points
 
@@ -134,6 +136,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
 - If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.
 - High-risk rounds that can change manuscript claims, governance posture, or acceptance status must separate implementer, reviewer, and verifier roles. One role may be omitted only when the parent records why the round is not high risk.
+- Governance-changing rounds must name their complexity risk, why existing primitives were insufficient, what duplicated surface was removed, and what remains canonical after the round.
 - Parent closeout must distinguish exact text evidence from high-level interpretation. Quote or point to the exact changed language for text claims, summarize interpretation separately, and do not substitute line references or paraphrase for the underlying text evidence.
 - Parent closeout must include an independent verification step for claimed completion. Verification cannot rely only on the implementer's summary or the reviewer's pass.
 

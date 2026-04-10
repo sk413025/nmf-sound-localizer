@@ -32,6 +32,20 @@ Define `codex-native` from real primitives in this branch:
 
 Do not propose an orchestration layer that duplicates these primitives without a concrete gap.
 
+## Complexity discipline
+
+Treat governance complexity as an explicit supervision risk.
+
+Before adding a new field, verdict, artifact, or workflow branch, ask:
+
+- Is this new field only a projection of an existing status?
+- Is this checker work, or is it really reviewer judgment?
+- Is this rule already defined by a canonical schema or contract elsewhere?
+- What duplicated surface will be removed if this new one lands?
+- If one document disappeared, would the system still have a clear canonical source of truth?
+
+If those questions do not produce a strong answer, prefer simplification or reuse over expansion.
+
 ## Execution-or-delegation rule
 
 The top-level agent is the default coordinator for routed work. It may execute directly or delegate to child specialists after an explicit routing decision.
@@ -71,25 +85,33 @@ This execution-or-delegation rule applies in both Default mode and Plan mode.
    - `cross-section` for a round that changes more than one section, changes section bridges, or redistributes discovery-versus-tool weight
    - `whole-manuscript` for a full-paper restructuring or any round that re-architects the Results spine
 8. for `local-salience` main-manuscript rounds, run the local architecture pass before claim-floor work: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, `reference-object role`, and the target `worldview-shift sentence`
-9. for `cross-section` and `whole-manuscript` rounds, run the full architecture pass before claim-floor work: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `redundancy / breathing risks`, and the target `worldview-shift sentence`
+9. for `cross-section` and `whole-manuscript` rounds, run the full architecture pass before claim-floor work and carry the required drafting-time bundle from `TASK_PACKETS.md`, `manuscript-contract.md`, and `scientific-voice-guide.md` rather than reconstructing a parallel field list
 10. for any paper-facing explanation round, write the supported discovery sentence before writing the caveat or boundary sentence
 11. for local high-salience main-manuscript hardening, write one `editor readout sentence` before drafting the final paragraph so the round has a target for salience
 12. for any paper-facing explanation round, run a sentence-energy pass after claim-floor extraction: identify noun-stack hotspots, missing causal glue, and unnatural formal diction before final drafting
 13. for local high-salience main-manuscript hardening, cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md`
 14. for other paper-facing explanation rounds, cite at least one micro sentence-craft `SV#` exemplar when the round rewrites legends, captions, review-note prose, or analysis summaries that may later flow into the paper
 15. for any `cross-section` or `whole-manuscript` hardening round, require the packet to carry the whole-paper spine map and require closeout to carry the `Architecture evidence map` rather than re-describing architecture in ad hoc prose
-16. if a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still classified as `local-salience`, treat that as a routing failure and reclassify it before drafting
-17. define the packet's `Risk level`, `Architecture scope`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
-18. choose `summary-only` or `summary+fork_context`
-19. if delegating, assign child specialists with explicit outputs and handoff targets
-20. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
-21. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
-22. if delegating, monitor active child agents and inspect status before interrupting, redirecting, or closing them
-23. request review or red-team critique when required
-24. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
-25. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
-26. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
-27. escalate to the human approver only at milestone boundaries
+16. when broader significance is in scope, require the packet and any `high-risk` round artifact to use the canonical surfaces defined in `ROUND_GOVERNANCE_SCHEMA.md` rather than a local copy of the field inventory
+17. if a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still classified as `local-salience`, treat that as a routing failure and reclassify it before drafting
+18. define the packet's `Risk level`, `Architecture scope`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
+19. choose `summary-only` or `summary+fork_context`
+20. if delegating, assign child specialists with explicit outputs and handoff targets
+21. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
+22. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
+23. if delegating, monitor active child agents and inspect status before interrupting, redirecting, or closing them
+24. request review or red-team critique when required
+25. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
+26. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
+27. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
+28. escalate to the human approver only at milestone boundaries
+
+For governance-changing rounds, also record:
+
+- `Complexity risk`
+- `Why existing primitives were insufficient`
+- `What duplicated surface was removed`
+- `What remains canonical after this round`
 
 ## Execution and decomposition threshold
 

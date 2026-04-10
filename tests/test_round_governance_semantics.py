@@ -64,19 +64,6 @@ def _base_round(status: str = "branch earned") -> dict:
             "reviewer_owner": "Reviewer",
             "reviewed_status": status,
             "status_change_note": "none",
-            "front_door_landed": (
-                "not required" if status == "core-only" else "yes"
-            ),
-            "consequence_bounded": (
-                "yes"
-                if status in {"branch earned", "leaf allowed"}
-                else "not required"
-            ),
-            "no_bolt_on_passed": (
-                "yes"
-                if status in {"branch earned", "leaf allowed"}
-                else "not required"
-            ),
         },
         "verification_verdict": {
             "verifier_owner": "Verifier",
@@ -88,9 +75,6 @@ def _base_round(status: str = "branch earned") -> dict:
             "implementer_owner": "Implementer",
             "final_status": status,
             "status_change_note": "none",
-            "second_layer_explicit": "yes" if status != "core-only" else "no",
-            "branch_retained": "yes" if status in {"branch earned", "leaf allowed"} else "no",
-            "leaf_retained": "yes" if status == "leaf allowed" else "no",
             "remaining_gap_disclosed": "none",
         },
     }
@@ -140,10 +124,15 @@ def test_review_demotion_requires_note(tmp_path: Path) -> None:
     payload["review_verdict"]["reviewed_status"] = "branch earned"
     payload["closeout"]["final_status"] = "branch earned"
     payload["verification_verdict"]["verified_status"] = "branch earned"
-    payload["closeout"]["leaf_retained"] = "no"
     result = _run(tmp_path / "review-demotion-no-note", payload)
     assert result.returncode != 0
     assert "review_verdict.status_change_note" in result.stderr
+
+
+def test_removed_reviewer_and_closeout_projection_fields_are_optional(tmp_path: Path) -> None:
+    payload = _base_round("branch earned")
+    result = _run(tmp_path / "minimal-canonical-yaml", payload)
+    assert result.returncode == 0, result.stderr
 
 
 def test_review_demotion_with_note_passes(tmp_path: Path) -> None:
@@ -152,7 +141,6 @@ def test_review_demotion_with_note_passes(tmp_path: Path) -> None:
     payload["review_verdict"]["status_change_note"] = "Drop the optional leaf to preserve trunk memory."
     payload["closeout"]["final_status"] = "branch earned"
     payload["verification_verdict"]["verified_status"] = "branch earned"
-    payload["closeout"]["leaf_retained"] = "no"
     result = _run(tmp_path / "review-demotion-pass", payload)
     assert result.returncode == 0, result.stderr
 
@@ -161,7 +149,6 @@ def test_closeout_demotion_requires_note(tmp_path: Path) -> None:
     payload = _base_round("branch earned")
     payload["closeout"]["final_status"] = "second-layer earned"
     payload["verification_verdict"]["verified_status"] = "second-layer earned"
-    payload["closeout"]["branch_retained"] = "no"
     result = _run(tmp_path / "closeout-demotion-no-note", payload)
     assert result.returncode != 0
     assert "closeout.status_change_note" in result.stderr

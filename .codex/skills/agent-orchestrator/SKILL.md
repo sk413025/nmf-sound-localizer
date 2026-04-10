@@ -64,6 +64,17 @@ When broader significance is in scope, keep these defaults explicit:
 - `reviewer-routing aware`: do not promote wording that only survives with an unusually sympathetic adjacent-field reviewer
 - `anti-slogan`: reject broad application language that cannot be restated as an evidence-earned discovery actor inference
 
+## Complexity self-check
+
+When changing governance, workflow, or high-risk gating, ask before adding anything:
+
+- Is this new field only a projection of an existing status?
+- Is this machine-checkable consistency, or is it actually reviewer judgment?
+- Is this concept already canonical in `ROUND_GOVERNANCE_SCHEMA.md` or another contract?
+- What duplicated surface will be removed if this new one lands?
+
+If those questions do not produce a strong answer, simplify or reuse instead of expanding the system.
+
 ## Workflow
 
 1. Classify the task by manuscript impact and role complexity.
@@ -126,30 +137,7 @@ Parent truth-maintenance checks for high-risk rounds:
 
 Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`:
 
-- `Risk level:`
-- `Plan items owned:`
-- `Plan completion:`
-- `Delivered items:`
-- `Deferred or dropped items:`
-- `Architecture verdict:`
-- `Protagonist preserved:`
-- `Pivot landed:`
-- `Tool role preserved:`
-- `Worldview shift explicit:`
-- `Second-layer discovery explicit:`
-- `Broader-significance status:`
-- `Final status:`
-- `Status change note:`
-- `Front-door preload sentence landed:`
-- `Two-takeaway editor readout landed:`
-- `No-bolt-on test passed:`
-- `Architecture evidence map:`
-- `Unresolved promised joints:`
-- `Scope-downgrade disclosure:`
-- `Delivery evidence:`
-- `Review verdict:`
-- `Verification verdict:`
-- `Parent closeout statement:`
+Use `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md` for the canonical closeout field list rather than recreating it locally.
 
 When `Deferred or dropped items` is non-empty, require an explicit scope downgrade instead of treating the round as fully complete.
 
@@ -180,8 +168,8 @@ Parent acceptance on reviewer-stack use:
 - the acceptance surface is explicit rather than implied
 - paper-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
 - local high-salience manuscript packets explicitly state the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and `discussion worldview-shift sentence`
-- `cross-section` and `whole-manuscript` packets explicitly state `Architecture scope`, the `Paper spine map`, `Results section jobs`, `Discovery cash-out section`, `Discovery-vs-tool weight budget`, `Second-layer discovery`, `Broader-implication trunk`, `Downstream-consequence branch`, `Optional leaf consequence`, `Front-door preload sentence`, `Two-takeaway editor readout`, `No-bolt-on test`, and `Redundancy / breathing risks`
-- broader-significance packets also state `Broader-significance status`, the `Broader-implication trunk`, the nearest bounded branch if any, and the `Front-door preload sentence`, while deferring machine-readable status mechanics to `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`
+- `cross-section` and `whole-manuscript` packets carry the drafting-time architecture bundle required by `TASK_PACKETS.md`, `manuscript-contract.md`, and `scientific-voice-guide.md`
+- broader-significance packets defer machine-readable status mechanics to `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` rather than recreating a second field inventory
 - main-manuscript packets identify the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
 - paper-facing explanation packets outside the main manuscript identify at least one closest micro sentence-craft `SV#` exemplar when the round touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper
 - review findings are consolidated at the parent layer instead of left as disconnected comments

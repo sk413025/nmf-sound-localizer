@@ -40,6 +40,7 @@ This contract governs the main-manuscript subset of the broader `paper-facing ex
 - If the broader-significance status is below `branch earned`, downstream application sentences must be removed or rewritten as frontier language outside the paper spine.
 - If an optional leaf cannot survive demotion pressure without stealing memorability from the trunk, it must be dropped rather than preserved as decoration.
 - For any `high-risk` manuscript round with broader significance or cross-disciplinary consequence in scope, the round must create `results/<round_name>/governance_round.yaml` and pass `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout may report that the broader significance landed.
+- For those rounds, `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` is the only canonical machine-readable field inventory. Do not recreate a second schema inside manuscript-facing contracts, packets, or closeout prose.
 - Any whole-manuscript or cross-section hardening round must write a `Paper spine map` before drafting. That map must include the Results section jobs, pivot sentence, discovery cash-out section, tool role, reference-object role, and a discovery-versus-tool weight budget.
 - Reference objects, calibration schemes, and solvers must be framed as supporting actors unless the paper's actual contribution is those objects or methods.
 - The manuscript must not be narrated in experiment-production order when a different order is needed to deliver the paper's cognitive shift.

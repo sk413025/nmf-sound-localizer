@@ -61,3 +61,4 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`
   - create `results/<round_name>/governance_round.yaml`
   - treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as blocking
+  - treat the schema doc as the only machine-readable field inventory; other contracts should reference it rather than recreate it
