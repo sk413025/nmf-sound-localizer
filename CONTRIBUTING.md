@@ -14,7 +14,7 @@ This branch is governed as a manuscript-first research worktree. Contributions s
 
 - Manuscript edits:
   - Follow `docs/governance/manuscript-contract.md`
-  - Use `docs/governance/scientific-voice-guide.md` as the canonical positive-style reference for high-salience prose
+  - Use `docs/governance/scientific-voice-guide.md` as the canonical positive-style reference for high-salience prose, narrative architecture, and sentence-level craft
 - Submission or figure compliance work:
   - Follow `docs/governance/submission-contract.md`
 - Experiments, validations, and results commits:

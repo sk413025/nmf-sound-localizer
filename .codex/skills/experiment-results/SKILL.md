@@ -47,14 +47,21 @@ If the task is about "what matters most", "which factors can we compute now", "c
    - rejected or weak candidates
    - current best candidate mechanism or equation form
    - missing evidence or validation still needed
-8. If the output will be promoted into paper-facing explanation such as manuscript, legend, rebuttal, or figure-support prose, run a sentence-energy pass:
+8. If the output will be promoted into paper-facing explanation such as manuscript, legend, rebuttal, or figure-support prose, also identify the paper-facing narrative role:
+   - what old-world belief this result helps replace
+   - what protagonist it is supporting
+   - whether it is evidence for the pivot, the governing principle, the broader implication, or the discovery cash-out
+   - which `Results section job` this result is supporting when it is being promoted into manuscript architecture
+   - how the result stays subordinate to discovery rather than becoming a tool-centered detour
+   - whether using this result risks repeated explanation or tool overweight instead of advancing the paper spine
+9. If the output will be promoted into paper-facing explanation such as manuscript, legend, rebuttal, or figure-support prose, run a sentence-energy pass:
    - name the result
    - state the consequence
    - keep one main causal move per sentence
    - replace compressed formal diction with natural scientific English where precision is unchanged
-9. When you create a new analysis, write it as a reproducible run bundle under `results/<run_name>/` with script, command, and machine-readable outputs.
-10. Write analysis in the language required by the experiment contract.
-11. Escalate if the requested claim outruns the available evidence.
+10. When you create a new analysis, write it as a reproducible run bundle under `results/<run_name>/` with script, command, and machine-readable outputs.
+11. Write analysis in the language required by the experiment contract.
+12. Escalate if the requested claim outruns the available evidence.
 
 ## Reviewer subset and acceptance surface
 
@@ -73,6 +80,8 @@ Acceptance surface for this skill:
 - descriptive findings, candidate mechanism, and unsupported interpretation remain clearly separated
 - comparator fairness and physical plausibility risks are surfaced when they matter
 - paper-facing follow-up is routed onward when the output now requires prose or figure revision rather than more analysis
+- paper-facing follow-up does not silently drift into method-as-protagonist language when the analysis is only supporting evidence for the discovery
+- architecture-sensitive paper-facing follow-up names the supported `Results section job`, whether the result serves the `discovery cash-out`, and whether it risks overweighting tool or repeated explanation
 - paper-facing explanation uses active voice, simple cause-effect phrasing, low noun-stack density, and natural scientific English; do not bury causality in nominalizations or leave important numbers unexplained
 
 Common trigger phrases:

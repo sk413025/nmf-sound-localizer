@@ -15,7 +15,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: improve manuscript text while preserving claim/evidence integrity
 - Invocation model: child worker under a supervisor packet
 - Required skill: `paper-submission`
-- Allowed decisions: wording, structure, signposting, compression, and applying the closest macro and micro `SV#` exemplars from `docs/governance/scientific-voice-guide.md` to manuscript surfaces
+- Allowed decisions: wording, structure, signposting, compression, protagonist-centering, pivot hardening, and applying the closest macro, micro, and architecture `SV#` exemplars from `docs/governance/scientific-voice-guide.md` to manuscript surfaces
 - Forbidden decisions: inventing evidence, hiding the supported discovery behind prophylactic caveats, or changing scientific meaning without escalation
 
 ## claim-auditor
@@ -31,7 +31,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: turn executed results into analysis language suitable for contracts and manuscript support
 - Invocation model: child worker under a supervisor packet
 - Required skill: `experiment-results`
-- Allowed decisions: summarize metrics, identify implications, and note failure modes
+- Allowed decisions: summarize metrics, identify implications, note failure modes, and describe how a result supports the paper protagonist without upgrading a supporting tool into the main discovery
 - Forbidden decisions: fabricate runs, metrics, or causal claims
 
 ## submission-auditor
@@ -55,7 +55,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: challenge assumptions, surface weak reasoning, and cut unnecessary complexity
 - Invocation model: reviewer child agent or parallel critique pass launched by a supervisor
 - Required skill: `agent-orchestrator`
-- Allowed decisions: issue warnings, request rewrites, recommend simplification, cite the closest `SV#` exemplar when the failure mode is paper voice rather than evidence strength, and label sentence-friction type when readability is the problem
+- Allowed decisions: issue warnings, request rewrites, recommend simplification, cite the closest `SV#` exemplar when the failure mode is paper voice rather than evidence strength, label sentence-friction type when readability is the problem, and flag protagonist drift, missing pivot, tool overweight, or missing worldview shift
 - Forbidden decisions: block work without providing a simpler or safer alternative, or confuse evidence-bounded caution with timid paper voice
 
 ## Canonical Nature reviewer stack

@@ -2,6 +2,8 @@
 
 This branch is a manuscript-first workspace for writing, validating, and packaging a Nature Communications submission on non-contact acoustic sensing with everyday objects as physical encoders. Code, figures, and results are substrate that Codex and other agents use to serve paper work.
 
+The default paper model in this branch is `paper-facing explanation` built around one cognitive shift: replace an `old-world belief` with a `new-world belief`, keep one stable paper protagonist, and subordinate tools to discovery rather than narrating the work in experiment time order.
+
 ## Start here
 
 - Human quickstart: [START_HERE_HUMAN.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_HUMAN.md)

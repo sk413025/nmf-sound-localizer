@@ -47,19 +47,26 @@ If the task is about converting results into stronger manuscript logic, cross-di
    - what is a current best mechanism or candidate explanation
    - what remains a frontier or open question
 7. For each revised paragraph, explicitly identify the `claim floor`, `claim ceiling`, and `evidence boundary` before drafting the final prose.
-8. Lead with the supported claim floor. Add the evidence boundary after the reader has already learned what the evidence does support.
-9. For high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
-10. For high-salience rewrites, name the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use them as positive rewrite targets, not just as warning labels.
-11. After claim-floor extraction, do a sentence-skeleton pass. For each key sentence, identify the subject, strongest available verb, and explicit consequence.
-12. Then do a sentence-energy pass. Split sentences with more than one main causal move unless scientific precision requires them to stay together.
-13. Translate important numerical changes into meaning. If a sentence gives a rise, drop, or contrast, state what that change means for the scientific point.
-14. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
-15. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, direct cause-effect phrasing, and low noun-stack friction over dense nominalization, front-loaded noun stacks, or manuscript-management language.
-16. Run a lab-meeting English test on paper-facing explanation. If a strong PhD student would not naturally say the sentence aloud, rewrite it in more natural scientific English and then restore only the technical precision that matters.
-17. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
-18. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
-19. Keep Results interpretive and Methods procedural.
-20. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
+8. Classify `Architecture scope` before local drafting:
+   - `local-salience` for a local high-salience rewrite with no section reweighting
+   - `cross-section` for a round that changes more than one section, section bridges, or discovery-versus-tool weight
+   - `whole-manuscript` for a full-paper restructuring or any rewrite that re-architects the Results spine
+9. For `local-salience` main-manuscript work, run the local architecture pass before drafting. Identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, `reference-object role`, and target `worldview-shift sentence`.
+10. For `cross-section` or `whole-manuscript` work, run the full architecture pass before drafting. Identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `redundancy / breathing risks`, and target `worldview-shift sentence`.
+11. Lead with the supported claim floor. Add the evidence boundary after the reader has already learned what the evidence does support.
+12. For local high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
+13. For local high-salience rewrites, name the closest macro `SV#` exemplar, the closest micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use them as positive rewrite targets, not just as warning labels.
+14. After claim-floor extraction, do a sentence-skeleton pass. For each key sentence, identify the subject, strongest available verb, and explicit consequence.
+15. Then do a sentence-energy pass. Split sentences with more than one main causal move unless scientific precision requires them to stay together.
+16. Translate important numerical changes into meaning. If a sentence gives a rise, drop, or contrast, state what that change means for the scientific point.
+17. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
+18. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, direct cause-effect phrasing, and low noun-stack friction over dense nominalization, front-loaded noun stacks, or manuscript-management language.
+19. Run a lab-meeting English test on paper-facing explanation. If a strong PhD student would not naturally say the sentence aloud, rewrite it in more natural scientific English and then restore only the technical precision that matters.
+20. Check terminology, comparator labels, mechanism language, and protagonist stability against the surrounding sections before finalizing.
+21. Perform a coherence pass on transitions, paragraph openings, paragraph endings, and section jobs so the edited text reads as one manuscript rather than a local patch.
+22. If `Architecture scope` is `cross-section` or `whole-manuscript`, verify that section order, discovery cash-out, and tool-versus-discovery weight are carried consistently across the in-scope surfaces before closeout.
+23. Keep Results interpretive and Methods procedural.
+24. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
 
 ## Required output bundle
 
@@ -67,12 +74,15 @@ When this skill proposes or performs a paper-facing explanation revision, the ou
 
 Include:
 
+- `Architecture scope:` set to `local-salience`, `cross-section`, or `whole-manuscript`
+- `Architecture ledger:` naming the `old-world belief`, `new-world belief`, `paper protagonist`, and any additional architecture fields required by the chosen `Architecture scope`
 - `Exact revised text:` with the exact replacement prose, not a summary
 - `Before anchor:` and `After anchor:` quoting the neighboring manuscript text that brackets the change
 - `Editor readout sentence:` stating the one-sentence discovery a skimming editor should retain from the revised surface
 - `Applied exemplar(s):` naming the `SV#` pair or pairs that guided the rewrite on high-salience surfaces
 - `Sentence craft fixes:` naming any noun-stack, causal-glue, diction, or static-verb fixes applied on the in-scope surface
 - `Unresolved promised joints:` listing any requested transition, claim linkage, or downstream manuscript connection that remains unfinished
+- `Architecture evidence map:` for any `cross-section` or `whole-manuscript` round, tying title, abstract opening, intro ending, pivot sentence, discovery cash-out sentence, and Discussion opening to the intended spine
 - `Verifier mode:` stating how the verifier should check the change; use `text-diff` when the task is local prose replacement and name any stronger mode when figure, evidence, or claim support must also be re-checked
 
 If no manuscript text was changed, state that explicitly in `Delivered items:` or `Deferred or dropped items:` instead of implying completion through plan language alone.
@@ -90,6 +100,8 @@ Default to the minimal reviewer subset that matches the manuscript change:
 Acceptance surface for this skill:
 
 - the revised text remains legible to cross-disciplinary readers
+- the revised text preserves one stable paper protagonist and keeps tools in a supporting role unless the packet explicitly declares a method paper
+- the revised text supports a clear paper pivot and does not read like an experiment log
 - the revised text uses scientific inference rather than rebuttal, guidebook, curator, or manuscript-management phrasing
 - the revised text uses active voice and simple cause-effect sentence structure where scientifically appropriate, without translation-like noun stacking
 - the revised text passes a sentence-energy check: main sentences have clear subjects, direct verbs, explicit consequence, and natural enough diction for one-pass reading
@@ -120,6 +132,9 @@ Common trigger phrases:
 - "make this read naturally"
 - "the logic feels jumpy"
 - "improve the flow between these paragraphs"
+- "this reads like a technical report"
+- "the paper still has no pivot"
+- "the method feels like the main character"
 
 Additional self-diminishing trigger phrases:
 
@@ -136,6 +151,8 @@ Additional self-diminishing trigger phrases:
 - Do not treat a generated figure as understood until the visual asset, code path, and evidence path agree.
 - Do not turn a candidate mechanism, factor audit, or descriptive trend into a settled law just because the prose sounds cleaner.
 - Do not optimize one paragraph in isolation if it breaks the surrounding logic.
+- Do not preserve a solver-, calibration-, or reference-object-centered framing when the discovery should be the protagonist.
+- Do not let tool validation consume more narrative mass than the paper-level finding it supports.
 - Do not leave terminology drift, comparator drift, or abrupt transitions after a local rewrite.
 - Do not assume a Nature Communications reader shares the subfield's shorthand or unstated background.
 - Do not preserve nominalization-heavy or front-loaded noun-stack phrasing just because the terminology itself is correct.

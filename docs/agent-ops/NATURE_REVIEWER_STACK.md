@@ -53,9 +53,14 @@ Evaluation goal:
 
 - Judge whether the manuscript reads like a Nature Communications paper rather than a narrow lab note or method-only report.
 - Check whether the claimed advance is legible at the paper level before technical details are unpacked.
+- Check whether the paper breaks a recognizable old-world belief and leaves the reader with a clear new-world belief.
+- Check whether the paper protagonist is the discovery or phenomenon rather than the reference object, calibration routine, or solver.
+- Check whether a skimming editor can locate the paper pivot without reconstructing the story from later sections.
+- Check whether a skimming editor can tell which section cashes out the paper-level discovery and which sections only support it.
 - Check whether the manuscript states its claim floor clearly enough for an editor to register the advance on a first pass, rather than burying it under qualifiers, pathways, or defensive framing.
 - Test whether the title, abstract, Results framing, and Discussion together justify editorial interest and scope.
 - Flag cases where the manuscript feels technically busy but editorially under-motivated.
+- Flag cases where tool-validation sections occupy more editorial weight than the discovery they are meant to support.
 - Flag rebuttal-style, guidebook-style, or manuscript-positioning prose that explains the paper instead of advancing the scientific inference.
 
 ### reviewer-routing reviewer
@@ -79,6 +84,7 @@ Evaluation goal:
 - Flag paragraphs that are technically correct but too compressed to be legible across disciplines.
 - Own sentence-level naturalness for paper-facing explanation. Flag wording that is formally correct but not how a strong scientific speaker would naturally explain the result aloud.
 - Flag quantitative sentences that report changes or contrasts without translating them into consequence.
+- Check whether the reader understands why the paper changes the interpretation of the system, not only what procedures or comparisons were carried out.
 
 ### physical-mechanism reviewer
 
@@ -132,9 +138,14 @@ Evaluation goal:
 - Check whether the manuscript moves through problem, method, evidence, and implication in a sequence that feels inevitable rather than patched together.
 - Verify that transitions between sections and figures preserve story logic and do not force the reader to reconstruct missing links.
 - Check that each major section opens with either the next scientific question or the supported answer to that question, not with procedural recap or defensive boundary-setting.
+- Check that section jobs form one cognitive-shift spine rather than an experiment log.
+- Identify the paper pivot and test whether the surrounding sections build toward it and cash it out afterward.
+- Identify where tool sections can be merged or compressed because they answer one bounded scientific question rather than independent discovery jobs.
+- Check that the protagonist stays stable across sections instead of drifting among phenomenon, method, and reference object.
 - Identify places where the paper's logic is buried inside abstract noun chains rather than explicit actions, results, and consequences.
 - Identify abrupt scope changes, repeated explanations, and local rewrites that create whole-manuscript drift.
 - Flag defensive `X rather than Y` framing, panel-choreography prose, and manuscript-positioning sentences that explain paper structure more than scientific consequence.
+- Flag tool sections that have become ends in themselves rather than supports for the discovery.
 - Flag places where section order or paragraph function needs revision to keep the paper natural and persuasive.
 
 ### cognitive-load reviewer
@@ -148,6 +159,8 @@ Evaluation goal:
 - Flag hedge density that forces the reader to decode caveats before understanding the supported claim floor.
 - Verify that each section and figure earns its complexity and that important takeaways are easy to retain.
 - Flag compression patterns that may be efficient for insiders but exhausting for reviewers or editors.
+- Flag manuscripts whose information density is uniformly high enough that no pivot or take-home shift becomes memorable.
+- Flag repeated explanations that do not upgrade understanding and therefore consume narrative mass without advancing the paper spine.
 
 ## Routing guidance
 
@@ -168,9 +181,11 @@ Reviewer outputs should name:
 - the best one-sentence editor readout if the current wording were fixed
 - the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` when the issue is primarily a manuscript-voice or salience failure
 - the sentence-friction type when applicable: `noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, or `static-verb`
+- the architecture verdicts when applicable: `paper protagonist`, `pivot`, `tool-vs-discovery weight`, and `worldview shift`
+- the whole-paper architecture verdicts when applicable: `Results section jobs`, `discovery cash-out`, and `redundancy / breathing risks`
 - any required rewrite, evidence, or routing follow-up
 
-## Mandatory reviewer subsets for high-salience prose rounds
+## Mandatory reviewer subsets for architecture-sensitive prose rounds
 
 For any paper-facing explanation round that may land in manuscript, supplementary, legends, captions, review-note prose, or analysis summaries, the parent must include:
 
@@ -186,3 +201,17 @@ For any round that changes the title, abstract, Results subsection openings, sec
 Add `statistics-evidence reviewer` when wording changes could alter evidence strength or scope, and add `reviewer-routing reviewer` when the new framing may change likely reviewer community routing.
 
 If multiple reviewer roles are used, the supervisor should consolidate them into one paper-facing decision rather than leaving them as disconnected comments.
+
+For any round with `Architecture scope: cross-section` or `Architecture scope: whole-manuscript`, the parent must include:
+
+- `handling-editor-scope reviewer`
+- `cross-disciplinary-readability reviewer`
+- `narrative-flow reviewer`
+- `cognitive-load reviewer`
+
+Add `statistics-evidence reviewer` when the restructuring changes the apparent strength or scope of the supporting evidence.
+
+Reviewer qualification gate for architecture:
+
+- Treat a reviewer output as under-scoped when it only comments on sentence polish or local clarity but does not judge protagonist, pivot, or tool-vs-discovery weight on a high-salience manuscript round.
+- Treat a reviewer output as under-scoped on a whole-manuscript or cross-section round when it does not judge section jobs, discovery cash-out location, or merge-versus-compress needs for overweight tool sections.

@@ -19,6 +19,8 @@ Use this contract when reporting task completion, review status, acceptance stat
 - When claiming that language was changed, fixed, removed, added, or aligned, cite the exact text or exact diff evidence rather than only line numbers, file summaries, or paraphrase.
 - Line references may support navigation, but they do not replace the underlying text evidence.
 - High-level interpretation must be labeled as interpretation and must not be presented as if it were the exact manuscript or governance text.
+- When a high-risk prose or governance round claims architectural improvement, the closeout must say whether the intended protagonist, pivot, tool role, and worldview shift actually landed.
+- When a whole-manuscript or cross-section hardening round claims architectural improvement, the closeout must include an `Architecture evidence map` tying title, abstract opening, intro ending, pivot sentence, discovery cash-out sentence, and Discussion opening to the intended spine.
 - Classify each closeout-sensitive round as high risk or not high risk before assigning reviewer and verifier ownership.
 - For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, separate implementer, reviewer, and verifier roles.
 - In a high-risk round, a reviewer pass is advisory to acceptance until an independent verifier confirms that the implemented state matches the claimed closeout.
@@ -39,6 +41,8 @@ Use this contract when reporting task completion, review status, acceptance stat
 - closeout does not hide scope reduction behind summary language
 - exact text evidence is available for text-facing claims
 - high-level interpretation is clearly distinguished from exact text evidence
+- architecture-sensitive rounds do not imply protagonist, pivot, or worldview-shift success without naming those verdicts explicitly
+- architecture-sensitive rounds do not imply whole-paper landing without an `Architecture evidence map`
 - closeout-sensitive rounds are explicitly classified as high risk or not high risk
 - high-risk rounds separate implementer, reviewer, and verifier unless an explicit non-high-risk rationale is recorded
 - final completion claims are backed by independent verification rather than a single actor's summary

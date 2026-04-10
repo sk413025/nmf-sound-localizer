@@ -29,7 +29,18 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 
 ## Scientific voice default
 
+- Before drafting or reviewing paper-facing prose, classify `Architecture scope`:
+  - `local-salience` for a local high-salience rewrite with no section reweighting
+  - `cross-section` for a round that changes more than one section, section bridges, or discovery-versus-tool weight
+  - `whole-manuscript` for a full-paper restructuring or any rewrite that re-architects the Results spine
 - Write paper-facing explanation to make the paper's actual discovery legible to an editor on first read.
+- Before drafting, identify the paper's `old-world belief`, `new-world belief`, and one stable `paper protagonist`.
+- Default the protagonist to the phenomenon or organizing principle, not to the solver, calibration procedure, or reference object.
+- Identify the paper pivot before revising Results flow. If no section clearly updates the reader's model of the system, the story is still under-architected.
+- For any `cross-section` or `whole-manuscript` rewrite, write a `Paper spine map` before editing. Include the Results section jobs, the pivot sentence, the discovery cash-out section, and the discovery-versus-tool weight budget.
+- Keep tool sections subordinate to discovery. A solver or assay may reveal the phenomenon, but it should not occupy more narrative weight than the paper-level finding.
+- Do not narrate the paper in experiment time order. Default to `old intuition -> surprising observation -> governing principle -> broader implication`.
+- If the Results outline still sounds like `and then we tested`, the spine is still wrong even if each paragraph is locally clear.
 - Lead with the strongest supported claim, then add the evidence boundary.
 - Do not import closeout, verifier, or governance caution language into paper-facing sentences.
 - Avoid the false tradeoff `rigorous = timid`. In this branch, rigor means precise support, not self-erasure.
@@ -41,6 +52,8 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Translate important numbers into meaning. If the sentence gives a rise, drop, or contrast, also state what that change means.
 - Use lab-meeting English for any paper-facing explanation prose, not only the main manuscript. If a strong PhD student would not naturally say the sentence aloud, rewrite it.
 - Before touching high-salience prose or any paper-facing explanation surface, read the canonical examples in `docs/governance/scientific-voice-guide.md` and use the closest `SV#` exemplar as the rewrite target.
+- For title, abstract, Results framing, and Discussion lead, also use the architecture exemplars there to keep protagonist, pivot, and worldview shift explicit.
+- For whole-manuscript architecture work, do not stop at sentence polish. Check where the old-world belief breaks, where the pivot lands, where the discovery cashes out, and whether any tool section has taken more mass than the finding it serves.
 
 ## Agent-first operating model
 

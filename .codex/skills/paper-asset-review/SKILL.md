@@ -64,15 +64,22 @@ Every paper-facing asset review must include these roles:
    - what the visual asset actually shows
    - whether manuscript text, asset, generator, and evidence agree
    - which parts are supported, missing, or overstated
-9. If the output includes paper-facing explanation or review-note prose, run a sentence-energy pass before finalizing:
+9. If the output includes paper-facing explanation or review-note prose, first identify the prose role:
+   - what paper protagonist the asset is serving
+   - whether the asset belongs before, at, or after the paper pivot
+   - which `Results section job` the asset is serving when the figure affects whole-paper sequence
+   - whether the asset strengthens the `discovery cash-out` or dilutes it into a late extension
+   - whether the explanation risks making the figure, reference object, or tool sound like the paper's main character
+   - whether the asset's current role increases tool-weight relative to discovery
+10. If the output includes paper-facing explanation or review-note prose, run a sentence-energy pass before finalizing:
    - reduce noun stacks
    - add causal glue where numbers or contrasts need interpretation
    - normalize diction toward natural scientific English
-10. For formal review tasks, `visual-reviewer` records the completed visual and backtrace checks, then writes `reviews/visual-reviewer.json`.
-11. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
-12. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
-13. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
-14. For any asset revision round, include a concise `visual delta summary` in the round `Delivery evidence` that states what changed in the visible asset and whether the delta closes the targeted review issue.
+11. For formal review tasks, `visual-reviewer` records the completed visual and backtrace checks, then writes `reviews/visual-reviewer.json`.
+12. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
+13. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
+14. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
+15. For any asset revision round, include a concise `visual delta summary` in the round `Delivery evidence` that states what changed in the visible asset and whether the delta closes the targeted review issue.
 
 ## Reviewer subset and acceptance surface
 
@@ -93,6 +100,8 @@ Acceptance surface for this skill:
 - panel logic, labels, and emphasis make the intended comparison readable
 - evidence support and comparator logic match the manuscript claim
 - any split, simplify, revise, or move-to-supplementary recommendation is made explicit
+- review notes and interpretive writeups keep the paper protagonist clear and do not let the figure, panel, or supporting tool become the paper's main character
+- architecture-sensitive figure reviews name the supported `Results section job`, whether the figure belongs before, at, or after the pivot, whether it strengthens the discovery cash-out, and whether it creates tool overweight
 - review notes and interpretive writeups use active voice, simple cause-effect phrasing, low noun-stack density, and natural scientific English when prose is needed
 - when a prose problem is identified, the review can name the closest `SV#` exemplar plus sentence-friction type (`noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, `static-verb`)
 

@@ -33,7 +33,7 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - Every paper-facing figure judgment must begin with visual inspection of the actual asset.
 - `jpg` and `png` assets must be reviewed directly; `pdf` assets must first be converted page-by-page into PNG previews for visual inspection.
 - Generated or data-backed figures are not submission-ready unless the visual asset has been reconciled against both its generator or composition code and its upstream evidence or provenance sources.
-- Paper-facing explanatory prose in legends, captions, availability sections, and submission-facing notes inherits the same sentence-energy standard as the broader paper-facing explanation model: clear subject, strong verb, explicit consequence, low noun-stack friction, and natural scientific English where precision permits.
+- Paper-facing explanatory prose in legends, captions, availability sections, and submission-facing notes inherits the same paper-facing explanation standard as the broader branch model: clear subject, strong verb, explicit consequence, low noun-stack friction, natural scientific English where precision permits, and supporting-actor language that does not let figures or tools replace the paper's discovery as protagonist.
 
 ## Required outputs
 

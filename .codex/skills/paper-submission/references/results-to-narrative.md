@@ -23,6 +23,25 @@ Keep these layers separate:
 3. Frontier or open question
    - what the paper cannot yet claim as established
 
+Architecture layer for full-paper work:
+
+1. Old-world belief
+   - what the reader currently assumes
+2. New-world belief
+   - what the paper wants the reader to understand instead
+3. Paper protagonist
+   - the discovery, organizing principle, or phenomenon the paper is really about
+4. Supporting actors
+   - tools, reference objects, calibration schemes, and assays that reveal or test that protagonist
+5. Pivot
+   - the section or transition where the reader's model of the system actually changes
+6. Results section jobs
+   - what each Results section contributes to the one cognitive shift
+7. Discovery cash-out
+   - where the paper-level discovery becomes unavoidable rather than optional
+8. Discovery-vs-tool weight budget
+   - how much narrative mass the discovery gets versus the tool that serves it
+
 Scientific voice rule:
 
 - write with earned confidence
@@ -35,6 +54,7 @@ Editor-first test:
 - after drafting, ask what a handling editor would underline in 15 seconds
 - if the answer is a caveat, setup detail, or workflow description, rewrite the paragraph with the closest `SV#` exemplar as the model
 - if the answer is the discovery sentence, keep going
+- if the answer is a tool, workflow, or reference object rather than the discovery, the protagonist has drifted
 
 For cross-disciplinary explanation:
 
@@ -58,12 +78,20 @@ For plain-language explanation:
 
 For whole-manuscript coherence:
 
+- identify the old-world belief and the new-world belief before rewriting section flow
+- identify the paper protagonist before rewriting local paragraphs
+- identify the Results pivot before deciding how much weight to give tool-validation sections
+- write the Results section jobs before approving a whole-paper flow
+- identify the discovery cash-out section before letting a final Results section read like a mere extension
+- compress or merge tool sections that answer one bounded scientific question instead of narrating them as independent discoveries
 - identify what logical job the paragraph or section performs
 - bridge from the previous known point before introducing the next claim
 - keep terminology, comparator names, and mechanism labels stable across sections
 - make each paragraph advance one main logical step
 - end paragraphs by showing why the point matters for the next step of the paper
 - if a sentence only works with hidden local context, rewrite it so the link is explicit
+- if a section only works because the reader remembers the experiment chronology, rewrite it around what the reader learns next instead
+- if the paper still sounds like a series of analyses rather than one model update, the spine is wrong even if each section is locally strong
 
 Preferred answer pattern:
 
@@ -71,6 +99,14 @@ Preferred answer pattern:
 2. what the result directly supports
 3. what mechanism it points toward
 4. what it still does not prove
+
+Preferred whole-paper pattern:
+
+1. old-world belief
+2. surprising observation
+3. governing principle
+4. broader implication
+5. boundary
 
 Preferred rewrite move when prose feels too cautious:
 

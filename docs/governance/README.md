@@ -38,7 +38,7 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
 - Writing or revising the paper:
   - use the manuscript contract
   - use the scientific voice guide as the canonical positive-style reference
-  - use the scientific voice guide for both paper-level salience and sentence-level craft across all paper-facing explanation surfaces
+  - use the scientific voice guide for paper-level architecture, paper-level salience, and sentence-level craft across all paper-facing explanation surfaces
   - treat the manuscript contract as the stricter main-manuscript subset inside the broader paper-facing explanation model
   - preserve the supported claim floor; do not let governance or closeout caution become manuscript tone
 - Checking Nature-facing compliance or packaging:

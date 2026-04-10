@@ -25,6 +25,12 @@ This contract governs the main-manuscript subset of the broader `paper-facing ex
 - Local revisions must preserve upstream and downstream logic; inspect neighboring paragraphs and section purpose before treating an edit as complete.
 - Terminology, comparator labels, and mechanism language must stay consistent across sections unless the manuscript explicitly marks a shift.
 - Each Results subsection should make its local question, evidence, and paper-level consequence explicit.
+- The manuscript must identify one stable paper protagonist and keep that protagonist explicit across title, abstract, Results framing, and Discussion.
+- The manuscript must identify one paper-level pivot where the reader's model of the system changes; a uniform sequence of equally weighted result summaries is not acceptable architecture.
+- The manuscript must give the discovery more narrative weight than the tools that reveal or validate it unless the packet explicitly declares a method paper.
+- Any whole-manuscript or cross-section hardening round must write a `Paper spine map` before drafting. That map must include the Results section jobs, pivot sentence, discovery cash-out section, tool role, reference-object role, and a discovery-versus-tool weight budget.
+- Reference objects, calibration schemes, and solvers must be framed as supporting actors unless the paper's actual contribution is those objects or methods.
+- The manuscript must not be narrated in experiment-production order when a different order is needed to deliver the paper's cognitive shift.
 - Any manuscript change that depends on figure meaning, panel mapping, or figure lineage must be grounded in actual visual inspection of the figure asset.
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
@@ -80,9 +86,12 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 **Positive construction defaults:**
 
 - Build high-salience sentences in this order when possible: supported finding, evidence anchor, implication, then boundary.
+- Build whole-paper architecture in this order when possible: old-world belief, surprising observation, governing principle, broader implication, then boundary.
 - Use the canonical `SV#` exemplars in `scientific-voice-guide.md` when a sentence sounds defensively cautious but the evidence remains strong.
 - When the evidence is strong, strengthen clarity rather than dampening tone. The correct fix for perceived overstatement is usually a narrower claim, not a weaker verb.
 - Distinguish `descriptive` from `insignificant`. A descriptive result may still be central if it organizes the paper's discovery.
+- Treat `paper protagonist`, `pivot`, and `tool role` as explicit design choices, not as emergent side effects of paragraph edits.
+- Treat `Results section jobs`, `Discovery cash-out section`, and `Discovery-vs-tool weight budget` as explicit architecture choices for any whole-manuscript round, not as formatting afterthoughts.
 
 **Preferred sentence jobs:**
 
@@ -91,6 +100,16 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Results closing sentence: state why the result matters for the next section.
 - Discussion opening sentence: interpret the advance at paper level before turning to limitations.
 - Limitation sentence: name the real evidence boundary in one direct clause without re-litigating the main claim.
+
+**Preferred architecture jobs:**
+
+- Title: break the old intuition and name the protagonist.
+- Abstract opening: replace the old-world belief with the new-world belief before setup detail arrives.
+- Introduction: establish stakes and the open gap before technical predictions.
+- Pivot section: state the turning point that updates the reader's model of the system.
+- Tool section: reveal the governing requirement or structure; do not become the story's main character.
+- Discovery cash-out section: make the paper-level discovery unavoidable rather than sounding like a final extension.
+- Discussion opening: deliver a worldview-shift sentence rather than a Results recap.
 
 **Verb and tone discipline:**
 
@@ -130,6 +149,8 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - prose states the supported claim floor clearly before naming the evidence boundary, and does not rely on defensive self-negation to signal rigor
 - the in-scope surface passes the editor-first readout test from `scientific-voice-guide.md`, meaning a skimming editor would remember the supported discovery rather than the caveat
 - the in-scope surface passes a sentence-energy test: high-salience sentences use clear subjects, explicit causal links, and low enough noun-stack density for one-pass reading
+- the in-scope surface passes an architecture test: the protagonist is stable, the pivot is legible, tool sections remain subordinate to discovery, and the Discussion opening upgrades the paper's meaning rather than restating Results
+- whole-manuscript and cross-section rounds provide a `Paper spine map` showing Results section jobs, discovery cash-out location, discovery-versus-tool weight, and redundancy or breathing risks
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved

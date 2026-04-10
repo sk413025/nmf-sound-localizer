@@ -19,7 +19,7 @@ The intended operating model is agent-first: Codex and other agents do the detai
   - `paper/manuscript/manuscript.md`
   - `docs/governance/manuscript-contract.md`
   - `docs/governance/scientific-voice-guide.md`
-  - use the voice guide for both paper-level claim posture and sentence-level readability (`noun stacking`, `causal glue`, and natural scientific English)
+  - use the voice guide for paper-level architecture, paper-level claim posture, and sentence-level readability (`noun stacking`, `causal glue`, and natural scientific English)
 - Nature submission or artwork compliance:
   - `docs/nature-communications/nature-communications-submission-requirements.md`
   - `docs/governance/submission-contract.md`

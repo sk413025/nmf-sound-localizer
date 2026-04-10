@@ -5,6 +5,11 @@ This script is a reviewer aid. It does not rewrite files or enforce a hard fail
 on stylistic findings. It reports potential claim-floor suppressors plus
 sentence-friction hotspots across paper-facing explanation surfaces and maps
 them to the closest scientific-voice exemplar categories for rewrite guidance.
+
+Passing this audit does not establish narrative-architecture adequacy. Paper
+protagonist, pivot, Results section jobs, discovery cash-out location,
+tool-vs-discovery weighting, and worldview-shift checks remain reviewer-gated
+responsibilities.
 """
 
 from __future__ import annotations
@@ -156,7 +161,8 @@ def number_without_meaning(text: str) -> bool:
 def main() -> int:
     print("Scientific-voice audit for paper-facing explanation")
     print("======================")
-    print("This is a review aid, not a pass/fail gate.\n")
+    print("This is a review aid, not a pass/fail gate.")
+    print("It does not certify protagonist, pivot, tool-vs-discovery weight, or worldview shift.\n")
 
     grand_total = 0
     for path in TARGETS:

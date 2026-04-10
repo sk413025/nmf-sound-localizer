@@ -62,17 +62,24 @@ Apply this execution-or-delegation rule in both Default mode and Plan mode.
 4. If delegating, decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
 5. If delegating, choose the right child task packet, role, and core skill for each child task.
 6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
-7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, and natural enough scientific English for one-pass reading.
-8. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
-9. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
-10. For high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar plus one micro sentence-craft `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
-11. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
-12. Summarize only the task-relevant conversation history.
-13. Use `Context mode: summary-only` by default.
-14. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-15. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-16. Define review, handoff, and escalation requirements.
-17. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, natural enough scientific English for one-pass reading, and narrative architecture that delivers one cognitive shift rather than an experiment log.
+8. Classify `Architecture scope` before claim-floor work:
+   - `local-salience` for a local high-salience rewrite with no section reweighting
+   - `cross-section` for a round that changes more than one section, section bridges, or discovery-versus-tool weight
+   - `whole-manuscript` for a full-paper restructuring or any round that re-architects the Results spine
+9. For `local-salience` main-manuscript hardening, run the local architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, `reference-object role`, and target `worldview-shift sentence`.
+10. For `cross-section` and `whole-manuscript` hardening, run the full architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `redundancy / breathing risks`, and target `worldview-shift sentence`.
+11. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
+12. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
+13. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
+14. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
+15. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
+16. Summarize only the task-relevant conversation history.
+17. Use `Context mode: summary-only` by default.
+18. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+19. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+20. Define review, handoff, and escalation requirements.
+21. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 
@@ -92,6 +99,8 @@ Parent truth-maintenance checks for high-risk rounds:
 - verify that the child closeout distinguishes `Plan completion`, `Review verdict`, and `Verification verdict` as separate fields
 - verify that any claimed manuscript change includes the exact revised text or an explicit statement that no text was changed
 - verify that before/after anchors are present when prose or asset content was changed
+- verify that architecture-sensitive rounds report whether the protagonist, pivot, tool role, and worldview shift actually landed instead of assuming sentence polish was enough
+- verify that whole-manuscript architecture rounds also carry an `Architecture evidence map` tying the intended spine to title, abstract opening, intro ending, pivot sentence, discovery cash-out sentence, and Discussion opening
 - verify that unresolved promised joints are listed when the round leaves any requested linkage, follow-through, or hardening step incomplete
 - verify that the risk classification, named owners, or explicit compression rationale are present
 - verify that a verifier actually ran in verifier mode instead of restating the implementer closeout
@@ -103,6 +112,12 @@ Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_
 - `Plan completion:`
 - `Delivered items:`
 - `Deferred or dropped items:`
+- `Architecture verdict:`
+- `Protagonist preserved:`
+- `Pivot landed:`
+- `Tool role preserved:`
+- `Worldview shift explicit:`
+- `Architecture evidence map:`
 - `Unresolved promised joints:`
 - `Scope-downgrade disclosure:`
 - `Delivery evidence:`
@@ -121,6 +136,7 @@ Use the minimal reviewer subset that matches the acceptance surface:
 
 - `handling-editor-scope reviewer` and `reviewer-routing reviewer` for editorial fit, paper-level framing, or likely reviewer-community routing
 - `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for paper prose, whole-paper flow, reader-burden risk, or sentence-level friction from passive phrasing, nominalization, noun stacking, or other paper-facing explanation surfaces
+- use the same trio to judge protagonist stability, pivot clarity, and tool-vs-discovery weighting on high-salience manuscript rounds
 - `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` for interpretation, plausibility, comparator fairness, or evidence sufficiency risk
 - `figure-science-readability reviewer` for figure science, panel logic, caption burden, or main-vs-supplementary judgment
 
@@ -137,6 +153,8 @@ Parent acceptance on reviewer-stack use:
 - the reviewer subset is minimal and task-matched
 - the acceptance surface is explicit rather than implied
 - paper-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
+- local high-salience manuscript packets explicitly state the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and `discussion worldview-shift sentence`
+- `cross-section` and `whole-manuscript` packets explicitly state `Architecture scope`, the `Paper spine map`, `Results section jobs`, `Discovery cash-out section`, `Discovery-vs-tool weight budget`, and `Redundancy / breathing risks`
 - main-manuscript packets identify the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
 - paper-facing explanation packets outside the main manuscript identify at least one closest micro sentence-craft `SV#` exemplar when the round touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper
 - review findings are consolidated at the parent layer instead of left as disconnected comments
@@ -150,6 +168,15 @@ Reviewer qualification gate:
 Manuscript-hardening planning and review checklist:
 
 - claim floor: is the strongest supported discovery sentence explicit, early, and easy to retain
+- old-world belief: what default intuition must the paper replace
+- new-world belief: what updated understanding should remain after one pass
+- paper protagonist: is the phenomenon or organizing principle stable across title, abstract, Results, and Discussion
+- pivot: where does the reader's model actually change
+- tool role: does the tool reveal, preserve, or test the discovery rather than become the discovery
+- weight discipline: does discovery carry more narrative mass than tool validation
+- section jobs: do the Results sections each have a clear role inside one cognitive shift rather than one more item in an experiment log
+- discovery cash-out: where does the paper-level discovery become unavoidable rather than optional
+- redundancy / breathing: where does the manuscript repeat explanation without upgrading understanding, or stay uniformly dense enough to flatten the pivot
 - claim ceiling: is the stronger unsupported interpretation clearly separated rather than implied
 - evidence boundary: are true scope limits named without collapsing the paragraph into self-negation
 - disciplinary narrative shift: does the prose drift from scientific inference into explanation of paper positioning or process
