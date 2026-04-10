@@ -55,14 +55,11 @@ For any `high-risk` round with broader significance or cross-disciplinary conseq
   - named verification owner, plus evidence check outcome
 - Warnings:
   - `none`, or list warning codes
-- Complexity risk:
-  - `none`, or state where the round risked adding redundant governance surface
-- Why existing primitives were insufficient:
-  - required for governance-changing rounds that introduced a new field, artifact, or gate behavior
-- What duplicated surface was removed:
-  - required for governance-changing rounds that claim simplification
-- What remains canonical after this round:
-  - name the single source of truth that survived the simplification
+- Complexity reflection for governance-changing rounds only:
+  - `Complexity risk`
+  - `Why existing primitives were insufficient`
+  - `What duplicated surface was removed`
+  - `What remains canonical after this round`
 - Escalation:
   - `none`, `NEEDS_REWRITE`, or `ESCALATE_HUMAN`
 - Parent closeout statement:
@@ -76,7 +73,7 @@ For any `high-risk` round with broader significance or cross-disciplinary conseq
 - Do not report broader significance as landed on a `high-risk` round unless `results/<round_name>/governance_round.yaml` exists and `make paper-governance-gate ROUND_DIR=results/<round_name>` passes.
 - Do not let closeout freehand a second governance vocabulary. For `high-risk` broader-significance rounds, treat `governance_round.yaml` as the canonical status record and summarize it here rather than inventing new field names.
 - Do not imply that human closeout verdicts such as `Second-layer discovery explicit` or `No-bolt-on test passed` are canonical YAML fields. Only `closeout.final_status`, any required `status_change_note`, and the rest of the schema in `ROUND_GOVERNANCE_SCHEMA.md` are machine-relevant.
-- Do not claim governance simplification without filling `Complexity risk`, `Why existing primitives were insufficient`, `What duplicated surface was removed`, and `What remains canonical after this round`.
+- Do not claim governance simplification without filling the `Complexity reflection for governance-changing rounds only` fields, and omit them on ordinary manuscript or evidence rounds.
 - Do not treat sentence polish as architectural completion. When the packet required protagonist, pivot, tool role, worldview shift, or second-layer discovery work, fill the architecture fields explicitly.
 - Do not claim whole-paper architecture completion without an `Architecture evidence map` when the round touched cross-section or whole-manuscript structure.
 - Do not merge `Review verdict` and `Verification verdict` unless the packet explicitly assigned both duties to one owner and the closeout states a `non-high-risk rationale` or `compression rationale`.

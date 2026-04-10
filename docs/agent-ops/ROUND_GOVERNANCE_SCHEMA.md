@@ -131,7 +131,7 @@ Status-dependent requirements are enforced by the checker:
 
 Reviewer judgments such as `Front-door preload sentence landed`, `Downstream consequence bounded`, `No-bolt-on test passed`, or closeout narrative verdicts such as `Second-layer discovery explicit` remain useful in human review and closeout prose, but they are not part of the canonical YAML interface and are not machine-validated here.
 
-## Minimal legal examples
+## Examples
 
 ### `second-layer earned`
 
@@ -143,16 +143,16 @@ role_mode: separated
 role_compression_reason: none
 
 task_packet:
-  core_discovery: "The system carries a recurring physical code."
-  second_layer_discovery: "The code relocates part of sensing into passive structure."
-  trunk: "Passive structure itself becomes part of the sensing substrate."
+  core_discovery: "A recurring physical code is present."
+  second_layer_discovery: "Passive structure itself becomes part of the sensing substrate."
+  trunk: "Passive structure becomes part of the sensing substrate."
   branch: ""
   leaf: ""
   proposed_status: second-layer earned
   front_door_preload_sentence: "This discovery relocates part of sensing into passive structure."
   two_takeaway_editor_readout:
-    - "The system carries a recurring physical code."
-    - "Passive structure itself becomes part of the sensing substrate."
+    - "A recurring physical code is present."
+    - "Passive structure becomes part of the sensing substrate."
   no_bolt_on_test: ""
 
 review_verdict:
@@ -173,7 +173,7 @@ closeout:
   remaining_gap_disclosed: none
 ```
 
-### Review demotes `leaf allowed` to `branch earned`
+### Downgrade example
 
 ```yaml
 task_packet:

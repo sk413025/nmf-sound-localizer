@@ -36,15 +36,17 @@ Do not propose an orchestration layer that duplicates these primitives without a
 
 Treat governance complexity as an explicit supervision risk.
 
-Before adding a new field, verdict, artifact, or workflow branch, ask:
+Use the anti-complexity discipline from `docs/governance/codex-collaboration-contract.md`
+and `.codex/skills/agent-orchestrator/SKILL.md` rather than inventing a second local
+checklist here.
 
-- Is this new field only a projection of an existing status?
-- Is this checker work, or is it really reviewer judgment?
-- Is this rule already defined by a canonical schema or contract elsewhere?
-- What duplicated surface will be removed if this new one lands?
-- If one document disappeared, would the system still have a clear canonical source of truth?
+At minimum, before adding a new field, verdict, artifact, or workflow branch, confirm:
 
-If those questions do not produce a strong answer, prefer simplification or reuse over expansion.
+- it is not already canonical elsewhere
+- it is not reviewer judgment disguised as checker work
+- it removes or collapses an older duplicated surface
+
+If those checks do not produce a strong answer, prefer simplification or reuse over expansion.
 
 ## Execution-or-delegation rule
 

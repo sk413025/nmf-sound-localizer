@@ -196,9 +196,9 @@ Reviewer outputs should name:
 - the sentence-friction type when applicable: `noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, or `static-verb`
 - the architecture verdicts when applicable: `paper protagonist`, `pivot`, `tool-vs-discovery weight`, and `worldview shift`
 - the whole-paper architecture verdicts when applicable: `Results section jobs`, `discovery cash-out`, `second-layer discovery`, `broader-implication trunk`, and `redundancy / breathing risks`
-- the broader-significance verdicts when applicable: `Reviewed status`, `Status change note`, `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed`
+- the broader-significance decision when applicable: `Reviewed status` and any required `Status change note`
+- optional human review judgments when useful: `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed`
 - a short `status_change_note` whenever review demotes the packet below its proposed status
-- whether those broader-significance verdicts are recorded coherently enough to populate `results/<round_name>/governance_round.yaml` without free-text interpretation drift
 - any required rewrite, evidence, or routing follow-up
 
 ## Promotion and demotion verdicts

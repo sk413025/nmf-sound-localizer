@@ -54,7 +54,7 @@ Anti-complexity rule:
 - do not add a new packet field, verdict, or artifact unless you can first explain why the existing canonical surfaces are insufficient
 - any governance expansion should also name what duplicated surface is removed or collapsed in exchange
 
-For governance-changing rounds, also record:
+For governance-changing rounds, also record these reflection fields; otherwise omit them:
 
 - `Complexity risk`
 - `Why existing primitives were insufficient`
@@ -116,14 +116,10 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - if only part of the requested manuscript surface lands, close out only that subset and list the remaining items explicitly
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
-- explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
-- the architecture bundle required by `manuscript-contract.md` for the chosen `Architecture scope`
-- `Relevant voice exemplar(s)` for any high-salience rewrite
-- local sentence-friction, causal-glue, or diction notes only when those are part of the owned acceptance surface
-- figure and Methods anchors for every claim-level change
-- `results/<round_name>/governance_round.yaml` for any `high-risk` broader-significance packet, using `ROUND_GOVERNANCE_SCHEMA.md` as the canonical field inventory
-  - coherence or terminology notes when surrounding transitions had to change to keep the manuscript natural
-  - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
+  - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the owned manuscript surface
+  - anchored claim-evidence support, including figure or Methods anchors when relevant
+  - `Relevant voice exemplar(s)` plus any required architecture or broader-significance bundle by reference to the canonical contracts, not by recreating a second field inventory
+  - visual inspection notes plus generator/provenance backtrace for any figure-dependent interpretation
   - explicit unresolved issues if evidence is weak
 - Escalate when:
   - a change could alter scientific interpretation

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that the branch-level governance skeleton is present and linked."""
+"""Check that the branch-level governance skeleton is present and canonically linked."""
 
 from __future__ import annotations
 
@@ -51,259 +51,143 @@ REQUIRED_FILES = [
     REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md",
 ]
 
-STRING_CHECKS = [
-    (REPO_ROOT / "README.md", "START_HERE_AGENT.md"),
-    (REPO_ROOT / "README.md", "docs/governance/README.md"),
-    (REPO_ROOT / "README.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / "README.md", "docs/agent-ops/README.md"),
-    (REPO_ROOT / "README.md", ".codex/skills/agent-orchestrator/SKILL.md"),
-    (REPO_ROOT / "README.md", "paper-facing explanation surfaces"),
-    (REPO_ROOT / "README.md", "one cognitive shift"),
-    (REPO_ROOT / "paper" / "README.md", "sentence-level readability"),
-    (REPO_ROOT / "paper" / "README.md", "scientific-voice-guide.md"),
-    (REPO_ROOT / "paper" / "README.md", "paper-audit-voice"),
-    (REPO_ROOT / "paper" / "figures" / "README.md", "paper-facing asset surface"),
-    (REPO_ROOT / "paper" / "manuscript" / "FIGURE_NAMING_CONTRACT.md", "paper-facing figure contract"),
-    (REPO_ROOT / "figures" / "FIGURE_REGISTRY.md", "main-manuscript semantics"),
-    (REPO_ROOT / "figures" / "FIGURE_REGISTRY.md", "paper-facing asset"),
-    (REPO_ROOT / "figures" / "conf" / "experiments.yaml", "canonical paper-facing asset"),
-    (REPO_ROOT / "figures" / "conf" / "review_targets.yaml", "main-manuscript claims live in"),
-    (REPO_ROOT / "figures" / "fig04_stepwise_mechanics.py", "paper-facing quantities"),
-    (REPO_ROOT / "figures" / "generators" / "fig04_solver_dynamics.py", "paper-facing, governed panels"),
-    (REPO_ROOT / "scripts" / "paper" / "rerun_active_figures.py", "active six paper-facing figures"),
-    (REPO_ROOT / "scripts" / "paper" / "verify_provenance.py", "paper-facing asset list"),
-    (REPO_ROOT / "DATA_PROVENANCE.md", "final paper-facing assets"),
-    (REPO_ROOT / "figures" / "conf" / "fig04_fig06_panel_name_provenance.md", "paper-facing OMP baseline"),
-    (REPO_ROOT / "AGENTS.md", "docs/governance/README.md"),
-    (REPO_ROOT / "AGENTS.md", "scientific-voice-guide.md"),
-    (REPO_ROOT / "AGENTS.md", "clear subject -> strong verb -> explicit consequence"),
-    (REPO_ROOT / "AGENTS.md", "lab meeting"),
-    (REPO_ROOT / "AGENTS.md", "paper-facing explanation"),
-    (REPO_ROOT / "AGENTS.md", "Architecture scope"),
-    (REPO_ROOT / "AGENTS.md", "one cognitive shift"),
-    (REPO_ROOT / "AGENTS.md", "paper protagonist"),
-    (REPO_ROOT / "AGENTS.md", "paper pivot"),
-    (REPO_ROOT / "AGENTS.md", "whole-paper spine map"),
-    (REPO_ROOT / "AGENTS.md", "Results section jobs"),
-    (REPO_ROOT / "AGENTS.md", "discovery cash-out"),
-    (REPO_ROOT / "AGENTS.md", "make paper-governance-gate"),
-    (REPO_ROOT / "AGENTS.md", "governance_round.yaml"),
-    (REPO_ROOT / "AGENTS.md", "Governance Precedence"),
-    (REPO_ROOT / "AGENTS.md", "docs/agent-ops/README.md"),
-    (REPO_ROOT / "AGENTS.md", "runtime-substrate-contract.md"),
-    (REPO_ROOT / "AGENTS.md", "Route top-level work through `agent-orchestrator` first."),
-    (REPO_ROOT / "AGENTS.md", "The top-level agent first classifies the task and decides whether direct execution or delegation is the better fit for scope and risk."),
-    (REPO_ROOT / "AGENTS.md", "standing authorization for sub-agent use"),
-    (REPO_ROOT / "AGENTS.md", "Apply this execution-or-delegation policy in both Default mode and Plan mode."),
-    (REPO_ROOT / "AGENTS.md", "When the top-level agent delegates, it must inspect a child agent's current status or latest output before interrupting or closing it."),
-    (REPO_ROOT / "AGENTS.md", "When the top-level agent delegates, it must decide whether a request is a true single-child task or must be decomposed into multiple child tasks."),
-    (REPO_ROOT / "CONTRIBUTING.md", "docs/governance/README.md"),
-    (REPO_ROOT / "CONTRIBUTING.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / "START_HERE_HUMAN.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / "START_HERE_HUMAN.md", "noun stacking"),
-    (REPO_ROOT / "START_HERE_HUMAN.md", "paper-level architecture"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "docs/agent-ops/README.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Use this sentence order by default: `clear subject -> strong verb -> explicit consequence`."),
-    (REPO_ROOT / "START_HERE_AGENT.md", "any paper-facing explanation prose"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Write paper-facing explanation"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Architecture scope"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "old-world belief"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "paper pivot"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Paper spine map"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "discovery-versus-tool weight budget"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/paper-submission/SKILL.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/agent-orchestrator/SKILL.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "docs/agent-ops/TASK_PACKETS.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Context mode: `summary-only`"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "standing authorization for sub-agent use"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Apply this execution-or-delegation policy in both Default mode and Plan mode."),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Inspect a child agent's current status or latest output before interrupting or closing it."),
-    (REPO_ROOT / "START_HERE_AGENT.md", "If delegation is chosen, use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts."),
-    (REPO_ROOT / "START_HERE_AGENT.md", "make paper-governance-gate"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "governance_round.yaml"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite."),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "paper-facing explanation"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "sentence-skeleton pass"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "local architecture pass"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "full architecture pass"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Architecture ledger:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "Results section jobs"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "discovery cash-out section"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Architecture evidence map:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "supporting actors"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "reference-object role"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "discovery-vs-tool weight budget"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "lab-meeting English test"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Applied exemplar(s):`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Sentence craft fixes:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "Perform a coherence pass on transitions, paragraph openings, paragraph endings, and section jobs"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "## Required output bundle"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Exact revised text:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Before anchor:` and `After anchor:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Unresolved promised joints:`"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md", "`Verifier mode:`"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "Nature-facing main text should remain intelligible to scientifically literate readers outside the immediate subfield."),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "scientific-voice-guide.md"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "paper protagonist"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "paper-level pivot"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "Paper spine map"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "Discovery cash-out section"),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "Default to one main causal move per sentence."),
-    (REPO_ROOT / "docs/governance/manuscript-contract.md", "paragraph and section transitions are natural and preserve the paper-level logic"),
-    (REPO_ROOT / "docs/governance/submission-contract.md", "paper-facing explanation standard"),
-    (REPO_ROOT / "docs/governance/submission-contract.md", "supporting-actor language"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "paper-facing explanation"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "Narrative architecture layer"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "Use `Architecture scope` to decide when this map is required:"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "paper protagonist"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "SV15"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "Whole-paper spine map"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "SV21"),
-    (REPO_ROOT / "docs/governance/scientific-voice-guide.md", "paper-facing asset"),
-    (REPO_ROOT / "docs/governance/README.md", "scientific-voice-guide.md"),
-    (REPO_ROOT / "docs/governance/README.md", "paper-level architecture"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "Relevant conversation context"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "scientific-voice-guide.md"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "paper-facing hardening"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "Architecture scope"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "paper protagonist"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "Paper spine map"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "Architecture evidence map"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "`summary+fork_context`"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "standing authorization for sub-agent use"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "monitor active child agents and inspect status before interrupting or closing them"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "require an explicit execution-or-delegation decision before specialist work begins"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, require implementer, reviewer, and verifier separation unless the parent records why the round is not high risk."),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "high-risk coordination requires implementer, reviewer, and verifier separation or an explicit non-high-risk rationale"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "governance_round.yaml"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "check_round_governance_semantics.py"),
-    (REPO_ROOT / "docs/governance/closeout-integrity-contract.md", "For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, separate implementer, reviewer, and verifier roles."),
-    (REPO_ROOT / "docs/governance/closeout-integrity-contract.md", "protagonist, pivot, tool role, and worldview shift"),
-    (REPO_ROOT / "docs/governance/closeout-integrity-contract.md", "Architecture evidence map"),
-    (REPO_ROOT / "docs/governance/closeout-integrity-contract.md", "the parent must record the constraint and explain why the round is not being treated as high risk or why temporary role compression is unavoidable"),
-    (REPO_ROOT / "docs/governance/closeout-integrity-contract.md", "governance_round.yaml"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "## Closeout ledger"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Risk level:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Architecture scope:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Plan completion:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Architecture verdict:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Protagonist preserved:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Pivot landed:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Tool role preserved:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Worldview shift explicit:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Architecture evidence map:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Unresolved promised joints:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Scope-downgrade disclosure:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Review verdict:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Verification verdict:"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "governance_round.yaml"),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "Do not omit named review and verification ownership on `high-risk` rounds."),
-    (REPO_ROOT / "docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md", "compression rationale"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "The top-level agent is the default coordinator for routed work. It may execute directly or delegate to child specialists after an explicit routing decision."),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "standing authorization for sub-agent use"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "This execution-or-delegation rule applies in both Default mode and Plan mode."),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "Before interrupting or closing a child agent, inspect its current status or latest output first."),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "Architecture scope"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "full architecture pass"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "Complexity discipline"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "What duplicated surface will be removed"),
-    (REPO_ROOT / "docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md", "## Execution and decomposition threshold"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "narrative architecture"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "Architecture scope"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "drafting-time architecture bundle"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "closeout must carry an `Architecture evidence map`"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "ROUND_GOVERNANCE_SCHEMA.md"),
-    (REPO_ROOT / "docs/agent-ops/README.md", "governance_round.yaml"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Relevant conversation context"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Architecture scope"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Relevant voice exemplar(s)"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "architecture bundle required by"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Complexity risk"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Context mode"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "Before issuing any packet, the top-level agent must make an execution-or-delegation decision."),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "governance_round.yaml"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "Act as the top-level routing authority. Make an explicit execution-or-delegation decision before specialist work begins."),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "docs/governance/scientific-voice-guide.md"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "Architecture scope"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "ROUND_GOVERNANCE_SCHEMA.md"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "ROUND_CLOSEOUT_TEMPLATE.md"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "Apply this execution-or-delegation rule in both Default mode and Plan mode."),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "standing authorization for sub-agent use"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "governance_round.yaml"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "Complexity self-check"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "What duplicated surface will be removed if this new one lands?"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "visual delta summary"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "sentence-energy pass"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "paper protagonist"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "Results section job"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "discovery cash-out"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "cross-disciplinary-readability reviewer"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md", "round `Delivery evidence`"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "sentence-energy pass"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "paper-facing explanation"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "old-world belief"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "Results section job"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "discovery cash-out"),
-    (REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md", "cross-disciplinary-readability reviewer"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "references" / "results-to-narrative.md", "paper-facing legend, review-note, or analysis-summary prose"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "references" / "results-to-narrative.md", "Paper protagonist"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "references" / "results-to-narrative.md", "Preferred whole-paper pattern"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-submission" / "references" / "results-to-narrative.md", "same sentence-energy surface"),
-    (REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "references" / "figure-claim-backtrace.md", "paper-facing `jpg` or `png` asset"),
-    (REPO_ROOT / "README.md", "ASSET_CLASSES.md"),
-    (REPO_ROOT / "docs" / "agent-ops" / "NATURE_REVIEWER_STACK.md", "paper-facing review model"),
-    (REPO_ROOT / "docs" / "agent-ops" / "NATURE_REVIEWER_STACK.md", "SV#"),
-    (REPO_ROOT / "docs" / "agent-ops" / "NATURE_REVIEWER_STACK.md", "sentence-friction type"),
-    (REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md", "WARN_PROTAGONIST_DRIFT"),
-    (REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md", "WARN_MISSING_PIVOT"),
-    (REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md", "WARN_ARCHITECTURE_SCOPE_MISROUTED"),
-    (REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md", "jointly reframes title/abstract/introduction/discussion"),
-    (REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md", "SV#"),
-    (REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md", "protagonist-centering"),
-    (REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md", "SV#"),
-    (REPO_ROOT / "scripts" / "paper" / "audit_claim_floor.py", "paper-facing explanation"),
-    (REPO_ROOT / "scripts" / "paper" / "audit_claim_floor.py", "does not establish narrative-architecture adequacy"),
-    (REPO_ROOT / "scripts" / "paper" / "check_figure_references.py", "paper-facing figure references"),
-]
+# Keep the link gate structural: each doc needs only enough anchors to prove
+# it points at the right canonical surface and still carries its role-specific job.
+ANCHOR_CHECKS = {
+    REPO_ROOT / "README.md": [
+        "docs/governance/README.md",
+        "docs/agent-ops/README.md",
+        ".codex/skills/agent-orchestrator/SKILL.md",
+    ],
+    REPO_ROOT / "AGENTS.md": [
+        "Governance Precedence",
+        "Route top-level work through `agent-orchestrator` first.",
+        "make paper-governance-gate ROUND_DIR=results/<round_name>",
+        "Treat governance complexity as a branch-level failure mode.",
+    ],
+    REPO_ROOT / "START_HERE_AGENT.md": [
+        "docs/agent-ops/README.md",
+        ".codex/skills/agent-orchestrator/SKILL.md",
+        "Context mode: `summary-only`",
+        "governance_round.yaml",
+    ],
+    REPO_ROOT / "START_HERE_HUMAN.md": [
+        "docs/governance/scientific-voice-guide.md",
+        "noun stacking",
+        "paper-level architecture",
+    ],
+    REPO_ROOT / "docs" / "governance" / "README.md": [
+        "scientific-voice-guide.md",
+        "codex-collaboration-contract.md",
+        "closeout-integrity-contract.md",
+    ],
+    REPO_ROOT / "docs" / "governance" / "scientific-voice-guide.md": [
+        "one endogenous second-layer discovery",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "Sentence energy is not enough.",
+    ],
+    REPO_ROOT / "docs" / "governance" / "manuscript-contract.md": [
+        "governance_round.yaml",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "Do not recreate a second schema",
+    ],
+    REPO_ROOT / "docs" / "governance" / "codex-collaboration-contract.md": [
+        "one canonical machine-readable artifact at `results/<round_name>/governance_round.yaml`",
+        "Do not let one concept acquire multiple canonical homes.",
+        "Do not let the checker over-model reviewer judgment.",
+    ],
+    REPO_ROOT / "docs" / "governance" / "closeout-integrity-contract.md": [
+        "governance_round.yaml",
+        "independent verification",
+        "exact text or exact diff evidence",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "README.md": [
+        "NATURE_REVIEWER_STACK.md",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "governance_round.yaml",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md": [
+        "Complexity discipline",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "execution-or-delegation rule",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md": [
+        "Use packet fields to record decisions, not to recreate a second schema.",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "Before issuing any packet, the top-level agent must make an execution-or-delegation decision.",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "ROUND_GOVERNANCE_SCHEMA.md": [
+        "The semantic gate checks only:",
+        "does **not** try to infer reviewer judgment",
+        "make paper-governance-gate",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "NATURE_REVIEWER_STACK.md": [
+        "Reviewed status",
+        "only machine-relevant level decision",
+        "not as a second status ladder",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "ROUND_CLOSEOUT_TEMPLATE.md": [
+        "blocking repo artifact is `results/<round_name>/governance_round.yaml`",
+        "human-facing closeout verdict, not a canonical YAML field",
+        "Do not let closeout freehand a second governance vocabulary.",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "REVIEW_AND_ESCALATION.md": [
+        "WARN_OVERMODELED_GOVERNANCE",
+        "WARN_PROTAGONIST_DRIFT",
+        "SV#",
+    ],
+    REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md": [
+        "Complexity self-check",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+        "governance_round.yaml",
+    ],
+    REPO_ROOT / ".codex" / "skills" / "paper-submission" / "SKILL.md": [
+        "docs/governance/scientific-voice-guide.md",
+        "full architecture pass",
+        "ROUND_GOVERNANCE_SCHEMA.md",
+    ],
+    REPO_ROOT / "paper" / "figures" / "README.md": [
+        "paper-facing asset surface",
+    ],
+    REPO_ROOT / "scripts" / "paper" / "check_figure_references.py": [
+        "paper-facing figure references",
+    ],
+    REPO_ROOT / "scripts" / "paper" / "verify_provenance.py": [
+        "paper-facing asset list",
+    ],
+}
 
-STALE_STRING_CHECKS = [
-    (REPO_ROOT / "README.md", "Nature Figure Workspace"),
-    (REPO_ROOT / "README.md", "docs/codex-native-assessment/README.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "Choose one skill only:"),
-    (REPO_ROOT / "AGENTS.md", "stop at the orchestration gate"),
-    (REPO_ROOT / "START_HERE_AGENT.md", "stop at the orchestration gate"),
-    (REPO_ROOT / "docs/governance/codex-collaboration-contract.md", "stop at an orchestration gate"),
-    (REPO_ROOT / "docs/agent-ops/TASK_PACKETS.md", "stop at the orchestration gate"),
-    (REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md", "stop at the orchestration gate"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/manuscript-revision/SKILL.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/claim-evidence-audit/SKILL.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/results-interpretation/SKILL.md"),
-    (REPO_ROOT / "START_HERE_AGENT.md", ".codex/skills/codex-native-assessment/SKILL.md"),
-    (REPO_ROOT / "START_HERE_HUMAN.md", "docs/codex-native-assessment/README.md"),
-    (REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md", "When a single agent is enough"),
-    (REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md", "decide whether the task is single-agent or multi-agent"),
-    (REPO_ROOT / "docs" / "governance" / "scientific-voice-guide.md", "manuscript-facing prose"),
-    (REPO_ROOT / "docs" / "governance" / "codex-collaboration-contract.md", "manuscript voice"),
-    (REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md", "manuscript voice"),
-    (REPO_ROOT / "paper" / "figures" / "README.md", "manuscript-facing final asset surface"),
-    (REPO_ROOT / "paper" / "manuscript" / "FIGURE_NAMING_CONTRACT.md", "active manuscript-facing figure contract"),
-    (REPO_ROOT / "figures" / "FIGURE_REGISTRY.md", "manuscript-facing semantics"),
-    (REPO_ROOT / "scripts" / "paper" / "check_figure_references.py", "manuscript-facing figure references"),
-    (REPO_ROOT / "figures" / "conf" / "experiments.yaml", "resolve the manuscript-facing asset"),
-    (REPO_ROOT / "figures" / "conf" / "experiments.yaml", "manuscript-facing OMP baseline"),
-    (REPO_ROOT / "figures" / "conf" / "review_targets.yaml", "manuscript-facing claims"),
-    (REPO_ROOT / "figures" / "fig04_stepwise_mechanics.py", "manuscript-facing quantities"),
-    (REPO_ROOT / "figures" / "generators" / "fig04_solver_dynamics.py", "manuscript-facing, governed panels"),
-    (REPO_ROOT / "figures" / "generators" / "fig04_solver_dynamics.py", "manuscript-facing data-backed panels"),
-    (REPO_ROOT / "scripts" / "paper" / "rerun_active_figures.py", "active six manuscript figures"),
-    (REPO_ROOT / "scripts" / "paper" / "rerun_active_figures.py", "Missing staged manuscript asset"),
-    (REPO_ROOT / "scripts" / "paper" / "rerun_active_figures.py", "Promoted staged manuscript assets"),
-    (REPO_ROOT / "scripts" / "paper" / "verify_provenance.py", "manuscript asset list"),
-    (REPO_ROOT / "DATA_PROVENANCE.md", "final manuscript assets"),
-    (REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md", "Discussion worldview-shift sentence"),
-]
+STALE_ANCHORS = {
+    REPO_ROOT / "README.md": [
+        "Nature Figure Workspace",
+        "docs/codex-native-assessment/README.md",
+    ],
+    REPO_ROOT / "AGENTS.md": [
+        "stop at the orchestration gate",
+    ],
+    REPO_ROOT / "START_HERE_AGENT.md": [
+        "Choose one skill only:",
+        "stop at the orchestration gate",
+        ".codex/skills/manuscript-revision/SKILL.md",
+        ".codex/skills/claim-evidence-audit/SKILL.md",
+        ".codex/skills/results-interpretation/SKILL.md",
+        ".codex/skills/codex-native-assessment/SKILL.md",
+    ],
+    REPO_ROOT / "START_HERE_HUMAN.md": [
+        "docs/codex-native-assessment/README.md",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md": [
+        "When a single agent is enough",
+        "decide whether the task is single-agent or multi-agent",
+    ],
+    REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md": [
+        "Discussion worldview-shift sentence",
+        "stop at the orchestration gate",
+    ],
+    REPO_ROOT / "docs" / "governance" / "scientific-voice-guide.md": [
+        "manuscript-facing prose",
+    ],
+}
 
 
 def main() -> int:
@@ -313,17 +197,22 @@ def main() -> int:
         if not path.exists():
             errors.append(f"missing required governance file: {path.relative_to(REPO_ROOT)}")
 
-    for path, needle in STRING_CHECKS:
+    for path, needles in ANCHOR_CHECKS.items():
         if not path.exists():
-            errors.append(f"missing file for string check: {path.relative_to(REPO_ROOT)}")
+            errors.append(f"missing file for anchor check: {path.relative_to(REPO_ROOT)}")
             continue
         text = path.read_text(encoding="utf-8")
-        if needle not in text:
-            errors.append(f"{path.relative_to(REPO_ROOT)} is missing required reference: {needle}")
+        for needle in needles:
+            if needle not in text:
+                errors.append(f"{path.relative_to(REPO_ROOT)} is missing canonical anchor: {needle}")
 
-    for path, needle in STALE_STRING_CHECKS:
-        if path.exists() and needle in path.read_text(encoding="utf-8"):
-            errors.append(f"{path.relative_to(REPO_ROOT)} still contains stale identity text: {needle}")
+    for path, needles in STALE_ANCHORS.items():
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for needle in needles:
+            if needle in text:
+                errors.append(f"{path.relative_to(REPO_ROOT)} still contains stale identity text: {needle}")
 
     if errors:
         print("ERROR: governance link check failed.")
@@ -331,7 +220,7 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
-    print("OK: governance entrypoints and links are in place.")
+    print("OK: governance entrypoints and canonical anchors are in place.")
     return 0
 
 
