@@ -21,6 +21,15 @@ When instructions conflict, follow this order:
 - Keep agent stance scientifically confident. The default paper voice in this branch is rigorous, clear, and editor-legible, not prophylactically defensive.
 - State the strongest evidence-backed discovery sentence early. Boundaries, transfer limits, and open questions must remain explicit, but they must not be allowed to erase the supported claim floor.
 - Do not confuse rigor with timidity. Overclaiming is forbidden, but self-diminishing prose is also a branch-level failure mode.
+- Keep paper-facing explanation architected around one cognitive shift. A Nature Communications paper in this branch must move the reader from an `old-world belief` to a `new-world belief`, not merely report a sequence of technically correct observations.
+- Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
+- Keep one stable paper protagonist. The default protagonist is the discovery, organizing principle, or physical phenomenon. Reference objects, calibration schemes, solvers, and analysis blocks are supporting actors unless the packet explicitly declares a method paper.
+- Keep one explicit paper pivot. At least one Results transition must function as the turning point that updates the reader's model of the system, not just the next item in an experiment log.
+- Keep discovery weight higher than tool-validation weight. Tool sections may reveal, test, or preserve the discovery, but they must not carry more narrative mass than the paper-level finding they support.
+- Keep one explicit whole-paper spine map for any cross-section or whole-manuscript hardening round. The map must name the old-world belief, new-world belief, protagonist, supporting actors, Results section jobs, pivot, discovery cash-out section, tool role, and discovery-versus-tool weight budget before prose is treated as architected.
+- Keep architecture artifacts phase-correct. `Paper spine map` belongs to drafting-time packets and rewrite planning; `Architecture evidence map` belongs to closeout-time verification when a cross-section or whole-manuscript round claims architecture landed.
+- Do not write in experiment time order. Default to `old intuition -> surprising observation -> governing principle -> broader implication`, even when that differs from the order in which the work was done.
+- Treat architecture as part of rigor. A paper that is locally precise but narratively mis-centered is still scientifically under-explained.
 - Keep paper-facing explanation reader-first at the sentence level. A scientifically literate generalist should not have to decode syntax, noun stacks, or governance-shaped abstractions before seeing the science.
 - Default to `clear subject -> strong verb -> explicit consequence`. If a sentence carries more than one main causal move, split it.
 - Prefer spoken-natural scientific English over compressed formal register. If a strong PhD student would not say the sentence aloud in lab meeting, treat that as a rewrite trigger.
@@ -84,6 +93,12 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 ### Agent scientific stance
 
 - The top-level agent should write as if trying to help an editor recognize the paper's real advance on a first pass.
+- The top-level agent should first ask what old belief the paper is replacing and what new belief the reader should leave with.
+- The top-level agent should identify the paper protagonist before revising prose. If the protagonist silently shifts between phenomenon, method, reference object, and workflow, treat that as a drafting failure.
+- The top-level agent should identify the paper pivot before drafting or approving a Results sequence. If every section speaks at the same narrative volume, treat that as a story-architecture failure.
+- The top-level agent should write down the Results section jobs before restructuring or approving a whole-paper rewrite. If the section list still reads like experiment chronology or analysis-bundle order, treat that as an architecture failure.
+- The top-level agent should keep reference objects and solvers subordinate to the discovery unless the packet explicitly declares a method-first paper.
+- The top-level agent should identify where the paper actually cashes out its discovery. If the discovery appears only as a final extension after long tool-validation buildup, treat that as narrative mis-centering.
 - Default scientific tone is: `clear claim first, evidence next, boundary after`, not `caveat first, claim later`.
 - When choosing between two truthful phrasings, prefer the one that preserves the supported claim floor and scientific momentum.
 - Treat `underclaim by reflex` as a routing error, not as a sign of higher rigor.
@@ -111,6 +126,8 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
 - Every review request must define its in-scope and out-of-scope acceptance surfaces. Submission metadata placeholders do not fail a scientific-narrative review unless submission packaging is explicitly in scope.
 - The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the paper-facing explanation rule above where it is in scope.
+- The parent must also reject paper-facing planning or review as under-scoped when it does not identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
+- The parent must reject whole-manuscript or cross-section hardening as under-architected when it lacks a `Paper spine map`, `Results section jobs`, `Discovery-vs-tool weight budget`, or a named `Discovery cash-out section`.
 - The parent must classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership. Any owner separation or role compression decision must follow that classification and be recorded.
 - Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
 - If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.

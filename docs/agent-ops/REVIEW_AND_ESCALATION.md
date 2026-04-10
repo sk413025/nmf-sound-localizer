@@ -48,12 +48,20 @@ Red-team review is mandatory for:
 - `WARN_CLAIM_FLOOR_BURIED`: the supported discovery is present in the evidence but buried under qualifiers, setup detail, or caveat-led wording
 - `WARN_CAVEAT_LEADS`: the highest-salience sentence leads with a limitation, pathway, or constraint instead of the supported advance
 - `WARN_MOMENTUM_COLLAPSE`: repeated hedge-heavy sentence order prevents the manuscript from carrying discovery momentum across sections
+- `WARN_PROTAGONIST_DRIFT`: the paper's main character shifts between discovery, tool, reference object, or workflow
+- `WARN_MISSING_PIVOT`: the Results sequence never clearly updates the reader's model of the system
+- `WARN_TOOL_OVERWEIGHT`: tool-validation has taken more narrative mass than the discovery it is meant to support
+- `WARN_WORLDVIEW_RECAP`: the Discussion opening restates Results instead of saying what understanding has changed
+- `WARN_SECTION_JOB_DRIFT`: Results sections have local findings but no stable whole-paper job map
+- `WARN_DISCOVERY_CASHOUT_BURIED`: the paper-level discovery appears only as a late extension rather than as the story's cash-out
+- `WARN_BREATHING_COLLAPSE`: repeated dense explanation leaves no reset sentence or memorable take-home shift
+- `WARN_ARCHITECTURE_SCOPE_MISROUTED`: the round changes section order, section bridges, discovery-versus-tool weight, or jointly reframes title/abstract/introduction/discussion but is still routed as `local-salience`
 - `WARN_NOUN_STACK`: the sentence asks the reader to decode a dense technical noun chain before seeing the scientific action
 - `WARN_CAUSAL_GAP`: facts or numbers are reported without telling the reader what they mean
 - `WARN_FORMAL_REGISTER`: the wording is formally correct but unnatural for broad scientific prose
 - `WARN_STATIC_VERB_DRAG`: low-energy holding verbs flatten a stronger scientific action that the evidence already supports
 
-When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
+When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_PROTAGONIST_DRIFT`, `WARN_MISSING_PIVOT`, `WARN_TOOL_OVERWEIGHT`, `WARN_WORLDVIEW_RECAP`, `WARN_SECTION_JOB_DRIFT`, `WARN_DISCOVERY_CASHOUT_BURIED`, `WARN_BREATHING_COLLAPSE`, `WARN_ARCHITECTURE_SCOPE_MISROUTED`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
 
 ## Closeout integrity checks
 
@@ -66,6 +74,9 @@ Before a round is reported as complete, confirm all of the following:
 - delivery evidence required by the packet is cited in text
 - review findings and verification findings are distinguished when both roles exist
 - a `high-risk` round does not omit verifier ownership
+- any round that changes section order, section bridges, discovery-versus-tool weight, or title/abstract/introduction/discussion together is not still classified as `local-salience`
+- any `cross-section` or `whole-manuscript` round that claims architecture landed includes an `Architecture evidence map`
+- whole-paper architecture remains open when reviewer findings still flag protagonist drift, missing pivot, tool overweight, buried discovery cash-out, or breathing collapse
 
 Escalate with `ESCALATE_HUMAN` when any of the following persist after one rewrite attempt:
 
@@ -74,6 +85,7 @@ Escalate with `ESCALATE_HUMAN` when any of the following persist after one rewri
 - `WARN_REVIEW_VERIFICATION_CONFUSION`
 - `WARN_PARENT_OVERCLAIM`
 - `WARN_MISSING_HIGH_RISK_VERIFIER`
+- `WARN_ARCHITECTURE_SCOPE_MISROUTED`
 
 ## Human gates
 

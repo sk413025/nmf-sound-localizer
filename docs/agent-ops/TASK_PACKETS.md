@@ -9,6 +9,7 @@ Every packet should include:
 - `Source of truth`
 - `Constraints`
 - `Risk level`
+- `Architecture scope`
 - `Acceptance surface`
 - `Out-of-scope surfaces`
 - `Plan items owned`
@@ -34,6 +35,35 @@ For any paper-facing explanation packet whose outputs may be promoted into manus
 - `Causal glue to add`
 - `Diction to normalize`
 
+For any local high-salience main-manuscript packet, also include:
+
+- `Old-world belief`
+- `New-world belief`
+- `Paper protagonist`
+- `Supporting actors`
+- `Pivot section`
+- `Pivot sentence`
+- `Tool role`
+- `Reference-object role`
+- `Worldview-shift sentence`
+
+For any packet with `Architecture scope: cross-section` or `Architecture scope: whole-manuscript`, also include:
+
+- `Old-world belief`
+- `New-world belief`
+- `Paper protagonist`
+- `Supporting actors`
+- `Paper spine map`
+- `Results section jobs`
+- `Pivot section`
+- `Pivot sentence`
+- `Discovery cash-out section`
+- `Tool role`
+- `Reference-object role`
+- `Discovery-vs-tool weight budget`
+- `Redundancy / breathing risks`
+- `Worldview-shift sentence`
+
 `Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
 `Context mode: summary-only` is the default.
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
@@ -48,6 +78,20 @@ If the packet includes paper-facing review or hardening, name the applicable rev
 `Sentence-friction hotspots` should identify sentences or local passages where noun stacks, fact clustering, or syntax density make the science harder to parse than necessary.
 `Causal glue to add` should identify where number-heavy or comparison-heavy sentences still need `because`, `which means`, `confirming that`, `so`, or equivalent scientific consequence language.
 `Diction to normalize` should identify phrases that are formally correct but unnaturally compressed, governance-shaped, or unlike natural lab-meeting scientific English.
+`Old-world belief` must name the intuition, field habit, or standard framing the in-scope high-salience manuscript surface needs to replace.
+`New-world belief` must name what the reader should understand differently after that high-salience surface lands.
+`Paper protagonist` must identify the discovery, organizing principle, or physical phenomenon that the round keeps at center.
+`Supporting actors` must identify which tools, assays, reference objects, or comparators serve the protagonist rather than replace it.
+`Paper spine map` must summarize the whole cognitive-shift architecture for the in-scope surface rather than listing isolated local edits.
+`Results section jobs` must classify each in-scope Results section as phenomenon-establishing, mechanism-defining, tool-diagnostic, tool-validation, or discovery cash-out.
+`Pivot section` must name the Results section or transition where the reader's model should change.
+`Pivot sentence` must state the one sentence that makes that change explicit.
+`Discovery cash-out section` must name where the paper-level discovery becomes unavoidable rather than optional.
+`Tool role` must say what bounded scientific job the tool is allowed to do in the story.
+`Reference-object role` must say how any reference object serves the broader discovery.
+`Discovery-vs-tool weight budget` must explain how the round keeps discovery weight higher than tool-validation weight and where compression or merging is required if tool sections are overweight.
+`Redundancy / breathing risks` must identify repeated explanations, uniformly dense passages, or missing reset sentences that keep the paper from feeling like one cognitive shift.
+`Worldview-shift sentence` must state how the Discussion opening will upgrade the paper's meaning rather than recap Results.
 
 Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
 If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
@@ -55,6 +99,10 @@ If delegation is chosen, split the request into multiple child packets when it s
 `Plan items owned` must name the exact subset the delegated child or direct implementer is accountable for closing.
 `Delivery evidence required` must identify the text, file, or artifact evidence needed before the top-level agent may claim completion.
 `Risk level` must classify the round as `high-risk` or `non-high-risk`.
+`Architecture scope` must be one of `local-salience`, `cross-section`, or `whole-manuscript`.
+Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes.
+Use `cross-section` when the round changes more than one section, changes section bridges, or redistributes discovery-versus-tool weight without rebuilding the full paper.
+Use `whole-manuscript` when the round restructures the Results spine or whole-paper story architecture.
 For `high-risk` rounds, `Review owner` and `Verification owner` must both be named.
 If ownership is compressed, record either a `non-high-risk rationale` or a `compression rationale`.
 `Verification target` must identify who or what verifies delivery against evidence.
@@ -101,6 +149,8 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
 - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
+- explicit `Old-world belief`, `New-world belief`, `Paper protagonist`, `Pivot section`, `Pivot sentence`, `Tool role`, `Reference-object role`, and `Worldview-shift sentence` entries for any local high-salience manuscript hardening round
+- explicit `Old-world belief`, `New-world belief`, `Paper protagonist`, `Paper spine map`, `Results section jobs`, `Pivot section`, `Pivot sentence`, `Discovery cash-out section`, `Tool role`, `Reference-object role`, `Discovery-vs-tool weight budget`, `Redundancy / breathing risks`, and `Worldview-shift sentence` entries for any `cross-section` or `whole-manuscript` manuscript hardening round
 - explicit `Relevant voice exemplar(s)` entries for any high-salience rewrite
 - explicit `Sentence-friction hotspots`, `Causal glue to add`, and `Diction to normalize` entries for any main-manuscript hardening round or other paper-facing explanation round
 - figure and Methods anchors for every claim-level change

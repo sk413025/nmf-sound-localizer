@@ -21,6 +21,12 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Route paper-facing hardening and other high-salience prose work through `docs/governance/scientific-voice-guide.md` so sentence-shape guidance comes from one canonical exemplar set rather than from duplicated local heuristics.
 - Treat sentence-level readability as part of scientific rigor, not as optional polish after claim-floor work is finished.
 - Require paper-facing workflow to optimize for reader-first scientific explanation, not only for contract compliance or hedge removal.
+- Treat narrative architecture as part of scientific rigor. The branch must optimize for one cognitive shift with one stable protagonist, not only for locally clean claim-floor sentences.
+- Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
+- Require paper-facing workflow to identify `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
+- Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, and discovery-versus-tool weight budget before local sentence polishing begins.
+- Keep architecture artifacts phase-correct: `Paper spine map` is a drafting-time packet artifact, while `Architecture evidence map` is a closeout-time verification artifact for `cross-section` and `whole-manuscript` rounds that claim architecture landed.
+- Do not let experiment chronology, tool fascination, or section-local optimization substitute for paper architecture.
 - Distinguish branch-local source of truth from archive material.
 - Route the top-level agent through `agent-orchestrator` and require an explicit execution-or-delegation decision before specialist work begins.
 - Multi-agent recommendations must include explicit acceptance criteria and ownership boundaries.
@@ -61,6 +67,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - local skills align with branch governance and stay limited to the core branch workflows
 - top-level routing goes through `agent-orchestrator`
 - agent-first guidance makes it explicit that manuscript rigor is not implemented as timid or self-diminishing scientific prose
+- agent-first guidance makes it explicit that editorial adequacy is not established by sentence polish alone when protagonist, pivot, or tool-vs-discovery weighting are still wrong
+- agent-first guidance makes whole-paper architecture explicit enough that a rewriter cannot satisfy the workflow with local paragraph improvements alone
 - task packets and role definitions are discoverable from the main governance path
 - top-level routing guidance distinguishes direct execution from delegated execution and explains when decomposition is required
 - task packets include `Relevant conversation context` and explicit `Context mode`

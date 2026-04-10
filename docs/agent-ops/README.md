@@ -34,7 +34,7 @@ This layer treats:
 
 - `AGENTS.md` is the constitution
 - `docs/governance/` defines contracts
-- `docs/governance/scientific-voice-guide.md` is the canonical positive-style reference for paper-facing explanation, including sentence-energy and natural-scientific-English defaults
+- `docs/governance/scientific-voice-guide.md` is the canonical positive-style reference for paper-facing explanation, including narrative architecture, sentence-energy, and natural-scientific-English defaults
 - `docs/agent-ops/` defines execution and handoff
 - project-local skills implement repeated task workflows
 
@@ -54,16 +54,18 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 
 1. human gives a goal
 2. the top-level supervisor routes through `agent-orchestrator` and decides whether to execute directly or delegate
-3. for paper-facing work, the top-level supervisor extracts the supported discovery sentence before caveat-hardening the prose, then runs a sentence-energy pass and uses the canonical `SV#` exemplars to guide both high-salience framing and sentence-level craft across manuscript, legend, asset-review, and paper-facing analysis surfaces
-4. when delegating, the top-level supervisor chooses the child role, specialist skill, and unified task packet
-5. the round records `Relevant conversation context`, `Context mode`, risk level, and ownership boundaries
-6. for paper-facing explanation and paper-facing hardening, the top-level supervisor selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
-7. direct work or delegated child work proceeds through one of the core skills
-8. reviewer or red-team agents challenge outputs when required, using the canonical reviewer stack instead of ad hoc reviewer personas
-9. the packet or closeout classifies the round as `high-risk` or `non-high-risk`
-10. for `high-risk` rounds, the round names both a review owner and a verification owner; compressed ownership requires an explicit compression rationale
-11. for `non-high-risk` rounds, compressed ownership requires a non-high-risk rationale
-12. the top-level supervisor consolidates only against the round's owned plan items, acceptance surface, delivery evidence, and verification target
-13. if delivered scope is narrower than planned scope, the top-level supervisor discloses the downgrade explicitly rather than closing out the original round as complete
-14. use the closeout-integrity governance contract plus `ROUND_CLOSEOUT_TEMPLATE.md` for dialogue closeouts when a reusable ledger helps, but do not treat the template as a mandatory repo artifact
-15. the human approves or redirects at milestone boundaries
+3. for paper-facing work, the top-level supervisor first classifies `Architecture scope` as `local-salience`, `cross-section`, or `whole-manuscript`
+4. `cross-section` and `whole-manuscript` rounds must carry the full drafting-time bundle in the packet: `Old-world belief`, `New-world belief`, `Paper protagonist`, `Supporting actors`, `Paper spine map`, `Results section jobs`, `Pivot section`, `Pivot sentence`, `Discovery cash-out section`, `Tool role`, `Reference-object role`, `Discovery-vs-tool weight budget`, `Redundancy / breathing risks`, and `Worldview-shift sentence`
+5. when a `cross-section` or `whole-manuscript` round claims architecture landed, the closeout must carry an `Architecture evidence map`
+6. when delegating, the top-level supervisor chooses the child role, specialist skill, and unified task packet
+7. the round records `Relevant conversation context`, `Context mode`, risk level, and ownership boundaries
+8. for paper-facing explanation and paper-facing hardening, the top-level supervisor selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
+9. direct work or delegated child work proceeds through one of the core skills
+10. reviewer or red-team agents challenge outputs when required, using the canonical reviewer stack instead of ad hoc reviewer personas
+11. the packet or closeout classifies the round as `high-risk` or `non-high-risk`
+12. for `high-risk` rounds, the round names both a review owner and a verification owner; compressed ownership requires an explicit compression rationale
+13. for `non-high-risk` rounds, compressed ownership requires a non-high-risk rationale
+14. the top-level supervisor consolidates only against the round's owned plan items, acceptance surface, delivery evidence, and verification target
+15. if delivered scope is narrower than planned scope, the top-level supervisor discloses the downgrade explicitly rather than closing out the original round as complete
+16. use the closeout-integrity governance contract plus `ROUND_CLOSEOUT_TEMPLATE.md` for dialogue closeouts when a reusable ledger helps, but do not treat the template as a mandatory repo artifact
+17. the human approves or redirects at milestone boundaries
