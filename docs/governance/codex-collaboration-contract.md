@@ -33,6 +33,18 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
   - what remains canonical after the change
   - what complexity risk stays open
 - If a governance change adds a field, verdict, artifact, or workflow branch without also deleting or collapsing an older duplicated surface, treat the change as presumptively invalid.
+- Treat these as default complexity symptoms:
+  - duplicated schema or field inventory
+  - a derived-state field pretending to be canonical machine state
+  - checker semantic overreach into reviewer judgment
+  - complexity displacement from docs into a checker or from a checker back into docs
+  - a tutorial or worked example starting to act like a second contract
+- Repair governance complexity in one order only:
+  - detect the duplicated or over-modeled surface
+  - classify it as `principle`, `machine state`, `reviewer judgment`, or `worked example`
+  - delete or merge one duplicated surface before adding anything new
+  - rewrite the surviving canonical home so it can carry the full job alone
+- Do not call a governance-changing round simplified unless that deletion or merge actually landed.
 - Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
 - Require paper-facing workflow to identify `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
 - Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, discovery-versus-tool weight budget, second-layer discovery, broader-implication trunk, and downstream-consequence branch before local sentence polishing begins.

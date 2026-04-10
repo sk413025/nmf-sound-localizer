@@ -74,6 +74,13 @@ Red-team review is mandatory for:
 
 When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_PROTAGONIST_DRIFT`, `WARN_MISSING_PIVOT`, `WARN_TOOL_OVERWEIGHT`, `WARN_WORLDVIEW_RECAP`, `WARN_SECTION_JOB_DRIFT`, `WARN_DISCOVERY_CASHOUT_BURIED`, `WARN_SECOND_LAYER_DISCOVERY_MISSING`, `WARN_SECOND_LAYER_NOT_EARNED`, `WARN_BRANCH_NOT_EARNED`, `WARN_TRUNK_BRANCH_COLLAPSE`, `WARN_BOLT_ON_IMPLICATION`, `WARN_FRONT_DOOR_PRELOAD_MISSING`, `WARN_TWO_TAKEAWAY_FAILURE`, `WARN_OPTIONAL_LEAF_OVERWEIGHT`, `WARN_LEAF_SHOULD_DROP`, `WARN_NO_BOLT_ON_TEST_MISSING`, `WARN_BREATHING_COLLAPSE`, `WARN_ARCHITECTURE_SCOPE_MISROUTED`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
 
+When `WARN_OVERMODELED_GOVERNANCE` is raised, repair in one order only:
+
+1. name the duplicated or over-modeled surface
+2. classify it as `principle`, `machine state`, `reviewer judgment`, or `worked example`
+3. delete or merge one duplicated surface
+4. rewrite the surviving canonical home so it carries the job alone
+
 ## Closeout integrity checks
 
 Before a round is reported as complete, confirm all of the following:

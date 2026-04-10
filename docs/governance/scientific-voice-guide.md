@@ -68,6 +68,28 @@ Use this ladder to decide whether a sentence belongs in the paper spine at all.
 
 The branch-local worked example for this ladder belongs only in `paper-submission/references/results-to-narrative.md`. Do not recreate a second worked example in contracts, reviewer docs, or closeout templates.
 
+## Broader-significance simplification rule
+
+Only one broader sentence may behave like a paper-level finding: the `second-layer discovery`.
+
+- The trunk may change how an editor understands the substrate, sensing location, or organizing principle.
+- A branch may say what that trunk now makes possible, but it must remain easier to delete than the trunk.
+- A leaf may appear only if deleting it would not improve editor memory for the trunk and branch.
+
+Treat these as complexity symptoms in paper-facing narrative:
+
+- more than one trunk sentence competes for paper-level memory
+- a branch needs a new protagonist or literature thread to sound important
+- a branch survives after the trunk is removed
+- an application list is doing work that the second-layer discovery should already be doing
+
+When those symptoms appear, repair in this order:
+
+1. rewrite the trunk in its most conservative truthful form around the paper's own discovery actor
+2. demote any branch that outruns that trunk
+3. delete any leaf that costs more memory than it returns
+4. only then perform local sentence polish
+
 ## Voice separation matrix
 
 Use the right voice for the right surface.

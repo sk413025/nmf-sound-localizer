@@ -73,9 +73,12 @@ When changing governance, workflow, or high-risk gating, ask before adding anyth
 - Is this new field only a projection of an existing status?
 - Is this machine-checkable consistency, or is it actually reviewer judgment?
 - Is this concept already canonical in `ROUND_GOVERNANCE_SCHEMA.md` or another contract?
+- Is complexity being displaced from docs into a checker, or from a checker back into docs?
+- Is this content really `principle`, `machine state`, `reviewer judgment`, or only a `worked example`?
 - What duplicated surface will be removed if this new one lands?
 
 If those questions do not produce a strong answer, simplify or reuse instead of expanding the system.
+For governance-changing rounds, use one repair order only: detect, classify, delete, then rewrite the surviving canonical home.
 
 ## Workflow
 
@@ -99,18 +102,19 @@ If those questions do not produce a strong answer, simplify or reuse instead of 
    - `Boundary-pressure test`
    - `Reviewer-routing survival test`
    - if a leaf remains, also apply the `Leaf deletion test`
-14. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and plan to run `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout.
-15. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
-16. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
-17. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
-18. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
-19. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
-20. Summarize only the task-relevant conversation history.
-21. Use `Context mode: summary-only` by default.
-22. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-23. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-24. Define review, handoff, and escalation requirements.
-25. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+14. For any governance-changing round, run the anti-complexity repair loop before adding new workflow surface: detect the symptom, classify the surface type, name the deletion target, and only then rewrite the surviving canonical home.
+15. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and plan to run `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout.
+16. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
+17. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
+18. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
+19. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
+20. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
+21. Summarize only the task-relevant conversation history.
+22. Use `Context mode: summary-only` by default.
+23. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+24. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+25. Define review, handoff, and escalation requirements.
+26. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 

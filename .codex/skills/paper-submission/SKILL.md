@@ -47,6 +47,13 @@ When broader significance is in scope, keep these defaults explicit:
 - `branch-bounded`: keep only the nearest downstream consequence that remains subordinate to the trunk
 - `anti-complexity`: reuse the canonical narrative ladder instead of inventing a local variant
 
+When broader significance is in scope, simplify in one direction only:
+
+- only the `second-layer discovery` may behave like a paper-level finding
+- if a branch becomes easier to remember than the trunk, demote or delete the branch
+- if a leaf introduces a new literature tour, application frame, or protagonist, delete it unless the branch already lands effortlessly
+- if the paper needs an application list to make the trunk feel real, the trunk is not yet written correctly
+
 ## Workflow
 
 1. Classify the task as revision, audit, submission check, results-to-narrative translation, or coherence pass.
@@ -69,22 +76,23 @@ When broader significance is in scope, keep these defaults explicit:
 12. When broader significance is in scope, classify its promotion level before drafting. Use only `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`.
 13. When broader significance is in scope, state it first as a `second-layer discovery` earned by the paper's own evidence before drafting any downstream application sentence.
 14. When broader significance is in scope, apply the `Earned-discovery test`, `Boundary-pressure test`, and `Reviewer-routing survival test` before keeping the trunk in any high-salience surface.
-15. When an optional leaf is in scope, apply the `Leaf deletion test` before preserving it.
-16. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as a blocking closeout gate.
-17. For local high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
-18. When broader significance is in scope, also write one `two-takeaway editor readout`: the core discovery sentence plus the second-layer discovery sentence a skimming editor should retain.
-19. For local high-salience rewrites, name the closest macro `SV#` exemplar, the closest micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use them as positive rewrite targets, not just as warning labels.
-20. After claim-floor extraction, do a sentence-skeleton pass. For each key sentence, identify the subject, strongest available verb, and explicit consequence.
-21. Then do a sentence-energy pass. Split sentences with more than one main causal move unless scientific precision requires them to stay together.
-22. Translate important numerical changes into meaning. If a sentence gives a rise, drop, or contrast, state what that change means for the scientific point.
-23. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
-24. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, direct cause-effect phrasing, and low noun-stack friction over dense nominalization, front-loaded noun stacks, or manuscript-management language.
-25. Run a lab-meeting English test on paper-facing explanation. If a strong PhD student would not naturally say the sentence aloud, rewrite it in more natural scientific English and then restore only the technical precision that matters.
-26. Check terminology, comparator labels, mechanism language, protagonist stability, and broader-implication trunk stability against the surrounding sections before finalizing.
-27. Perform a coherence pass on transitions, paragraph openings, paragraph endings, and section jobs so the edited text reads as one manuscript rather than a local patch.
-28. If `Architecture scope` is `cross-section` or `whole-manuscript`, verify that section order, discovery cash-out, tool-versus-discovery weight, second-layer discovery, and the chosen broader-significance status are carried consistently across the in-scope surfaces before closeout.
-29. Keep Results interpretive and Methods procedural.
-30. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
+15. When broader significance is in scope, apply one simplification repair order before local sentence polish: rewrite the trunk conservatively around the discovery actor, demote any branch that outruns it, and delete any leaf that harms trunk memory.
+16. When an optional leaf is in scope, apply the `Leaf deletion test` before preserving it.
+17. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as a blocking closeout gate.
+18. For local high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
+19. When broader significance is in scope, also write one `two-takeaway editor readout`: the core discovery sentence plus the second-layer discovery sentence a skimming editor should retain.
+20. For local high-salience rewrites, name the closest macro `SV#` exemplar, the closest micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use them as positive rewrite targets, not just as warning labels.
+21. After claim-floor extraction, do a sentence-skeleton pass. For each key sentence, identify the subject, strongest available verb, and explicit consequence.
+22. Then do a sentence-energy pass. Split sentences with more than one main causal move unless scientific precision requires them to stay together.
+23. Translate important numerical changes into meaning. If a sentence gives a rise, drop, or contrast, state what that change means for the scientific point.
+24. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
+25. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, direct cause-effect phrasing, and low noun-stack friction over dense nominalization, front-loaded noun stacks, or manuscript-management language.
+26. Run a lab-meeting English test on paper-facing explanation. If a strong PhD student would not naturally say the sentence aloud, rewrite it in more natural scientific English and then restore only the technical precision that matters.
+27. Check terminology, comparator labels, mechanism language, protagonist stability, and broader-implication trunk stability against the surrounding sections before finalizing.
+28. Perform a coherence pass on transitions, paragraph openings, paragraph endings, and section jobs so the edited text reads as one manuscript rather than a local patch.
+29. If `Architecture scope` is `cross-section` or `whole-manuscript`, verify that section order, discovery cash-out, tool-versus-discovery weight, second-layer discovery, and the chosen broader-significance status are carried consistently across the in-scope surfaces before closeout.
+30. Keep Results interpretive and Methods procedural.
+31. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
 
 ## Required output bundle
 
