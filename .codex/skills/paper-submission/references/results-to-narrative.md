@@ -164,6 +164,8 @@ Promote slowly. Demote quickly.
 
 Worked example for this branch:
 
+This is the only branch-local worked example for the Nature-level narrative ladder. Do not recreate a parallel example set in contracts, packet templates, reviewer docs, or closeout templates.
+
 - `core discovery`
   - ordinary passive objects carry a recurring local directional code
 - `second-layer discovery`

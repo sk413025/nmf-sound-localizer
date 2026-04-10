@@ -48,6 +48,26 @@ Use these architecture defaults unless the packet explicitly declares a method-f
 
 Architecture failure is still a writing failure even when the sentences are locally clear.
 
+## Nature-level narrative ladder
+
+Treat this guide as the only canonical home for the paper-facing narrative ladder:
+
+1. `old-world belief`
+2. `core discovery`
+3. `governing principle`
+4. `second-layer discovery`
+5. `bounded downstream consequence`
+6. `boundary`
+
+Use this ladder to decide whether a sentence belongs in the paper spine at all.
+
+- If a sentence cannot be rewritten as an inference from the paper's own discovery actor, it is not a `second-layer discovery`.
+- If a consequence outruns the second-layer discovery, demote it to a weaker branch or delete it.
+- If broader significance cannot survive conservative pressure, keep the round at `core-only`.
+- Do not let applications compete with the trunk for paper-level memory.
+
+The branch-local worked example for this ladder belongs only in `paper-submission/references/results-to-narrative.md`. Do not recreate a second worked example in contracts, reviewer docs, or closeout templates.
+
 ## Voice separation matrix
 
 Use the right voice for the right surface.

@@ -58,13 +58,15 @@ Apply this execution-or-delegation rule in both Default mode and Plan mode.
 
 When broader significance is in scope, keep these defaults explicit:
 
+- `discovery-first`: preserve the core discovery before polishing broader significance
+- `second-layer-aware`: broader significance must first become an evidence-earned second-layer discovery
 - `promotion-conservative`: do not promote beyond what the evidence clearly earns
-- `demotion-forward`: prefer demotion or deletion over defending a weak trunk, branch, or leaf
-- `editor-memory-first`: preserve the trunk sentence a skimming editor should actually retain
-- `reviewer-routing aware`: do not promote wording that only survives with an unusually sympathetic adjacent-field reviewer
-- `anti-slogan`: reject broad application language that cannot be restated as an evidence-earned discovery actor inference
+- `branch-bounded`: keep only the nearest downstream consequence that remains subordinate to the trunk
+- `anti-complexity`: reuse the canonical narrative ladder and canonical schema instead of inventing local variants
 
 ## Complexity self-check
+
+Use `docs/governance/codex-collaboration-contract.md` as the canonical anti-complexity rule source.
 
 When changing governance, workflow, or high-risk gating, ask before adding anything:
 

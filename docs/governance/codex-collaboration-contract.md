@@ -26,11 +26,13 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Treat broader significance as a governed promotion ladder rather than an intuition call. The only allowed statuses are `core-only`, `second-layer earned`, `branch earned`, and `leaf allowed`.
 - Do not let one concept acquire multiple canonical homes. If a schema, ladder, or field inventory is machine-readable in one place, other docs should reference it rather than re-implement it.
 - Do not let the checker over-model reviewer judgment. Executable gates should enforce consistency and ownership boundaries, not infer higher-level paper verdicts that belong to review.
+- Treat this contract as the canonical home of anti-complexity discipline for governance and workflow changes. Other docs may apply that discipline, but they should not restate a second full rule set.
 - Any governance expansion must answer four questions before landing:
   - why existing primitives were insufficient
   - what duplicated surface was removed
   - what remains canonical after the change
   - what complexity risk stays open
+- If a governance change adds a field, verdict, artifact, or workflow branch without also deleting or collapsing an older duplicated surface, treat the change as presumptively invalid.
 - Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
 - Require paper-facing workflow to identify `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
 - Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, discovery-versus-tool weight budget, second-layer discovery, broader-implication trunk, and downstream-consequence branch before local sentence polishing begins.

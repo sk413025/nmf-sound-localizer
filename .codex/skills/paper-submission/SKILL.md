@@ -35,15 +35,17 @@ If the task is about converting results into stronger manuscript logic, cross-di
 
 - [references/results-to-narrative.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/paper-submission/references/results-to-narrative.md)
 
+Treat `docs/governance/scientific-voice-guide.md` as the only canonical definition of the Nature-level narrative ladder, and treat `references/results-to-narrative.md` as the only branch-local worked example for that ladder.
+
 ## Repo-local stance for broader significance
 
 When broader significance is in scope, keep these defaults explicit:
 
+- `discovery-first`: protect the core discovery before trying to improve broader significance
+- `second-layer-aware`: broader significance must first appear as an evidence-earned second-layer discovery
 - `promotion-conservative`: do not upgrade a branch into a trunk just because the sentence sounds smoother
-- `demotion-forward`: drop or demote weak leaves instead of protecting them through extra explanation
-- `editor-memory-first`: preserve the one trunk sentence an editor should remember after one skim
-- `reviewer-routing aware`: keep only the broader implication that survives likely reviewer routing
-- `anti-slogan`: ban generic “smart environments”, “AI”, or similar utility slogans unless they descend from an earned trunk
+- `branch-bounded`: keep only the nearest downstream consequence that remains subordinate to the trunk
+- `anti-complexity`: reuse the canonical narrative ladder instead of inventing a local variant
 
 ## Workflow
 
