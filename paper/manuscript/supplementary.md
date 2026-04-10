@@ -2,7 +2,7 @@
 
 **Object-specific directional readout in calibrated passive objects**
 
-Sound direction enters the measured LDV spectrum through the object's continuous structural response, and the following derivations trace how that response becomes a standardized directional fingerprint and a local-overlap decoding problem in the acrylic reference-object study and its object-specific extensions. In the cross-object extension, the relevant observation is whether compact, locally organized directional fingerprints recur beyond the acrylic reference object and preserve the structural precondition for the acrylic readout problem. The reduced-order surrogate isolates the local angle geometry, whereas the guided solver writes that local continuity into staged residual updates in the full standardized feature space and the OMP baseline provides the hard-selection comparison.
+Sound direction enters the measured LDV spectrum through the object's continuous structural response. The derivations below connect that response to the standardized directional fingerprints, local-overlap geometry, and staged residual updates used in the acrylic reference-object study and in the cross-object extension. The reduced-order surrogate makes the local angle geometry explicit. The guided solver then preserves that local continuity in the full standardized feature space, with OMP providing the hard-selection comparison.
 
 ## Supplementary Methods 1. Single-spectrum response from the continuous plate model
 
@@ -155,7 +155,7 @@ H=[h_1,\dots,h_E]\in\mathbb{R}^{F\times E},
 \tag{S15}
 $$
 
-where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the experimental dictionary used for downstream analysis and inference. It is built from standardized measured fingerprints, whereas \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix.
+where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the experimental dictionary used for downstream analysis and inference. It is built from standardized measured fingerprints. By contrast, \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix.
 
 To isolate angle-dependent structure from shared magnitude offsets, we analyze the centered-magnitude matrix
 
@@ -175,7 +175,7 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. This compact measured structure motivates a local-overlap decoding picture rather than a search over unrelated angle templates.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. This compact measured structure motivates a local-overlap decoding picture on the calibrated angle grid.
 
 Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints and carries the local angle ordering into measured space. In the full standardized feature space, a held-out fingerprint can be written as
 
@@ -206,7 +206,7 @@ z \approx A x,
 \tag{S20}
 $$
 
-This projected form makes the reduced-order geometry behind Eq. 2 explicit. It is a bridge for describing why nearby calibrated directions compete locally, not the implemented inference surface itself. The decoder used in Figs. 4 and 5 operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, rather than on the projected pair \((z, A)\).
+This projected form makes the reduced-order geometry behind Eq. 2 explicit. It clarifies why nearby calibrated directions compete locally. The decoder used in Figs. 4 and 5 still operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, not on the projected pair \((z, A)\).
 
 ## Supplementary Methods 3. Hard OMP on the reduced-order surrogate
 
@@ -267,11 +267,11 @@ $$
 \tag{S27}
 $$
 
-Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Because that recursion selects one support element and orthogonalizes immediately, locally coherent neighboring directions are exactly the regime in which it becomes brittle: once one group is chosen, coupled evidence from the same neighborhood is no longer carried intact into the next residual step. Figure 3 therefore does not plot that full recursion. Instead, it isolates the first discrete commitment in the full standardized space: starting from \(r_0=\tilde y\), the plotted stage-0 score aggregates the grouped inner-product magnitudes \(|g_0[e,m]| = |\langle \tilde y,d_{e,m}\rangle|\) within each direction group. When that stage-0 score concentrates near the matched direction, the current fingerprint remains locally separable; when it spreads across neighboring groups, the fingerprint becomes locally ambiguous and an immediate first choice becomes unstable on held-out speech. The noise-response curves in Fig. 3f use that same stage-0 diagnostic but remain a separate surface from Fig. 3d: the white-noise branch is recomputed on synthetic noisy white-noise datasets, whereas the speech branch comes from a separate five-seed speech-plus-babble sweep.
+Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Because that recursion selects one support element and orthogonalizes immediately, locally coherent neighboring directions are exactly the regime in which it becomes brittle: once one group is chosen, coupled evidence from the same neighborhood no longer carries intact into the next residual step. Figure 3 therefore isolates the first discrete commitment in the full standardized space instead of plotting the full recursion. Starting from \(r_0=\tilde y\), the plotted stage-0 score aggregates the grouped inner-product magnitudes \(|g_0[e,m]| = |\langle \tilde y,d_{e,m}\rangle|\) within each direction group. When that stage-0 score concentrates near the matched direction, the current fingerprint remains locally separable; when it spreads across neighboring groups, the fingerprint becomes locally ambiguous and an immediate first choice becomes unstable on held-out speech. The noise-response curves in Fig. 3f use that same stage-0 diagnostic but remain a separate surface from Fig. 3d: the white-noise branch is recomputed on synthetic noisy white-noise datasets, whereas the speech branch comes from a separate five-seed speech-plus-babble sweep.
 
 ## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
 
-The guided solver is a physics-guided residual-correction readout with learned local gating. It operates directly in the full standardized feature space and replaces immediate one-angle commitment with learned local gating, thereby preserving the contiguous angle neighborhood implied by the calibrated dictionary long enough for subtraction to act on a physically plausible local support. The staged updates gather and resolve broad local evidence before subtraction, matching the local-overlap regime established in Fig. 3. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same, but locally coupled evidence is pooled before subtraction instead of being collapsed into an immediate one-angle choice.
+The guided solver is a physics-guided residual-correction readout with learned local gating. It operates directly in the full standardized feature space and replaces immediate one-angle commitment with learned local gating, preserving the contiguous angle neighborhood implied by the calibrated dictionary long enough for subtraction to act on a physically plausible local support. The staged updates gather and resolve broad local evidence before subtraction, matching the local-overlap regime established in Fig. 3. At each stage, the solver scores the current residual against the physical dictionary, routes that evidence across nearby direction groups, applies a gated update, and then recomputes the residual. Relative to Supplementary Methods 3, the residual-correction scaffold stays the same; the difference here is that locally coupled evidence is pooled before subtraction.
 
 The guided solver uses a grouped dictionary
 
@@ -298,7 +298,7 @@ $$
 
 Unlike the reduced-order hard-OMP recursion in Supplementary Methods 3, the routed solver does not commit to one support element and refit. Instead it distributes weight across a local neighborhood of angle groups before subtraction.
 
-The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions, so the subtraction step acts on a focused local neighborhood rather than on an immediate one-angle choice. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the reported implementation, that pooling step is an L2 norm over the per-direction atom scores. The implementation then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
+The learned routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions, so the subtraction step acts on a focused local neighborhood after broad support has been pooled. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those atom-level scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the reported implementation, that pooling step is an L2 norm over the per-direction atom scores. The implementation then converts the direction-level scores into routing weights with a Gumbel-family gating rule,
 
 $$
 w_t = \mathrm{GumbelSoftmax}\!\left(s_t^{(\mathrm{exp})};\tau\right),
