@@ -5,15 +5,16 @@ This file is a navigation summary for the active six main-paper figures used in
 
 Primary authorities:
 
-- manuscript-facing semantics: `paper/manuscript/manuscript.md`
+- main-manuscript semantics: `paper/manuscript/manuscript.md`
 - canonical figure naming: `paper/manuscript/FIGURE_NAMING_CONTRACT.md`
 - machine-readable figure/panel contract: `figures/conf/experiments.yaml`
 - intended panel-mm layout: `figures/conf/layout_spec.md`
 - realized layout evidence: `paper/figures/*.layout.json`
 - review workflow configuration: `figures/conf/review_targets.yaml`
 
-`paper/figures/` is a final-assets-only manuscript surface. Mixed-figure support
-panels live under `figures/output/*_panels/`.
+`paper/figures/` is a final-assets-only paper-facing asset surface. It also serves
+as the literal manuscript-facing delivery surface for final paper figures. Mixed-figure
+support panels live under `figures/output/*_panels/`.
 
 Retired material:
 
@@ -22,7 +23,7 @@ Retired material:
 
 ## Overview
 
-| Figure | Manuscript asset | Generator / composer | Panel mode | Contract anchor |
+| Figure | Paper-facing asset | Generator / composer | Panel mode | Contract anchor |
 |--------|------------------|----------------------|------------|-----------------|
 | Fig 1 | `paper/figures/fig01_paradigm-shift.jpg` | `fig01_paradigm_data.py` + `compose_master_figure3_family.py` | mixed | `experiments.yaml → fig01_manual` |
 | Fig 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | `fig02_svd_spectrum.py` | data-backed | `experiments.yaml → fig02_svd` |
@@ -35,28 +36,28 @@ Retired material:
 
 ### Fig 1 — Direction-Dependent Structural Filtering
 
-- Manuscript asset: `paper/figures/fig01_paradigm-shift.jpg`
+- Paper-facing asset: `paper/figures/fig01_paradigm-shift.jpg`
 - Generator / composer: `figures/generators/fig01_paradigm_data.py` + `scripts/paper/compose_master_figure3_family.py`
 - Active panel manifest: `figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig01_manual`
 
 ### Fig 2 — Structured Physical Dictionary
 
-- Manuscript asset: `paper/figures/fig02_svd-physical-dictionary.jpg`
+- Paper-facing asset: `paper/figures/fig02_svd-physical-dictionary.jpg`
 - Generator: `figures/generators/fig02_svd_spectrum.py`
 - Active panel manifest: `figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig02_svd`
 
 ### Fig 3 — Discriminability And Classical OMP Failure
 
-- Manuscript asset: `paper/figures/fig03_fingerprint-discriminability.jpg`
+- Paper-facing asset: `paper/figures/fig03_fingerprint-discriminability.jpg`
 - Generator: `figures/generators/fig03_fingerprint_discriminability.py`
 - Active panel manifest: `figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig03_discriminability`
 
 ### Fig 4 — Physics-Guided Solver Mechanism
 
-- Manuscript asset: `paper/figures/fig04_solver-dynamics.jpg`
+- Paper-facing asset: `paper/figures/fig04_solver-dynamics.jpg`
 - Generator / composer: `figures/generators/fig04_solver_dynamics.py` + `scripts/paper/compose_master_figure3_family.py`
 - Composite asset: `figures/output/fig04_solver_dynamics.pdf`
 - Active panel manifest: `figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json`
@@ -65,7 +66,7 @@ Retired material:
 
 ### Fig 5 — Performance And Structure
 
-- Manuscript asset: `paper/figures/fig05_performance-structure.jpg`
+- Paper-facing asset: `paper/figures/fig05_performance-structure.jpg`
 - Generator: `figures/generators/fig05_performance_structure.py`
 - Active panel manifest: `figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json`
 - Contract entry: `figures/conf/experiments.yaml → fig05_performance_structure`
@@ -73,7 +74,7 @@ Retired material:
 
 ### Fig 6 — Universality
 
-- Manuscript asset: `paper/figures/fig06_universality.jpg`
+- Paper-facing asset: `paper/figures/fig06_universality.jpg`
 - Generator / composer: `figures/generators/fig06_universality.py` + `scripts/paper/compose_master_figure3_family.py`
 - Manual support panel `a`: `figures/output/fig06_cross_material_universality_panels/fig06_panel_a_material_exemplars.png`
 - Active panel manifest: `figures/output/fig06_universality_manuscript_panels/fig06_panel_manifest.json`

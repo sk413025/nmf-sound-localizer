@@ -1,6 +1,6 @@
 # Active Figure Naming Contract
 
-This document defines the active manuscript-facing figure contract for the current six-figure Nature Communications draft.
+This document defines the active paper-facing figure contract for the current six-figure Nature Communications draft.
 
 Canonical sources:
 
@@ -12,14 +12,14 @@ Canonical sources:
 - `figures/conf/layout_spec.md` for intended panel sizes in mm
 - `paper/figures/*.layout.json` for realized geometry checks
 
-Treat `paper/figures/` as the final manuscript-facing figure surface only.
+Treat `paper/figures/` as the final paper-facing figure surface and the literal manuscript-facing delivery surface only.
 Committed support panels belong under `figures/output/*_panels/`.
 
 The retired nine-figure main-paper contract is historical only. Do not use it as the naming authority for the current manuscript.
 
 ## Active Main-Paper Figures
 
-| Fig. | Manuscript asset | Canonical title | Panels | Layout authority |
+| Fig. | Paper-facing asset | Canonical title | Panels | Layout authority |
 |------|------------------|-----------------|--------|------------------|
 | 1 | `paper/figures/fig01_paradigm-shift.jpg` | Direction-dependent structural filtering revealed by single-point laser vibrometry | a-e | `figures/conf/layout_spec.md` |
 | 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Calibration fingerprints occupy a compact angle-ordered space | a-f | `figures/conf/layout_spec.md` |

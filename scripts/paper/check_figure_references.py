@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check manuscript-facing figure references against the registry and assets."""
+"""Check active paper-facing figure references against the registry and asset contract."""
 
 from __future__ import annotations
 
@@ -116,14 +116,14 @@ def main() -> int:
         if missing_registry:
             print(f"- figure registry missing entries for figures: {missing_registry}")
         if missing_assets:
-            print(f"- paper/figures missing canonical manuscript assets for figures: {missing_assets}")
+            print(f"- paper/figures missing canonical paper-facing assets for figures: {missing_assets}")
         if missing_layouts:
             print(f"- paper/figures missing tracked layout sidecars: {missing_layouts}")
         if unexpected_files:
             print(f"- paper/figures contains non-canonical files: {unexpected_files}")
         return 1
 
-    print("OK: manuscript references, registry entries, and the canonical paper/figures surface match the active Fig. 1-6 contract.")
+    print("OK: main-manuscript references, registry entries, and the canonical paper/figures paper-facing asset surface match the active Fig. 1-6 contract.")
     return 0
 
 
