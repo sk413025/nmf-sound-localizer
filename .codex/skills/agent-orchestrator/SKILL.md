@@ -20,6 +20,7 @@ Open and follow:
 - `START_HERE_AGENT.md`
 - `docs/governance/codex-collaboration-contract.md`
 - `docs/governance/closeout-integrity-contract.md`
+- `docs/governance/scientific-voice-guide.md`
 - `docs/agent-ops/README.md`
 - `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`
@@ -62,12 +63,14 @@ Apply this execution-or-delegation rule in both Default mode and Plan mode.
 5. If delegating, choose the right child task packet, role, and core skill for each child task.
 6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
 7. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
-8. Summarize only the task-relevant conversation history.
-9. Use `Context mode: summary-only` by default.
-10. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-11. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-12. Define review, handoff, and escalation requirements.
-13. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+8. For manuscript-facing hardening, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
+9. For high-salience manuscript rounds, write one `editor readout sentence` and cite at least one relevant `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
+10. Summarize only the task-relevant conversation history.
+11. Use `Context mode: summary-only` by default.
+12. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+13. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+14. Define review, handoff, and escalation requirements.
+15. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 
@@ -132,6 +135,7 @@ Parent acceptance on reviewer-stack use:
 - the reviewer subset is minimal and task-matched
 - the acceptance surface is explicit rather than implied
 - manuscript-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
+- manuscript-facing packets identify the closest `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
 - review findings are consolidated at the parent layer instead of left as disconnected comments
 
 Reviewer qualification gate:
@@ -142,8 +146,12 @@ Reviewer qualification gate:
 
 Manuscript-hardening planning and review checklist:
 
+- claim floor: is the strongest supported discovery sentence explicit, early, and easy to retain
+- claim ceiling: is the stronger unsupported interpretation clearly separated rather than implied
+- evidence boundary: are true scope limits named without collapsing the paragraph into self-negation
 - disciplinary narrative shift: does the prose drift from scientific inference into explanation of paper positioning or process
 - defensive tone: does the text rely on `X rather than Y` framing or rebuttal-like self-defense
+- self-diminishing triggers: do phrases such as `without upgrading`, `descriptive rather than`, `remains positive`, or abstract endings led by `pathway` or `constraint` lower the claim floor without adding precision
 - structural pacing: do section and paragraph endings carry scientific consequence rather than administrative wrap-up
 - figure-as-actor phrasing: are figures or panels narrating sentences that should be carried by observations, interventions, or mechanisms
 - supplement and legend leakage: do supplementary text, legends, or inline legend prose slip into manuscript-management language

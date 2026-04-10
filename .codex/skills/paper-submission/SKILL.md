@@ -22,6 +22,7 @@ Open and follow:
 
 - `START_HERE_AGENT.md`
 - `docs/governance/manuscript-contract.md`
+- `docs/governance/scientific-voice-guide.md`
 - `docs/governance/submission-contract.md`
 - `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/TASK_PACKETS.md`
@@ -45,12 +46,16 @@ If the task is about converting results into stronger manuscript logic, cross-di
    - what the executed results directly support
    - what is a current best mechanism or candidate explanation
    - what remains a frontier or open question
-7. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
-8. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, and direct cause-effect phrasing over dense nominalization, front-loaded noun stacks, or manuscript-management language.
-9. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
-10. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
-11. Keep Results interpretive and Methods procedural.
-12. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
+7. For each revised paragraph, explicitly identify the `claim floor`, `claim ceiling`, and `evidence boundary` before drafting the final prose.
+8. Lead with the supported claim floor. Add the evidence boundary after the reader has already learned what the evidence does support.
+9. For high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
+10. For high-salience rewrites, name the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use it as a positive rewrite target, not just as a warning label.
+11. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
+12. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, and direct cause-effect phrasing over dense nominalization, front-loaded noun stacks, or manuscript-management language.
+13. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
+14. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
+15. Keep Results interpretive and Methods procedural.
+16. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
 
 ## Required output bundle
 
@@ -60,6 +65,8 @@ Include:
 
 - `Exact revised text:` with the exact replacement prose, not a summary
 - `Before anchor:` and `After anchor:` quoting the neighboring manuscript text that brackets the change
+- `Editor readout sentence:` stating the one-sentence discovery a skimming editor should retain from the revised surface
+- `Applied exemplar(s):` naming the `SV#` pair or pairs that guided the rewrite on high-salience surfaces
 - `Unresolved promised joints:` listing any requested transition, claim linkage, or downstream manuscript connection that remains unfinished
 - `Verifier mode:` stating how the verifier should check the change; use `text-diff` when the task is local prose replacement and name any stronger mode when figure, evidence, or claim support must also be re-checked
 
@@ -106,6 +113,14 @@ Common trigger phrases:
 - "make this read naturally"
 - "the logic feels jumpy"
 - "improve the flow between these paragraphs"
+
+Additional self-diminishing trigger phrases:
+
+- `without upgrading`
+- `descriptive rather than`
+- `remains positive` without comparator context
+- abstract endings led by `pathway`, `constraint`, or equivalent caveat-first framing
+- section openings that recap the previous result instead of posing the next scientific question or stating the next supported finding
 
 ## Guardrails
 

@@ -22,6 +22,19 @@ Keep these layers separate:
 3. Frontier or open question
    - what the paper cannot yet claim as established
 
+Scientific voice rule:
+
+- write with earned confidence
+- use `docs/governance/scientific-voice-guide.md` as the canonical sentence-shape and exemplar reference
+- say the supported discovery sentence plainly before naming the limitation
+- if a paragraph sounds safer only because it is weaker, it is probably worse
+
+Editor-first test:
+
+- after drafting, ask what a handling editor would underline in 15 seconds
+- if the answer is a caveat, setup detail, or workflow description, rewrite the paragraph with the closest `SV#` exemplar as the model
+- if the answer is the discovery sentence, keep going
+
 For cross-disciplinary explanation:
 
 - preserve the causal structure
@@ -34,6 +47,7 @@ For plain-language explanation:
 
 - keep the scientific hierarchy intact
 - do not replace uncertainty with confidence
+- do not replace confidence with timidity
 - say "suggests" or "currently points to" when the evidence is descriptive or limited
 
 For whole-manuscript coherence:
@@ -52,11 +66,11 @@ Preferred answer pattern:
 3. what mechanism it points toward
 4. what it still does not prove
 
-Preferred paragraph pattern for Nature-facing Results prose:
+Preferred rewrite move when prose feels too cautious:
 
-1. bridge from the prior paragraph or subsection
-2. state the question or claim for this paragraph
-3. present the evidence that answers it
-4. close with the implication that carries the reader forward
+1. shorten the claim to the supported scope
+2. strengthen the verb until it matches the evidence
+3. move the caveat to the second sentence unless it changes the truth value of the first
+4. keep only the limitations that a reviewer truly needs in order to interpret the claim correctly
 
 If the translation depends on figure meaning, first route through `paper-asset-review` or perform the required visual and provenance backtrace inside `paper-submission`.

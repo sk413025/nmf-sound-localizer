@@ -1,4 +1,4 @@
-.PHONY: paper-build paper-pdf paper-check manuscript figures paper-review-assets paper-review-gate clean
+.PHONY: paper-build paper-pdf paper-check paper-audit-claims paper-audit-voice manuscript figures paper-review-assets paper-review-gate clean
 
 paper-build:
 	bash scripts/paper/build_docx.sh
@@ -13,6 +13,12 @@ paper-check:
 	python scripts/paper/check_asset_boundaries.py
 	python scripts/paper/verify_provenance.py
 	bash scripts/paper/build_docx.sh
+
+paper-audit-claims:
+	python scripts/paper/audit_claim_floor.py
+
+paper-audit-voice:
+	python scripts/paper/audit_claim_floor.py
 
 manuscript: figures paper-build
 
