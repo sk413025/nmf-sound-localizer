@@ -7,12 +7,14 @@ This branch is governed as a manuscript-first research worktree. Contributions s
 1. [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 2. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 3. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
-4. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
+4. [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
+5. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 
 ## Contribution modes
 
 - Manuscript edits:
   - Follow `docs/governance/manuscript-contract.md`
+  - Use `docs/governance/scientific-voice-guide.md` as the canonical positive-style reference for high-salience prose
 - Submission or figure compliance work:
   - Follow `docs/governance/submission-contract.md`
 - Experiments, validations, and results commits:
@@ -41,6 +43,7 @@ Run additional commands as needed:
 
 ```bash
 make paper-build
+make paper-audit-voice
 make manuscript
 make paper-review-assets
 make paper-review-gate

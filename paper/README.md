@@ -37,12 +37,19 @@ This manuscript workspace sits inside a branch-level governance system.
 
 - Branch constitution: `AGENTS.md`
 - Governance contracts: `docs/governance/`
+- Scientific voice canon: `docs/governance/scientific-voice-guide.md`
 - Human and agent quickstarts: `START_HERE_HUMAN.md`, `START_HERE_AGENT.md`
 
 Recommended health check:
 
 ```bash
 make paper-check
+```
+
+Recommended manuscript-voice audit when revising high-salience prose:
+
+```bash
+make paper-audit-voice
 ```
 
 ## Nature Communications formatting (submission)

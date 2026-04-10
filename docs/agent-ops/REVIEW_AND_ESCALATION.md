@@ -45,6 +45,11 @@ Red-team review is mandatory for:
 - `WARN_REVIEW_VERIFICATION_CONFUSION`: reviewer approval is being used as delivery verification without the required evidence check
 - `WARN_PARENT_OVERCLAIM`: the parent claims completion beyond the packet's owned plan items or acceptance surface
 - `WARN_MISSING_HIGH_RISK_VERIFIER`: a `high-risk` round does not name a verification owner
+- `WARN_CLAIM_FLOOR_BURIED`: the supported discovery is present in the evidence but buried under qualifiers, setup detail, or caveat-led wording
+- `WARN_CAVEAT_LEADS`: the highest-salience sentence leads with a limitation, pathway, or constraint instead of the supported advance
+- `WARN_MOMENTUM_COLLAPSE`: repeated hedge-heavy sentence order prevents the manuscript from carrying discovery momentum across sections
+
+When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, or `WARN_MOMENTUM_COLLAPSE` is raised on manuscript-facing prose, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
 
 ## Closeout integrity checks
 

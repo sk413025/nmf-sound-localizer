@@ -2,6 +2,8 @@
 
 Use this contract for any task that changes manuscript text, figure legends, paper structure, or the scientific narrative.
 
+For sentence-shape defaults, salience order, and positive `bad -> good` exemplars, use [scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical style reference.
+
 ## Applies to
 
 - `paper/manuscript/manuscript.md`
@@ -56,10 +58,32 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 **Scientific inference discipline:**
 
 - Manuscript-facing prose must advance by `observation -> inference -> bounded conclusion`, not by document guidance, rebuttal-style positioning, curator narration, or manuscript-management phrasing.
+- For each claim-bearing sentence or paragraph, keep three layers distinct: `claim floor`, `claim ceiling`, and `evidence boundary`.
+- `Claim floor` is the strongest finding the current evidence does support. State it clearly and early instead of hiding it behind defensive qualifiers.
+- `Claim ceiling` is the stronger statement the current evidence does not yet support. Bound it explicitly only when that distinction matters for scientific accuracy.
+- `Evidence boundary` is the real scope limit, transfer condition, or open question that constrains the claim. Keep it separate from the lead claim instead of collapsing the paragraph into self-diminishing wording.
+- Treat self-diminishing prose as a manuscript failure mode. Do not lower the claim floor with prophylactic negation, straw-man disclaimers, or "safe" wording when the evidence already supports a clearer statement.
 - Hold supplementary text, figure legends, inline legends, and manuscript-facing Methods prose to the same prose standard as the main text.
 - Prefer scientific actors and observations over figure-as-actor wording. Avoid panel-choreography phrasing when the sentence can instead name what was measured, changed, or inferred.
 - If a sentence mainly explains how to read the paper, how the manuscript is organized, or how a figure is being used, rewrite it so the sentence states what the evidence implies.
 - If a local rewrite removes passive voice but still reads like a guidebook, rebuttal, caption choreography, or repo-provenance note, it is not yet acceptable manuscript prose.
+- In Abstract endings, Results subsection openings, and the first paragraph of Discussion, lead with the main supported finding or implication before any caveat, pathway framing, or limitation.
+- Phrases such as `without upgrading`, `descriptive rather than`, or `remains positive` without comparator context are presumed rewrite triggers on manuscript-facing surfaces unless they serve a real evidentiary distinction.
+
+**Positive construction defaults:**
+
+- Build high-salience sentences in this order when possible: supported finding, evidence anchor, implication, then boundary.
+- Use the canonical `SV#` exemplars in `scientific-voice-guide.md` when a sentence sounds defensively cautious but the evidence remains strong.
+- When the evidence is strong, strengthen clarity rather than dampening tone. The correct fix for perceived overstatement is usually a narrower claim, not a weaker verb.
+- Distinguish `descriptive` from `insignificant`. A descriptive result may still be central if it organizes the paper's discovery.
+
+**Preferred sentence jobs:**
+
+- Abstract final sentence: state the paper-level advance or implication.
+- Results opening sentence: state the section's scientific question or supported answer.
+- Results closing sentence: state why the result matters for the next section.
+- Discussion opening sentence: interpret the advance at paper level before turning to limitations.
+- Limitation sentence: name the real evidence boundary in one direct clause without re-litigating the main claim.
 
 **Verb and tone discipline:**
 
@@ -96,6 +120,8 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
 - prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
 - prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
+- prose states the supported claim floor clearly before naming the evidence boundary, and does not rely on defensive self-negation to signal rigor
+- the in-scope surface passes the editor-first readout test from `scientific-voice-guide.md`, meaning a skimming editor would remember the supported discovery rather than the caveat
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved

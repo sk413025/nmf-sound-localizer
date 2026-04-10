@@ -17,6 +17,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Prefer existing repository primitives such as `AGENTS.md`, local skills, and `scripts/paper/` over parallel systems.
 - Keep collaboration manuscript-first.
 - Make code subordinate to manuscript, evidence, and submission workflows.
+- Keep agent stance aligned with Nature-facing scientific writing: rigorous, editor-legible, and claim-forward rather than reflexively defensive.
+- Route manuscript-hardening and other high-salience prose work through `docs/governance/scientific-voice-guide.md` so sentence-shape guidance comes from one canonical exemplar set rather than from duplicated local heuristics.
 - Distinguish branch-local source of truth from archive material.
 - Route the top-level agent through `agent-orchestrator` and require an explicit execution-or-delegation decision before specialist work begins.
 - Multi-agent recommendations must include explicit acceptance criteria and ownership boundaries.
@@ -35,6 +37,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, require implementer, reviewer, and verifier separation unless the parent records why the round is not high risk.
 - Parent closeout must cite exact text or exact diff evidence for text-facing claims. Line references and summaries may assist navigation, but they do not replace the underlying evidence.
 - Require independent verification before the parent reports full completion on a high-risk round.
+- Do not let high-risk closeout discipline bleed into manuscript voice. Evidence-boundary rigor belongs in routing, review, and closeout, but manuscript prose must still state the supported claim floor clearly.
 - For paper-related figures, use Codex multimodal capability on the real asset rather than metadata-only inference.
 - Require image inspection for `jpg` and `png`, and page-by-page PDF-to-PNG conversion before figure interpretation when the asset is a `pdf`.
 - For generated or data-backed figures, require a three-layer check: visual asset, generator or composition code, and upstream evidence or provenance artifact.
@@ -55,6 +58,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - main entrypoints clearly route to the right canonical docs
 - local skills align with branch governance and stay limited to the core branch workflows
 - top-level routing goes through `agent-orchestrator`
+- agent-first guidance makes it explicit that manuscript rigor is not implemented as timid or self-diminishing scientific prose
 - task packets and role definitions are discoverable from the main governance path
 - top-level routing guidance distinguishes direct execution from delegated execution and explains when decomposition is required
 - task packets include `Relevant conversation context` and explicit `Context mode`

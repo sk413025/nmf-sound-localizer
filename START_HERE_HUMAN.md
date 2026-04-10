@@ -10,13 +10,15 @@ The intended operating model is agent-first: Codex and other agents do the detai
 2. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 3. [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 4. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
-5. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
+5. [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
+6. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Use these depending on task
 
 - Writing or revising the manuscript:
   - `paper/manuscript/manuscript.md`
   - `docs/governance/manuscript-contract.md`
+  - `docs/governance/scientific-voice-guide.md`
 - Nature submission or artwork compliance:
   - `docs/nature-communications/nature-communications-submission-requirements.md`
   - `docs/governance/submission-contract.md`
@@ -33,6 +35,7 @@ The intended operating model is agent-first: Codex and other agents do the detai
 
 - `make paper-build`
 - `make paper-check`
+- `make paper-audit-voice`
 - `make manuscript`
 - `make paper-review-assets`
 - `make paper-review-gate`

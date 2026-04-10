@@ -53,6 +53,7 @@ Evaluation goal:
 
 - Judge whether the manuscript reads like a Nature Communications paper rather than a narrow lab note or method-only report.
 - Check whether the claimed advance is legible at the paper level before technical details are unpacked.
+- Check whether the manuscript states its claim floor clearly enough for an editor to register the advance on a first pass, rather than burying it under qualifiers, pathways, or defensive framing.
 - Test whether the title, abstract, Results framing, and Discussion together justify editorial interest and scope.
 - Flag cases where the manuscript feels technically busy but editorially under-motivated.
 - Flag rebuttal-style, guidebook-style, or manuscript-positioning prose that explains the paper instead of advancing the scientific inference.
@@ -128,6 +129,7 @@ Evaluation goal:
 
 - Check whether the manuscript moves through problem, method, evidence, and implication in a sequence that feels inevitable rather than patched together.
 - Verify that transitions between sections and figures preserve story logic and do not force the reader to reconstruct missing links.
+- Check that each major section opens with either the next scientific question or the supported answer to that question, not with procedural recap or defensive boundary-setting.
 - Identify places where the paper's logic is buried inside abstract noun chains rather than explicit actions, results, and consequences.
 - Identify abrupt scope changes, repeated explanations, and local rewrites that create whole-manuscript drift.
 - Flag defensive `X rather than Y` framing, panel-choreography prose, and manuscript-positioning sentences that explain paper structure more than scientific consequence.
@@ -141,6 +143,7 @@ Evaluation goal:
 - Identify where density, notation, or panel complexity overwhelms the amount of progress delivered to the reader.
 - Flag nominalization-heavy sentences, overloaded front-loaded noun phrases, and other sentence forms that make the reader decode syntax before science.
 - Flag figure-as-actor, guidebook, curator, and manuscript-management phrasing that makes the reader track paper machinery instead of scientific actors and observations.
+- Flag hedge density that forces the reader to decode caveats before understanding the supported claim floor.
 - Verify that each section and figure earns its complexity and that important takeaways are easy to retain.
 - Flag compression patterns that may be efficient for insiders but exhausting for reviewers or editors.
 
@@ -160,6 +163,18 @@ Reviewer outputs should name:
 - the reviewer role used
 - the evaluation goal being applied
 - the main findings and failure modes
+- the best one-sentence editor readout if the current wording were fixed
+- the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` when the issue is primarily a manuscript-voice or salience failure
 - any required rewrite, evidence, or routing follow-up
+
+## Mandatory reviewer subsets for high-salience prose rounds
+
+For any round that changes the title, abstract, Results subsection openings, section-to-section bridges, figure-to-figure transitions, or the first paragraph of Discussion, the parent must include:
+
+- `handling-editor-scope reviewer`
+- `narrative-flow reviewer`
+- `cognitive-load reviewer`
+
+Add `statistics-evidence reviewer` when wording changes could alter evidence strength or scope, and add `reviewer-routing reviewer` when the new framing may change likely reviewer community routing.
 
 If multiple reviewer roles are used, the supervisor should consolidate them into one manuscript-facing decision rather than leaving them as disconnected comments.

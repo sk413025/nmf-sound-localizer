@@ -9,6 +9,7 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
 - Branch constitution: [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 - Manuscript workspace: [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
 - Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Scientific voice guide: [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
 - Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Canonical documents
@@ -23,6 +24,8 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `figures/FIGURE_REGISTRY.md`
 - Figure layout spec:
   - `figures/conf/layout_spec.md`
+- Scientific voice canon:
+  - `docs/governance/scientific-voice-guide.md`
 - Task routing:
   - `docs/agent-ops/TASK_PACKETS.md`
 - Top-level agent routing:
@@ -36,6 +39,7 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
 ```bash
 make paper-build
 make paper-check
+make paper-audit-voice
 make manuscript
 make paper-review-assets
 make paper-review-gate

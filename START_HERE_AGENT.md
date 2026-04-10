@@ -7,7 +7,8 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 1. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 2. [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 3. [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
-4. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
+4. [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
+5. [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Route in six steps
 
@@ -25,6 +26,16 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 4. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md` and assume only TF + USM + soft-OMP support is active unless proven otherwise.
 5. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
 6. If the task is manuscript-facing hardening or could shift claims, governance, or submission posture, open `docs/agent-ops/NATURE_REVIEWER_STACK.md`, select the applicable reviewer roles and evaluation goals, and stay in the supervisor model for routing.
+
+## Scientific voice default
+
+- Write manuscript prose to make the paper's actual discovery legible to an editor on first read.
+- Lead with the strongest supported claim, then add the evidence boundary.
+- Do not import closeout, verifier, or governance caution language into manuscript-facing sentences.
+- Avoid the false tradeoff `rigorous = timid`. In this branch, rigor means precise support, not self-erasure.
+- If a sentence sounds safer only because it lowers the claim floor, rewrite it.
+- Use this salience order by default: `discovery -> evidence -> implication -> boundary`.
+- Before touching high-salience prose, read the canonical examples in `docs/governance/scientific-voice-guide.md` and use the closest `SV#` exemplar as the rewrite target.
 
 ## Agent-first operating model
 

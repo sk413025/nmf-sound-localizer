@@ -18,6 +18,10 @@ When instructions conflict, follow this order:
 - Keep the branch manuscript-first. Do not treat it as a generic package-development branch or a figure-only sandbox.
 - Keep code subordinate to paper work. Read or change code only when it supports manuscript, evidence, review, or submission tasks.
 - Keep manuscript-facing prose scientific. Across main text, supplementary text, figure legends, inline legends, and manuscript-facing Methods prose, advance by `observation -> inference -> bounded conclusion`, not by rebuttal-style, guidebook-style, curator-style, or manuscript-management language.
+- Keep agent stance scientifically confident. The default manuscript voice in this branch is rigorous, clear, and editor-legible, not prophylactically defensive.
+- State the strongest evidence-backed discovery sentence early. Boundaries, transfer limits, and open questions must remain explicit, but they must not be allowed to erase the supported claim floor.
+- Do not confuse rigor with timidity. Overclaiming is forbidden, but self-diminishing prose is also a branch-level failure mode.
+- Do not let governance, verifier, or closeout language leak into manuscript prose. The paper must read like a scientific argument, not like a safety memo about the argument.
 - For any paper-related figure task, inspect the actual figure visually before interpreting, comparing, replacing, renumbering, or approving it.
 - For `jpg` and `png` paper assets, inspect the image directly. For `pdf` paper assets, convert every page to viewable PNG previews before judging content or suitability.
 - For any generated or data-backed paper figure, inspect the visual asset, the generator or composition code, and the upstream evidence or provenance source before concluding what the figure shows or how it should be used in the manuscript.
@@ -33,6 +37,7 @@ When instructions conflict, follow this order:
 - Agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
 - Branch overview: [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 - Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Scientific voice canon: [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
 - Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Core Contracts
@@ -71,6 +76,15 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - `make paper-review-gate`
 
 ## Current Operating Model
+
+### Agent scientific stance
+
+- The top-level agent should write as if trying to help an editor recognize the paper's real advance on a first pass.
+- Default scientific tone is: `clear claim first, evidence next, boundary after`, not `caveat first, claim later`.
+- When choosing between two truthful phrasings, prefer the one that preserves the supported claim floor and scientific momentum.
+- Treat `underclaim by reflex` as a routing error, not as a sign of higher rigor.
+- Treat defensive strawmen such as `without upgrading into a universal law` or `descriptive rather than` as suspect by default unless they resolve a real evidence ambiguity.
+- For manuscript-facing prose, use [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical positive-style reference and exemplar set.
 
 - The human sets direction and approves milestones.
 - The top-level agent first classifies the task and decides whether direct execution or delegation is the better fit for scope and risk.

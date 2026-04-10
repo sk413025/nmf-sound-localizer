@@ -21,10 +21,27 @@ Every packet should include:
 - `Escalate when`
 - `Context mode`
 
+For manuscript-facing hardening packets, also include:
+
+- `Claim floor`
+- `Claim ceiling`
+- `Evidence boundary`
+- `Editor readout sentence`
+- `Relevant voice exemplar(s)`
+- `Bridge question`
+- `Defensive phrasings to remove`
+
 `Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
 `Context mode: summary-only` is the default.
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
 If the packet includes manuscript-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+`Claim floor` must state the strongest supported discovery sentence for the in-scope surface.
+`Claim ceiling` must state the stronger statement that must not be implied.
+`Evidence boundary` must name the real scope limit or transfer condition instead of embedding that limit inside self-diminishing prose.
+`Editor readout sentence` must state, in one sentence, what an editor should remember after a first pass over the in-scope surface.
+`Relevant voice exemplar(s)` must cite the closest `SV#` pair or pairs from `docs/governance/scientific-voice-guide.md` for title, abstract, Results opening, transition, section-title, or Discussion-opening rewrites.
+`Bridge question` must state why the next section, figure, or paragraph logically follows from the current one.
+`Defensive phrasings to remove` should list local wording patterns such as `without upgrading`, `descriptive rather than`, or other prophylactic negation that lowers the claim floor without adding scientific precision.
 
 Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
 If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
@@ -53,6 +70,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - `docs/nature-communications/nature-communications-submission-requirements.md`
 - Constraints:
   - preserve claim and evidence integrity
+  - state the supported claim floor clearly before adding the evidence boundary
   - default to cross-disciplinary readability for Nature-facing prose
   - inspect neighboring paragraphs and section logic before treating a local rewrite as complete
   - record visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
@@ -76,6 +94,8 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - if only part of the requested manuscript surface lands, close out only that subset and list the remaining items explicitly
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
+  - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
+  - explicit `Relevant voice exemplar(s)` entries for any high-salience rewrite
   - figure and Methods anchors for every claim-level change
   - coherence or terminology notes when surrounding transitions had to change to keep the manuscript natural
   - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation

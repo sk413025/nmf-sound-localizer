@@ -6,6 +6,20 @@ The supervisor is the top-level coordinator for routed work in this branch.
 
 Convert high-level goals into agent-safe work units and keep the branch aligned with manuscript-first outcomes.
 
+The supervisor must preserve two things at once:
+
+- evidence discipline
+- claim-floor legibility
+
+Do not protect the first by sacrificing the second.
+
+Use this default manuscript salience ladder:
+
+1. what was discovered
+2. what evidence supports it
+3. why it matters
+4. what boundary still applies
+
 ## Codex-native baseline
 
 Define `codex-native` from real primitives in this branch:
@@ -52,17 +66,20 @@ This execution-or-delegation rule applies in both Default mode and Plan mode.
 4. if delegating, decide whether the request is a true single-child task or must be decomposed into multiple child tasks
 5. if delegating, choose the right child role, specialist skill, and task packet for each child task
 6. use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout
-7. define the packet's `Risk level`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
-8. choose `summary-only` or `summary+fork_context`
-9. if delegating, assign child specialists with explicit outputs and handoff targets
-10. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
-11. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
-12. if delegating, monitor active child agents and inspect status before interrupting, redirecting, or closing them
-13. request review or red-team critique when required
-14. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
-15. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
-16. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
-17. escalate to the human approver only at milestone boundaries
+7. for manuscript-facing work, write the supported discovery sentence before writing the caveat or boundary sentence
+8. for manuscript-facing hardening, write one `editor readout sentence` before drafting the final paragraph so the round has a target for salience
+9. for manuscript-facing hardening, cite at least one relevant `SV#` exemplar from `docs/governance/scientific-voice-guide.md` when the round is rewriting high-salience prose
+10. define the packet's `Risk level`, `Acceptance surface`, `Out-of-scope surfaces`, `Plan items owned`, `Delivery evidence required`, `Review owner`, `Verification owner`, `Verification target`, and `Scope downgrade rule`
+11. choose `summary-only` or `summary+fork_context`
+12. if delegating, assign child specialists with explicit outputs and handoff targets
+13. for `high-risk` rounds, name both review owner and verification owner; if ownership is compressed, record a compression rationale
+14. for `non-high-risk` rounds, record either distinct owners or a non-high-risk rationale for compressed ownership
+15. if delegating, monitor active child agents and inspect status before interrupting, redirecting, or closing them
+16. request review or red-team critique when required
+17. consolidate outputs against owned plan items and delivered evidence, not against a broader round narrative
+18. if delivered scope is narrower than planned scope, close out only the delivered subset and disclose the downgrade explicitly
+19. use the sanctioned closeout route from `docs/governance/closeout-integrity-contract.md` and `ROUND_CLOSEOUT_TEMPLATE.md` when a dialogue closeout needs a reusable ledger, but do not require a repo artifact for every round
+20. escalate to the human approver only at milestone boundaries
 
 ## Execution and decomposition threshold
 
@@ -104,6 +121,7 @@ Decompose into multiple child tasks when any of the following are true:
 - Do not close a round as complete without text evidence that the owned acceptance surface landed.
 - Do not let reviewer approval substitute for verifier confirmation when the packet requires distinct evidence checks.
 - Treat missing verifier ownership on a `high-risk` round as a closeout failure, not as an optional omission.
+- Do not let the language habits of review or closeout contaminate manuscript prose. A child may write caution into a packet or closeout, but manuscript-facing text must still preserve the supported claim floor.
 
 ## Context handoff policy
 

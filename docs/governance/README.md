@@ -24,6 +24,7 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
 
 - [experiment-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/experiment-contract.md)
 - [manuscript-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/manuscript-contract.md)
+- [scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
 - [submission-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/submission-contract.md)
 - [codex-collaboration-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/codex-collaboration-contract.md)
 - [closeout-integrity-contract.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/closeout-integrity-contract.md)
@@ -36,6 +37,8 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - use the experiment contract
 - Writing or revising the paper:
   - use the manuscript contract
+  - use the scientific voice guide as the canonical positive-style reference
+  - preserve the supported claim floor; do not let governance or closeout caution become manuscript tone
 - Checking Nature-facing compliance or packaging:
   - use the submission contract
 - Designing or auditing Codex and multi-agent workflows:
