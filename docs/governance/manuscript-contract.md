@@ -4,6 +4,8 @@ Use this contract for any task that changes manuscript text, figure legends, pap
 
 For sentence-shape defaults, salience order, and positive `bad -> good` exemplars, use [scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical style reference.
 
+This contract governs the main-manuscript subset of the broader `paper-facing explanation` model used across the branch.
+
 ## Applies to
 
 - `paper/manuscript/manuscript.md`
@@ -54,6 +56,11 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Reduce noun-stack friction. Avoid overloaded front-loaded noun phrases when a clause with a clear subject and verb would read more naturally.
 - Keep sentence openings light enough that the reader can identify what is acting before they must unpack multiple modifiers, labels, or stacked technical nouns.
 - When drafting or revising a paragraph, check that a cross-disciplinary reader can tell in one pass what changed, what caused it, and why it matters.
+- Default to one main causal move per sentence. If a sentence carries multiple independent results, mechanisms, or implications, split it unless scientific accuracy requires them to stay together.
+- Treat noun stacks longer than three content words as rewrite triggers unless the phrase is an established term of art, a fixed material name, or a standard mathematical label.
+- When a sentence reports a strong numerical comparison, rise, drop, or separation, state the scientific consequence in the same sentence or the next one.
+- Prefer spoken-natural scientific English over formal machine-like compression. If a strong graduate student would not naturally say the sentence aloud in lab meeting, rewrite it.
+- Prefer dynamic verbs over static holding verbs when the stronger verb preserves the truth value. Replace low-energy forms such as `remains`, `stays`, or `continues` when they only mark persistence rather than scientific action.
 
 **Scientific inference discipline:**
 
@@ -63,12 +70,12 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - `Claim ceiling` is the stronger statement the current evidence does not yet support. Bound it explicitly only when that distinction matters for scientific accuracy.
 - `Evidence boundary` is the real scope limit, transfer condition, or open question that constrains the claim. Keep it separate from the lead claim instead of collapsing the paragraph into self-diminishing wording.
 - Treat self-diminishing prose as a manuscript failure mode. Do not lower the claim floor with prophylactic negation, straw-man disclaimers, or "safe" wording when the evidence already supports a clearer statement.
-- Hold supplementary text, figure legends, inline legends, and manuscript-facing Methods prose to the same prose standard as the main text.
+- Hold supplementary text, figure legends, inline legends, and main-manuscript Methods prose to the same prose standard as the main text.
 - Prefer scientific actors and observations over figure-as-actor wording. Avoid panel-choreography phrasing when the sentence can instead name what was measured, changed, or inferred.
 - If a sentence mainly explains how to read the paper, how the manuscript is organized, or how a figure is being used, rewrite it so the sentence states what the evidence implies.
 - If a local rewrite removes passive voice but still reads like a guidebook, rebuttal, caption choreography, or repo-provenance note, it is not yet acceptable manuscript prose.
 - In Abstract endings, Results subsection openings, and the first paragraph of Discussion, lead with the main supported finding or implication before any caveat, pathway framing, or limitation.
-- Phrases such as `without upgrading`, `descriptive rather than`, or `remains positive` without comparator context are presumed rewrite triggers on manuscript-facing surfaces unless they serve a real evidentiary distinction.
+- Phrases such as `without upgrading`, `descriptive rather than`, or `remains positive` without comparator context are presumed rewrite triggers on main-manuscript surfaces unless they serve a real evidentiary distinction.
 
 **Positive construction defaults:**
 
@@ -122,6 +129,7 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
 - prose states the supported claim floor clearly before naming the evidence boundary, and does not rely on defensive self-negation to signal rigor
 - the in-scope surface passes the editor-first readout test from `scientific-voice-guide.md`, meaning a skimming editor would remember the supported discovery rather than the caveat
+- the in-scope surface passes a sentence-energy test: high-salience sentences use clear subjects, explicit causal links, and low enough noun-stack density for one-pass reading
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved

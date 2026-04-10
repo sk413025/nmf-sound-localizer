@@ -12,7 +12,7 @@ Use this order:
 1. Locate the manuscript anchors.
    - Read the relevant Results, legend, and Methods lines first.
 2. Inspect the real asset.
-   - View the manuscript-facing `jpg` or `png`.
+   - View the paper-facing `jpg` or `png` asset.
    - For `pdf`, inspect every page preview first.
 3. Inspect split panels or bundle context when available.
    - Use the review bundle to distinguish panel-local issues from composition issues.

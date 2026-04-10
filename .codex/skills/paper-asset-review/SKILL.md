@@ -10,7 +10,7 @@ Use this skill for:
 - main-paper figure review
 - supplementary or extended-data figure review
 - manual figure asset review
-- future table review tasks that need manuscript-first visual judgment
+- future table review tasks that need paper-facing asset judgment under manuscript-first branch priorities
 - explaining what a figure or panel is actually showing
 - checking whether a figure supports the intended manuscript claim
 - comparing the current figure against reviewer-style critique or rewrite proposals
@@ -22,12 +22,13 @@ Open and follow:
 
 - `START_HERE_AGENT.md`
 - `docs/governance/submission-contract.md`
+- `docs/governance/scientific-voice-guide.md`
 - `docs/agent-ops/NATURE_REVIEWER_STACK.md`
 - `docs/agent-ops/TASK_PACKETS.md`
 - [docs/nature-communications/nature-communications-submission-requirements.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/nature-communications-submission-requirements.md)
 - [docs/nature-communications/paper-asset-review-workflow.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/nature-communications/paper-asset-review-workflow.md)
 
-Treat this workflow as manuscript-first governance. `figures/` prepares assets and bundles; `scripts/paper/` owns the review entrypoint.
+Treat this workflow as paper-facing asset governance inside a manuscript-first branch. `figures/` prepares assets and bundles; `scripts/paper/` owns the review entrypoint.
 
 If the user is asking an interpretive question rather than a formal review-gate task, also read:
 
@@ -63,11 +64,15 @@ Every paper-facing asset review must include these roles:
    - what the visual asset actually shows
    - whether manuscript text, asset, generator, and evidence agree
    - which parts are supported, missing, or overstated
-9. For formal review tasks, `visual-reviewer` records the completed visual and backtrace checks, then writes `reviews/visual-reviewer.json`.
-10. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
-11. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
-12. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
-13. For any asset revision round, include a concise `visual delta summary` in the round `Delivery evidence` that states what changed in the visible asset and whether the delta closes the targeted review issue.
+9. If the output includes paper-facing explanation or review-note prose, run a sentence-energy pass before finalizing:
+   - reduce noun stacks
+   - add causal glue where numbers or contrasts need interpretation
+   - normalize diction toward natural scientific English
+10. For formal review tasks, `visual-reviewer` records the completed visual and backtrace checks, then writes `reviews/visual-reviewer.json`.
+11. For formal review tasks, `manuscript-fit-reviewer` checks whether the asset supports the intended claim and paper role after reconciling the visual asset with code and evidence, then writes `reviews/manuscript-fit-reviewer.json`.
+12. For formal review tasks, `supervisor` consolidates both role reports into `review.json`.
+13. Enforce formal review outputs with `python scripts/paper/review_paper_assets.py gate`.
+14. For any asset revision round, include a concise `visual delta summary` in the round `Delivery evidence` that states what changed in the visible asset and whether the delta closes the targeted review issue.
 
 ## Reviewer subset and acceptance surface
 
@@ -76,7 +81,8 @@ The canonical stack supplements the required formal-review roles here; it does n
 
 Default to the minimal reviewer subset that matches the figure risk:
 
-- `figure-science-readability reviewer` for almost every manuscript-facing figure or table decision
+- `figure-science-readability reviewer` for almost every paper-facing figure or table decision
+- `cross-disciplinary-readability reviewer` when the deliverable includes interpretive prose, legend advice, or reviewer-facing explanation that may later flow into the paper
 - `statistics-evidence reviewer` when the figure may overclaim relative to the supporting evidence
 - `sparse-inverse-problem-comparator reviewer` when comparator families, baselines, or panel-to-panel comparison logic could be read as unfair or silently shifting
 - `cognitive-load reviewer` or `narrative-flow reviewer` when panel density, panel order, or caption burden makes the figure hard to use in the paper sequence
@@ -87,7 +93,8 @@ Acceptance surface for this skill:
 - panel logic, labels, and emphasis make the intended comparison readable
 - evidence support and comparator logic match the manuscript claim
 - any split, simplify, revise, or move-to-supplementary recommendation is made explicit
-- review notes and interpretive writeups use active voice, simple cause-effect phrasing, and low noun-stack density when prose is needed
+- review notes and interpretive writeups use active voice, simple cause-effect phrasing, low noun-stack density, and natural scientific English when prose is needed
+- when a prose problem is identified, the review can name the closest `SV#` exemplar plus sentence-friction type (`noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, `static-verb`)
 
 Common trigger phrases:
 

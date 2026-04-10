@@ -7,6 +7,7 @@ Use this reference when the user asks for:
 - cross-disciplinary explanation
 - plain-language explanation that remains scientifically honest
 - better whole-manuscript flow or coherence
+- paper-facing legend, review-note, or analysis-summary prose that may later be promoted into the manuscript
 
 Default audience for Nature-facing prose:
 
@@ -42,6 +43,11 @@ For cross-disciplinary explanation:
 - define the physical role of each quantity before naming the metric
 - state the physical question before the model, metric, or architecture label
 - prefer short bridge phrases over symbol-heavy prose
+- keep one main causal move per sentence
+- when you report a number, also report what the number means
+- unpack noun stacks into clauses when they slow first-pass reading
+- prefer the wording you could say naturally in lab meeting over a more compressed formal synonym
+- treat legends, reviewer-facing explanation, and paper-support analysis summaries as part of the same sentence-energy surface when they may later flow into the manuscript
 
 For plain-language explanation:
 

@@ -62,15 +62,17 @@ Apply this execution-or-delegation rule in both Default mode and Plan mode.
 4. If delegating, decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
 5. If delegating, choose the right child task packet, role, and core skill for each child task.
 6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
-7. For manuscript-facing planning, writing, or review tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, and lower noun-stack friction when scientific accuracy permits.
-8. For manuscript-facing hardening, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
-9. For high-salience manuscript rounds, write one `editor readout sentence` and cite at least one relevant `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
-10. Summarize only the task-relevant conversation history.
-11. Use `Context mode: summary-only` by default.
-12. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-13. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-14. Define review, handoff, and escalation requirements.
-15. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, and natural enough scientific English for one-pass reading.
+8. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
+9. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
+10. For high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar plus one micro sentence-craft `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
+11. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
+12. Summarize only the task-relevant conversation history.
+13. Use `Context mode: summary-only` by default.
+14. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+15. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+16. Define review, handoff, and escalation requirements.
+17. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 
@@ -112,13 +114,13 @@ When `Deferred or dropped items` is non-empty, require an explicit scope downgra
 
 ## Reviewer-stack routing
 
-For manuscript-facing work, treat `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
+For paper-facing work, treat `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
 Do not invent ad hoc reviewer personas when the stack already covers the risk.
 
 Use the minimal reviewer subset that matches the acceptance surface:
 
 - `handling-editor-scope reviewer` and `reviewer-routing reviewer` for editorial fit, paper-level framing, or likely reviewer-community routing
-- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for manuscript prose, whole-paper flow, reader-burden risk, or sentence-level friction from passive phrasing, nominalization, and noun stacking
+- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for paper prose, whole-paper flow, reader-burden risk, or sentence-level friction from passive phrasing, nominalization, noun stacking, or other paper-facing explanation surfaces
 - `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` for interpretation, plausibility, comparator fairness, or evidence sufficiency risk
 - `figure-science-readability reviewer` for figure science, panel logic, caption burden, or main-vs-supplementary judgment
 
@@ -134,14 +136,15 @@ Parent acceptance on reviewer-stack use:
 - the packet cites the canonical reviewer-stack doc
 - the reviewer subset is minimal and task-matched
 - the acceptance surface is explicit rather than implied
-- manuscript-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
-- manuscript-facing packets identify the closest `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
+- paper-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
+- main-manuscript packets identify the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
+- paper-facing explanation packets outside the main manuscript identify at least one closest micro sentence-craft `SV#` exemplar when the round touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper
 - review findings are consolidated at the parent layer instead of left as disconnected comments
 
 Reviewer qualification gate:
 
 - Reject planner or reviewer outputs as under-scoped when they do not engage the required acceptance surface.
-- Reject manuscript-hardening review as unqualified when it ignores scientific inference versus manuscript-management language, even if it comments on grammar or passive voice.
+- Reject main-manuscript-hardening review as unqualified when it ignores scientific inference versus manuscript-management language, even if it comments on grammar or passive voice.
 - Exclude submission metadata placeholders from scientific-narrative review unless submission packaging is explicitly in scope.
 
 Manuscript-hardening planning and review checklist:
@@ -152,6 +155,8 @@ Manuscript-hardening planning and review checklist:
 - disciplinary narrative shift: does the prose drift from scientific inference into explanation of paper positioning or process
 - defensive tone: does the text rely on `X rather than Y` framing or rebuttal-like self-defense
 - self-diminishing triggers: do phrases such as `without upgrading`, `descriptive rather than`, `remains positive`, or abstract endings led by `pathway` or `constraint` lower the claim floor without adding precision
+- sentence friction: do noun stacks, fact clusters, static verbs, or formal-register wording force the reader to decode syntax before the science
+- causal glue: when the prose gives numbers or contrasts, does it also tell the reader what those numbers mean
 - structural pacing: do section and paragraph endings carry scientific consequence rather than administrative wrap-up
 - figure-as-actor phrasing: are figures or panels narrating sentences that should be carried by observations, interventions, or mechanisms
 - supplement and legend leakage: do supplementary text, legends, or inline legend prose slip into manuscript-management language

@@ -1,17 +1,17 @@
 # Nature Reviewer Stack
 
-This document is the canonical source of truth for the Nature Communications reviewer stack used in manuscript hardening, red-team review, and submission-facing critique in this branch.
+This document is the canonical source of truth for the Nature Communications reviewer stack used in paper-facing hardening, red-team review, and submission-facing critique in this branch.
 
 Use it to keep reviewer roles and evaluation goals stable across review rounds.
 Do not create ad hoc reviewer personas when this stack already covers the risk.
 
 ## Purpose
 
-The reviewer stack is a manuscript-facing review model, not a parallel workflow system.
+The reviewer stack is a paper-facing review model, not a parallel workflow system.
 
 - The supervisor still owns routing, decomposition, and review planning.
 - Existing execution roles in `docs/agent-ops/ROLE_CATALOG.md` still own the work.
-- This stack defines the named review lenses and evaluation goals that the supervisor selects when manuscript-facing work needs high-standard critique.
+- This stack defines the named review lenses and evaluation goals that the supervisor selects when paper-facing work needs high-standard critique.
 
 ## When to use this stack
 
@@ -28,7 +28,7 @@ Use the canonical reviewer stack when a task could affect:
 - narrative flow across sections
 - cognitive load for the reader
 
-For full manuscript hardening, the supervisor should assume this stack is the default review surface and then select the minimal applicable subset.
+For full manuscript hardening, the supervisor should assume this stack is the default review surface and then select the minimal applicable subset. For other paper-facing explanation rounds, the supervisor should still route through this stack whenever prose, reader burden, or claim interpretation could flow back into the paper.
 
 ## How the supervisor should apply it
 
@@ -41,7 +41,7 @@ For full manuscript hardening, the supervisor should assume this stack is the de
 
 Reviewer qualification gate:
 
-- When manuscript-facing prose is in scope, treat a reviewer output as unqualified if it does not test for scientific inference versus manuscript-management language, or if it ignores the stated acceptance surface.
+- When paper-facing explanation is in scope, treat a reviewer output as unqualified if it does not test for scientific inference versus manuscript-management language, or if it ignores the stated acceptance surface.
 
 These reviewer roles are review lenses, not new top-level workflow roles.
 
@@ -77,6 +77,8 @@ Evaluation goal:
 - Check that key sentences use active, verb-led phrasing and direct cause-effect relations instead of nominalization-heavy or front-loaded noun-stack constructions.
 - Test whether the prose advances by observation, inference, and bounded conclusion rather than by guidebook, rebuttal, or manuscript-management language.
 - Flag paragraphs that are technically correct but too compressed to be legible across disciplines.
+- Own sentence-level naturalness for paper-facing explanation. Flag wording that is formally correct but not how a strong scientific speaker would naturally explain the result aloud.
+- Flag quantitative sentences that report changes or contrasts without translating them into consequence.
 
 ### physical-mechanism reviewer
 
@@ -109,7 +111,7 @@ Evaluation goal:
 
 Evaluation goal:
 
-- Check whether every manuscript-facing claim has evidence strength that matches the wording.
+- Check whether every paper-facing claim has evidence strength that matches the wording.
 - Verify that comparisons, trends, and interpretations are grounded in reported statistics, artifact-backed results, or explicit figure anchors.
 - Identify missing uncertainty language, missing controls, or over-general conclusions drawn from partial evidence.
 - Flag places where the manuscript needs weaker wording, more provenance, or a more explicit evidence boundary.
@@ -153,7 +155,7 @@ Use these reviewer roles through the existing role and skill system:
 
 - `handling-editor-scope reviewer` and `reviewer-routing reviewer`: usually routed through `supervisor` or `red-team-reviewer` with `agent-orchestrator`
 - `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer`: usually routed through `manuscript-reviser` or `claim-auditor` with `paper-submission`
-- `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer`: usually routed through `claim-auditor` or `experiment-results-analyst`, depending on whether the task is manuscript-facing critique or artifact-facing analysis
+- `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer`: usually routed through `claim-auditor` or `experiment-results-analyst`, depending on whether the task is paper-facing critique or artifact-facing analysis
 - `figure-science-readability reviewer`: usually routed through `paper-asset-reviewer`, with `paper-submission` follow-up when the figure critique requires manuscript rewrites
 
 ## Output expectations
@@ -165,16 +167,22 @@ Reviewer outputs should name:
 - the main findings and failure modes
 - the best one-sentence editor readout if the current wording were fixed
 - the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` when the issue is primarily a manuscript-voice or salience failure
+- the sentence-friction type when applicable: `noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, or `static-verb`
 - any required rewrite, evidence, or routing follow-up
 
 ## Mandatory reviewer subsets for high-salience prose rounds
 
+For any paper-facing explanation round that may land in manuscript, supplementary, legends, captions, review-note prose, or analysis summaries, the parent must include:
+
+- `cross-disciplinary-readability reviewer`
+
 For any round that changes the title, abstract, Results subsection openings, section-to-section bridges, figure-to-figure transitions, or the first paragraph of Discussion, the parent must include:
 
 - `handling-editor-scope reviewer`
+- `cross-disciplinary-readability reviewer`
 - `narrative-flow reviewer`
 - `cognitive-load reviewer`
 
 Add `statistics-evidence reviewer` when wording changes could alter evidence strength or scope, and add `reviewer-routing reviewer` when the new framing may change likely reviewer community routing.
 
-If multiple reviewer roles are used, the supervisor should consolidate them into one manuscript-facing decision rather than leaving them as disconnected comments.
+If multiple reviewer roles are used, the supervisor should consolidate them into one paper-facing decision rather than leaving them as disconnected comments.

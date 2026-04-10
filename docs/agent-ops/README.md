@@ -34,7 +34,7 @@ This layer treats:
 
 - `AGENTS.md` is the constitution
 - `docs/governance/` defines contracts
-- `docs/governance/scientific-voice-guide.md` is the canonical positive-style reference for manuscript voice
+- `docs/governance/scientific-voice-guide.md` is the canonical positive-style reference for paper-facing explanation, including sentence-energy and natural-scientific-English defaults
 - `docs/agent-ops/` defines execution and handoff
 - project-local skills implement repeated task workflows
 
@@ -54,10 +54,10 @@ Do not rebuild a parallel platform around these primitives unless a real workflo
 
 1. human gives a goal
 2. the top-level supervisor routes through `agent-orchestrator` and decides whether to execute directly or delegate
-3. for manuscript-facing work, the top-level supervisor extracts the supported discovery sentence before caveat-hardening the prose and uses the canonical `SV#` exemplars to guide high-salience rewrites
+3. for paper-facing work, the top-level supervisor extracts the supported discovery sentence before caveat-hardening the prose, then runs a sentence-energy pass and uses the canonical `SV#` exemplars to guide both high-salience framing and sentence-level craft across manuscript, legend, asset-review, and paper-facing analysis surfaces
 4. when delegating, the top-level supervisor chooses the child role, specialist skill, and unified task packet
 5. the round records `Relevant conversation context`, `Context mode`, risk level, and ownership boundaries
-6. for manuscript-facing hardening, the top-level supervisor selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
+6. for paper-facing explanation and paper-facing hardening, the top-level supervisor selects the applicable reviewer roles and evaluation goals from `NATURE_REVIEWER_STACK.md`
 7. direct work or delegated child work proceeds through one of the core skills
 8. reviewer or red-team agents challenge outputs when required, using the canonical reviewer stack instead of ad hoc reviewer personas
 9. the packet or closeout classifies the round as `high-risk` or `non-high-risk`

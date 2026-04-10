@@ -48,8 +48,12 @@ Red-team review is mandatory for:
 - `WARN_CLAIM_FLOOR_BURIED`: the supported discovery is present in the evidence but buried under qualifiers, setup detail, or caveat-led wording
 - `WARN_CAVEAT_LEADS`: the highest-salience sentence leads with a limitation, pathway, or constraint instead of the supported advance
 - `WARN_MOMENTUM_COLLAPSE`: repeated hedge-heavy sentence order prevents the manuscript from carrying discovery momentum across sections
+- `WARN_NOUN_STACK`: the sentence asks the reader to decode a dense technical noun chain before seeing the scientific action
+- `WARN_CAUSAL_GAP`: facts or numbers are reported without telling the reader what they mean
+- `WARN_FORMAL_REGISTER`: the wording is formally correct but unnatural for broad scientific prose
+- `WARN_STATIC_VERB_DRAG`: low-energy holding verbs flatten a stronger scientific action that the evidence already supports
 
-When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, or `WARN_MOMENTUM_COLLAPSE` is raised on manuscript-facing prose, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
+When `WARN_CLAIM_FLOOR_BURIED`, `WARN_CAVEAT_LEADS`, `WARN_MOMENTUM_COLLAPSE`, `WARN_NOUN_STACK`, `WARN_CAUSAL_GAP`, `WARN_FORMAL_REGISTER`, or `WARN_STATIC_VERB_DRAG` is raised on paper-facing explanation, cite the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` so the rewrite target is concrete rather than abstract.
 
 ## Closeout integrity checks
 

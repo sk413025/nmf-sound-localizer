@@ -38,6 +38,7 @@ This manuscript workspace sits inside a branch-level governance system.
 - Branch constitution: `AGENTS.md`
 - Governance contracts: `docs/governance/`
 - Scientific voice canon: `docs/governance/scientific-voice-guide.md`
+  - use it for manuscript, supplementary, legends, and other paper-facing explanation surfaces
 - Human and agent quickstarts: `START_HERE_HUMAN.md`, `START_HERE_AGENT.md`
 
 Recommended health check:
@@ -51,6 +52,11 @@ Recommended manuscript-voice audit when revising high-salience prose:
 ```bash
 make paper-audit-voice
 ```
+
+The voice guide now governs both:
+
+- paper-level claim and salience order
+- sentence-level readability, including noun-stack control, causal glue, and natural scientific English
 
 ## Nature Communications formatting (submission)
 Nature Communications is typeset in two columns at publication, but Word submissions should be formatted for review readability (e.g., double-spaced, single-column, no full justification, with Arabic page numbers). The journal does not provide a Word template; formatting is imposed later during production.

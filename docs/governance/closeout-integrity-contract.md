@@ -6,7 +6,7 @@ Use this contract when reporting task completion, review status, acceptance stat
 
 - parent closeout messages and completion claims
 - task packets, review requests, and acceptance reporting
-- governance and manuscript hardening rounds
+- governance and paper-facing hardening rounds
 - reviewer-pass, verification, and milestone status decisions
 
 ## Core rules

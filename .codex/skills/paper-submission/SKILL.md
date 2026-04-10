@@ -7,10 +7,10 @@ description: Use this skill for manuscript revision, claim-evidence auditing, Na
 
 Use this skill for:
 
-- revising manuscript sections
+- revising manuscript sections and other paper-facing explanation surfaces
 - auditing claim and evidence alignment
 - checking Nature-facing submission compliance
-- editing paper legends, tables, and manuscript-facing assets
+- editing paper legends, tables, and paper-facing explanatory assets
 - translating executed analysis into manuscript-ready claims
 - rewriting technical findings into cross-disciplinary scientific prose
 - explaining results in plain language without overstating certainty
@@ -49,17 +49,21 @@ If the task is about converting results into stronger manuscript logic, cross-di
 7. For each revised paragraph, explicitly identify the `claim floor`, `claim ceiling`, and `evidence boundary` before drafting the final prose.
 8. Lead with the supported claim floor. Add the evidence boundary after the reader has already learned what the evidence does support.
 9. For high-salience surfaces, also write one `editor readout sentence`: the sentence a handling editor should still remember after skimming the section once.
-10. For high-salience rewrites, name the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use it as a positive rewrite target, not just as a warning label.
-11. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
-12. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, and direct cause-effect phrasing over dense nominalization, front-loaded noun stacks, or manuscript-management language.
-13. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
-14. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
-15. Keep Results interpretive and Methods procedural.
-16. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
+10. For high-salience rewrites, name the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before drafting. Use them as positive rewrite targets, not just as warning labels.
+11. After claim-floor extraction, do a sentence-skeleton pass. For each key sentence, identify the subject, strongest available verb, and explicit consequence.
+12. Then do a sentence-energy pass. Split sentences with more than one main causal move unless scientific precision requires them to stay together.
+13. Translate important numerical changes into meaning. If a sentence gives a rise, drop, or contrast, state what that change means for the scientific point.
+14. Default to cross-disciplinary scientific readability for Nature-facing prose, even when the user only asks for a rewrite.
+15. Simplify language without upgrading the evidence level. Prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, verb-led clauses, direct cause-effect phrasing, and low noun-stack friction over dense nominalization, front-loaded noun stacks, or manuscript-management language.
+16. Run a lab-meeting English test on paper-facing explanation. If a strong PhD student would not naturally say the sentence aloud, rewrite it in more natural scientific English and then restore only the technical precision that matters.
+17. Check terminology, comparator labels, and mechanism language against the surrounding sections before finalizing.
+18. Perform a coherence pass on transitions, paragraph openings, and paragraph endings so the edited text reads as part of one natural manuscript rather than a local patch.
+19. Keep Results interpretive and Methods procedural.
+20. Route paper-facing figure acceptance to `paper-asset-review` instead of improvising a visual review here.
 
 ## Required output bundle
 
-When this skill proposes or performs a manuscript-facing revision, the output must be verifier-ready.
+When this skill proposes or performs a paper-facing explanation revision, the output must be verifier-ready.
 
 Include:
 
@@ -67,6 +71,7 @@ Include:
 - `Before anchor:` and `After anchor:` quoting the neighboring manuscript text that brackets the change
 - `Editor readout sentence:` stating the one-sentence discovery a skimming editor should retain from the revised surface
 - `Applied exemplar(s):` naming the `SV#` pair or pairs that guided the rewrite on high-salience surfaces
+- `Sentence craft fixes:` naming any noun-stack, causal-glue, diction, or static-verb fixes applied on the in-scope surface
 - `Unresolved promised joints:` listing any requested transition, claim linkage, or downstream manuscript connection that remains unfinished
 - `Verifier mode:` stating how the verifier should check the change; use `text-diff` when the task is local prose replacement and name any stronger mode when figure, evidence, or claim support must also be re-checked
 
@@ -77,6 +82,7 @@ If no manuscript text was changed, state that explicitly in `Delivered items:` o
 Use `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
 Default to the minimal reviewer subset that matches the manuscript change:
 
+- `cross-disciplinary-readability reviewer` for every paper-facing prose-hardening round
 - `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for most Nature-facing prose revision, explanation, and coherence passes
 - `handling-editor-scope reviewer` and `reviewer-routing reviewer` when title, abstract, Results framing, Discussion framing, or paper-level positioning could change editorial fit
 - `physical-mechanism reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` when wording changes touch mechanism language, comparator logic, or evidence strength
@@ -86,13 +92,14 @@ Acceptance surface for this skill:
 - the revised text remains legible to cross-disciplinary readers
 - the revised text uses scientific inference rather than rebuttal, guidebook, curator, or manuscript-management phrasing
 - the revised text uses active voice and simple cause-effect sentence structure where scientifically appropriate, without translation-like noun stacking
+- the revised text passes a sentence-energy check: main sentences have clear subjects, direct verbs, explicit consequence, and natural enough diction for one-pass reading
 - paragraph and section flow still reads as one manuscript-level argument
 - mechanism, comparator, and evidence wording stay within the support shown by figures, Methods, and artifacts
 - unresolved reviewer-stack risks are named and escalated instead of hidden inside cleaner prose
 
 ## Manuscript-management blacklist
 
-Treat the following as rewrite triggers on manuscript-facing surfaces unless a narrow procedural context truly requires them:
+Treat the following as rewrite triggers on paper-facing explanation surfaces unless a narrow procedural context truly requires them:
 
 - `This section asks...`
 - `We use Fig. X...`

@@ -9,7 +9,7 @@ The goal is not merely to generate compliant artwork. The goal is to decide whet
 Therefore:
 
 - `figures/` owns generation and preview preparation
-- `scripts/paper/` owns manuscript-facing review entrypoints
+- `scripts/paper/` owns paper-facing review entrypoints
 - Codex multimodal review is the primary acceptance judge
 - AGENTS and local skills define the governance contract
 - Paper-facing figure review is visual-first: figure meaning, panel identity, and suitability cannot be inferred from filenames or metadata alone
@@ -60,19 +60,19 @@ The final accepted artifact is:
 - `evidence source`: results/data files that support the claim
 - `generator output`: clean code-produced figure asset
 - `split panel assets`: top-level manuscript panels (`a/b/c/...`) stored as internal recomposition assets
-- `manuscript asset`: final paper-facing composite that is actually reviewed
+- `paper-facing asset`: final paper-facing composite that is actually reviewed
 - `manuscript layout sidecar`: realized manuscript geometry such as `paper/figures/*.layout.json` used for overlay and clearance audits
 
-For single-panel manual figures, only the manuscript asset may exist. For data-backed figures,
-the manuscript asset must remain traceable to the upstream evidence and generator outputs.
+For single-panel manual figures, only the paper-facing asset may exist. For data-backed figures,
+the paper-facing asset must remain traceable to the upstream evidence and generator outputs.
 For multi-panel figures in this branch, split top-level panel assets are required internal assets even though the journal-facing release target remains the final composite.
 When a manuscript layout sidecar exists, it is part of the review context rather than an optional debugging extra.
 
 Review must follow this inspection order:
 
-1. Inspect the manuscript asset visually.
+1. Inspect the paper-facing asset visually.
 2. If a manuscript layout sidecar exists, inspect it before deciding whether spacing and geometry are acceptable.
-3. If the manuscript asset or any reviewed upstream figure asset is a `pdf`, inspect PNG page previews for every page before interpreting the asset.
+3. If the paper-facing asset or any reviewed upstream figure asset is a `pdf`, inspect PNG page previews for every page before interpreting the asset.
 4. Inspect split panel assets or upstream figure assets listed in `context.json`.
 5. Inspect the generator or composition code that produced the figure.
 6. Inspect the evidence or provenance sources that the figure claims to summarize.

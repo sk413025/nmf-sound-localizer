@@ -21,7 +21,7 @@ Every packet should include:
 - `Escalate when`
 - `Context mode`
 
-For manuscript-facing hardening packets, also include:
+For any paper-facing explanation packet whose outputs may be promoted into manuscript, supplementary, legend, caption, review-note, or analysis-summary prose, also include:
 
 - `Claim floor`
 - `Claim ceiling`
@@ -30,11 +30,14 @@ For manuscript-facing hardening packets, also include:
 - `Relevant voice exemplar(s)`
 - `Bridge question`
 - `Defensive phrasings to remove`
+- `Sentence-friction hotspots`
+- `Causal glue to add`
+- `Diction to normalize`
 
 `Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
 `Context mode: summary-only` is the default.
 Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-If the packet includes manuscript-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+If the packet includes paper-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
 `Claim floor` must state the strongest supported discovery sentence for the in-scope surface.
 `Claim ceiling` must state the stronger statement that must not be implied.
 `Evidence boundary` must name the real scope limit or transfer condition instead of embedding that limit inside self-diminishing prose.
@@ -42,6 +45,9 @@ If the packet includes manuscript-facing review or hardening, name the applicabl
 `Relevant voice exemplar(s)` must cite the closest `SV#` pair or pairs from `docs/governance/scientific-voice-guide.md` for title, abstract, Results opening, transition, section-title, or Discussion-opening rewrites.
 `Bridge question` must state why the next section, figure, or paragraph logically follows from the current one.
 `Defensive phrasings to remove` should list local wording patterns such as `without upgrading`, `descriptive rather than`, or other prophylactic negation that lowers the claim floor without adding scientific precision.
+`Sentence-friction hotspots` should identify sentences or local passages where noun stacks, fact clustering, or syntax density make the science harder to parse than necessary.
+`Causal glue to add` should identify where number-heavy or comparison-heavy sentences still need `because`, `which means`, `confirming that`, `so`, or equivalent scientific consequence language.
+`Diction to normalize` should identify phrases that are formally correct but unnaturally compressed, governance-shaped, or unlike natural lab-meeting scientific English.
 
 Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
 If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
@@ -94,9 +100,10 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - if only part of the requested manuscript surface lands, close out only that subset and list the remaining items explicitly
 - Expected outputs:
   - revised text, audit findings, or compliance gap list
-  - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
-  - explicit `Relevant voice exemplar(s)` entries for any high-salience rewrite
-  - figure and Methods anchors for every claim-level change
+- explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the in-scope manuscript surface
+- explicit `Relevant voice exemplar(s)` entries for any high-salience rewrite
+- explicit `Sentence-friction hotspots`, `Causal glue to add`, and `Diction to normalize` entries for any main-manuscript hardening round or other paper-facing explanation round
+- figure and Methods anchors for every claim-level change
   - coherence or terminology notes when surrounding transitions had to change to keep the manuscript natural
   - visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
   - explicit unresolved issues if evidence is weak
@@ -125,7 +132,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - ground conclusions in committed logs, metrics, and provenance artifacts
   - keep fail-fast expectations and reproducibility requirements explicit
 - Risk level:
-  - classify as `high-risk` when the analysis may affect manuscript-facing interpretation; otherwise classify as `non-high-risk`
+  - classify as `high-risk` when the analysis may affect paper-facing interpretation; otherwise classify as `non-high-risk`
 - Acceptance surface:
   - the named experiment question, comparison, or evidence interpretation to be closed
 - Out-of-scope surfaces:
@@ -150,7 +157,7 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
 - Escalate when:
   - logs, metrics, or provenance inputs are missing
   - the run is not reproducible from committed artifacts
-  - a manuscript-facing claim is being inferred from weak or partial evidence
+  - a paper-facing claim is being inferred from weak or partial evidence
 - Context mode:
   - start with `summary-only`
   - upgrade to `summary+fork_context` when the task depends on precise dialogue about metrics, caveats, or comparison scope

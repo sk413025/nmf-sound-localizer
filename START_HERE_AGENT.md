@@ -25,17 +25,22 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
    - `.codex/skills/experiment-results/SKILL.md`
 4. If the task touches `nmf_localizer/`, `doa_rl/`, `scripts/` outside `scripts/paper/`, `tests/`, or package metadata, open `docs/governance/runtime-substrate-contract.md` and assume only TF + USM + soft-OMP support is active unless proven otherwise.
 5. Open the matching section in `docs/agent-ops/TASK_PACKETS.md`.
-6. If the task is manuscript-facing hardening or could shift claims, governance, or submission posture, open `docs/agent-ops/NATURE_REVIEWER_STACK.md`, select the applicable reviewer roles and evaluation goals, and stay in the supervisor model for routing.
+6. If the task is paper-facing hardening or could shift claims, governance, or submission posture, open `docs/agent-ops/NATURE_REVIEWER_STACK.md`, select the applicable reviewer roles and evaluation goals, and stay in the supervisor model for routing.
 
 ## Scientific voice default
 
-- Write manuscript prose to make the paper's actual discovery legible to an editor on first read.
+- Write paper-facing explanation to make the paper's actual discovery legible to an editor on first read.
 - Lead with the strongest supported claim, then add the evidence boundary.
-- Do not import closeout, verifier, or governance caution language into manuscript-facing sentences.
+- Do not import closeout, verifier, or governance caution language into paper-facing sentences.
 - Avoid the false tradeoff `rigorous = timid`. In this branch, rigor means precise support, not self-erasure.
 - If a sentence sounds safer only because it lowers the claim floor, rewrite it.
 - Use this salience order by default: `discovery -> evidence -> implication -> boundary`.
-- Before touching high-salience prose, read the canonical examples in `docs/governance/scientific-voice-guide.md` and use the closest `SV#` exemplar as the rewrite target.
+- Use this sentence order by default: `clear subject -> strong verb -> explicit consequence`.
+- If one sentence carries more than one major causal relation, split it.
+- Keep noun stacks short enough that a broad scientific reader can parse the sentence in one pass.
+- Translate important numbers into meaning. If the sentence gives a rise, drop, or contrast, also state what that change means.
+- Use lab-meeting English for any paper-facing explanation prose, not only the main manuscript. If a strong PhD student would not naturally say the sentence aloud, rewrite it.
+- Before touching high-salience prose or any paper-facing explanation surface, read the canonical examples in `docs/governance/scientific-voice-guide.md` and use the closest `SV#` exemplar as the rewrite target.
 
 ## Agent-first operating model
 
@@ -45,7 +50,7 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 - Delegate even a bounded task only when delegation improves scope control, review separation, or execution safety.
 - If delegation is chosen, use a single child only when the request is genuinely single-scope; otherwise split it into multiple child tasks before execution starts.
 - Use supervisor-led orchestration for tasks that affect manuscript claims, submission posture, or branch governance.
-- For manuscript-facing review and hardening, use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md` instead of inventing review personas ad hoc.
+- For paper-facing review and hardening, use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md` instead of inventing review personas ad hoc.
 - Before spawning a child agent, write a task packet with `Relevant conversation context`.
 - After spawning a child agent, monitor it until completion, explicit redirect, or a justified shutdown.
 - Inspect a child agent's current status or latest output before interrupting or closing it.

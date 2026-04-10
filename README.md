@@ -26,6 +26,8 @@ This branch is a manuscript-first workspace for writing, validating, and packagi
   - `figures/conf/layout_spec.md`
 - Scientific voice canon:
   - `docs/governance/scientific-voice-guide.md`
+  - use it for both claim-forward manuscript posture and sentence-level readability defaults
+  - it governs manuscript, supplementary, legends, review-note prose, and other paper-facing explanation surfaces
 - Task routing:
   - `docs/agent-ops/TASK_PACKETS.md`
 - Top-level agent routing:

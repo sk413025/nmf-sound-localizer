@@ -17,11 +17,15 @@ When instructions conflict, follow this order:
 
 - Keep the branch manuscript-first. Do not treat it as a generic package-development branch or a figure-only sandbox.
 - Keep code subordinate to paper work. Read or change code only when it supports manuscript, evidence, review, or submission tasks.
-- Keep manuscript-facing prose scientific. Across main text, supplementary text, figure legends, inline legends, and manuscript-facing Methods prose, advance by `observation -> inference -> bounded conclusion`, not by rebuttal-style, guidebook-style, curator-style, or manuscript-management language.
-- Keep agent stance scientifically confident. The default manuscript voice in this branch is rigorous, clear, and editor-legible, not prophylactically defensive.
+- Keep paper-facing explanation scientific. Across main text, supplementary text, figure legends, inline legends, captions, review-note prose, analysis summaries that may flow into the paper, and main-manuscript Methods prose, advance by `observation -> inference -> bounded conclusion`, not by rebuttal-style, guidebook-style, curator-style, or manuscript-management language.
+- Keep agent stance scientifically confident. The default paper voice in this branch is rigorous, clear, and editor-legible, not prophylactically defensive.
 - State the strongest evidence-backed discovery sentence early. Boundaries, transfer limits, and open questions must remain explicit, but they must not be allowed to erase the supported claim floor.
 - Do not confuse rigor with timidity. Overclaiming is forbidden, but self-diminishing prose is also a branch-level failure mode.
-- Do not let governance, verifier, or closeout language leak into manuscript prose. The paper must read like a scientific argument, not like a safety memo about the argument.
+- Keep paper-facing explanation reader-first at the sentence level. A scientifically literate generalist should not have to decode syntax, noun stacks, or governance-shaped abstractions before seeing the science.
+- Default to `clear subject -> strong verb -> explicit consequence`. If a sentence carries more than one main causal move, split it.
+- Prefer spoken-natural scientific English over compressed formal register. If a strong PhD student would not say the sentence aloud in lab meeting, treat that as a rewrite trigger.
+- Translate numbers and comparisons into consequence. When a sentence reports a strong rise, drop, separation, or contrast, state what that change means for the scientific claim.
+- Do not let governance, verifier, or closeout language leak into paper-facing explanation. The paper must read like a scientific argument, not like a safety memo about the argument.
 - For any paper-related figure task, inspect the actual figure visually before interpreting, comparing, replacing, renumbering, or approving it.
 - For `jpg` and `png` paper assets, inspect the image directly. For `pdf` paper assets, convert every page to viewable PNG previews before judging content or suitability.
 - For any generated or data-backed paper figure, inspect the visual asset, the generator or composition code, and the upstream evidence or provenance source before concluding what the figure shows or how it should be used in the manuscript.
@@ -83,8 +87,12 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - Default scientific tone is: `clear claim first, evidence next, boundary after`, not `caveat first, claim later`.
 - When choosing between two truthful phrasings, prefer the one that preserves the supported claim floor and scientific momentum.
 - Treat `underclaim by reflex` as a routing error, not as a sign of higher rigor.
+- Treat `reader must decode the sentence before seeing the claim` as a drafting failure, not as acceptable technical density.
+- Use one main causal move per sentence by default. When a sentence reports both the measurement and its interpretation, make the link explicit with direct causal language or split the sentence.
+- Keep technical noun stacks short unless the phrase is an established term of art. Prefer clauses, verbs, and prepositional phrases over front-loaded label chains.
+- Prefer dynamic scientific verbs such as `concentrates`, `exceeds`, `holds`, `tracks`, `reveals`, and `limits` over static filler verbs such as `remains` or `stays` when the stronger verb preserves the truth value.
 - Treat defensive strawmen such as `without upgrading into a universal law` or `descriptive rather than` as suspect by default unless they resolve a real evidence ambiguity.
-- For manuscript-facing prose, use [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical positive-style reference and exemplar set.
+- For paper-facing explanation, use [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical positive-style reference and exemplar set.
 
 - The human sets direction and approves milestones.
 - The top-level agent first classifies the task and decides whether direct execution or delegation is the better fit for scope and risk.
@@ -102,7 +110,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - High-stakes manuscript hardening and critique must be adversarial. Reviewers should try to surface rejection-grade objections, not merely confirm adequacy.
 - The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
 - Every review request must define its in-scope and out-of-scope acceptance surfaces. Submission metadata placeholders do not fail a scientific-narrative review unless submission packaging is explicitly in scope.
-- The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the manuscript-facing prose rule above where it is in scope.
+- The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the paper-facing explanation rule above where it is in scope.
 - The parent must classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership. Any owner separation or role compression decision must follow that classification and be recorded.
 - Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
 - If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.

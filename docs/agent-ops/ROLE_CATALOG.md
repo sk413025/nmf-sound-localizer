@@ -15,7 +15,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: improve manuscript text while preserving claim/evidence integrity
 - Invocation model: child worker under a supervisor packet
 - Required skill: `paper-submission`
-- Allowed decisions: wording, structure, signposting, compression, and applying the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` to high-salience manuscript surfaces
+- Allowed decisions: wording, structure, signposting, compression, and applying the closest macro and micro `SV#` exemplars from `docs/governance/scientific-voice-guide.md` to manuscript surfaces
 - Forbidden decisions: inventing evidence, hiding the supported discovery behind prophylactic caveats, or changing scientific meaning without escalation
 
 ## claim-auditor
@@ -23,7 +23,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: verify that claims match figures, citations, artifacts, and Methods
 - Invocation model: child worker under a supervisor packet
 - Required skill: `paper-submission`
-- Allowed decisions: flagging mismatches, recommending stronger anchors, and identifying when a manuscript-voice failure should be routed with a specific `SV#` exemplar
+- Allowed decisions: flagging mismatches, recommending stronger anchors, and identifying when a manuscript-voice failure should be routed with a specific `SV#` exemplar or sentence-friction category
 - Forbidden decisions: rewriting claims without handing off to a reviser or supervisor
 
 ## experiment-results-analyst
@@ -36,7 +36,7 @@ This catalog defines the standard roles for agent-first operation in this worktr
 
 ## submission-auditor
 
-- Mission: check Nature-facing compliance, packaging, and manuscript-facing assets
+- Mission: check Nature-facing compliance, packaging, and paper-facing assets
 - Invocation model: child worker under a supervisor packet
 - Required skill: `paper-submission`
 - Allowed decisions: identify compliance gaps and route follow-up work
@@ -55,14 +55,14 @@ This catalog defines the standard roles for agent-first operation in this worktr
 - Mission: challenge assumptions, surface weak reasoning, and cut unnecessary complexity
 - Invocation model: reviewer child agent or parallel critique pass launched by a supervisor
 - Required skill: `agent-orchestrator`
-- Allowed decisions: issue warnings, request rewrites, recommend simplification, and cite the closest `SV#` exemplar when the failure mode is manuscript voice rather than evidence strength
-- Forbidden decisions: block work without providing a simpler or safer alternative, or confuse evidence-bounded caution with timid manuscript voice
+- Allowed decisions: issue warnings, request rewrites, recommend simplification, cite the closest `SV#` exemplar when the failure mode is paper voice rather than evidence strength, and label sentence-friction type when readability is the problem
+- Forbidden decisions: block work without providing a simpler or safer alternative, or confuse evidence-bounded caution with timid paper voice
 
 ## Canonical Nature reviewer stack
 
 The canonical Nature Communications reviewer stack lives in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
 
-- Use it for manuscript-facing hardening, editor-scope review, reviewer-routing review, figure-science review, and red-team critique that could affect claims, submission posture, or reader burden.
+- Use it for paper-facing hardening, editor-scope review, reviewer-routing review, figure-science review, and red-team critique that could affect claims, submission posture, or reader burden.
 - Treat the named reviewers in that document as review lenses, not replacement workflow roles.
 - The supervisor selects the minimal applicable reviewer subset and records the chosen reviewer roles and evaluation goals in the task packet or review request.
 - Route those reviewer lenses through the existing role system in this catalog instead of inventing new skills or a parallel role tree.
