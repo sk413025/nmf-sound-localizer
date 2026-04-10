@@ -1,6 +1,6 @@
 # Figures
 
-This directory is the manuscript-facing final asset surface for the active paper.
+This directory is the final paper-facing asset surface for the active paper. It is also the literal manuscript-facing delivery surface for the six main-paper figure assets.
 It should contain only:
 
 - `Figure-Legends.md`
@@ -13,5 +13,5 @@ Committed support panels belong in the active panel layer under `figures/output/
 
 Guidelines:
 - Keep intermediate/generated artifacts under `results/<run_name>/`.
-- Keep only final manuscript assets here with stable, descriptive, sortable names (for example `fig01_paradigm-shift.jpg`, `fig04_solver-dynamics.jpg`, `fig06_universality.jpg`).
+- Keep only final paper-facing assets here with stable, descriptive, sortable names (for example `fig01_paradigm-shift.jpg`, `fig04_solver-dynamics.jpg`, `fig06_universality.jpg`).
 - For the active six-figure manuscript, naming is governed by `paper/manuscript/FIGURE_NAMING_CONTRACT.md`.
