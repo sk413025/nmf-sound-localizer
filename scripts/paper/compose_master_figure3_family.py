@@ -53,11 +53,12 @@ ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 
 # --- Figure 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
-FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png"
+FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf"
 FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
 FIG01_COMPOSITE_CDE_LAYOUT = REPO_ROOT / "figures/output/fig01_paradigm_data.layout.json"
 FIG01_WIDTH_MM = 183.0
-FIG01_TOP_PANEL_WIDTH_MM = 89.0
+FIG01_PANEL_A_WIDTH_MM = 78.0
+FIG01_PANEL_B_WIDTH_MM = 100.0
 FIG01_ROW_HEIGHT_MM = 65.0
 FIG01_ROW_GAP_MM = 5.0
 FIG01_HEIGHT_MM = FIG01_ROW_HEIGHT_MM * 2 + FIG01_ROW_GAP_MM
@@ -491,28 +492,29 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     fig01_layout_asset = fig01_asset.with_suffix(".layout.json")
 
     panel_a = ImageOps.exif_transpose(Image.open(FIG01_PANEL_A)).convert("RGB")
-    panel_b = ImageOps.exif_transpose(Image.open(FIG01_PANEL_B)).convert("RGB")
+    panel_b = _render_pdf(FIG01_PANEL_B, scale=4.0).convert("RGB")
     panel_a = _crop_relative(panel_a, *FIG01_PANEL_A_CROP)
     panel_b = _crop_relative(panel_b, *FIG01_PANEL_B_CROP)
     panel_cde = _render_pdf(FIG01_COMPOSITE_CDE, scale=4.0).convert("RGB")
 
     figure_width_px = _mm_to_px(FIG01_WIDTH_MM)
-    top_panel_width_px = _mm_to_px(FIG01_TOP_PANEL_WIDTH_MM)
-    top_gap_px = figure_width_px - 2 * top_panel_width_px
+    panel_a_width_px = _mm_to_px(FIG01_PANEL_A_WIDTH_MM)
+    panel_b_width_px = _mm_to_px(FIG01_PANEL_B_WIDTH_MM)
+    top_gap_px = figure_width_px - panel_a_width_px - panel_b_width_px
     row_height_px = _mm_to_px(FIG01_ROW_HEIGHT_MM)
     row_gap_px = _mm_to_px(FIG01_ROW_GAP_MM)
     figure_height_px = row_height_px * 2 + row_gap_px
 
-    panel_a = _contain_in_box(panel_a, top_panel_width_px, row_height_px)
-    panel_b = _contain_in_box(panel_b, top_panel_width_px, row_height_px)
+    panel_a = _contain_in_box(panel_a, panel_a_width_px, row_height_px)
+    panel_b = _contain_in_box(panel_b, panel_b_width_px, row_height_px)
     panel_cde = _resize_to_width(panel_cde, figure_width_px)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
     draw = ImageDraw.Draw(canvas)
     canvas.paste(panel_a, (0, 0))
-    canvas.paste(panel_b, (top_panel_width_px + top_gap_px, 0))
+    canvas.paste(panel_b, (panel_a_width_px + top_gap_px, 0))
     _draw_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(2.0))
-    _draw_panel_label(draw, "b", top_panel_width_px + top_gap_px + _mm_to_px(2.5), _mm_to_px(2.0))
+    _draw_panel_label(draw, "b", panel_a_width_px + top_gap_px + _mm_to_px(2.5), _mm_to_px(2.0))
 
     bottom_row_y_px = row_height_px + row_gap_px
     bottom_strip_y_px = bottom_row_y_px + max((row_height_px - panel_cde.height) // 2, 0)
@@ -535,7 +537,7 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             **_bbox_payload(
                 x0_mm=0.0,
                 y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
-                width_mm=FIG01_TOP_PANEL_WIDTH_MM,
+                width_mm=FIG01_PANEL_A_WIDTH_MM,
                 height_mm=FIG01_ROW_HEIGHT_MM,
                 figure_width_mm=FIG01_WIDTH_MM,
                 figure_height_mm=FIG01_HEIGHT_MM,
@@ -544,13 +546,13 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
         {
             "index": 1,
             "panel_id": "b",
-            "kind": "manual",
-            "has_data": False,
-            "title": "Physical mechanism schematic",
+            "kind": "data_backed",
+            "has_data": True,
+            "title": "Empirical component bridge",
             **_bbox_payload(
-                x0_mm=FIG01_WIDTH_MM - FIG01_TOP_PANEL_WIDTH_MM,
+                x0_mm=FIG01_PANEL_A_WIDTH_MM + (FIG01_WIDTH_MM - FIG01_PANEL_A_WIDTH_MM - FIG01_PANEL_B_WIDTH_MM),
                 y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
-                width_mm=FIG01_TOP_PANEL_WIDTH_MM,
+                width_mm=FIG01_PANEL_B_WIDTH_MM,
                 height_mm=FIG01_ROW_HEIGHT_MM,
                 figure_width_mm=FIG01_WIDTH_MM,
                 figure_height_mm=FIG01_HEIGHT_MM,

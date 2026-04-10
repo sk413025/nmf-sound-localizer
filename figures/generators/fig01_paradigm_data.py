@@ -1,13 +1,15 @@
-"""Figure 1 — Paradigm + First Data Evidence.
+"""Figure 1 — Phenomenon-first opener with an empirical component bridge.
 
-Panels (a) and (b) are external JPG assets (setup photo + conceptual schematic).
-This generator produces the data panels tied to panel (b)'s physical principle:
-  (c) Real time-domain WN waveforms at 5 representative angles
-  (d) Spectral fingerprints H(theta,f) for the same 5 angles (smoothed)
-  (e) Directivity polar plot H(theta) at 3 representative frequency bands
+Panel (a) remains the committed setup photo support asset.
+This generator produces:
+  (b) a data-backed bridge showing that direction reweights reusable empirical
+      spectral components rather than creating unrelated fingerprints
+  (c) representative input-to-output spectral shaping
+  (d) a full angle-frequency heatmap from the white-noise calibration bundle
+  (e) band-limited directivity
 
-All panels demonstrate the direction-dependent transfer function H(theta,f)
-predicted by the physical model in panel (b).
+Together these panels keep Fig. 1 as a phenomenon-first opener while tying it
+more explicitly to the compact measured geometry formalized in Fig. 2.
 """
 
 from __future__ import annotations
@@ -87,6 +89,9 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     angles_deg = dict_data["angles"]  # (37,)
     F, E = H_np.shape
     freqs = _build_freq_axis(F)
+    H_mag = np.abs(H_np)
+    H_centered = H_mag - H_mag.mean(axis=1, keepdims=True)
+    U, S, Vt = np.linalg.svd(H_centered, full_matrices=False)
 
     # 5 representative angles for panels (c) and (d)
     representative = [0, 45, 90, 135, 180]
@@ -97,6 +102,24 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     colors_5 = ["#0072B2", "#56B4E9", "#D55E00", "#E69F00", "#009E73"]
     angle_labels = [f"{angles_deg[i]:.0f}\u00b0" for i in angle_indices]
+    component_indices = [0, 1, 5]
+    component_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    component_labels = ["Comp. 1", "Comp. 2", "Comp. 6"]
+    bridge_angle_targets = [0, 90, 180]
+    bridge_angle_indices = [int(np.argmin(np.abs(angles_deg - target))) for target in bridge_angle_targets]
+    bridge_angle_labels = [f"{angles_deg[idx]:.0f}\u00b0" for idx in bridge_angle_indices]
+    component_profiles = []
+    for mode_idx in component_indices:
+        profile = np.abs(U[:, mode_idx])
+        profile = _smooth_spectrum(profile, window=41, polyorder=3)
+        profile = np.clip(profile, 0.0, None)
+        profile = profile / (profile.max() + 1e-10)
+        component_profiles.append(profile)
+    bridge_weights = np.stack(
+        [np.abs(Vt[component_indices, idx]) for idx in bridge_angle_indices],
+        axis=1,
+    )
+    bridge_weights = bridge_weights / (bridge_weights.sum(axis=0, keepdims=True) + 1e-10)
 
     # Load real WN spectra for panel (c): source (original) vs output (box)
     from scipy.signal import stft as scipy_stft
@@ -188,37 +211,45 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_c, "c", x=-0.10, y=1.06)
 
-    # --- Panel (d): Multi-trial repeatability (5 angles, mean ± std band) ---
+    # --- Panel (d): Full angle-frequency heatmap from the calibration bundle ---
     ax_d = fig.add_subplot(gs[0, 1])
 
-    for aidx, color, label in zip(angle_indices, colors_5, angle_labels):
-        angle_val = int(angles_deg[aidx])
+    heatmap_rows: list[np.ndarray] = []
+    for angle_val in angles_deg.astype(int):
         clip_dir = wn_base / f"angle_{angle_val}"
         clips = sorted(clip_dir.glob("*.npy"))[:3]
         trial_spectra = []
         for clip_path in clips:
             spec = _compute_mean_spectrum(clip_path)
             if spec is not None:
-                spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
-                trial_spectra.append(spec_smooth)
+                trial_spectra.append(_smooth_spectrum(spec, sg_window, sg_poly))
         if trial_spectra:
             stacked = np.stack(trial_spectra)
-            # Normalize all trials by the global max of this angle's mean
             mean_spec = stacked.mean(axis=0)
-            norm_factor = mean_spec.max() + 1e-10
-            mean_norm = mean_spec / norm_factor
-            std_norm = stacked.std(axis=0) / norm_factor
-            ax_d.plot(freqs / 1000, mean_norm, color=color, linewidth=0.9,
-                      label=label)
-            ax_d.fill_between(freqs / 1000,
-                              mean_norm - std_norm, mean_norm + std_norm,
-                              color=color, alpha=0.25)
+            norm_factor = src_spec.max() + 1e-10 if src_spec is not None else mean_spec.max() + 1e-10
+            heatmap_rows.append(mean_spec / norm_factor)
+        else:
+            heatmap_rows.append(np.zeros_like(freqs, dtype=float))
+    heatmap = np.stack(heatmap_rows, axis=0)
 
+    im = ax_d.imshow(
+        heatmap,
+        origin="lower",
+        aspect="auto",
+        interpolation="bilinear",
+        extent=[freqs[0] / 1000, freqs[-1] / 1000, float(angles_deg[0]), float(angles_deg[-1])],
+        cmap="magma",
+        vmin=0.0,
+        vmax=np.percentile(heatmap, 99.5),
+    )
     ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_d.set_ylabel("Normalized amplitude", fontsize=6)
-    ax_d.set_title("Trial repeatability (\u00b11 s.d.)", fontsize=6.5)
-    ax_d.legend(fontsize=5, frameon=False, loc="upper right")
-    ax_d.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_d.set_ylabel("Angle (°)", fontsize=6)
+    ax_d.set_title("Angle-frequency heatmap", fontsize=6.5)
+    ax_d.set_yticks([0, 45, 90, 135, 180])
+    ax_d.tick_params(labelsize=5)
+    cbar = fig.colorbar(im, ax=ax_d, fraction=0.046, pad=0.02)
+    cbar.set_label("Normalized amplitude", fontsize=5.5)
+    cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 
     # --- Panel (e): Directivity polar plot (3 frequency bands, 37 angles) ---
@@ -262,6 +293,67 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_dir = output_dir / "fig01_paradigm_data_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
+    # Panel b standalone: empirical component bridge
+    fig_b = make_figure(width_mm=96, height_mm=65)
+    gs_b = gridspec.GridSpec(
+        1,
+        2,
+        figure=fig_b,
+        width_ratios=[1.95, 0.95],
+        wspace=0.24,
+        left=0.08,
+        right=0.98,
+        bottom=0.18,
+        top=0.88,
+    )
+    ax_b1 = fig_b.add_subplot(gs_b[0, 0])
+    ax_b2 = fig_b.add_subplot(gs_b[0, 1])
+    for profile, color, label in zip(component_profiles, component_colors, component_labels, strict=True):
+        ax_b1.plot(freqs / 1000.0, profile, color=color, linewidth=1.05)
+        label_x = 2.80
+        label_idx = int(np.argmin(np.abs(freqs / 1000.0 - label_x)))
+        label_y = float(profile[label_idx])
+        ax_b1.text(
+            label_x + 0.03,
+            label_y,
+            label,
+            color=color,
+            fontsize=4.8,
+            ha="left",
+            va="center",
+        )
+    ax_b1.set_title("Reusable empirical components", fontsize=6.0, pad=1.5)
+    ax_b1.set_xlabel("Frequency (kHz)", fontsize=6)
+    ax_b1.set_ylabel("Relative loading", fontsize=6)
+    ax_b1.set_xticks([0.5, 1.5, 2.5])
+    ax_b1.set_ylim(0.0, 1.05)
+    ax_b1.set_xlim(0.28, 3.05)
+    ax_b1.tick_params(axis="both", labelsize=5, pad=1)
+    ax_b1.grid(True, axis="y", linestyle="--", alpha=0.25)
+
+    y = np.arange(len(bridge_angle_indices), dtype=float)
+    left = np.zeros(len(bridge_angle_indices), dtype=float)
+    for comp_idx, color in enumerate(component_colors):
+        ax_b2.barh(
+            y,
+            bridge_weights[comp_idx],
+            left=left,
+            height=0.54,
+            color=color,
+            alpha=0.85,
+        )
+        left += bridge_weights[comp_idx]
+    ax_b2.set_title("Angle shares", fontsize=6.0, pad=1.5)
+    ax_b2.set_xlim(0.0, 1.0)
+    ax_b2.set_xlabel("Weight share", fontsize=6)
+    ax_b2.set_yticks(y)
+    ax_b2.set_yticklabels(bridge_angle_labels, fontsize=5)
+    ax_b2.tick_params(axis="x", labelsize=5, pad=1)
+    ax_b2.tick_params(axis="y", pad=1)
+    ax_b2.grid(True, axis="x", linestyle="--", alpha=0.25)
+    all_paths.extend(save_outputs(fig_b, panel_dir / "fig01_panel_b_component_bridge"))
+    plt.close(fig_b)
+
     # Panel c standalone
     fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_c.add_subplot(111)
@@ -288,8 +380,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel d standalone
     fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_d.add_subplot(111)
-    for aidx, color, label in zip(angle_indices, colors_5, angle_labels):
-        angle_val = int(angles_deg[aidx])
+    heatmap_rows: list[np.ndarray] = []
+    for angle_val in angles_deg.astype(int):
         clip_dir = wn_base / f"angle_{angle_val}"
         clips = sorted(clip_dir.glob("*.npy"))[:3]
         trial_spectra = []
@@ -300,19 +392,31 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         if trial_spectra:
             stacked = np.stack(trial_spectra)
             mean_spec = stacked.mean(axis=0)
-            norm_factor = mean_spec.max() + 1e-10
-            mean_norm = mean_spec / norm_factor
-            std_norm = stacked.std(axis=0) / norm_factor
-            ax.plot(freqs / 1000, mean_norm, color=color, linewidth=1.0, label=label)
-            ax.fill_between(freqs / 1000,
-                            mean_norm - std_norm, mean_norm + std_norm,
-                            color=color, alpha=0.25)
+            norm_factor = src_spec.max() + 1e-10 if src_spec is not None else mean_spec.max() + 1e-10
+            heatmap_rows.append(mean_spec / norm_factor)
+        else:
+            heatmap_rows.append(np.zeros_like(freqs, dtype=float))
+    heatmap = np.stack(heatmap_rows, axis=0)
+    im = ax.imshow(
+        heatmap,
+        origin="lower",
+        aspect="auto",
+        interpolation="bilinear",
+        extent=[freqs[0] / 1000, freqs[-1] / 1000, float(angles_deg[0]), float(angles_deg[-1])],
+        cmap="magma",
+        vmin=0.0,
+        vmax=np.percentile(heatmap, 99.5),
+    )
     ax.set_xlabel("Frequency (kHz)")
-    ax.set_ylabel("Normalized amplitude")
-    ax.legend(fontsize=6, frameon=False)
+    ax.set_ylabel("Angle (°)")
+    ax.set_title("Angle-frequency heatmap", fontsize=6.5)
+    ax.set_yticks([0, 45, 90, 135, 180])
+    cbar = fig_d.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+    cbar.set_label("Normalized amplitude", fontsize=6)
+    cbar.ax.tick_params(labelsize=5)
     add_panel_label(ax, "d")
     fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_repeatability"))
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_angle_frequency_heatmap"))
     plt.close(fig_d)
 
     # Panel e standalone (polar)
@@ -345,6 +449,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         panel_dir,
         [
             {
+                "panel_id": "b",
+                "title": "Empirical component bridge",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf",
+                "provenance_mode": "data_backed",
+                "description": "Centered-magnitude components 1, 2, and 6 define reusable spectral patterns, and representative angles redistribute their relative weights differently.",
+            },
+            {
                 "panel_id": "c",
                 "title": "Input-output spectral shaping",
                 "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf",
@@ -353,10 +464,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Trial repeatability",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_repeatability.pdf",
+                "title": "Angle-frequency heatmap",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf",
                 "provenance_mode": "data_backed",
-                "description": "3 trials × 3 angles showing stable fingerprints (within-angle overlap) and distinct profiles (between-angle separation).",
+                "description": "Full white-noise calibration heatmap across all 37 measured angles, showing structured spectral variation across directions.",
             },
             {
                 "panel_id": "e",

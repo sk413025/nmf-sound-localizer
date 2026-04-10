@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
 from scipy.interpolate import CubicSpline, PchipInterpolator
+from sklearn.manifold import MDS
 
 from figures.style import (
     set_nature_rcparams,
@@ -148,6 +149,26 @@ def _smooth_angle_series(
     return averaged, angles_interp, values_interp
 
 
+def _metric_mds_embedding(x_rows: np.ndarray) -> np.ndarray:
+    """Two-dimensional metric-MDS embedding for the angle rows."""
+    diffs = x_rows[:, None, :] - x_rows[None, :, :]
+    distances = np.sqrt(np.maximum(np.sum(diffs * diffs, axis=2), 0.0))
+    mds = MDS(
+        n_components=2,
+        metric=True,
+        dissimilarity="precomputed",
+        random_state=0,
+        n_init=8,
+        max_iter=500,
+        normalized_stress="auto",
+    )
+    coords = mds.fit_transform(distances)
+    coords = coords - coords.mean(axis=0, keepdims=True)
+    scale = np.max(np.abs(coords), axis=0)
+    coords = coords / np.where(scale > 1e-10, scale, 1.0)
+    return coords
+
+
 # ---------------------------------------------------------------------------
 # Public interface
 # ---------------------------------------------------------------------------
@@ -170,6 +191,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     H_mag = np.abs(H_np)
     H_centered = H_mag - H_mag.mean(axis=1, keepdims=True)
+    embedding_coords = _metric_mds_embedding(H_centered.T)
 
     U, S, Vt = np.linalg.svd(H_centered, full_matrices=False)
     V = Vt.T
@@ -310,7 +332,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         u_smooth, freqs_smooth, _, _ = modes_data[r]
         u_abs = np.abs(u_smooth)
         ax_b.plot(freqs_smooth, u_abs, color=colors[r], linewidth=0.9, label=mode_labels[r])
-        ax_b.fill_between(freqs_smooth, u_abs, color=colors[r], alpha=0.15)
+    ax_b.set_title("Reusable spectral patterns", fontsize=6.2, pad=1.5)
     ax_b.set_xlabel("Frequency (kHz)")
     ax_b.set_ylabel("Rel. loading", labelpad=1)
     ax_b.tick_params(axis="both", which="major", pad=1, labelsize=5)
@@ -326,7 +348,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         _, _, v_norm, angles_smooth = modes_data[r]
         angles_rad = np.deg2rad(angles_smooth)
         ax_c.plot(angles_rad, v_norm, color=colors[r], linewidth=0.9, label=mode_labels[r])
-        ax_c.fill_between(angles_rad, 0, v_norm, color=colors[r], alpha=0.18)
+    ax_c.set_title("Angle-selective loadings", fontsize=6.2, pad=2.0)
     ax_c.grid(True, alpha=0.3, linewidth=0.5)
     ax_c.set_theta_zero_location("N")
     ax_c.set_theta_direction(-1)
@@ -405,6 +427,44 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     cbar = plt.colorbar(im_f, cax=cax_f)
     cbar.set_label("Pearson r", fontsize=6)
     cbar.ax.tick_params(labelsize=6)
+    ax_f_in = ax_f.inset_axes([0.54, 0.53, 0.38, 0.38])
+    angle_cmap = plt.cm.viridis
+    angle_norm = plt.Normalize(float(angles_deg.min()), float(angles_deg.max()))
+    ax_f_in.plot(
+        embedding_coords[:, 0],
+        embedding_coords[:, 1],
+        color="0.75",
+        linewidth=0.7,
+        alpha=0.9,
+        zorder=1,
+    )
+    ax_f_in.scatter(
+        embedding_coords[:, 0],
+        embedding_coords[:, 1],
+        c=angles_deg,
+        cmap=angle_cmap,
+        norm=angle_norm,
+        s=9,
+        linewidths=0.0,
+        zorder=2,
+    )
+    for target_angle in (0, 90, 180):
+        idx = int(np.argmin(np.abs(angles_deg - target_angle)))
+        ax_f_in.text(
+            embedding_coords[idx, 0],
+            embedding_coords[idx, 1],
+            f"{int(angles_deg[idx])}°",
+            fontsize=4.3,
+            ha="left",
+            va="bottom",
+            color="0.2",
+        )
+    ax_f_in.set_xticks([])
+    ax_f_in.set_yticks([])
+    ax_f_in.set_title("2D geometry", fontsize=4.8, pad=1.2)
+    for spine in ax_f_in.spines.values():
+        spine.set_color("0.55")
+        spine.set_linewidth(0.5)
     add_panel_label(ax_f, "f", x=-0.15, y=1.09)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")
@@ -476,6 +536,42 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_ylabel("Angle (\u00b0)")
     cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
     plt.colorbar(im, cax=cax).set_label("Pearson r", fontsize=6)
+    ax_in = ax.inset_axes([0.54, 0.53, 0.38, 0.38])
+    ax_in.plot(
+        embedding_coords[:, 0],
+        embedding_coords[:, 1],
+        color="0.75",
+        linewidth=0.7,
+        alpha=0.9,
+        zorder=1,
+    )
+    ax_in.scatter(
+        embedding_coords[:, 0],
+        embedding_coords[:, 1],
+        c=angles_deg,
+        cmap=plt.cm.viridis,
+        norm=plt.Normalize(float(angles_deg.min()), float(angles_deg.max())),
+        s=9,
+        linewidths=0.0,
+        zorder=2,
+    )
+    for target_angle in (0, 90, 180):
+        idx = int(np.argmin(np.abs(angles_deg - target_angle)))
+        ax_in.text(
+            embedding_coords[idx, 0],
+            embedding_coords[idx, 1],
+            f"{int(angles_deg[idx])}°",
+            fontsize=4.3,
+            ha="left",
+            va="bottom",
+            color="0.2",
+        )
+    ax_in.set_xticks([])
+    ax_in.set_yticks([])
+    ax_in.set_title("2D geometry", fontsize=4.8, pad=1.2)
+    for spine in ax_in.spines.values():
+        spine.set_color("0.55")
+        spine.set_linewidth(0.5)
     add_panel_label(ax, "f")
     fig_f_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
     all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_correlation"))
@@ -525,7 +621,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 "title": "Inter-angle fingerprint similarity",
                 "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_correlation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 fingerprint-similarity matrix whose near-diagonal band shows smooth angle-manifold structure.",
+                "description": "37x37 fingerprint-similarity matrix whose near-diagonal band shows smooth local ordering, with a 2D embedding inset of the same centered-|H| geometry.",
             },
         ],
     )
