@@ -50,8 +50,15 @@ If the task is about "what matters most", "which factors can we compute now", "c
 8. If the output will be promoted into paper-facing explanation such as manuscript, legend, rebuttal, or figure-support prose, also identify the paper-facing narrative role:
    - what old-world belief this result helps replace
    - what protagonist it is supporting
-   - whether it is evidence for the pivot, the governing principle, the broader implication, or the discovery cash-out
+   - what broader-significance status this result could support: `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`
+   - what `broader-implication trunk` this result could support if it is promoted beyond its home figure or analysis
+   - whether it is evidence for the pivot, the governing principle, the second-layer discovery, the downstream-consequence branch, or the discovery cash-out
    - which `Results section job` this result is supporting when it is being promoted into manuscript architecture
+   - whether it strengthens the `front-door preload sentence` or only the later Discussion consequence
+   - whether it contributes to the `two-takeaway editor readout` or only to local support detail
+   - whether a weaker `optional leaf consequence` should be dropped to keep the result from outrunning the trunk
+   - whether the result survives a named `no-bolt-on test`, meaning the branch still depends on the second-layer discovery rather than replacing it
+   - what promotion rationale this result supplies and what demotion trigger would keep it from being over-promoted
    - how the result stays subordinate to discovery rather than becoming a tool-centered detour
    - whether using this result risks repeated explanation or tool overweight instead of advancing the paper spine
 9. If the output will be promoted into paper-facing explanation such as manuscript, legend, rebuttal, or figure-support prose, run a sentence-energy pass:
