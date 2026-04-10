@@ -54,9 +54,13 @@ Evaluation goal:
 - Judge whether the manuscript reads like a Nature Communications paper rather than a narrow lab note or method-only report.
 - Check whether the claimed advance is legible at the paper level before technical details are unpacked.
 - Check whether the paper breaks a recognizable old-world belief and leaves the reader with a clear new-world belief.
+- Check whether any broader significance lands as a second-layer discovery rather than appearing first as an application paragraph in Discussion.
+- Check whether the front door preloads that second-layer discovery before Discussion has to introduce it.
+- Check whether the current broader-significance status looks earned enough for front-door placement or should be demoted.
 - Check whether the paper protagonist is the discovery or phenomenon rather than the reference object, calibration routine, or solver.
 - Check whether a skimming editor can locate the paper pivot without reconstructing the story from later sections.
 - Check whether a skimming editor can tell which section cashes out the paper-level discovery and which sections only support it.
+- Check whether a skimming editor can retain two takeaways when the evidence supports them: the core discovery and the second-layer discovery.
 - Check whether the manuscript states its claim floor clearly enough for an editor to register the advance on a first pass, rather than burying it under qualifiers, pathways, or defensive framing.
 - Test whether the title, abstract, Results framing, and Discussion together justify editorial interest and scope.
 - Flag cases where the manuscript feels technically busy but editorially under-motivated.
@@ -71,6 +75,7 @@ Evaluation goal:
 - Check whether the manuscript signals the right disciplinary anchors early enough for reviewers to place the contribution correctly.
 - Identify places where wording could trigger the wrong reviewer expectations or create avoidable scope mismatch.
 - Flag claims that require a specific expert audience but are currently framed too vaguely or too broadly.
+- Check whether the promoted trunk or branch would survive first contact with the likely reviewer community, or whether the broader implication should be demoted one level.
 
 ### cross-disciplinary-readability reviewer
 
@@ -85,6 +90,9 @@ Evaluation goal:
 - Own sentence-level naturalness for paper-facing explanation. Flag wording that is formally correct but not how a strong scientific speaker would naturally explain the result aloud.
 - Flag quantitative sentences that report changes or contrasts without translating them into consequence.
 - Check whether the reader understands why the paper changes the interpretation of the system, not only what procedures or comparisons were carried out.
+- Check whether any broader implication is introduced as an inference from the paper's own discovery actor rather than as a separate topic or literature thread.
+- Check whether any optional leaf consequence remains visibly weaker than the trunk and branch rather than competing with them.
+- Check whether a proposed branch is genuinely earned or is being used to mask an unearned trunk.
 
 ### physical-mechanism reviewer
 
@@ -121,6 +129,7 @@ Evaluation goal:
 - Verify that comparisons, trends, and interpretations are grounded in reported statistics, artifact-backed results, or explicit figure anchors.
 - Identify missing uncertainty language, missing controls, or over-general conclusions drawn from partial evidence.
 - Flag places where the manuscript needs weaker wording, more provenance, or a more explicit evidence boundary.
+- Check whether the evidence earns the claimed broader-significance status, especially the difference between `second-layer earned` and `branch earned`.
 
 ### figure-science-readability reviewer
 
@@ -139,6 +148,7 @@ Evaluation goal:
 - Verify that transitions between sections and figures preserve story logic and do not force the reader to reconstruct missing links.
 - Check that each major section opens with either the next scientific question or the supported answer to that question, not with procedural recap or defensive boundary-setting.
 - Check that section jobs form one cognitive-shift spine rather than an experiment log.
+- Check that any second-layer discovery is preloaded before Discussion and feels endogenous to the Results cash-out rather than bolted on later.
 - Identify the paper pivot and test whether the surrounding sections build toward it and cash it out afterward.
 - Identify where tool sections can be merged or compressed because they answer one bounded scientific question rather than independent discovery jobs.
 - Check that the protagonist stays stable across sections instead of drifting among phenomenon, method, and reference object.
@@ -161,6 +171,9 @@ Evaluation goal:
 - Flag compression patterns that may be efficient for insiders but exhausting for reviewers or editors.
 - Flag manuscripts whose information density is uniformly high enough that no pivot or take-home shift becomes memorable.
 - Flag repeated explanations that do not upgrade understanding and therefore consume narrative mass without advancing the paper spine.
+- Flag cases where mid-manuscript density prevents a second-layer discovery from landing with the same memorability as the core discovery.
+- Apply the `no-bolt-on test` when broader significance is in scope: if the second-layer discovery is removed, the downstream consequence should immediately lose support.
+- Flag optional leaves that should be dropped because they reduce editor memory for the trunk or branch.
 
 ## Routing guidance
 
@@ -182,8 +195,24 @@ Reviewer outputs should name:
 - the closest `SV#` exemplar from `docs/governance/scientific-voice-guide.md` when the issue is primarily a manuscript-voice or salience failure
 - the sentence-friction type when applicable: `noun-stack`, `causal-gap`, `number-without-meaning`, `formal-register`, or `static-verb`
 - the architecture verdicts when applicable: `paper protagonist`, `pivot`, `tool-vs-discovery weight`, and `worldview shift`
-- the whole-paper architecture verdicts when applicable: `Results section jobs`, `discovery cash-out`, and `redundancy / breathing risks`
+- the whole-paper architecture verdicts when applicable: `Results section jobs`, `discovery cash-out`, `second-layer discovery`, `broader-implication trunk`, and `redundancy / breathing risks`
+- the broader-significance verdicts when applicable: `Reviewed status`, `Front-door preload sentence landed`, `Downstream consequence bounded`, and `No-bolt-on test passed`
+- a short `status_change_note` whenever review demotes the packet below its proposed status
+- whether those broader-significance verdicts are recorded coherently enough to populate `results/<round_name>/governance_round.yaml` without free-text interpretation drift
 - any required rewrite, evidence, or routing follow-up
+
+## Promotion and demotion verdicts
+
+When broader significance is in scope, reviewers should report these explicit verdicts:
+
+- `Reviewed status`: `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`
+- `Status change note`: `none` when review keeps the packet status, otherwise one short explanation of why review demoted it
+- `Front-door preload sentence landed`: `yes`, `no`, or `not required`
+- `Downstream consequence bounded`: `yes`, `no`, or `not required`
+- `No-bolt-on test passed`: `yes`, `no`, or `not required`
+
+Use these verdicts to force a level decision rather than leaving broader significance at vague “improved but risky” language.
+For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, these verdicts must be mirrored into `results/<round_name>/governance_round.yaml` so closeout can be gated semantically rather than by memo prose alone.
 
 ## Mandatory reviewer subsets for architecture-sensitive prose rounds
 
@@ -199,6 +228,7 @@ For any round that changes the title, abstract, Results subsection openings, sec
 - `cognitive-load reviewer`
 
 Add `statistics-evidence reviewer` when wording changes could alter evidence strength or scope, and add `reviewer-routing reviewer` when the new framing may change likely reviewer community routing.
+Add `statistics-evidence reviewer` for broader-significance rounds when the dispute is whether the paper has earned a trunk or only a branch.
 
 If multiple reviewer roles are used, the supervisor should consolidate them into one paper-facing decision rather than leaving them as disconnected comments.
 
@@ -214,4 +244,4 @@ Add `statistics-evidence reviewer` when the restructuring changes the apparent s
 Reviewer qualification gate for architecture:
 
 - Treat a reviewer output as under-scoped when it only comments on sentence polish or local clarity but does not judge protagonist, pivot, or tool-vs-discovery weight on a high-salience manuscript round.
-- Treat a reviewer output as under-scoped on a whole-manuscript or cross-section round when it does not judge section jobs, discovery cash-out location, or merge-versus-compress needs for overweight tool sections.
+- Treat a reviewer output as under-scoped on a whole-manuscript or cross-section round when it does not judge section jobs, discovery cash-out location, second-layer-discovery landing, or merge-versus-compress needs for overweight tool sections.

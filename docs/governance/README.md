@@ -13,9 +13,10 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
 - Asset classification:
   - `ASSET_CLASSES.md`
 - Agent operations:
-  - `docs/agent-ops/`
+- `docs/agent-ops/`
 - Executable gates:
   - `make paper-check`
+  - `make paper-governance-gate ROUND_DIR=results/<round_name>`
   - `scripts/paper/`
 - Historical context:
   - `docs/archive/`
@@ -56,3 +57,7 @@ This directory defines the operational contracts for the `paper/nature-comm` wor
   - treat only TF + USM + soft-OMP support paths as active by default
 - Running multi-agent task orchestration:
   - use `docs/agent-ops/`
+- Governing a `high-risk` broader-significance round:
+  - use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`
+  - create `results/<round_name>/governance_round.yaml`
+  - treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as blocking

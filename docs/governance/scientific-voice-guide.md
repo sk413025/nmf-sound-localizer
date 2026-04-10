@@ -13,7 +13,7 @@ Use these surface definitions across the active branch:
 
 ## Narrative architecture layer
 
-Sentence energy is not enough. Paper-facing explanation in this branch must also carry one cognitive shift.
+Sentence energy is not enough. Paper-facing explanation in this branch must also carry one primary cognitive shift and, when the evidence earns it, one endogenous second-layer discovery.
 
 Use these architecture definitions:
 
@@ -24,6 +24,11 @@ Use these architecture definitions:
 - `pivot`: the Results transition where the reader's model of the system should change, not just accumulate another result
 - `discovery weight`: the narrative mass given to the paper-level finding
 - `tool weight`: the narrative mass given to calibration, decoder, or other support machinery
+- `second-layer discovery`: the broader paper-level inference that follows from the discovery itself, not from speculative application desire
+- `broader-implication trunk`: the shortest defensible sentence that states the second-layer discovery
+- `downstream-consequence branch`: the nearest practical or cross-disciplinary consequence that follows from the trunk without becoming a new paper protagonist
+- `optional leaf consequence`: a weaker, more distant implication that may be noted briefly only if the trunk and branch already land cleanly
+- `broader-significance status`: the current promotion level for broader implication. Use only `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`
 - `worldview-shift sentence`: the Discussion-opening sentence that says what the paper changes in how the system should be understood
 
 Use these architecture defaults unless the packet explicitly declares a method-first paper:
@@ -32,6 +37,10 @@ Use these architecture defaults unless the packet explicitly declares a method-f
 - Keep one stable paper protagonist from title through Discussion.
 - Treat reference objects, calibration routines, and solvers as supporting actors.
 - Give the discovery more narrative weight than tool validation.
+- When broader significance is present, phrase it first as a second-layer discovery, not as an application slogan.
+- Keep one broader-implication trunk. Let branches and optional leaves descend from that trunk instead of competing with it.
+- If the trunk does not land, remove or weaken downstream branches rather than multiplying applications.
+- Promote broader significance conservatively. If evidence does not clearly earn the trunk, keep the round at `core-only` rather than writing a broader slogan.
 - Write down a whole-paper spine map for any cross-section or whole-manuscript rewrite. Name the Results section jobs, the pivot sentence, the discovery cash-out section, and the discovery-versus-tool weight budget.
 - Do not narrate the paper in experiment time order.
 - Reserve the Discussion opening for worldview shift, not recap.
@@ -82,8 +91,9 @@ Default order for a full paper:
 1. Old-world belief
 2. Surprising observation
 3. Governing principle
-4. Broader implication
-5. Boundary
+4. Second-layer discovery
+5. Bounded downstream consequence
+6. Boundary
 
 Use that order to decide what each major section is doing.
 
@@ -101,6 +111,93 @@ Use that order to decide what each major section is doing.
   - show what requirement, structure, or physical principle the tool reveals; do not let the tool become the protagonist
 - Discussion opening:
   - say what understanding has changed at paper level
+
+## Second-layer discovery ladder
+
+When a paper needs broader significance, build it in this order:
+
+1. Core discovery
+2. Second-layer discovery
+3. Downstream-consequence branch
+4. Optional leaf consequence
+5. Boundary
+
+Use this ladder to keep cross-disciplinary consequence endogenous to the paper instead of bolted on.
+
+### What that means in practice
+
+- Abstract tail:
+  - land first on the second-layer discovery, not on an application inventory
+- Introduction ending:
+  - preload the broader-implication trunk before Results begin
+- Discovery cash-out section:
+  - make the second-layer discovery feel inevitable by the end of the Results arc
+- Discussion:
+  - state the trunk before any downstream branch
+  - keep optional leaves brief, late, and clearly weaker than the trunk
+
+## Promotion ladder
+
+Use this ladder to decide what level of broader significance the paper has actually earned:
+
+1. `core-only`
+   - the evidence supports only the immediate-field discovery
+   - do not preload broader significance into the front door
+2. `second-layer earned`
+   - the evidence supports one discovery-level inference beyond the immediate field
+   - write the trunk, but do not yet add a downstream branch
+3. `branch earned`
+   - the evidence supports one bounded downstream consequence in addition to an already earned trunk
+   - keep the branch visibly subordinate and near the trunk
+4. `leaf allowed`
+   - the trunk and branch already land cleanly
+   - one weaker, more distant implication may appear briefly and late
+
+Default bias:
+
+- promote conservatively
+- demote quickly
+- drop optional leaves rather than letting them crowd the trunk
+
+## Promotion tests
+
+Use these tests before promoting broader significance beyond `core-only`:
+
+- `Earned-discovery test`
+  - The sentence must still read as an inference from the paper's own discovery actor.
+  - If the sentence only works as a use case, future application, or literature-tour rationale, it is not a second-layer discovery.
+- `Boundary-pressure test`
+  - Rewrite the broader implication in the most conservative truthful form.
+  - If the sentence still sounds worth saying in the Abstract tail, Introduction ending, or Discussion trunk, it may stay promoted.
+  - If the sentence collapses into vague usefulness, demote it.
+- `Reviewer-routing survival test`
+  - Ask whether the proposed promotion would survive first contact with an immediate-field reviewer.
+  - If the statement depends on adjacent-field enthusiasm to seem reasonable, it is over-promoted.
+
+Use these tests before preserving an optional leaf:
+
+- `Leaf deletion test`
+  - If deleting the leaf improves editor memory for the trunk, delete it.
+- `Leaf burden test`
+  - If the leaf introduces a new literature thread, new protagonist, or new application frame, demote or drop it unless the branch already lands effortlessly.
+
+For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, mirror the chosen promotion level, any review-forced demotion, and the final closeout status into `results/<round_name>/governance_round.yaml` and treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as the blocking semantic gate.
+
+## Naturalization test
+
+Use this test whenever a paper-facing round claims broader significance:
+
+- `No-bolt-on test`:
+  - if the downstream consequence is removed, the second-layer discovery should still read as complete
+  - if the second-layer discovery is removed, the downstream consequence should immediately feel unsupported
+- `Earned-level test`:
+  - the broader-significance status should still look defensible after the trunk is rewritten in its most conservative truthful form
+- `Two-takeaway editor test`:
+  - after one skim, an editor should be able to restate one core discovery sentence and one second-layer discovery sentence
+- `One-trunk test`:
+  - the broader implication should reduce to one trunk sentence rather than multiple competing application labels
+- `Branch-boundary test`:
+  - downstream consequences should read as bounded uses of the trunk, not as new protagonists
 
 ## Whole-paper spine map
 
@@ -123,6 +220,11 @@ For any `cross-section` or `whole-manuscript` round, write down this map before 
 - `Tool role`
 - `Reference-object role`
 - `Discovery-vs-tool weight budget`
+- `Second-layer discovery`
+- `Broader-significance status`
+- `Broader-implication trunk`
+- `Downstream-consequence branch`
+- `Optional leaf consequence`
 - `Redundancy / breathing risks`
 - `Worldview-shift sentence`
 
@@ -132,6 +234,10 @@ Use the map to answer four architectural questions before sentence editing begin
 - Where does that change happen?
 - Which sections build toward that change and which ones cash it out?
 - Which tool sections can be merged or compressed because they answer one bounded scientific question?
+- What is the second-layer discovery, if any, that the paper earns beyond its immediate field?
+- Which downstream consequence survives if all weaker application leaves are removed?
+- At what promotion level does the broader significance currently belong: `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`?
+- If this is a `high-risk` broader-significance round, record the machine-readable promotion spine in `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` rather than inventing a second free-form field set.
 
 ## Sentence-energy defaults
 
@@ -165,6 +271,7 @@ Read this before writing any paper-facing explanation:
 - If the tool sounds like the protagonist, rewrite the paragraph around the discovery instead.
 - If no section feels like a pivot, the paper still reads like an experiment log.
 - If the Discussion opening merely restates Results, rewrite it as a worldview shift.
+- If the broader implication sounds attractive only because it is broad, demote it until the sentence still holds under conservative pressure.
 
 ## Golden pairs
 
@@ -258,7 +365,52 @@ Why:
 - The bad version apologizes for not doing a different analysis.
 - The good version states what the result does establish and bounds it precisely.
 
-### SV7: Limitations dilute the discussion instead of bounding it
+### SV7: Abstract tail uses application slogan instead of second-layer discovery
+
+Bad:
+
+> These findings open opportunities for smart environments and ambient intelligence applications.
+
+Good:
+
+> Because the same directional code recurs across ordinary passive objects, directional sensing need not reside only in dedicated hardware; part of the sensing substrate can already be embedded in existing structure.
+
+Why:
+
+- The bad version jumps straight from discovery to vague applications.
+- The good version first states the broader paper-level inference that applications can later descend from.
+
+### SV8: Discussion adds broader significance as a new topic jump
+
+Bad:
+
+> Beyond the present acoustics setting, these results may also be useful for contextual awareness and selective attention in future systems.
+
+Good:
+
+> The broader implication is that passive structure is not only something directional sensing must overcome. When the local code recurs across ordinary objects, that structure itself becomes part of the directional sensing substrate.
+
+Why:
+
+- The bad version opens a new topic and a new literature thread at once.
+- The good version keeps the paper's own discovery actor and turns broader significance into a second-layer discovery.
+
+### SV9: Downstream consequence outruns the trunk
+
+Bad:
+
+> The present results therefore enable event attribution, contextual awareness, and selective listening in ambient agents.
+
+Good:
+
+> Once passive structure contributes directional front-end information, a system may be able to use coarse directional neighborhoods to decide what part of a scene to process next.
+
+Why:
+
+- The bad version lists distant applications as if they were already proven.
+- The good version keeps the consequence near, bounded, and subordinate to the second-layer discovery.
+
+### SV10: Limitations dilute the discussion instead of bounding it
 
 Bad:
 
@@ -273,7 +425,21 @@ Why:
 - The bad version turns the whole sentence into a warning cloud.
 - The good version states the true transfer boundary directly and stops.
 
-### SV8: Section title reports activity instead of interpretation
+### SV11: A broader implication has not yet earned promotion beyond the core discovery
+
+Bad:
+
+> These findings may enable new smart-environment and cognitive-attention applications.
+
+Good:
+
+> The current evidence does not yet earn a paper-level broader implication beyond the core discovery. Keep the paragraph at `core-only`, and let later rounds earn a trunk before adding applications.
+
+Why:
+
+- The good version forces a promotion decision instead of letting slogans substitute for evidence.
+
+### SV12: Section title reports activity instead of interpretation
 
 Bad:
 
@@ -288,7 +454,7 @@ Why:
 - The bad version sounds observational and low-stakes.
 - The good version tells the reader what the observation means.
 
-### SV9: Noun stack hides the sentence's action
+### SV13: Noun stack hides the sentence's action
 
 Bad:
 
@@ -303,7 +469,7 @@ Why:
 - The bad version asks the reader to hold too many technical noun phrases at once.
 - The good version gives each clause one clear job and lets the action carry the sentence.
 
-### SV10: Facts are listed, but the causal link is missing
+### SV14: Facts are listed, but the causal link is missing
 
 Bad:
 
@@ -318,7 +484,7 @@ Why:
 - The bad version reports numbers but leaves the reader to infer why they matter.
 - The good version translates each number into a scientific consequence.
 
-### SV11: A quantitative contrast appears without a "so what"
+### SV15: A quantitative contrast appears without a "so what"
 
 Bad:
 
@@ -333,7 +499,7 @@ Why:
 - The bad version gives a counterintuitive fact but withholds the insight.
 - The good version spells out what the contrast teaches the reader.
 
-### SV12: The diction is formally correct but not natural
+### SV16: The diction is formally correct but not natural
 
 Bad:
 
@@ -348,7 +514,7 @@ Why:
 - The bad version sounds like technical compression rather than natural scientific explanation.
 - The good version uses words a strong researcher could say aloud without sacrificing precision.
 
-### SV13: Static verbs flatten a real scientific result
+### SV17: Static verbs flatten a real scientific result
 
 Bad:
 
@@ -363,7 +529,7 @@ Why:
 - The bad version describes persistence rather than scientific structure.
 - The good version uses verbs that reveal what the result is doing.
 
-### SV14: Methods or legends compress the pipeline into a noun block
+### SV18: Methods or legends compress the pipeline into a noun block
 
 Bad:
 
@@ -378,7 +544,7 @@ Why:
 - The bad version turns pipeline bookkeeping into a hard-to-parse noun cluster.
 - The good version keeps the same technical content in direct procedural prose.
 
-### SV15: Abstract reads like compressed Results instead of a changed worldview
+### SV19: Abstract reads like compressed Results instead of a changed worldview
 
 Bad:
 
@@ -393,7 +559,7 @@ Why:
 - The bad version reports workflow order.
 - The good version opens by replacing an old intuition with the paper's new one.
 
-### SV16: Introduction spends stakes on technical predictions too early
+### SV20: Introduction spends stakes on technical predictions too early
 
 Bad:
 
@@ -408,7 +574,7 @@ Why:
 - The bad version spends reader attention on technical consequences before the problem matters.
 - The good version establishes stakes first and delays technical detail until the reader has a reason to care.
 
-### SV17: The method becomes the paper's main character
+### SV21: The method becomes the paper's main character
 
 Bad:
 
@@ -423,7 +589,7 @@ Why:
 - The bad version makes the method the grammatical and conceptual subject.
 - The good version keeps the discovery as protagonist and assigns the tool a supporting role.
 
-### SV18: Results advance evenly instead of pivoting
+### SV22: Results advance evenly instead of pivoting
 
 Bad:
 
@@ -438,7 +604,7 @@ Why:
 - The bad version sounds like an experiment log.
 - The good version marks the pivot and reinterprets later sections through that pivot.
 
-### SV19: Tool validation outweighs discovery
+### SV23: Tool validation outweighs discovery
 
 Bad:
 
@@ -453,7 +619,7 @@ Why:
 - The bad version lets the tool consume the paper's narrative mass.
 - The good version assigns the tool one bounded scientific job inside the discovery story.
 
-### SV20: Discussion opens by restating Results instead of shifting worldview
+### SV24: Discussion opens by restating Results instead of shifting worldview
 
 Bad:
 
@@ -468,7 +634,7 @@ Why:
 - The bad version repeats a result.
 - The good version tells the reader what understanding has changed.
 
-### SV21: Abstract opens with specialized setup instead of breaking the old intuition
+### SV25: Abstract opens with specialized setup instead of breaking the old intuition
 
 Bad:
 
@@ -483,7 +649,7 @@ Why:
 - The bad version opens inside setup detail and presumes the reader already cares.
 - The good version first breaks the old intuition, then names the discovery.
 
-### SV22: Introduction spends stakes too late and technique too early
+### SV26: Introduction spends stakes too late and technique too early
 
 Bad:
 
@@ -498,7 +664,7 @@ Why:
 - The bad version spends reader attention on technical predictions before the problem feels important.
 - The good version establishes stakes first and keeps the technique in a supporting role.
 
-### SV23: Results sections are individually correct but collectively read like an experiment log
+### SV27: Results sections are individually correct but collectively read like an experiment log
 
 Bad:
 
@@ -513,7 +679,7 @@ Why:
 - The bad version narrates the order of analyses.
 - The good version narrates what the reader learns next.
 
-### SV24: Tool-validation consumes more narrative mass than the discovery
+### SV28: Tool-validation consumes more narrative mass than the discovery
 
 Bad:
 
@@ -528,7 +694,7 @@ Why:
 - The bad version lets the tool behave like the main event.
 - The good version budgets the tool to one scientific job and restores discovery weight.
 
-### SV25: The paper-level discovery appears only as the final extension
+### SV29: The paper-level discovery appears only as the final extension
 
 Bad:
 
@@ -543,7 +709,7 @@ Why:
 - The bad version makes the broad discovery sound optional.
 - The good version marks the final section as the place where the paper's real claim becomes unavoidable.
 
-### SV26: Discussion opening recaps findings instead of updating field understanding
+### SV30: Discussion opening recaps findings instead of updating field understanding
 
 Bad:
 

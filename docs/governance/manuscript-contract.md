@@ -26,8 +26,20 @@ This contract governs the main-manuscript subset of the broader `paper-facing ex
 - Terminology, comparator labels, and mechanism language must stay consistent across sections unless the manuscript explicitly marks a shift.
 - Each Results subsection should make its local question, evidence, and paper-level consequence explicit.
 - The manuscript must identify one stable paper protagonist and keep that protagonist explicit across title, abstract, Results framing, and Discussion.
-- The manuscript must identify one paper-level pivot where the reader's model of the system changes; a uniform sequence of equally weighted result summaries is not acceptable architecture.
+- The manuscript must identify one primary paper-level pivot where the reader's model of the system changes; a uniform sequence of equally weighted result summaries is not acceptable architecture.
 - The manuscript must give the discovery more narrative weight than the tools that reveal or validate it unless the packet explicitly declares a method paper.
+- When the evidence supports broader significance, the manuscript must express it first as an endogenous `second-layer discovery` rather than as a free-standing application list.
+- The allowed hierarchy for broader significance is `core discovery -> second-layer discovery -> bounded downstream consequence -> boundary`.
+- If a paper-facing broader implication cannot be stated as a discovery-level inference earned by the current evidence, downstream applications must be weakened or removed rather than promoted into the paper spine.
+- Promotion into broader significance must follow this ladder:
+  - `core-only`: the evidence supports only the immediate-field discovery; broader implication stays out of the paper spine
+  - `second-layer earned`: the evidence supports one discovery-level inference beyond the immediate field; only the trunk may enter the spine
+  - `branch earned`: the evidence supports one bounded downstream consequence in addition to an already earned trunk
+  - `leaf allowed`: a weaker, more distant implication may appear briefly only after trunk and branch already land cleanly
+- If the broader-significance status is below `second-layer earned`, the manuscript must not preload broader consequence in the Abstract tail, Introduction ending, or Discussion trunk paragraph.
+- If the broader-significance status is below `branch earned`, downstream application sentences must be removed or rewritten as frontier language outside the paper spine.
+- If an optional leaf cannot survive demotion pressure without stealing memorability from the trunk, it must be dropped rather than preserved as decoration.
+- For any `high-risk` manuscript round with broader significance or cross-disciplinary consequence in scope, the round must create `results/<round_name>/governance_round.yaml` and pass `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout may report that the broader significance landed.
 - Any whole-manuscript or cross-section hardening round must write a `Paper spine map` before drafting. That map must include the Results section jobs, pivot sentence, discovery cash-out section, tool role, reference-object role, and a discovery-versus-tool weight budget.
 - Reference objects, calibration schemes, and solvers must be framed as supporting actors unless the paper's actual contribution is those objects or methods.
 - The manuscript must not be narrated in experiment-production order when a different order is needed to deliver the paper's cognitive shift.
@@ -86,11 +98,14 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 **Positive construction defaults:**
 
 - Build high-salience sentences in this order when possible: supported finding, evidence anchor, implication, then boundary.
-- Build whole-paper architecture in this order when possible: old-world belief, surprising observation, governing principle, broader implication, then boundary.
+- Build whole-paper architecture in this order when possible: old-world belief, surprising observation, governing principle, second-layer discovery, bounded downstream consequence, then boundary.
+- Build broader-significance promotion in this order when possible: prove the core discovery, earn the second-layer discovery, earn one bounded branch, then decide whether any optional leaf is still worth the reader burden.
 - Use the canonical `SV#` exemplars in `scientific-voice-guide.md` when a sentence sounds defensively cautious but the evidence remains strong.
 - When the evidence is strong, strengthen clarity rather than dampening tone. The correct fix for perceived overstatement is usually a narrower claim, not a weaker verb.
 - Distinguish `descriptive` from `insignificant`. A descriptive result may still be central if it organizes the paper's discovery.
 - Treat `paper protagonist`, `pivot`, and `tool role` as explicit design choices, not as emergent side effects of paragraph edits.
+- Treat `second-layer discovery`, `broader-implication trunk`, and `downstream-consequence branch` as explicit design choices whenever the paper reaches beyond its immediate field.
+- Treat broader-significance status as an explicit design choice whenever the paper reaches beyond its immediate field. Record whether the round is `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed` before drafting high-salience prose.
 - Treat `Results section jobs`, `Discovery cash-out section`, and `Discovery-vs-tool weight budget` as explicit architecture choices for any whole-manuscript round, not as formatting afterthoughts.
 
 **Preferred sentence jobs:**
@@ -110,6 +125,8 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Tool section: reveal the governing requirement or structure; do not become the story's main character.
 - Discovery cash-out section: make the paper-level discovery unavoidable rather than sounding like a final extension.
 - Discussion opening: deliver a worldview-shift sentence rather than a Results recap.
+- Broader-significance trunk: promote it into the paper spine only when it survives the earned-discovery, boundary-pressure, and reviewer-routing survival tests.
+- Downstream branch: promote it only when it remains bounded, subordinate to the trunk, and worth its cognitive cost after demotion pressure.
 
 **Verb and tone discipline:**
 
@@ -120,6 +137,25 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 
 - Every reference cited in the Discussion must have a corresponding mention or contextual anchor in the Introduction. Do not introduce new literature threads in the Discussion that lack any Introduction setup.
 - Do not include a standalone Road map paragraph. Integrate paper-organization cues into the contribution statement.
+
+## Broader-significance promotion gate
+
+Use this gate whenever a manuscript round wants to land broader significance.
+
+- `Earned-discovery test`:
+  - The proposed second-layer discovery must still be stated with the paper's own discovery actor as subject.
+  - If the sentence only works as an application slogan, future-use promise, or literature-tour justification, it is not earned and must demote.
+- `Boundary-pressure test`:
+  - Rewrite the broader implication in the most conservative truthful form.
+  - If the conservative version is still worth placing in the Abstract tail, Introduction ending, or Discussion trunk, it may remain promoted.
+  - If the conservative version collapses into vague usefulness, demote it to `core-only` or drop it.
+- `Reviewer-routing survival test`:
+  - Ask whether the proposed trunk would still look evidence-earned if the paper were read first by an immediate-field reviewer rather than a sympathetic adjacent-field reader.
+  - If the claim would likely be read as scope drift, it cannot be promoted beyond `core-only`.
+- `Demotion rule`:
+  - If the trunk fails, demote to `core-only` and rewrite the prose accordingly.
+  - If a downstream branch fails, demote to `second-layer earned`.
+  - Optional leaves that fail the same test must demote to `branch earned` or be dropped rather than defended.
 
 **Audience and narrative coherence:**
 
@@ -150,12 +186,15 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - the in-scope surface passes the editor-first readout test from `scientific-voice-guide.md`, meaning a skimming editor would remember the supported discovery rather than the caveat
 - the in-scope surface passes a sentence-energy test: high-salience sentences use clear subjects, explicit causal links, and low enough noun-stack density for one-pass reading
 - the in-scope surface passes an architecture test: the protagonist is stable, the pivot is legible, tool sections remain subordinate to discovery, and the Discussion opening upgrades the paper's meaning rather than restating Results
-- whole-manuscript and cross-section rounds provide a `Paper spine map` showing Results section jobs, discovery cash-out location, discovery-versus-tool weight, and redundancy or breathing risks
+- whole-manuscript and cross-section rounds provide a `Paper spine map` showing Results section jobs, discovery cash-out location, discovery-versus-tool weight, second-layer discovery, broader-implication trunk, downstream-consequence branch, and redundancy or breathing risks
+- whole-manuscript and cross-section rounds with broader significance also record a broader-significance status and show why the trunk or branch earned promotion rather than relying on intuition alone
 - paragraph and section transitions are natural and preserve the paper-level logic
 - terminology, comparator labels, and mechanism language stay consistent across sections unless an explicit shift is introduced
 - unresolved placeholders are explicitly tracked or resolved
 - manuscript closeout claims about textual changes are backed by exact text or diff evidence, with interpretation labeled separately
 - manuscript review pass is not treated as equivalent to full implementation or full plan completion
+- paper-facing broader significance passes a `no-bolt-on` test: if the second-layer discovery is removed, downstream consequences lose support immediately; if only the downstream consequence is removed, the manuscript still lands its broader paper-level inference
+- paper-facing broader significance passes the `earned-discovery`, `boundary-pressure`, and `reviewer-routing survival` tests at the claimed promotion level
 - paper-facing checks under `make paper-check` pass
 
 ## Executable gates
@@ -163,4 +202,6 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - `python scripts/paper/check_required_sections.py`
 - `python scripts/paper/check_figure_references.py`
 - `python scripts/paper/verify_provenance.py`
+- `python scripts/paper/check_round_governance_semantics.py --round-dir results/<round_name>` for any `high-risk` broader-significance round
+- `make paper-governance-gate ROUND_DIR=results/<round_name>` for any `high-risk` broader-significance round
 - `make paper-build`

@@ -84,6 +84,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 
 - `make paper-build`
 - `make paper-check`
+- `make paper-governance-gate ROUND_DIR=results/<round_name>`
 - `make manuscript`
 - `make paper-review-assets`
 - `make paper-review-gate`
@@ -129,6 +130,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - The parent must also reject paper-facing planning or review as under-scoped when it does not identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
 - The parent must reject whole-manuscript or cross-section hardening as under-architected when it lacks a `Paper spine map`, `Results section jobs`, `Discovery-vs-tool weight budget`, or a named `Discovery cash-out section`.
 - The parent must classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership. Any owner separation or role compression decision must follow that classification and be recorded.
+- High-risk rounds with broader significance or cross-disciplinary consequence in scope must create `results/<round_name>/governance_round.yaml` and pass `make paper-governance-gate ROUND_DIR=results/<round_name>` before parent closeout may report that broader significance landed.
 - Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
 - If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.
 - High-risk rounds that can change manuscript claims, governance posture, or acceptance status must separate implementer, reviewer, and verifier roles. One role may be omitted only when the parent records why the round is not high risk.

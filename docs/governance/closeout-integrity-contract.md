@@ -20,7 +20,11 @@ Use this contract when reporting task completion, review status, acceptance stat
 - Line references may support navigation, but they do not replace the underlying text evidence.
 - High-level interpretation must be labeled as interpretation and must not be presented as if it were the exact manuscript or governance text.
 - When a high-risk prose or governance round claims architectural improvement, the closeout must say whether the intended protagonist, pivot, tool role, and worldview shift actually landed.
-- When a whole-manuscript or cross-section hardening round claims architectural improvement, the closeout must include an `Architecture evidence map` tying title, abstract opening, intro ending, pivot sentence, discovery cash-out sentence, and Discussion opening to the intended spine.
+- When broader significance is in scope for that round, the same closeout must also say whether any promised second-layer discovery actually landed.
+- When a whole-manuscript or cross-section hardening round claims architectural improvement, the closeout must include an `Architecture evidence map` tying title, the `front-door preload sentence` when one is required, pivot sentence, discovery cash-out sentence, and Discussion opening to the intended spine.
+- When a round claims broader significance landed, the closeout must distinguish the `second-layer discovery` from any downstream consequence and must report whether the `broader-implication trunk` and `no-bolt-on test` landed.
+- When a round claims broader significance landed, the closeout must also report the earned promotion level and any demotion that review or verification required.
+- For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, the closeout must be backed by `results/<round_name>/governance_round.yaml` and a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` run.
 - Classify each closeout-sensitive round as high risk or not high risk before assigning reviewer and verifier ownership.
 - For high-risk rounds that can change manuscript claims, governance posture, or acceptance status, separate implementer, reviewer, and verifier roles.
 - In a high-risk round, a reviewer pass is advisory to acceptance until an independent verifier confirms that the implemented state matches the claimed closeout.
@@ -41,8 +45,11 @@ Use this contract when reporting task completion, review status, acceptance stat
 - closeout does not hide scope reduction behind summary language
 - exact text evidence is available for text-facing claims
 - high-level interpretation is clearly distinguished from exact text evidence
-- architecture-sensitive rounds do not imply protagonist, pivot, or worldview-shift success without naming those verdicts explicitly
+- architecture-sensitive rounds do not imply protagonist, pivot, worldview-shift, or second-layer-discovery success without naming those verdicts explicitly
+- broader-significance rounds do not imply that the trunk or branch was earned without naming the promotion level or demotion outcome
 - architecture-sensitive rounds do not imply whole-paper landing without an `Architecture evidence map`
 - closeout-sensitive rounds are explicitly classified as high risk or not high risk
 - high-risk rounds separate implementer, reviewer, and verifier unless an explicit non-high-risk rationale is recorded
 - final completion claims are backed by independent verification rather than a single actor's summary
+- broader-significance closeout distinguishes `second-layer discovery` from `downstream consequence` rather than collapsing them into one vague implication claim
+- `high-risk` broader-significance closeout is backed by a machine-readable `governance_round.yaml` artifact whose final status and demotion outcome match review and verification

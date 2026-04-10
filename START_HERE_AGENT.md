@@ -80,9 +80,16 @@ This worktree is a manuscript-first Nature Communications branch. Do not treat i
 
 - `make paper-build`
 - `make paper-check`
+- `make paper-governance-gate ROUND_DIR=results/<round_name>`
 - `make manuscript`
 - `make paper-review-assets`
 - `make paper-review-gate`
+
+For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, also create:
+
+- `results/<round_name>/governance_round.yaml`
+
+and treat `make paper-governance-gate ROUND_DIR=results/<round_name>` as the blocking semantic gate for promotion, demotion, and closeout coherence.
 
 ## Do not use as source of truth
 

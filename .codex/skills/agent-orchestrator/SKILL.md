@@ -54,6 +54,16 @@ Do not:
 
 Apply this execution-or-delegation rule in both Default mode and Plan mode.
 
+## Repo-local stance for broader significance
+
+When broader significance is in scope, keep these defaults explicit:
+
+- `promotion-conservative`: do not promote beyond what the evidence clearly earns
+- `demotion-forward`: prefer demotion or deletion over defending a weak trunk, branch, or leaf
+- `editor-memory-first`: preserve the trunk sentence a skimming editor should actually retain
+- `reviewer-routing aware`: do not promote wording that only survives with an unusually sympathetic adjacent-field reviewer
+- `anti-slogan`: reject broad application language that cannot be restated as an evidence-earned discovery actor inference
+
 ## Workflow
 
 1. Classify the task by manuscript impact and role complexity.
@@ -62,24 +72,32 @@ Apply this execution-or-delegation rule in both Default mode and Plan mode.
 4. If delegating, decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
 5. If delegating, choose the right child task packet, role, and core skill for each child task.
 6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
-7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, natural enough scientific English for one-pass reading, and narrative architecture that delivers one cognitive shift rather than an experiment log.
+7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, natural enough scientific English for one-pass reading, and narrative architecture that delivers one primary cognitive shift plus one evidence-earned second-layer discovery rather than an experiment log or application inventory.
 8. Classify `Architecture scope` before claim-floor work:
    - `local-salience` for a local high-salience rewrite with no section reweighting
    - `cross-section` for a round that changes more than one section, section bridges, or discovery-versus-tool weight
    - `whole-manuscript` for a full-paper restructuring or any round that re-architects the Results spine
 9. For `local-salience` main-manuscript hardening, run the local architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, `reference-object role`, and target `worldview-shift sentence`.
-10. For `cross-section` and `whole-manuscript` hardening, run the full architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `redundancy / breathing risks`, and target `worldview-shift sentence`.
-11. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
-12. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
-13. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
-14. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
-15. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
-16. Summarize only the task-relevant conversation history.
-17. Use `Context mode: summary-only` by default.
-18. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-19. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-20. Define review, handoff, and escalation requirements.
-21. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+10. For `cross-section` and `whole-manuscript` hardening, run the full architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `second-layer discovery`, `broader-implication trunk`, `downstream-consequence branch`, `optional leaf consequence`, `front-door preload sentence`, `two-takeaway editor readout`, `no-bolt-on test`, `redundancy / breathing risks`, and target `worldview-shift sentence`.
+11. When broader significance is in scope, classify the promotion level before any rewrite or review request. Use only `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`.
+12. When broader significance is in scope, record the `promotion rationale`, `demotion trigger`, `reviewer-routing survival`, and `leaf deletion rule` in the packet or local execution notes.
+13. Apply the broader-significance promotion gate before approving high-salience prose:
+   - `Earned-discovery test`
+   - `Boundary-pressure test`
+   - `Reviewer-routing survival test`
+   - if a leaf remains, also apply the `Leaf deletion test`
+14. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and plan to run `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout.
+15. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
+16. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
+17. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
+18. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
+19. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
+20. Summarize only the task-relevant conversation history.
+21. Use `Context mode: summary-only` by default.
+22. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
+23. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
+24. Define review, handoff, and escalation requirements.
+25. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
 
 ## High-risk rounds
 
@@ -99,11 +117,12 @@ Parent truth-maintenance checks for high-risk rounds:
 - verify that the child closeout distinguishes `Plan completion`, `Review verdict`, and `Verification verdict` as separate fields
 - verify that any claimed manuscript change includes the exact revised text or an explicit statement that no text was changed
 - verify that before/after anchors are present when prose or asset content was changed
-- verify that architecture-sensitive rounds report whether the protagonist, pivot, tool role, and worldview shift actually landed instead of assuming sentence polish was enough
-- verify that whole-manuscript architecture rounds also carry an `Architecture evidence map` tying the intended spine to title, abstract opening, intro ending, pivot sentence, discovery cash-out sentence, and Discussion opening
+- verify that architecture-sensitive rounds report whether the protagonist, pivot, tool role, worldview shift, and any promised second-layer discovery actually landed instead of assuming sentence polish was enough
+- verify that whole-manuscript architecture rounds also carry an `Architecture evidence map` tying the intended spine to title, the `front-door preload sentence` when required, pivot sentence, discovery cash-out sentence, and Discussion opening
 - verify that unresolved promised joints are listed when the round leaves any requested linkage, follow-through, or hardening step incomplete
 - verify that the risk classification, named owners, or explicit compression rationale are present
 - verify that a verifier actually ran in verifier mode instead of restating the implementer closeout
+- verify that any `high-risk` broader-significance round has a matching `results/<round_name>/governance_round.yaml` artifact and a passing semantic-gate result before the parent reports that broader significance landed
 
 Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`:
 
@@ -117,6 +136,13 @@ Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_
 - `Pivot landed:`
 - `Tool role preserved:`
 - `Worldview shift explicit:`
+- `Second-layer discovery explicit:`
+- `Broader-significance status:`
+- `Final status:`
+- `Status change note:`
+- `Front-door preload sentence landed:`
+- `Two-takeaway editor readout landed:`
+- `No-bolt-on test passed:`
 - `Architecture evidence map:`
 - `Unresolved promised joints:`
 - `Scope-downgrade disclosure:`
@@ -154,7 +180,8 @@ Parent acceptance on reviewer-stack use:
 - the acceptance surface is explicit rather than implied
 - paper-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
 - local high-salience manuscript packets explicitly state the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and `discussion worldview-shift sentence`
-- `cross-section` and `whole-manuscript` packets explicitly state `Architecture scope`, the `Paper spine map`, `Results section jobs`, `Discovery cash-out section`, `Discovery-vs-tool weight budget`, and `Redundancy / breathing risks`
+- `cross-section` and `whole-manuscript` packets explicitly state `Architecture scope`, the `Paper spine map`, `Results section jobs`, `Discovery cash-out section`, `Discovery-vs-tool weight budget`, `Second-layer discovery`, `Broader-implication trunk`, `Downstream-consequence branch`, `Optional leaf consequence`, `Front-door preload sentence`, `Two-takeaway editor readout`, `No-bolt-on test`, and `Redundancy / breathing risks`
+- broader-significance packets also state `Broader-significance status`, the `Broader-implication trunk`, the nearest bounded branch if any, and the `Front-door preload sentence`, while deferring machine-readable status mechanics to `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`
 - main-manuscript packets identify the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
 - paper-facing explanation packets outside the main manuscript identify at least one closest micro sentence-craft `SV#` exemplar when the round touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper
 - review findings are consolidated at the parent layer instead of left as disconnected comments
@@ -174,8 +201,18 @@ Manuscript-hardening planning and review checklist:
 - pivot: where does the reader's model actually change
 - tool role: does the tool reveal, preserve, or test the discovery rather than become the discovery
 - weight discipline: does discovery carry more narrative mass than tool validation
-- section jobs: do the Results sections each have a clear role inside one cognitive shift rather than one more item in an experiment log
+- section jobs: do the Results sections each have a clear role inside the primary cognitive shift rather than one more item in an experiment log
 - discovery cash-out: where does the paper-level discovery become unavoidable rather than optional
+- second-layer discovery: what broader paper-level inference is earned by the discovery itself rather than by speculative application framing
+- broader-significance status: whether the round is still `core-only`, has reached `second-layer earned`, has earned one bounded branch, or can safely carry an optional leaf
+- broader-implication trunk: what single sentence should a skimming editor remember about the paper's broader consequence
+- downstream consequence branch: what bounded consequence survives once weaker application leaves are stripped away
+- optional leaf consequence: what weaker implication can be noted briefly without competing with the trunk and branch
+- promotion rationale: why the current evidence earns the chosen promotion level rather than a lower one
+- demotion trigger: what evidence or routing failure would force a downgrade
+- reviewer-routing survival: whether the promoted trunk or branch survives the likely reviewer community
+- front-door preload sentence: where the broader-implication trunk is planted before Discussion
+- two-takeaway editor readout: what two sentences a skimming editor should retain if the evidence supports a second-layer discovery
 - redundancy / breathing: where does the manuscript repeat explanation without upgrading understanding, or stay uniformly dense enough to flatten the pivot
 - claim ceiling: is the stronger unsupported interpretation clearly separated rather than implied
 - evidence boundary: are true scope limits named without collapsing the paragraph into self-negation
@@ -188,6 +225,8 @@ Manuscript-hardening planning and review checklist:
 - figure-as-actor phrasing: are figures or panels narrating sentences that should be carried by observations, interventions, or mechanisms
 - supplement and legend leakage: do supplementary text, legends, or inline legend prose slip into manuscript-management language
 - audience expectation mismatch: will physicist, acoustics, and ML readers infer different scope or evidence promises from the current wording
+- no-bolt-on test: if the downstream consequence is removed, does the second-layer discovery still land, and if the second-layer discovery is removed, does the downstream consequence immediately collapse
+- leaf deletion rule: if deleting the leaf improves memory for the trunk and branch, the leaf should disappear
 
 ## Plan mode
 

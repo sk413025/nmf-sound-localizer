@@ -21,12 +21,18 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Route paper-facing hardening and other high-salience prose work through `docs/governance/scientific-voice-guide.md` so sentence-shape guidance comes from one canonical exemplar set rather than from duplicated local heuristics.
 - Treat sentence-level readability as part of scientific rigor, not as optional polish after claim-floor work is finished.
 - Require paper-facing workflow to optimize for reader-first scientific explanation, not only for contract compliance or hedge removal.
-- Treat narrative architecture as part of scientific rigor. The branch must optimize for one cognitive shift with one stable protagonist, not only for locally clean claim-floor sentences.
+- Treat narrative architecture as part of scientific rigor. The branch must optimize for one primary cognitive shift with one stable protagonist, and when the evidence supports broader significance it must also express one endogenous second-layer discovery rather than only a list of applications.
+- Treat broader significance as a governed promotion ladder rather than an intuition call. The only allowed statuses are `core-only`, `second-layer earned`, `branch earned`, and `leaf allowed`.
 - Classify `Architecture scope` before paper-facing hardening begins. Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes; use `cross-section` for rounds that change more than one section, section bridges, or discovery-versus-tool weight; use `whole-manuscript` for full-paper restructuring or any round that re-architects the Results spine.
 - Require paper-facing workflow to identify `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
-- Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, and discovery-versus-tool weight budget before local sentence polishing begins.
+- Require whole-manuscript and cross-section hardening to write a `Paper spine map` with Results section jobs, pivot sentence, discovery cash-out section, discovery-versus-tool weight budget, second-layer discovery, broader-implication trunk, and downstream-consequence branch before local sentence polishing begins.
 - Keep architecture artifacts phase-correct: `Paper spine map` is a drafting-time packet artifact, while `Architecture evidence map` is a closeout-time verification artifact for `cross-section` and `whole-manuscript` rounds that claim architecture landed.
 - Do not let experiment chronology, tool fascination, or section-local optimization substitute for paper architecture.
+- Treat broader significance as architecture, not as a late decorative paragraph. If the paper cannot state a supported second-layer discovery, the workflow must not compensate by adding a wider application inventory.
+- Require broader-significance promotion to pass three named tests before the parent may let it into the paper spine: `Earned-discovery test`, `Boundary-pressure test`, and `Reviewer-routing survival test`.
+- Require the workflow to demote broader significance when those tests fail. If the trunk fails, demote to `core-only`; if a branch fails, demote to `second-layer earned`; if a leaf fails, drop it or demote to `branch earned`.
+- For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, require one canonical machine-readable artifact at `results/<round_name>/governance_round.yaml`.
+- Treat `governance_round.yaml` as the blocking source of truth for promotion level, review-forced demotion, verification status, and closeout-ready status on those rounds. Human-readable memos may accompany it, but they do not replace it.
 - Distinguish branch-local source of truth from archive material.
 - Route the top-level agent through `agent-orchestrator` and require an explicit execution-or-delegation decision before specialist work begins.
 - Multi-agent recommendations must include explicit acceptance criteria and ownership boundaries.
@@ -56,6 +62,8 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - reusable skills and unified task packets for repeated work
 - task packets that record `Relevant conversation context` and a `Context mode` decision
 - review plans that name the applicable canonical reviewer roles when paper-facing critique is required
+- packet, review, and closeout surfaces that record broader-significance status, promotion rationale, and demotion triggers when broader significance is in scope
+- a canonical `governance_round.yaml` artifact plus executable semantic validation for `high-risk` broader-significance rounds
 - evidence-backed recommendations
 - closeout that distinguishes exact text evidence from high-level interpretation
 - executable checks where policy is high value and low ambiguity
@@ -81,9 +89,14 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - governance checks confirm the key files and links exist
 - Codex-native orchestration guidance remains discoverable from the main governance path
 - paper-related figure workflows do not allow metadata-only acceptance when visual inspection or provenance backtrace is required
+- paper-facing workflow exposes whether broader significance landed as a second-layer discovery, whether downstream consequences stayed bounded, and whether the `no-bolt-on` test passed
+- paper-facing workflow also exposes whether broader significance earned its current promotion level or should be demoted
+- `high-risk` broader-significance rounds cannot close out as landed without a passing `governance_round.yaml` semantic gate
 
 ## Executable gates
 
 - `python scripts/paper/check_governance_links.py`
+- `python scripts/paper/check_round_governance_semantics.py --round-dir results/<round_name>` for any `high-risk` broader-significance round
+- `make paper-governance-gate ROUND_DIR=results/<round_name>` for any `high-risk` broader-significance round
 - `make paper-check`
 - `docs/agent-ops/README.md`
