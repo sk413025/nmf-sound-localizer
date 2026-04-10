@@ -41,10 +41,11 @@ fig01_manual:
       asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png
       note: "Committed setup support panel; no data generator or run artifact."
     b:
-      title: "Spectral fingerprint schematic"
-      provenance_mode: manual_support
-      asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png
-      note: "Committed physical-mechanism schematic; no data generator or run artifact."
+      title: "Empirical component bridge"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
     c:
       title: "Input-output spectral shaping"
       provenance_mode: data_backed
