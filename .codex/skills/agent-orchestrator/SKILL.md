@@ -119,6 +119,17 @@ For unfamiliar or runtime-touching tasks, make sure the packet records:
 - which unknowns remain open
 - which epistemic action must happen before mutation if uncertainty is still high
 
+## Branch memory updates
+
+Treat branch-memory edits as top-level controlled actions.
+
+- child agents may propose candidate memory lines, but they should not directly decide what is promoted into `.codex/memory/`
+- before a substantive memory update, run a weak-agent anti-log review using `Context mode: summary-only`
+- give that weak agent only the current memory surface, the proposed candidate lines, and a short summary of the completed round
+- use the review only to classify whether a candidate is reusable branch-state memory and whether it belongs in `current`, `archive`, or `nowhere`
+- do not let the weak agent become a second policy authority; the top-level agent still owns the final promotion, rewrite, or rejection decision
+- do not let branch-memory review redefine the task's other acceptance surfaces
+
 ## Paper-facing routing
 
 For manuscript, supplementary, legend, caption, review-note, or analysis-summary prose:

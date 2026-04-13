@@ -63,6 +63,8 @@ Load these only when the task requires them:
 
 - Code is substrate. Read or change code only when it supports manuscript, evidence, review, or submission work.
 - For manuscript, governance, strategy, and other branch-shaping tasks, read the branch memory brief first and open archive notes only when the brief points there.
+- If a task includes a substantive `.codex/memory` update, first open `.codex/memory/README.md`, then run a weak-agent anti-log review before the first mutating action on that memory file.
+- Child agents may propose memory candidates, but only the top-level agent may promote content into `CURRENT_BRANCH_MEMORY.md` or `archive/`.
 - Context mode: `summary-only` is the default for child handoff. Upgrade to `summary+fork_context` only when exact dialogue history cannot be safely compressed.
 - Before making any paper-figure judgment, inspect the real asset. For `pdf`, inspect PNG previews for every page first.
 - For generated or data-backed paper figures, inspect the visual asset, generator or composition code, and upstream evidence or provenance source before drawing conclusions.

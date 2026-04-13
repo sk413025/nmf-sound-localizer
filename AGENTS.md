@@ -56,7 +56,7 @@ When instructions conflict, follow this order:
 - Scientific voice canon: [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
 - Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
-Treat `.codex/memory/` as the derived branch-memory layer, not as a second constitution. It may summarize stable branch state and session-derived lessons, but it must not override `AGENTS.md`, manuscript text, or canonical governance contracts.
+Treat `.codex/memory/` as the derived branch-memory layer, not as a second constitution. `CURRENT_BRANCH_MEMORY.md` is the current brief, and `.codex/memory/README.md` is the update/use policy home. This layer may summarize stable branch state and session-derived lessons, but it must not override `AGENTS.md`, manuscript text, or canonical governance contracts.
 
 ## Core Contracts
 
