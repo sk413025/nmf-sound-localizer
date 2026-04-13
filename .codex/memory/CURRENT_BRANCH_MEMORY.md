@@ -12,6 +12,7 @@
 - the stable protagonist is the discovery, organizing principle, or physical phenomenon rather than the solver, calibration scheme, or workflow
 - the Results spine needs a clear `pivot`, a `discovery cash-out` section, and discovery weight that stays higher than tool-validation weight
 - paper-facing explanation should move by `observation -> inference -> bounded conclusion` in natural scientific English
+- the manuscript currently lands most naturally at `second-layer earned` broader significance: passive structure acts as part of the sensing substrate, while downstream application branches should be dropped when they read like added framing rather than natural growth from the discovery
 
 ## Stable Narrative Commitments
 
@@ -19,6 +20,7 @@
 - lead with the strongest evidence-backed discovery sentence, then boundary it
 - do not let broader significance degrade into an application inventory
 - route broader significance through `core discovery -> second-layer discovery -> downstream consequence`, with any weaker leaf dropped if it harms editor memory for the trunk
+- for high-salience manuscript rounds, default to whole-paragraph rewrites instead of patch-style sentence edits; local patching tends to leave mixed-author voice and manuscript-management phrasing
 
 ## Active Figure And Manuscript Fronts
 
@@ -32,12 +34,14 @@
 - letting the solver or workflow become the apparent protagonist
 - using defensive or self-diminishing phrasing that lowers the discovery floor without adding precision
 - promoting applications that do not descend from an evidence-earned second-layer discovery
+- broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
 
 ## Open Unresolved Items
 
 - the current brief does not yet backfill older pre-April branch history; it only captures the recent active reframing
 - `Fig. 4` and `Fig. 6` still require ongoing evidence and editorial hardening as the manuscript evolves
 - future branch-memory updates should stay selective and avoid becoming a transcript archive
+- `high-risk` governance artifacts under `results/` do not enter version control by default because `results/` is gitignored; `governance_round.yaml` needs force-add or a policy change when the branch wants those artifacts tracked
 
 ## Read-Next Links
 
