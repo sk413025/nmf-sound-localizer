@@ -18,6 +18,7 @@ Use this skill for:
 Open and follow:
 
 - `START_HERE_AGENT.md`
+- `.codex/memory/CURRENT_BRANCH_MEMORY.md`
 - `docs/governance/codex-collaboration-contract.md`
 - `docs/governance/closeout-integrity-contract.md`
 - `docs/governance/scientific-voice-guide.md`
@@ -53,6 +54,8 @@ Do not:
 - close a child agent solely because it feels slow
 
 Apply this execution-or-delegation rule in both Default mode and Plan mode.
+
+When the task is manuscript-shaping, governance-shaping, strategic, or otherwise branch-shaping, load the current branch memory brief first and pass only the task-relevant memory forward through local notes or child task packets. Do not bulk-load archive notes into every task by default.
 
 ## Repo-local stance for broader significance
 

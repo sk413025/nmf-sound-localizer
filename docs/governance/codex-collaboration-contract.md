@@ -25,6 +25,7 @@ Use this contract for any task about Codex-native workflow, multi-agent organiza
 - Treat narrative architecture as part of scientific rigor. The branch must optimize for one primary cognitive shift with one stable protagonist, and when the evidence supports broader significance it must also express one endogenous second-layer discovery rather than only a list of applications.
 - Treat broader significance as a governed promotion ladder rather than an intuition call. The only allowed statuses are `core-only`, `second-layer earned`, `branch earned`, and `leaf allowed`.
 - Do not let one concept acquire multiple canonical homes. If a schema, ladder, or field inventory is machine-readable in one place, other docs should reference it rather than re-implement it.
+- Repo-local branch memory may summarize stable branch state, but it must remain a derived layer. Do not let `.codex/memory/` create new policy, new canonical field inventories, or a second governance vocabulary.
 - Do not let the checker over-model reviewer judgment. Executable gates should enforce consistency and ownership boundaries, not infer higher-level paper verdicts that belong to review.
 - Treat this contract as the canonical home of anti-complexity discipline for governance and workflow changes. Other docs may apply that discipline, but they should not restate a second full rule set.
 - Any governance expansion must answer four questions before landing:

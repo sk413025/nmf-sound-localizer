@@ -12,6 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 REQUIRED_FILES = [
     REPO_ROOT / "START_HERE_AGENT.md",
     REPO_ROOT / "START_HERE_HUMAN.md",
+    REPO_ROOT / ".codex" / "memory" / "README.md",
+    REPO_ROOT / ".codex" / "memory" / "CURRENT_BRANCH_MEMORY.md",
     REPO_ROOT / "docs" / "governance" / "README.md",
     REPO_ROOT / "docs" / "governance" / "experiment-contract.md",
     REPO_ROOT / "docs" / "governance" / "manuscript-contract.md",
@@ -61,15 +63,27 @@ ANCHOR_CHECKS = {
     ],
     REPO_ROOT / "AGENTS.md": [
         "Governance Precedence",
+        ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "Route top-level work through `agent-orchestrator` first.",
         "make paper-governance-gate ROUND_DIR=results/<round_name>",
         "Treat governance complexity as a branch-level failure mode.",
     ],
     REPO_ROOT / "START_HERE_AGENT.md": [
+        ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "docs/agent-ops/README.md",
         ".codex/skills/agent-orchestrator/SKILL.md",
         "Context mode: `summary-only`",
         "governance_round.yaml",
+    ],
+    REPO_ROOT / ".codex" / "memory" / "README.md": [
+        "not a second constitution",
+        "CURRENT_BRANCH_MEMORY.md",
+        "must not create new policy",
+    ],
+    REPO_ROOT / ".codex" / "memory" / "CURRENT_BRANCH_MEMORY.md": [
+        "Current Nature Communications Framing",
+        "second-layer discovery",
+        "Read-Next Links",
     ],
     REPO_ROOT / "START_HERE_HUMAN.md": [
         "docs/governance/scientific-voice-guide.md",
@@ -94,6 +108,7 @@ ANCHOR_CHECKS = {
     REPO_ROOT / "docs" / "governance" / "codex-collaboration-contract.md": [
         "one canonical machine-readable artifact at `results/<round_name>/governance_round.yaml`",
         "Do not let one concept acquire multiple canonical homes.",
+        "Repo-local branch memory may summarize stable branch state",
         "Do not let the checker over-model reviewer judgment.",
     ],
     REPO_ROOT / "docs" / "governance" / "closeout-integrity-contract.md": [
@@ -102,6 +117,7 @@ ANCHOR_CHECKS = {
         "exact text or exact diff evidence",
     ],
     REPO_ROOT / "docs" / "agent-ops" / "README.md": [
+        ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "NATURE_REVIEWER_STACK.md",
         "ROUND_GOVERNANCE_SCHEMA.md",
         "governance_round.yaml",
@@ -137,6 +153,7 @@ ANCHOR_CHECKS = {
         "SV#",
     ],
     REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md": [
+        ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "Complexity self-check",
         "ROUND_GOVERNANCE_SCHEMA.md",
         "governance_round.yaml",

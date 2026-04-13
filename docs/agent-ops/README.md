@@ -44,7 +44,8 @@ This layer treats:
 
 Treat this branch as Codex-native only when the workflow is grounded in actual repository primitives:
 
-- `AGENTS.md` as persistent branch memory
+- `AGENTS.md` as the constitution
+- `.codex/memory/CURRENT_BRANCH_MEMORY.md` as the derived branch-memory brief
 - project-local skills as reusable work modes
 - `docs/governance/` as contracts
 - `docs/agent-ops/` as supervisor, role, and task routing

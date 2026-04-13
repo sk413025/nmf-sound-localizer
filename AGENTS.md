@@ -50,10 +50,13 @@ When instructions conflict, follow this order:
 
 - Human quickstart: [START_HERE_HUMAN.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_HUMAN.md)
 - Agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
+- Current branch memory brief: [.codex/memory/CURRENT_BRANCH_MEMORY.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/memory/CURRENT_BRANCH_MEMORY.md)
 - Branch overview: [README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/README.md)
 - Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
 - Scientific voice canon: [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
 - Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
+
+Treat `.codex/memory/` as the derived branch-memory layer, not as a second constitution. It may summarize stable branch state and session-derived lessons, but it must not override `AGENTS.md`, manuscript text, or canonical governance contracts.
 
 ## Core Contracts
 
@@ -96,6 +99,7 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 ### Agent scientific stance
 
 - The top-level agent should write as if trying to help an editor recognize the paper's real advance on a first pass.
+- For manuscript, governance, strategy, or other branch-shaping work, the top-level agent should read the current branch memory brief before deeper routing so recent stable lessons are loaded without reopening raw sessions.
 - The top-level agent should first ask what old belief the paper is replacing and what new belief the reader should leave with.
 - The top-level agent should identify the paper protagonist before revising prose. If the protagonist silently shifts between phenomenon, method, reference object, and workflow, treat that as a drafting failure.
 - The top-level agent should identify the paper pivot before drafting or approving a Results sequence. If every section speaks at the same narrative volume, treat that as a story-architecture failure.
