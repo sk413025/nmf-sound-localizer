@@ -2,7 +2,7 @@
 
 **Fig. 1 | A passive acrylic plate exposes directional coding at one measurement point.**
 a, Photograph of the experimental setup (loudspeaker excitation, acrylic sensor plate and laser Doppler vibrometer (LDV)).
-b, Component-decomposition view. Three reusable centered-magnitude component spectra are shown together with their relative weight shares at representative angles (0°, 90°, 180°), illustrating how direction reweights the same shared spectral patterns across angle.
+b, Hybrid governing-principle view. A compact schematic traces how incoming angle excites the passive plate and is read out at one fixed LDV spot. The adjoining decomposition shows three shared centered-magnitude responses, their angle-specific weights at representative angles (0°, 90°, 180°), and the resulting measured versus three-response reconstructed fingerprints. Direction therefore reweights shared structural responses rather than creating unrelated templates.
 c, Broadband spectral reshaping under matched calibration. The flat white-noise source spectrum (grey dashed) is redistributed differently at five representative angles (0°, 45°, 90°, 135°, 180°), showing that direction changes the measured output spectrum.
 d, Full angle-frequency heatmap of the mean white-noise calibration response across the 37 measured angles (0°–180°). The response varies systematically across both angle and frequency, making the directional fingerprint visible as organized full-band structure.
 e, Frequency-dependent directivity across 0°–180° for four frequency bands (0.3–0.5, 0.5–1, 1–2, 2–3 kHz). Different bands emphasize different directional sectors, showing that directional encoding is distributed unevenly across frequency.
