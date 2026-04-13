@@ -1,6 +1,10 @@
 # Task Packets
 
-Use these packet templates to turn a high-level request into a bounded delegated task, or into a checklist for a direct top-level execution round when explicit ownership and acceptance surfaces still need to be recorded.
+Use these templates to turn a high-level request into a bounded delegated task, or into a checklist for a direct round that still needs explicit ownership and acceptance surfaces.
+
+This file owns the packet schema. It does not restate the full supervisor workflow. Top-level routing, unfamiliarity bootstrap, and child supervision live in `.codex/skills/agent-orchestrator/SKILL.md`.
+
+## Required fields
 
 Every packet should include:
 
@@ -22,14 +26,38 @@ Every packet should include:
 - `Escalate when`
 - `Context mode`
 
-Use packet fields to record decisions, not to recreate a second schema.
+## Field notes
 
-`Relevant conversation context` should summarize only the task-relevant parts of the current interaction.
-`Context mode: summary-only` is the default.
-Use `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-If the packet includes paper-facing review or hardening, name the applicable reviewer roles and evaluation goals from `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+- `Relevant conversation context`
+  - summarize only task-relevant history, confirmed decisions, constraints, and unresolved risks
+- `Source of truth`
+  - name the files, artifacts, or runtime surfaces the task is allowed to rely on
+- `Constraints`
+  - name what must be preserved, what must be inspected first, and any epistemic action required before mutation on unfamiliar work
+- `Risk level`
+  - use `high-risk` or `non-high-risk`
+- `Architecture scope`
+  - use `local-salience`, `cross-section`, or `whole-manuscript`
+- `Delivery evidence required`
+  - name the exact text, file, artifact, visual inspection, or command evidence needed before claiming completion
+- `Context mode`
+  - `summary-only` by default; use `summary+fork_context` only when exact wording history matters
 
-For any paper-facing explanation packet whose outputs may be promoted into manuscript, supplementary, legend, caption, review-note, or analysis-summary prose, the minimum human-facing additions are:
+Use packet fields to record decisions, not to create a second schema or a second supervision checklist.
+
+## Unfamiliar or runtime-touching work
+
+For unfamiliar tasks, runtime-touching tasks, or artifact lineages that are not already clear, the packet should explicitly record:
+
+- which environment surface was inspected first
+- which unknowns still remain open
+- which epistemic action must happen before mutation if uncertainty is still high
+
+Do this inside existing fields. Do not add a new unfamiliarity field.
+
+## Paper-facing additions
+
+For any packet whose outputs may be promoted into manuscript, supplementary, legend, caption, review-note, or analysis-summary prose, also include:
 
 - `Claim floor`
 - `Claim ceiling`
@@ -38,53 +66,36 @@ For any paper-facing explanation packet whose outputs may be promoted into manus
 - `Relevant voice exemplar(s)`
 - `Bridge question`
 
-Add sentence-friction, diction, or local cleanup notes only when they are genuinely part of the owned acceptance surface.
+For any local high-salience, `cross-section`, or `whole-manuscript` manuscript round, carry the architecture bundle required by:
 
-For any local high-salience, `cross-section`, or `whole-manuscript` manuscript round, carry the architecture bundle required by `docs/governance/manuscript-contract.md` and `docs/governance/scientific-voice-guide.md` instead of restating the full field inventory here.
+- `docs/governance/manuscript-contract.md`
+- `docs/governance/scientific-voice-guide.md`
+
+Do not recreate that bundle here.
+
+## High-risk broader-significance rounds
 
 For any `high-risk` round with broader significance or cross-disciplinary consequence in scope:
 
 - create `results/<round_name>/governance_round.yaml`
-- treat `governance_round.yaml` as the only machine-readable source of truth for proposed, reviewed, final, and verified status
-- use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` as the canonical field inventory
+- use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` as the only machine-readable field inventory
 - include a passing `make paper-governance-gate ROUND_DIR=results/<round_name>` run in `Delivery evidence required`
 
-Anti-complexity rule:
+## Governance-changing rounds
 
-- do not add a new packet field, verdict, or artifact unless you can first explain why the existing canonical surfaces are insufficient
-- any governance expansion should also name what duplicated surface is removed or collapsed in exchange
-
-For governance-changing rounds, also record these reflection fields; otherwise omit them:
+For governance-changing rounds, also record:
 
 - `Complexity risk`
 - `Why existing primitives were insufficient`
 - `What duplicated surface was removed`
 - `What remains canonical after this round`
 
-Before issuing any packet, the top-level agent must make an execution-or-delegation decision.
-If delegation is chosen, use one child packet only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
-If delegation is chosen, split the request into multiple child packets when it spans multiple skills or roles, mixes execution with separate review work, or contains independent acceptance criteria that can be delegated separately.
-`Plan items owned` must name the exact subset the delegated child or direct implementer is accountable for closing.
-`Delivery evidence required` must identify the text, file, or artifact evidence needed before the top-level agent may claim completion.
-`Risk level` must classify the round as `high-risk` or `non-high-risk`.
-`Architecture scope` must be one of `local-salience`, `cross-section`, or `whole-manuscript`.
-Use `local-salience` only for local high-salience rewrites with no section reweighting, no section-bridge changes, and no Results-spine changes.
-Use `cross-section` when the round changes more than one section, changes section bridges, or redistributes discovery-versus-tool weight without rebuilding the full paper.
-Use `whole-manuscript` when the round restructures the Results spine or whole-paper story architecture.
-For `high-risk` rounds, `Review owner` and `Verification owner` must both be named.
-If ownership is compressed, record either a `non-high-risk rationale` or a `compression rationale`.
-`Verification target` must identify who or what verifies delivery against evidence.
-`Scope downgrade rule` must say how to report a narrowed landing without overstating the round as complete.
-
 ## Manuscript and submission packet
 
-- Role: `manuscript-reviser`, `claim-auditor`, or `submission-auditor`
-- Skill: `paper-submission`
-- Objective:
-  - revise manuscript text, audit claim/evidence alignment, or check Nature-facing compliance
-- Relevant conversation context:
-  - include the requested change, confirmed style or audience constraints, already approved language, and unresolved evidence risks
-  - omit unrelated thread history
+- Role:
+  - `manuscript-reviser`, `claim-auditor`, or `submission-auditor`
+- Skill:
+  - `paper-submission`
 - Source of truth:
   - `paper/manuscript/manuscript.md`
   - `docs/governance/manuscript-contract.md`
@@ -92,180 +103,92 @@ If ownership is compressed, record either a `non-high-risk rationale` or a `comp
   - `docs/nature-communications/nature-communications-submission-requirements.md`
 - Constraints:
   - preserve claim and evidence integrity
-  - state the supported claim floor clearly before adding the evidence boundary
-  - default to cross-disciplinary readability for Nature-facing prose
   - inspect neighboring paragraphs and section logic before treating a local rewrite as complete
-  - record visual inspection notes plus generator and provenance backtrace for any figure-dependent interpretation
-- Risk level:
-  - classify as `high-risk` when interpretation, submission posture, or claim scope could shift; otherwise classify as `non-high-risk`
-- Acceptance surface:
-  - the named manuscript or submission surfaces the child is allowed to close
-- Out-of-scope surfaces:
-  - neighboring manuscript, figure, or packaging surfaces the child may mention but not claim as completed
-- Plan items owned:
-  - the exact rewrite, audit, or compliance items assigned in this packet, whether to a delegated child or a direct implementer
+  - record visual inspection plus generator and provenance backtrace for any figure-dependent interpretation
 - Delivery evidence required:
-  - revised text, anchored file locations, and any figure/provenance notes needed to justify closeout
-- Review owner:
-  - name the reviewer, or record a `non-high-risk rationale` or `compression rationale` if ownership is compressed
-- Verification owner:
-  - name the verifier; `high-risk` packets must not leave this blank
-- Verification target:
-  - parent or verifier confirms that the delivered text and anchors satisfy the packet without expanding scope
-- Scope downgrade rule:
-  - if only part of the requested manuscript surface lands, close out only that subset and list the remaining items explicitly
+  - revised text or audit findings
+  - anchored file locations
+  - figure/provenance notes when relevant
 - Expected outputs:
-  - revised text, audit findings, or compliance gap list
-  - explicit `Claim floor`, `Claim ceiling`, `Evidence boundary`, `Editor readout sentence`, and `Bridge question` entries for the owned manuscript surface
-  - anchored claim-evidence support, including figure or Methods anchors when relevant
-  - `Relevant voice exemplar(s)` plus any required architecture or broader-significance bundle by reference to the canonical contracts, not by recreating a second field inventory
-  - visual inspection notes plus generator/provenance backtrace for any figure-dependent interpretation
-  - explicit unresolved issues if evidence is weak
+  - revised text, audit findings, or compliance gaps
+  - the paper-facing additions listed above
 - Escalate when:
-  - a change could alter scientific interpretation
-  - a figure or table might move between main paper and supplementary
-  - Nature-facing compliance conflicts with the current manuscript structure
-- Context mode:
-  - start with `summary-only`
-  - upgrade to `summary+fork_context` when exact wording history or reviewer instructions must be preserved
+  - the change could alter scientific interpretation
+  - main-versus-supplement placement may change
+  - Nature-facing compliance conflicts with current manuscript structure
 
 ## Experiment and results packet
 
-- Role: `experiment-results-analyst`
-- Skill: `experiment-results`
-- Objective:
-  - interpret committed run artifacts and turn them into manuscript-safe analysis language
-- Relevant conversation context:
-  - include the metric, comparison, or hypothesis the user actually asked about
-  - include any already agreed caution language or reproducibility constraints
+- Role:
+  - `experiment-results-analyst`
+- Skill:
+  - `experiment-results`
 - Source of truth:
   - `docs/governance/experiment-contract.md`
   - `results/<run_name>/`
   - `DATA_PROVENANCE.md`
 - Constraints:
   - ground conclusions in committed logs, metrics, and provenance artifacts
-  - keep fail-fast expectations and reproducibility requirements explicit
-- Risk level:
-  - classify as `high-risk` when the analysis may affect paper-facing interpretation; otherwise classify as `non-high-risk`
-- Acceptance surface:
-  - the named experiment question, comparison, or evidence interpretation to be closed
-- Out-of-scope surfaces:
-  - unrun comparisons, speculative mechanisms, or manuscript claims not supported by the committed artifacts
-- Plan items owned:
-  - the exact analysis items delegated from the round plan
+  - keep reproducibility expectations explicit
 - Delivery evidence required:
-  - artifact paths, logs, metrics, and reproduction commands sufficient to support the reported interpretation
-- Review owner:
-  - name the reviewer, or record a `non-high-risk rationale` or `compression rationale` if ownership is compressed
-- Verification owner:
-  - name the verifier; `high-risk` packets must not leave this blank
-- Verification target:
-  - parent or verifier checks the cited artifacts and reproduction surface before accepting the closeout
-- Scope downgrade rule:
-  - if only a subset of the analysis lands, disclose the missing items and do not roll the whole experiment round up as complete
+  - artifact paths
+  - logs and metrics
+  - reproduction commands when needed
 - Expected outputs:
-  - executed-run interpretation grounded in logs and artifacts
-  - reproduction commands and artifact paths
-  - figure-facing backtrace when a run artifact is being promoted into manuscript evidence
-  - success, failure, and next-step analysis written in contract language
+  - artifact-grounded interpretation
+  - reproduction surface
+  - figure-facing backtrace when a run artifact supports paper evidence
 - Escalate when:
-  - logs, metrics, or provenance inputs are missing
+  - logs, metrics, or provenance are missing
   - the run is not reproducible from committed artifacts
-  - a paper-facing claim is being inferred from weak or partial evidence
-- Context mode:
-  - start with `summary-only`
-  - upgrade to `summary+fork_context` when the task depends on precise dialogue about metrics, caveats, or comparison scope
+  - a paper-facing claim would rely on weak or partial evidence
 
 ## Paper asset review packet
 
-- Role: `paper-asset-reviewer`
-- Skill: `paper-asset-review`
-- Objective:
-  - decide whether a figure or table should stay, be revised, be split, or move to supplementary
-- Relevant conversation context:
-  - include the figure or panel under review, the manuscript claim or critique that triggered the review, and any already agreed layout or claim constraints
+- Role:
+  - `paper-asset-reviewer`
+- Skill:
+  - `paper-asset-review`
 - Source of truth:
   - `docs/governance/submission-contract.md`
   - `docs/nature-communications/paper-asset-review-workflow.md`
-  - figure review bundle under `figures/review_artifacts/<figure_id>/`
+  - `figures/review_artifacts/<figure_id>/`
 - Constraints:
   - inspect the real visual asset
   - check generator and evidence layers when the asset is generated or data-backed
-- Risk level:
-  - classify as `high-risk` when the recommendation could affect paper-level claim support or asset placement; otherwise classify as `non-high-risk`
-- Acceptance surface:
-  - the named figure or table decision and its manuscript-fit judgment
-- Out-of-scope surfaces:
-  - broader manuscript rewrites, undelegated panels, or unreviewed assets
-- Plan items owned:
-  - the exact asset-review decisions assigned in this packet, whether to a delegated child or a direct implementer
 - Delivery evidence required:
-  - visual inspection confirmation plus any generator, provenance, and review-gate artifacts required for the recommendation
-- Review owner:
-  - name the reviewer, or record a `non-high-risk rationale` or `compression rationale` if ownership is compressed
-- Verification owner:
-  - name the verifier; `high-risk` packets must not leave this blank
-- Verification target:
-  - parent or verifier checks that the reviewed asset and cited evidence match the recommendation
-- Scope downgrade rule:
-  - if only some panels or decisions were reviewed, disclose the narrowed coverage explicitly
+  - visual inspection confirmation
+  - generator, provenance, and review-gate artifacts when relevant
 - Expected outputs:
   - keep, revise, split, or move recommendation
   - manuscript-fit justification
-  - recorded confirmation that the figure was visually inspected and that generator and evidence layers were checked when applicable
-  - review JSON artifacts required by the review gate
+  - explicit confirmation that visual and provenance checks were performed
 - Escalate when:
-  - a figure looks acceptable visually but weakens the paper-level claim
-  - visual content, generator code, and provenance source disagree about what the figure is showing
-  - the review implies main-paper versus supplementary reclassification
-- Context mode:
-  - start with `summary-only`
-  - upgrade to `summary+fork_context` when precise claim wording or prior review instructions materially affect the judgment
+  - visual content, generator code, and provenance disagree
+  - the recommendation implies main-versus-supplement reclassification
 
 ## Governance and orchestration packet
 
-- Role: `supervisor` or `red-team-reviewer`
-- Skill: `agent-orchestrator`
-- Objective:
-  - frame a task, choose direct execution or child roles, challenge a workflow proposal, or review a coordinated result set
-- Relevant conversation context:
-  - include the requested workflow, confirmed delegation policy, unresolved governance risks, and any already chosen defaults
+- Role:
+  - `supervisor` or `red-team-reviewer`
+- Skill:
+  - `agent-orchestrator`
 - Source of truth:
   - `docs/governance/codex-collaboration-contract.md`
   - `docs/governance/closeout-integrity-contract.md`
-  - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
-  - `docs/agent-ops/ROLE_CATALOG.md`
   - `docs/agent-ops/REVIEW_AND_ESCALATION.md`
   - `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`
 - Constraints:
-  - the top-level agent must make an explicit execution-or-delegation decision before specialist work begins
-  - assume repository-default standing authorization for sub-agent use unless a higher-level constraint blocks delegation
-- Risk level:
-  - classify as `high-risk` when the packet can change governance posture, closeout claims, or milestone reporting; otherwise classify as `non-high-risk`
-- Acceptance surface:
-  - the specific workflow, packet, review, or closeout surface under judgment
-- Out-of-scope surfaces:
-  - unrelated governance layers, role redesign, or non-requested process rewrites
-- Plan items owned:
-  - the exact orchestration, review, or hardening items assigned in this packet, whether to a delegated child or a direct implementer
+  - keep the task bounded to the named workflow or governance surface
+  - record the owned acceptance surface and ownership boundaries explicitly
+  - use the unfamiliarity bootstrap when the routed surface is not already familiar
 - Delivery evidence required:
-  - packet text, routing decisions, warning disposition, and any cited status or artifact checks needed for closeout
-- Review owner:
-  - name the reviewer, or record a `non-high-risk rationale` or `compression rationale` if ownership is compressed
-- Verification owner:
-  - name the verifier; `high-risk` packets must not leave this blank
-- Verification target:
-  - parent or verifier checks that the reported outcome matches the owned packet scope
-- Scope downgrade rule:
-  - if the packet lands only a narrowed governance subset, the closeout must name the downgrade and remaining plan items
+  - packet text, routing decisions, warning disposition, and any cited artifact or status checks needed for closeout
 - Expected outputs:
   - task framing
-  - execution-versus-delegation decisions, role assignments, decomposition decisions, review findings, or `Context mode` decisions
+  - routing or decomposition decisions
   - warnings, rewrites, or milestone summary
 - Escalate when:
-  - a proposal introduces new governance layers or duplicate skills
-  - a workflow shifts the branch toward code-first operation
-  - a milestone decision requires human approval
-- Context mode:
-  - start with `summary-only`
-  - upgrade to `summary+fork_context` when the child reviewer must reconstruct exact dialogue history to judge the workflow safely
+  - the proposal adds a new governance layer or duplicate skill
+  - the workflow shifts toward code-first operation
+  - a milestone-level decision requires human approval

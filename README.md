@@ -7,12 +7,20 @@ The default paper model in this branch is `paper-facing explanation` built aroun
 ## Start here
 
 - Human quickstart: [START_HERE_HUMAN.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_HUMAN.md)
-- Agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
-- Branch constitution: [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 - Manuscript workspace: [paper/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/README.md)
-- Governance contracts: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+
+For agents, the mandatory first pass is only:
+
+1. [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
+2. [.codex/memory/CURRENT_BRANCH_MEMORY.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/memory/CURRENT_BRANCH_MEMORY.md)
+3. [.codex/skills/agent-orchestrator/SKILL.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/.codex/skills/agent-orchestrator/SKILL.md)
+
+After that top-level route, agents should load governance and agent-ops docs only on demand:
+
+- Agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
+- Governance contracts index: [docs/governance/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/README.md)
+- Agent operations index: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 - Scientific voice guide: [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
-- Agent operating model: [docs/agent-ops/README.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/agent-ops/README.md)
 
 ## Canonical documents
 
@@ -31,10 +39,13 @@ The default paper model in this branch is `paper-facing explanation` built aroun
   - use it for both claim-forward manuscript posture and sentence-level readability defaults
   - it governs manuscript, supplementary, legends, review-note prose, and other paper-facing explanation surfaces
 - Task routing:
-  - `docs/agent-ops/TASK_PACKETS.md`
-- Top-level agent routing:
   - `.codex/skills/agent-orchestrator/SKILL.md`
-  - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
+  - use it for the top-level routing decision
+- Top-level agent routing:
+  - `docs/agent-ops/TASK_PACKETS.md`
+  - load it on demand for packet schema and task templates
+  - `.codex/skills/agent-orchestrator/references/supervisor-operating-model.md`
+  - load it on demand for deeper supervision notes after routing
 - Asset classification:
   - `docs/governance/ASSET_CLASSES.md`
 
@@ -55,7 +66,8 @@ make paper-review-gate
 - `figures/`: generator, validator, review-bundle, and deployment pipeline
 - `scripts/paper/`: manuscript build and paper-facing checks
 - `docs/governance/`: operational contracts
-- `docs/agent-ops/`: supervisor model, roles, task packets, and review loop
+- `docs/agent-ops/`: shared roles, task packets, reviewer stack, and review/closeout references
+- `.codex/skills/agent-orchestrator/references/`: skill-private deeper notes for top-level orchestration such as supervision guidance
 - `docs/evidence/`: evidence, lineage, and provenance notes that still support current work
 - `docs/working-notes/`: exploratory notes, prompts, and analysis that are not canonical
 - `nmf_localizer/`, `doa_rl/`, `scripts/`, `tests/`: minimal runtime substrate for TF, USM, and soft-OMP support, governed by `docs/governance/runtime-substrate-contract.md`

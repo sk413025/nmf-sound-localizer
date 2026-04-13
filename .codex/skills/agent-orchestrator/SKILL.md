@@ -1,270 +1,175 @@
 ---
 name: agent-orchestrator
-description: Top-level orchestration for this repository. Use when Codex is the first agent receiving a task in this branch, or when coordinating child agents, defining role boundaries, choosing task packets, managing review loops, or routing manuscript-first requests. The top-level agent must route through orchestration first, then decide whether direct execution or delegation is the better fit.
+description: Top-level orchestration for this repository. Use when Codex is the first agent receiving a task in this branch, or when coordinating child agents, defining role boundaries, choosing task packets, managing review loops, or routing manuscript-first requests.
 ---
 
 # Agent Orchestrator
 
 Use this skill for:
 
-- top-level parent orchestration
-- supervisor-led task decomposition
-- child-agent coordination
-- review and escalation planning
-- routing tasks to roles and skills
+- top-level routing
+- execution-versus-delegation decisions
+- unfamiliarity management before acting
+- child-agent handoff and supervision
+- review, escalation, and closeout routing
 
-## Required first step
+## Preflight
 
-Open and follow:
+Before using this skill, the top-level agent should already have read:
 
-- `START_HERE_AGENT.md`
+- `AGENTS.md`
 - `.codex/memory/CURRENT_BRANCH_MEMORY.md`
-- `docs/governance/codex-collaboration-contract.md`
-- `docs/governance/closeout-integrity-contract.md`
-- `docs/governance/scientific-voice-guide.md`
-- `docs/agent-ops/README.md`
-- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
-- `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`
-- `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
+- `START_HERE_AGENT.md`
+
+Do not bulk-load the rest of the governance stack. Load only the smallest additional surface needed for the routed task.
+
+## Progressive disclosure
+
+Open these only when needed:
+
 - `docs/agent-ops/TASK_PACKETS.md`
-- `docs/agent-ops/REVIEW_AND_ESCALATION.md`
+  - when delegating or when a direct round still needs explicit ownership and acceptance surfaces
+- `docs/agent-ops/NATURE_REVIEWER_STACK.md`
+  - when paper-facing review or red-team critique is in scope
+- `docs/governance/scientific-voice-guide.md`
+  - when drafting or judging paper-facing prose
+- `docs/governance/codex-collaboration-contract.md`
+  - when changing governance or machine-checkable workflow rules
+- `docs/governance/closeout-integrity-contract.md`
+  - when closeout posture, owner separation, or reporting truthfulness is the active problem
+- `docs/governance/runtime-substrate-contract.md`
+  - when work touches active runtime code, scripts outside `scripts/paper/`, tests, or package metadata
+- `references/supervisor-operating-model.md`
+  - when deeper supervision guidance is needed after the top-level routing decision
 
-## Execution-or-delegation rule
+## Unfamiliarity bootstrap
 
-Act as the top-level routing authority. Make an explicit execution-or-delegation decision before specialist work begins.
+When the environment, task surface, or artifact lineage is not already familiar, complete this bootstrap before any mutating action:
 
-Do:
+1. classify the task surface and likely source-of-truth layer
+2. inspect the environment surface you will rely on
+3. inspect the smallest memory, contract, or artifact that can reduce uncertainty
+4. name the main unknowns, risks, and missing evidence
+5. choose the next epistemic action before the first mutating action
 
-- classify the task
-- decide whether direct execution or delegation best fits scope, risk, and throughput
-- if delegating, choose the child role, skill, and task packet
-- if delegating, write `Relevant conversation context`
-- choose `Context mode`
-- decide whether `fork_context` is necessary
-- if delegating, spawn child agents
-- if delegating, monitor active child-agent progress and latest outputs
-- review outputs and synthesize results
-- execute directly when the task is bounded and direct execution does not collapse required review or verification separation
+Epistemic actions include:
 
-Do not:
+- inspect repo structure or relevant files
+- inspect figure assets, logs, schemas, or API surfaces
+- inspect the runtime substrate contract
+- run dry checks or read-only validation
+- narrow scope before acting
 
-- skip the execution-or-delegation decision and drift into an implicit workflow
-- collapse `high-risk` implementer, reviewer, and verifier ownership into one role without an explicit non-high-risk or compression rationale
-- dump irrelevant thread history into a child prompt
-- close a child agent solely because it feels slow
+Treat unfamiliarity as a routing signal, not only a stop sign.
 
-Apply this execution-or-delegation rule in both Default mode and Plan mode.
+## Core routing decision
 
-When the task is manuscript-shaping, governance-shaping, strategic, or otherwise branch-shaping, load the current branch memory brief first and pass only the task-relevant memory forward through local notes or child task packets. Do not bulk-load archive notes into every task by default.
+Make an explicit execution-or-delegation decision before specialist work begins.
 
-## Repo-local stance for broader significance
+Choose direct execution when:
 
-When broader significance is in scope, keep these defaults explicit:
+- the work is bounded
+- delegation would not improve correctness, throughput, or role separation
+- required reviewer and verifier ownership can still remain explicit
 
-- `discovery-first`: preserve the core discovery before polishing broader significance
-- `second-layer-aware`: broader significance must first become an evidence-earned second-layer discovery
-- `promotion-conservative`: do not promote beyond what the evidence clearly earns
-- `branch-bounded`: keep only the nearest downstream consequence that remains subordinate to the trunk
-- `anti-complexity`: reuse the canonical narrative ladder and canonical schema instead of inventing local variants
+Choose delegation when:
 
-## Complexity self-check
+- the work spans more than one specialist surface
+- review or red-team critique should remain separate from implementation
+- child isolation improves source-of-truth handling or throughput
 
-Use `docs/governance/codex-collaboration-contract.md` as the canonical anti-complexity rule source.
+If delegating, decide whether the request is:
 
-When changing governance, workflow, or high-risk gating, ask before adding anything:
+- a true single-child task
+- or a multi-child task that must be decomposed before execution begins
 
-- Is this new field only a projection of an existing status?
-- Is this machine-checkable consistency, or is it actually reviewer judgment?
-- Is this concept already canonical in `ROUND_GOVERNANCE_SCHEMA.md` or another contract?
-- Is complexity being displaced from docs into a checker, or from a checker back into docs?
-- Is this content really `principle`, `machine state`, `reviewer judgment`, or only a `worked example`?
-- What duplicated surface will be removed if this new one lands?
+## Handoff rules
 
-If those questions do not produce a strong answer, simplify or reuse instead of expanding the system.
-For governance-changing rounds, use one repair order only: detect, classify, delete, then rewrite the surviving canonical home.
+Every child-agent handoff must include:
 
-## Workflow
+- `Relevant conversation context`
+- `Context mode`
+- the owned acceptance surface
+- the owned output bundle
 
-1. Classify the task by manuscript impact and role complexity.
-2. Treat this repository's default operating mode as standing authorization for sub-agent use.
-3. Decide whether direct execution or delegation is the better fit.
-4. If delegating, decide whether the request is a valid single-child task or must be decomposed into multiple child tasks.
-5. If delegating, choose the right child task packet, role, and core skill for each child task.
-6. Use the task-packet fields as the canonical checklist for the round; when delegating, write the packet before handoff, and when executing directly, preserve the same acceptance-surface and ownership discipline in local notes or closeout.
-7. For paper-facing explanation tasks, state the prose acceptance rule explicitly in the packet or review request: prefer scientific-inference prose that moves by `observation -> inference -> bounded conclusion`, with active voice, simple cause-effect relations, lower noun-stack friction, natural enough scientific English for one-pass reading, and narrative architecture that delivers one primary cognitive shift plus one evidence-earned second-layer discovery rather than an experiment log or application inventory.
-8. Classify `Architecture scope` before claim-floor work:
-   - `local-salience` for a local high-salience rewrite with no section reweighting
-   - `cross-section` for a round that changes more than one section, section bridges, or discovery-versus-tool weight
-   - `whole-manuscript` for a full-paper restructuring or any round that re-architects the Results spine
-9. For `local-salience` main-manuscript hardening, run the local architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, `reference-object role`, and target `worldview-shift sentence`.
-10. For `cross-section` and `whole-manuscript` hardening, run the full architecture pass: identify the `old-world belief`, `new-world belief`, `paper protagonist`, `supporting actors`, `paper spine map`, `Results section jobs`, `pivot`, `pivot sentence`, `discovery cash-out section`, `tool role`, `reference-object role`, `discovery-vs-tool weight budget`, `second-layer discovery`, `broader-implication trunk`, `downstream-consequence branch`, `optional leaf consequence`, `front-door preload sentence`, `two-takeaway editor readout`, `no-bolt-on test`, `redundancy / breathing risks`, and target `worldview-shift sentence`.
-11. When broader significance is in scope, classify the promotion level before any rewrite or review request. Use only `core-only`, `second-layer earned`, `branch earned`, or `leaf allowed`.
-12. When broader significance is in scope, record the `promotion rationale`, `demotion trigger`, `reviewer-routing survival`, and `leaf deletion rule` in the packet or local execution notes.
-13. Apply the broader-significance promotion gate before approving high-salience prose:
-   - `Earned-discovery test`
-   - `Boundary-pressure test`
-   - `Reviewer-routing survival test`
-   - if a leaf remains, also apply the `Leaf deletion test`
-14. For any governance-changing round, run the anti-complexity repair loop before adding new workflow surface: detect the symptom, classify the surface type, name the deletion target, and only then rewrite the surviving canonical home.
-15. For any `high-risk` round with broader significance or cross-disciplinary consequence in scope, create `results/<round_name>/governance_round.yaml` as the canonical machine-readable round artifact and plan to run `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout.
-16. For main-manuscript hardening and other paper-facing explanation rounds, extract the `claim floor`, `claim ceiling`, and `evidence boundary` before revising text. Do not start with caveat-hardening before the supported discovery sentence is explicit.
-17. For any paper-facing explanation round, run a sentence-energy pass before drafting or approving prose: identify noun-stack hotspots, missing causal glue, and unnatural formal diction.
-18. For local high-salience manuscript rounds, write one `editor readout sentence` and cite at least one macro `SV#` exemplar, at least one micro sentence-craft `SV#` exemplar, and the closest architecture `SV#` exemplar from `docs/governance/scientific-voice-guide.md` before asking for a rewrite.
-19. For any other paper-facing explanation round, cite at least one micro sentence-craft `SV#` exemplar when the work touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper.
-20. If a round changes section order, section bridges, title/abstract/introduction/discussion together, or discovery-versus-tool weight but is still scoped as `local-salience`, reject the packet as misclassified and re-route it with `Architecture scope: cross-section` or `whole-manuscript`.
-21. Summarize only the task-relevant conversation history.
-22. Use `Context mode: summary-only` by default.
-23. Upgrade to `Context mode: summary+fork_context` only when exact wording, multi-turn decisions, or non-compressible constraints matter to the child task.
-24. If delegating, after spawning a child agent, monitor its status and latest output before deciding on interruption, redirect, or shutdown.
-25. Define review, handoff, and escalation requirements.
-26. Keep the human at milestone approval boundaries unless the task requires earlier intervention.
+`Relevant conversation context` should summarize only task-relevant history, confirmed decisions, constraints, and unresolved risks.
+
+`Context mode: summary-only` is the default.
+Use `summary+fork_context` only when exact wording or non-compressible dialogue constraints matter.
+
+Do not dump irrelevant thread history into child prompts.
+
+## Packet discipline
+
+Open `docs/agent-ops/TASK_PACKETS.md` when delegation or explicit round ownership is needed.
+
+Use packet fields to record:
+
+- source of truth
+- constraints
+- acceptance surface
+- out-of-scope surfaces
+- delivery evidence
+- review owner
+- verification owner
+
+For unfamiliar or runtime-touching tasks, make sure the packet records:
+
+- which environment surface was inspected first
+- which unknowns remain open
+- which epistemic action must happen before mutation if uncertainty is still high
+
+## Paper-facing routing
+
+For manuscript, supplementary, legend, caption, review-note, or analysis-summary prose:
+
+- load `docs/governance/scientific-voice-guide.md`
+- keep the paper's discovery as protagonist
+- preserve the supported claim floor before adding the evidence boundary
+- classify `Architecture scope` as `local-salience`, `cross-section`, or `whole-manuscript`
+
+If paper-facing review or critique is in scope, load `docs/agent-ops/NATURE_REVIEWER_STACK.md` and use the smallest reviewer subset that fits.
 
 ## High-risk rounds
 
-Use an explicit `implementer + reviewer + verifier` round when the task can change manuscript claims, review verdicts, closeout state, or any other paper-facing acceptance signal that could be overstated in a final report.
+Treat a round as `high-risk` when it can change manuscript claims, governance posture, acceptance status, or closeout state in a way that could be overstated in the final report.
 
-For these rounds, the parent must:
+For `high-risk` rounds:
 
-- classify the round explicitly as `high risk` or `not high risk` before closeout
-- assign an implementer responsible for the bounded change
-- name the review owner responsible for critique against the stated acceptance surface, or record an explicit compression rationale if ownership must be compressed
-- name the verifier owner responsible for checking the implemented state against the packet, revised text, anchors, and any required executable or visual evidence, or record an explicit compression rationale if ownership must be compressed
-- require scope-downgrade disclosure when a child cannot complete the requested surface and instead returns a narrower result
-- reject closeout language that upgrades a partial implementation, partial review, or missing verification into full completion
+- keep implementer, reviewer, and verifier ownership explicit
+- do not treat reviewer approval as verification
+- require scope-downgrade disclosure if the delivered surface is narrower than planned
 
-Parent truth-maintenance checks for high-risk rounds:
+For `high-risk` broader-significance rounds:
 
-- verify that the child closeout distinguishes `Plan completion`, `Review verdict`, and `Verification verdict` as separate fields
-- verify that any claimed manuscript change includes the exact revised text or an explicit statement that no text was changed
-- verify that before/after anchors are present when prose or asset content was changed
-- verify that architecture-sensitive rounds report whether the protagonist, pivot, tool role, worldview shift, and any promised second-layer discovery actually landed instead of assuming sentence polish was enough
-- verify that whole-manuscript architecture rounds also carry an `Architecture evidence map` tying the intended spine to title, the `front-door preload sentence` when required, pivot sentence, discovery cash-out sentence, and Discussion opening
-- verify that unresolved promised joints are listed when the round leaves any requested linkage, follow-through, or hardening step incomplete
-- verify that the risk classification, named owners, or explicit compression rationale are present
-- verify that a verifier actually ran in verifier mode instead of restating the implementer closeout
-- verify that any `high-risk` broader-significance round has a matching `results/<round_name>/governance_round.yaml` artifact and a passing semantic-gate result before the parent reports that broader significance landed
-
-Required closeout ledger fields for high-risk rounds from `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md`:
-
-Use `docs/agent-ops/ROUND_CLOSEOUT_TEMPLATE.md` for the canonical closeout field list rather than recreating it locally.
-
-When `Deferred or dropped items` is non-empty, require an explicit scope downgrade instead of treating the round as fully complete.
-
-## Reviewer-stack routing
-
-For paper-facing work, treat `docs/agent-ops/NATURE_REVIEWER_STACK.md` as the canonical reviewer-lens source.
-Do not invent ad hoc reviewer personas when the stack already covers the risk.
-
-Use the minimal reviewer subset that matches the acceptance surface:
-
-- `handling-editor-scope reviewer` and `reviewer-routing reviewer` for editorial fit, paper-level framing, or likely reviewer-community routing
-- `cross-disciplinary-readability reviewer`, `narrative-flow reviewer`, and `cognitive-load reviewer` for paper prose, whole-paper flow, reader-burden risk, or sentence-level friction from passive phrasing, nominalization, noun stacking, or other paper-facing explanation surfaces
-- use the same trio to judge protagonist stability, pivot clarity, and tool-vs-discovery weighting on high-salience manuscript rounds
-- `physical-mechanism reviewer`, `acoustics-doa reviewer`, `sparse-inverse-problem-comparator reviewer`, and `statistics-evidence reviewer` for interpretation, plausibility, comparator fairness, or evidence sufficiency risk
-- `figure-science-readability reviewer` for figure science, panel logic, caption burden, or main-vs-supplementary judgment
-
-When writing a child packet or review request, name:
-
-- the selected reviewer roles
-- the acceptance surface they are judging
-- the in-scope and out-of-scope surfaces they must and must not treat as review failures
-- any follow-up owner if a reviewer finding must be routed to another skill
-
-Parent acceptance on reviewer-stack use:
-
-- the packet cites the canonical reviewer-stack doc
-- the reviewer subset is minimal and task-matched
-- the acceptance surface is explicit rather than implied
-- paper-facing packets explicitly state the scientific-inference-over-manuscript-management rule, not only active voice, simple causality, and noun-stack-friction
-- local high-salience manuscript packets explicitly state the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and `discussion worldview-shift sentence`
-- `cross-section` and `whole-manuscript` packets carry the drafting-time architecture bundle required by `TASK_PACKETS.md`, `manuscript-contract.md`, and `scientific-voice-guide.md`
-- broader-significance packets defer machine-readable status mechanics to `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md` rather than recreating a second field inventory
-- main-manuscript packets identify the closest macro `SV#` exemplar and the closest micro sentence-craft `SV#` exemplar when the round touches title, abstract, Results opening, transitions, section titles, or the first paragraph of Discussion
-- paper-facing explanation packets outside the main manuscript identify at least one closest micro sentence-craft `SV#` exemplar when the round touches legends, captions, review-note prose, or analysis summaries that may later flow into the paper
-- review findings are consolidated at the parent layer instead of left as disconnected comments
-
-Reviewer qualification gate:
-
-- Reject planner or reviewer outputs as under-scoped when they do not engage the required acceptance surface.
-- Reject main-manuscript-hardening review as unqualified when it ignores scientific inference versus manuscript-management language, even if it comments on grammar or passive voice.
-- Exclude submission metadata placeholders from scientific-narrative review unless submission packaging is explicitly in scope.
-
-Manuscript-hardening planning and review checklist:
-
-- claim floor: is the strongest supported discovery sentence explicit, early, and easy to retain
-- old-world belief: what default intuition must the paper replace
-- new-world belief: what updated understanding should remain after one pass
-- paper protagonist: is the phenomenon or organizing principle stable across title, abstract, Results, and Discussion
-- pivot: where does the reader's model actually change
-- tool role: does the tool reveal, preserve, or test the discovery rather than become the discovery
-- weight discipline: does discovery carry more narrative mass than tool validation
-- section jobs: do the Results sections each have a clear role inside the primary cognitive shift rather than one more item in an experiment log
-- discovery cash-out: where does the paper-level discovery become unavoidable rather than optional
-- second-layer discovery: what broader paper-level inference is earned by the discovery itself rather than by speculative application framing
-- broader-significance status: whether the round is still `core-only`, has reached `second-layer earned`, has earned one bounded branch, or can safely carry an optional leaf
-- broader-implication trunk: what single sentence should a skimming editor remember about the paper's broader consequence
-- downstream consequence branch: what bounded consequence survives once weaker application leaves are stripped away
-- optional leaf consequence: what weaker implication can be noted briefly without competing with the trunk and branch
-- promotion rationale: why the current evidence earns the chosen promotion level rather than a lower one
-- demotion trigger: what evidence or routing failure would force a downgrade
-- reviewer-routing survival: whether the promoted trunk or branch survives the likely reviewer community
-- front-door preload sentence: where the broader-implication trunk is planted before Discussion
-- two-takeaway editor readout: what two sentences a skimming editor should retain if the evidence supports a second-layer discovery
-- redundancy / breathing: where does the manuscript repeat explanation without upgrading understanding, or stay uniformly dense enough to flatten the pivot
-- claim ceiling: is the stronger unsupported interpretation clearly separated rather than implied
-- evidence boundary: are true scope limits named without collapsing the paragraph into self-negation
-- disciplinary narrative shift: does the prose drift from scientific inference into explanation of paper positioning or process
-- defensive tone: does the text rely on `X rather than Y` framing or rebuttal-like self-defense
-- self-diminishing triggers: do phrases such as `without upgrading`, `descriptive rather than`, `remains positive`, or abstract endings led by `pathway` or `constraint` lower the claim floor without adding precision
-- sentence friction: do noun stacks, fact clusters, static verbs, or formal-register wording force the reader to decode syntax before the science
-- causal glue: when the prose gives numbers or contrasts, does it also tell the reader what those numbers mean
-- structural pacing: do section and paragraph endings carry scientific consequence rather than administrative wrap-up
-- figure-as-actor phrasing: are figures or panels narrating sentences that should be carried by observations, interventions, or mechanisms
-- supplement and legend leakage: do supplementary text, legends, or inline legend prose slip into manuscript-management language
-- audience expectation mismatch: will physicist, acoustics, and ML readers infer different scope or evidence promises from the current wording
-- no-bolt-on test: if the downstream consequence is removed, does the second-layer discovery still land, and if the second-layer discovery is removed, does the downstream consequence immediately collapse
-- leaf deletion rule: if deleting the leaf improves memory for the trunk and branch, the leaf should disappear
-
-## Plan mode
-
-- Keep the same parent-orchestrator routing in Plan mode.
-- The top-level agent may work directly or use child agents in Plan mode for planning, exploration, checking, and review.
-- Keep direct and delegated work non-mutating and plan-safe until execution mode.
-
-## Delegation decision
-
-Choose direct execution when the work is bounded, delegation would not improve correctness or review separation, and the round's risk controls still remain intact.
-
-If delegating, use a single child only when the request fits one core skill, one main output bundle, and one bounded acceptance surface.
-
-Decompose into multiple child tasks when the request:
-
-- spans multiple skills or specialist roles
-- mixes execution with a separate review, audit, or red-team pass
-- contains parallelizable subproblems with different source-of-truth sets or outputs
-- would force one child packet to satisfy multiple independent acceptance criteria
+- use `docs/agent-ops/ROUND_GOVERNANCE_SCHEMA.md`
+- create `results/<round_name>/governance_round.yaml`
+- require `make paper-governance-gate ROUND_DIR=results/<round_name>` before reporting that broader significance landed
 
 ## Supervision loop
 
-- After spawning a child agent, either continue non-overlapping parent work or check the child's progress explicitly.
-- Before interrupting or closing a child agent, inspect its current status or latest output first.
-- Close a child agent only after completion, user cancellation, clear supersession, or an explicit redirect decision grounded in observed status.
-- Do not close a child agent solely because elapsed time feels long.
+After spawning a child agent:
 
-Quick routing defaults:
+- continue non-overlapping parent work, or
+- check the child's status explicitly
 
-- "what is this figure or panel showing", "does this figure support the claim", or "what gap exists between this figure and this critique" -> `paper-asset-review`
-- "which factors matter most", "what can we compute now", "which metric explains performance better", or "can we do a factor audit" -> `experiment-results`
-- "write this as manuscript prose", "explain this for cross-disciplinary readers", or "rewrite this in plain language without losing rigor" -> `paper-submission`
+Before interrupting or closing a child agent:
+
+- inspect its current status or latest output first
+
+Close a child agent only after:
+
+- completion
+- user cancellation
+- clear supersession
+- or an explicit redirect grounded in observed status
+
+Do not close a child agent solely because it feels slow.
 
 ## Guardrails
 
-- Do not drift into a code-first coordination model.
-- Do not create new roles when the role catalog already fits.
-- Do not add new governance layers before proving a concrete workflow gap.
-- Prefer manuscript objectives over implementation-centric decomposition.
-- Do not delegate by reflex when direct execution is the simpler bounded path.
-- Do not let direct execution erase required reviewer or verifier separation.
-- Do not omit `Relevant conversation context` from a child handoff.
-- Do not use `summary+fork_context` when `summary-only` is sufficient.
-- Do not interrupt or close a child agent without first checking status or latest output.
+- Do not invent a parallel workflow when the existing skills and contracts already fit.
+- Do not rebuild packet or schema logic inside a child prompt.
+- Do not let governance caution leak into paper-facing prose.
+- Do not treat archive notes as current source of truth.
+- Do not let simplification add a second governance vocabulary.

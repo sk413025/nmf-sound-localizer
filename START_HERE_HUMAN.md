@@ -31,7 +31,7 @@ The intended operating model is agent-first: Codex and other agents do the detai
   - `docs/governance/ASSET_CLASSES.md`
 - Codex and multi-agent workflow design:
   - `docs/governance/codex-collaboration-contract.md`
-  - `docs/agent-ops/SUPERVISOR_OPERATING_MODEL.md`
+  - `.codex/skills/agent-orchestrator/references/supervisor-operating-model.md`
 
 ## Common commands
 

@@ -71,19 +71,29 @@ Treat `.codex/memory/` as the derived branch-memory layer, not as a second const
 
 ## Skill Routing
 
-Use only the minimal skill set for repeated work:
+Use only the minimal repeated skill set:
 
+- `agent-orchestrator`
 - `paper-submission`
 - `paper-asset-review`
-- `agent-orchestrator`
 - `experiment-results`
 
 Route top-level work through `agent-orchestrator` first.
-Treat the top-level agent as the routing authority: it may execute directly or delegate to child agents after the top-level routing decision.
-Treat `paper-submission`, `paper-asset-review`, and `experiment-results` as specialist execution skills that may be used through direct top-level work or delegated child work.
-In this repository's default operating mode, the human provides standing authorization for sub-agent use and the top-level agent may decide when delegation is useful.
-Apply this execution-or-delegation policy in both Default mode and Plan mode.
+Treat the top-level agent as the routing authority: it may execute directly or delegate after the top-level routing decision.
+Treat the specialist skills as on-demand execution surfaces, not mandatory first-pass reads.
 If a task does not clearly fit one of these skills, route through `agent-orchestrator` first instead of inventing a parallel workflow.
+
+## Agent Operating Model
+
+- The top-level agent should write as if helping an editor recognize the paper's actual advance on first pass.
+- For manuscript, governance, strategy, and other branch-shaping work, read the current branch memory brief before deeper routing.
+- Use the smallest top-level surface that fits: constitution, branch memory, then `agent-orchestrator`.
+- Treat unfamiliarity as a reason to inspect the next missing source-of-truth surface, not as a reason to improvise or freeze.
+- Keep paper-facing prose claim-forward: `clear claim first, evidence next, boundary after`.
+- Route manuscript hardening, editorial critique, and reviewer-routing critique through the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
+- Treat review, verification, and plan completion as separate decisions.
+- For `high-risk` rounds with broader significance or cross-disciplinary consequence in scope, require `results/<round_name>/governance_round.yaml` plus `make paper-governance-gate ROUND_DIR=results/<round_name>` before closeout may report that broader significance landed.
+- Parent closeout must distinguish exact text evidence from high-level interpretation and must not imply full completion after a scope downgrade.
 
 ## Command Surface
 
@@ -93,56 +103,6 @@ If a task does not clearly fit one of these skills, route through `agent-orchest
 - `make manuscript`
 - `make paper-review-assets`
 - `make paper-review-gate`
-
-## Current Operating Model
-
-### Agent scientific stance
-
-- The top-level agent should write as if trying to help an editor recognize the paper's real advance on a first pass.
-- For manuscript, governance, strategy, or other branch-shaping work, the top-level agent should read the current branch memory brief before deeper routing so recent stable lessons are loaded without reopening raw sessions.
-- The top-level agent should first ask what old belief the paper is replacing and what new belief the reader should leave with.
-- The top-level agent should identify the paper protagonist before revising prose. If the protagonist silently shifts between phenomenon, method, reference object, and workflow, treat that as a drafting failure.
-- The top-level agent should identify the paper pivot before drafting or approving a Results sequence. If every section speaks at the same narrative volume, treat that as a story-architecture failure.
-- The top-level agent should write down the Results section jobs before restructuring or approving a whole-paper rewrite. If the section list still reads like experiment chronology or analysis-bundle order, treat that as an architecture failure.
-- The top-level agent should keep reference objects and solvers subordinate to the discovery unless the packet explicitly declares a method-first paper.
-- The top-level agent should identify where the paper actually cashes out its discovery. If the discovery appears only as a final extension after long tool-validation buildup, treat that as narrative mis-centering.
-- Default scientific tone is: `clear claim first, evidence next, boundary after`, not `caveat first, claim later`.
-- When choosing between two truthful phrasings, prefer the one that preserves the supported claim floor and scientific momentum.
-- Treat `underclaim by reflex` as a routing error, not as a sign of higher rigor.
-- Treat `reader must decode the sentence before seeing the claim` as a drafting failure, not as acceptable technical density.
-- Use one main causal move per sentence by default. When a sentence reports both the measurement and its interpretation, make the link explicit with direct causal language or split the sentence.
-- Keep technical noun stacks short unless the phrase is an established term of art. Prefer clauses, verbs, and prepositional phrases over front-loaded label chains.
-- Prefer dynamic scientific verbs such as `concentrates`, `exceeds`, `holds`, `tracks`, `reveals`, and `limits` over static filler verbs such as `remains` or `stays` when the stronger verb preserves the truth value.
-- Treat defensive strawmen such as `without upgrading into a universal law` or `descriptive rather than` as suspect by default unless they resolve a real evidence ambiguity.
-- For paper-facing explanation, use [docs/governance/scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md) as the canonical positive-style reference and exemplar set.
-
-- The human sets direction and approves milestones.
-- The top-level agent first classifies the task and decides whether direct execution or delegation is the better fit for scope and risk.
-- When the top-level agent delegates, it decomposes work, chooses child roles, and reviews child outputs.
-- When the top-level agent delegates, it must decide whether a request is a true single-child task or must be decomposed into multiple child tasks.
-- When the top-level agent delegates, it writes a task packet with `Relevant conversation context` and `Context mode` before handing work to a child agent.
-- When the top-level agent delegates, it monitors active child agents until completion, explicit redirect, or a justified shutdown.
-- When the top-level agent delegates, it must inspect a child agent's current status or latest output before interrupting or closing it.
-- When the top-level agent delegates, it must not close a child agent solely because it feels slow.
-- The default `Context mode` is `summary-only`; escalate to `summary+fork_context` only when exact dialogue history cannot be safely compressed.
-- In Plan mode, direct and delegated work may still use this routing model, but all work must remain non-mutating and plan-safe.
-- Specialists may execute bounded paper-facing tasks through direct top-level work or as child agents.
-- Review and red-team loops are mandatory when claims, governance, or submission posture could shift.
-- Manuscript-facing hardening, editor-scope review, reviewer-routing review, and high-stakes critique must use the canonical reviewer stack in `docs/agent-ops/NATURE_REVIEWER_STACK.md`.
-- High-stakes manuscript hardening and critique must be adversarial. Reviewers should try to surface rejection-grade objections, not merely confirm adequacy.
-- The parent selects the minimal applicable reviewer roles and evaluation goals from that stack and records them in the task packet or review request instead of inventing ad hoc reviewer personas.
-- Every review request must define its in-scope and out-of-scope acceptance surfaces. Submission metadata placeholders do not fail a scientific-narrative review unless submission packaging is explicitly in scope.
-- The parent must reject planner, reviewer, or rewriter outputs as under-scoped when they do not engage the stated acceptance surface or do not test the paper-facing explanation rule above where it is in scope.
-- The parent must also reject paper-facing planning or review as under-scoped when it does not identify the `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, and `tool role` for high-salience manuscript rounds.
-- The parent must reject whole-manuscript or cross-section hardening as under-architected when it lacks a `Paper spine map`, `Results section jobs`, `Discovery-vs-tool weight budget`, or a named `Discovery cash-out section`.
-- The parent must classify closeout-sensitive rounds as high risk or not high risk before assigning reviewer and verifier ownership. Any owner separation or role compression decision must follow that classification and be recorded.
-- High-risk rounds with broader significance or cross-disciplinary consequence in scope must create `results/<round_name>/governance_round.yaml` and pass `make paper-governance-gate ROUND_DIR=results/<round_name>` before parent closeout may report that broader significance landed.
-- Reviewer pass, review completion, and plan completion are distinct states. The parent must not report plan completion unless every committed acceptance surface for the task packet has been independently satisfied or the remaining gap is disclosed explicitly.
-- If scope, acceptance surface, or promised outputs are narrowed after work begins, the parent must disclose that downgrade explicitly in closeout rather than implying the original plan was completed.
-- High-risk rounds that can change manuscript claims, governance posture, or acceptance status must separate implementer, reviewer, and verifier roles. One role may be omitted only when the parent records why the round is not high risk.
-- Governance-changing rounds must name their complexity risk, why existing primitives were insufficient, what duplicated surface was removed, and what remains canonical after the round.
-- Parent closeout must distinguish exact text evidence from high-level interpretation. Quote or point to the exact changed language for text claims, summarize interpretation separately, and do not substitute line references or paraphrase for the underlying text evidence.
-- Parent closeout must include an independent verification step for claimed completion. Verification cannot rely only on the implementer's summary or the reviewer's pass.
 
 ## Asset Boundaries
 

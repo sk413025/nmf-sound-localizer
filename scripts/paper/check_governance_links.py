@@ -24,7 +24,6 @@ REQUIRED_FILES = [
     REPO_ROOT / "docs" / "governance" / "runtime-substrate-contract.md",
     REPO_ROOT / "docs" / "governance" / "ASSET_CLASSES.md",
     REPO_ROOT / "docs" / "agent-ops" / "README.md",
-    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md",
     REPO_ROOT / "docs" / "agent-ops" / "ROLE_CATALOG.md",
     REPO_ROOT / "docs" / "agent-ops" / "ROUND_CLOSEOUT_TEMPLATE.md",
     REPO_ROOT / "docs" / "agent-ops" / "ROUND_GOVERNANCE_SCHEMA.md",
@@ -51,6 +50,7 @@ REQUIRED_FILES = [
     REPO_ROOT / ".codex" / "skills" / "paper-asset-review" / "SKILL.md",
     REPO_ROOT / ".codex" / "skills" / "experiment-results" / "SKILL.md",
     REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md",
+    REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "references" / "supervisor-operating-model.md",
 ]
 
 # Keep the link gate structural: each doc needs only enough anchors to prove
@@ -66,14 +66,15 @@ ANCHOR_CHECKS = {
         ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "Route top-level work through `agent-orchestrator` first.",
         "make paper-governance-gate ROUND_DIR=results/<round_name>",
-        "Treat governance complexity as a branch-level failure mode.",
+        "Treat unfamiliarity as a reason to inspect the next missing source-of-truth surface",
     ],
     REPO_ROOT / "START_HERE_AGENT.md": [
+        "Only three top-level surfaces are mandatory",
         ".codex/memory/CURRENT_BRANCH_MEMORY.md",
-        "docs/agent-ops/README.md",
         ".codex/skills/agent-orchestrator/SKILL.md",
+        "Unfamiliarity bootstrap",
         "Context mode: `summary-only`",
-        "governance_round.yaml",
+        "Do not treat unfamiliarity as a reason to freeze.",
     ],
     REPO_ROOT / ".codex" / "memory" / "README.md": [
         "not a second constitution",
@@ -91,7 +92,8 @@ ANCHOR_CHECKS = {
         "paper-level architecture",
     ],
     REPO_ROOT / "docs" / "governance" / "README.md": [
-        "scientific-voice-guide.md",
+        "Codex should not read this whole directory on first pass.",
+        ".codex/skills/agent-orchestrator/SKILL.md",
         "codex-collaboration-contract.md",
         "closeout-integrity-contract.md",
     ],
@@ -106,10 +108,10 @@ ANCHOR_CHECKS = {
         "Do not recreate a second schema",
     ],
     REPO_ROOT / "docs" / "governance" / "codex-collaboration-contract.md": [
-        "one canonical machine-readable artifact at `results/<round_name>/governance_round.yaml`",
         "Do not let one concept acquire multiple canonical homes.",
         "Repo-local branch memory may summarize stable branch state",
         "Do not let the checker over-model reviewer judgment.",
+        "Do not restate operational detail from these homes in parallel documents.",
     ],
     REPO_ROOT / "docs" / "governance" / "closeout-integrity-contract.md": [
         "governance_round.yaml",
@@ -117,20 +119,27 @@ ANCHOR_CHECKS = {
         "exact text or exact diff evidence",
     ],
     REPO_ROOT / "docs" / "agent-ops" / "README.md": [
+        "It is not part of the mandatory first-pass load for Codex.",
         ".codex/memory/CURRENT_BRANCH_MEMORY.md",
         "NATURE_REVIEWER_STACK.md",
         "ROUND_GOVERNANCE_SCHEMA.md",
-        "governance_round.yaml",
+        "on-demand operating references",
     ],
-    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md": [
+    REPO_ROOT
+    / ".codex"
+    / "skills"
+    / "agent-orchestrator"
+    / "references"
+    / "supervisor-operating-model.md": [
         "Complexity discipline",
         "ROUND_GOVERNANCE_SCHEMA.md",
         "execution-or-delegation rule",
     ],
     REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md": [
-        "Use packet fields to record decisions, not to recreate a second schema.",
+        "This file owns the packet schema.",
+        "Use packet fields to record decisions, not to create a second schema",
         "ROUND_GOVERNANCE_SCHEMA.md",
-        "Before issuing any packet, the top-level agent must make an execution-or-delegation decision.",
+        "Do not add a new unfamiliarity field.",
     ],
     REPO_ROOT / "docs" / "agent-ops" / "ROUND_GOVERNANCE_SCHEMA.md": [
         "The semantic gate checks only:",
@@ -154,7 +163,8 @@ ANCHOR_CHECKS = {
     ],
     REPO_ROOT / ".codex" / "skills" / "agent-orchestrator" / "SKILL.md": [
         ".codex/memory/CURRENT_BRANCH_MEMORY.md",
-        "Complexity self-check",
+        "Progressive disclosure",
+        "Unfamiliarity bootstrap",
         "ROUND_GOVERNANCE_SCHEMA.md",
         "governance_round.yaml",
     ],
@@ -192,10 +202,6 @@ STALE_ANCHORS = {
     ],
     REPO_ROOT / "START_HERE_HUMAN.md": [
         "docs/codex-native-assessment/README.md",
-    ],
-    REPO_ROOT / "docs" / "agent-ops" / "SUPERVISOR_OPERATING_MODEL.md": [
-        "When a single agent is enough",
-        "decide whether the task is single-agent or multi-agent",
     ],
     REPO_ROOT / "docs" / "agent-ops" / "TASK_PACKETS.md": [
         "Discussion worldview-shift sentence",
