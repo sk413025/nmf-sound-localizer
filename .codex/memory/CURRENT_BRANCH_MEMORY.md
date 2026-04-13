@@ -5,6 +5,7 @@
 - harden the manuscript and paper-facing figures toward a Nature Communications editorial read
 - preserve the supported discovery floor while removing tool-first or underclaiming prose habits
 - keep figure, prose, and governance work aligned around one stable paper architecture
+- keep the active six main-paper figures on one submission-family surface rather than split visual lineages or stale preview outputs
 
 ## Current Nature Communications Framing
 
@@ -26,6 +27,8 @@
 
 ## Active Figure And Manuscript Fronts
 
+- figure-family governance: `Fig. 1–6` now route through one active paper-facing contract with layout-spec typography, Arial/Helvetica-only source-PDF fonts, exact mm-to-300 dpi paper-facing JPGs, and a freshness check that keeps `paper/out` from silently lagging behind `paper/figures`
+- `Fig. 1` remains the only figure with a manual-support source panel; panel `a` is now shown through governed crop-and-annotation composition, but it is still the main residual visual-parity risk within the opener family
 - `Fig. 4`: reconstruction, panel hierarchy, panel-a historical backtrace, and main-text suitability
 - `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
@@ -39,12 +42,12 @@
 - letting supplementary text turn into a support-document checklist or reviewer-navigation guide instead of a natural extension of the paper's scientific voice
 - letting noun stacks or compressed technical labels replace explicit cause-effect explanation, forcing readers to decode terminology before they can follow the scientific inference
 - broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
+- judging figure typography or font compliance from a stale `paper/out` preview instead of the current `paper/figures` assets or fresh rebuilt preview surfaces
 
 ## Open Unresolved Items
 
-- the current brief does not yet backfill older pre-April branch history; it only captures the recent active reframing
 - `Fig. 4` and `Fig. 6` still require ongoing evidence and editorial hardening as the manuscript evolves
-- future branch-memory updates should stay selective and avoid becoming a transcript archive
+- `Fig. 1 panel a` still depends on a legacy raster source rather than a clean paper-native setup image, even though the manuscript-facing panel is now governed rather than unmanaged
 - `high-risk` governance artifacts under `results/` do not enter version control by default because `results/` is gitignored; `governance_round.yaml` needs force-add or a policy change when the branch wants those artifacts tracked
 
 ## Read-Next Links
