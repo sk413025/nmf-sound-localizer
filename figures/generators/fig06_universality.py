@@ -524,7 +524,7 @@ def _plot_panel_b(
 
     cbar = fig.colorbar(image, cax=cax)
     cbar.ax.tick_params(labelsize=colorbar_tick_pt, length=2)
-    cbar.set_label(r"$\log_{10}|H|$", fontsize=colorbar_label_pt, labelpad=0.6)
+    cbar.set_label("log10|H|", fontsize=colorbar_label_pt, labelpad=0.6)
     return [ax_block, *heatmap_axes, cax]
 
 
@@ -711,8 +711,8 @@ def _plot_panel_c(
     ax_curve.set_xlim(0.0, float(x_focus.max()))
     ax_curve.set_ylim(-0.42, 1.02)
     ax_curve.set_xticks([0, 15, 30, 45, 60, 75, 90])
-    ax_curve.set_ylabel(r"Mean centered-$|H|$ corr.", fontsize=axis_label_pt)
-    ax_curve.set_xlabel(r"Angular separation $|\Delta\theta|$ (deg)", fontsize=axis_label_pt)
+    ax_curve.set_ylabel("Mean centered-|H| corr.", fontsize=axis_label_pt)
+    ax_curve.set_xlabel("Angular separation |Δθ| (deg)", fontsize=axis_label_pt)
     ax_curve.tick_params(axis="both", labelsize=tick_label_pt, length=2)
     ax_curve.grid(True, alpha=FAMILY_STYLE["grid_alpha"])
     ax_curve.legend(
@@ -879,7 +879,7 @@ def _plot_panel_d(
         facecolors="white",
         edgecolors=energy_color,
         linewidths=STROKE_TOKENS["base"],
-        label=r"marker area $\propto$ norm. $|H|$ energy",
+        label="marker area scales with norm. |H| energy",
     )
     ax_bottom.set_xlim(float(overlap_burden.min()) - 0.005, float(overlap_burden.max()) + 0.005)
     ax_bottom.set_ylim(0.60, 0.88)

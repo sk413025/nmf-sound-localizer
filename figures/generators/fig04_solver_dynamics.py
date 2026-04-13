@@ -211,7 +211,7 @@ def _draw_local_band_guide(
         ax.text(
             0.98,
             0.11,
-            "measured local band in $H$",
+            "measured local band in H",
             transform=ax.transAxes,
             fontsize=legend_pt if legend_pt is not None else 5.6,
             ha="right",

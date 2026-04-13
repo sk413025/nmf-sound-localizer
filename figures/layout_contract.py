@@ -122,6 +122,19 @@ def font_pt(name: str) -> float:
     return fonts[name]
 
 
+def figure_typography(figure_id: str) -> dict[str, float]:
+    typography = font_tokens()
+    figure_cfg = figure_contract(figure_id)
+    if "typography" in figure_cfg:
+        typography.update(
+            {
+                key: float(value)
+                for key, value in dict(figure_cfg["typography"]).items()
+            }
+        )
+    return typography
+
+
 def figure_contract(figure_id: str) -> dict[str, Any]:
     figures = load_layout_contract()["figures"]
     if figure_id not in figures:

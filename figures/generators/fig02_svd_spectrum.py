@@ -21,14 +21,33 @@ from scipy.signal import savgol_filter
 from scipy.interpolate import CubicSpline, PchipInterpolator
 from sklearn.manifold import MDS
 
+from figures.layout_contract import contract_version, font_pt, source_layout_spec
 from figures.style import (
-    set_nature_rcparams,
+    add_panel_label,
+    DOUBLE_COL_MM,
+    SEMANTIC_PALETTE,
+    STYLE_COLORS,
+    load_paths,
     make_figure,
     save_outputs,
-    add_panel_label,
-    load_paths,
-    DOUBLE_COL_MM,
+    set_nature_rcparams,
 )
+
+FIG02_TYPOGRAPHY = {
+    "panel_label": font_pt("panel_label"),
+    "title": font_pt("title"),
+    "axis_label": font_pt("axis_label"),
+    "tick_label": font_pt("tick_label"),
+    "legend": font_pt("legend"),
+    "annotation": font_pt("annotation"),
+    "colorbar_tick": font_pt("colorbar_tick"),
+    "colorbar_label": font_pt("colorbar_label"),
+}
+FIG02_COMPONENT_COLORS = [
+    SEMANTIC_PALETTE["physics"],
+    SEMANTIC_PALETTE["ablation"],
+    SEMANTIC_PALETTE["learned"],
+]
 
 
 # ---------------------------------------------------------------------------
@@ -94,11 +113,14 @@ def _process_angular_mode(
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
     manifest_path = panel_dir / "fig02_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig02",
         "composite_asset": "figures/output/fig02_svd_spectrum.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": FIG02_TYPOGRAPHY,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -211,7 +233,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     selected_mode_indices = [0, 1, 5]
     n_modes = len(selected_mode_indices)
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    colors = FIG02_COMPONENT_COLORS
     mode_labels = ["Comp. 1", "Comp. 2", "Comp. 6"]
 
     # Process modes
@@ -238,11 +260,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # --- Panel (a): Cumulative fraction + singular values ---
     ax_sv = fig.add_subplot(gs[0, 0])
     r_idx = np.arange(1, full_stop + 1)
-    ax_sv.axvspan(1, 10, color="0.97", alpha=0.9, zorder=0)
+    ax_sv.axvspan(1, 10, color=STYLE_COLORS["chance_fill"], alpha=0.9, zorder=0)
     line2, = ax_sv.plot(
         r_idx,
         cum_energy_r[:full_stop],
-        color="g",
+        color=SEMANTIC_PALETTE["learned"],
         marker="s",
         markersize=1.9,
         label="Cum Energy",
@@ -252,7 +274,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     line3, = ax_sv.plot(
         r_idx,
         cum_doa_cap_r[:full_stop],
-        color="#d62728",
+        color=SEMANTIC_PALETTE["ablation"],
         marker="^",
         markersize=2.2,
         markerfacecolor="white",
@@ -264,45 +286,45 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax_sv.set_xlim(0.7, full_stop + 0.3)
     ax_sv.set_xticks([1, 6, 12, 18, 24, 30, 37])
-    ax_sv.set_xlabel("Component index r", fontsize=6)
-    ax_sv.set_ylabel("Cum. fraction", fontsize=6, labelpad=1)
+    ax_sv.set_xlabel("Component index r", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_sv.set_ylabel("Cum. fraction", fontsize=FIG02_TYPOGRAPHY["axis_label"], labelpad=1)
     ax_sv.set_ylim(0.25, 1.01)
     ax_sv.set_yticks([0.25, 0.50, 0.75, 0.90, 1.00])
-    ax_sv.tick_params(axis="both", labelsize=5.5, pad=1)
+    ax_sv.tick_params(axis="both", labelsize=FIG02_TYPOGRAPHY["colorbar_tick"], pad=1)
     ax_sv.grid(True, axis="y", alpha=0.20, linewidth=0.5)
 
     ax_sv2 = ax_sv.twinx()
-    ax_sv2.vlines(r_idx, 0.0, S[:full_stop], color="C0", alpha=0.20, linewidth=0.9, zorder=1)
+    ax_sv2.vlines(r_idx, 0.0, S[:full_stop], color=SEMANTIC_PALETTE["physics"], alpha=0.20, linewidth=0.9, zorder=1)
     line1, = ax_sv2.plot(
         r_idx,
         S[:full_stop],
         marker="o",
         markersize=2.0,
-        label=r"$\sigma_r$",
-        color="C0",
+        label="σ_r",
+        color=SEMANTIC_PALETTE["physics"],
         linewidth=1.0,
         zorder=2,
     )
-    ax_sv2.set_ylabel(r"Singular value $\sigma_r$", fontsize=6, labelpad=1)
+    ax_sv2.set_ylabel("Singular value σ_r", fontsize=FIG02_TYPOGRAPHY["axis_label"], labelpad=1)
     ax_sv2.set_ylim(0.0, 0.76)
     ax_sv2.set_yticks([0.0, 0.2, 0.4, 0.6])
-    ax_sv2.tick_params(axis="y", labelsize=5.5, pad=1)
+    ax_sv2.tick_params(axis="y", labelsize=FIG02_TYPOGRAPHY["colorbar_tick"], pad=1)
 
     for rank, text_xy in [
         (r80, (21.0, 0.855)),
         (r85, (21.0, 0.905)),
     ]:
         value = float(cum_energy_r[rank - 1])
-        ax_sv.axvline(rank, color="0.55", linestyle=":", linewidth=0.6, zorder=1)
-        ax_sv.scatter(rank, value, s=12, color="#2f2f2f", zorder=4)
+        ax_sv.axvline(rank, color=STYLE_COLORS["guide_line"], linestyle=":", linewidth=0.6, zorder=1)
+        ax_sv.scatter(rank, value, s=12, color=STYLE_COLORS["neutral_text"], zorder=4)
         ax_sv.annotate(
             f"r={rank}, {value * 100:.1f}%",
             xy=(rank, value),
             xytext=text_xy,
             textcoords="data",
-            fontsize=4.8,
-            color="#2f2f2f",
-            arrowprops={"arrowstyle": "-", "lw": 0.6, "color": "0.35"},
+            fontsize=FIG02_TYPOGRAPHY["tick_label"],
+            color=STYLE_COLORS["neutral_text"],
+            arrowprops={"arrowstyle": "-", "lw": 0.6, "color": STYLE_COLORS["dense_routing"]},
             va="bottom",
             ha="left",
         )
@@ -314,10 +336,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         loc="center",
         bbox_to_anchor=(0.73, 0.50),
         ncol=1,
-        fontsize=4.9,
+        fontsize=FIG02_TYPOGRAPHY["legend"],
         frameon=True,
         framealpha=0.92,
-        edgecolor="0.85",
+        edgecolor=STYLE_COLORS["chance_line"],
         facecolor="white",
         handlelength=1.4,
         columnspacing=0.8,
@@ -332,14 +354,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         u_smooth, freqs_smooth, _, _ = modes_data[r]
         u_abs = np.abs(u_smooth)
         ax_b.plot(freqs_smooth, u_abs, color=colors[r], linewidth=0.9, label=mode_labels[r])
-    ax_b.set_title("Reusable spectral patterns", fontsize=6.2, pad=1.5)
+    ax_b.set_title("Reusable spectral patterns", fontsize=FIG02_TYPOGRAPHY["title"], pad=1.5)
     ax_b.set_xlabel("Frequency (kHz)")
     ax_b.set_ylabel("Rel. loading", labelpad=1)
-    ax_b.tick_params(axis="both", which="major", pad=1, labelsize=5)
+    ax_b.tick_params(axis="both", which="major", pad=1, labelsize=FIG02_TYPOGRAPHY["tick_label"])
     ax_b.set_xticks([500, 1500, 2500])
     ax_b.set_xticklabels(["0.5k", "1.5k", "2.5k"])
     ax_b.grid(True, alpha=0.3, linewidth=0.5)
-    ax_b.legend(fontsize=5.5, frameon=False, loc="upper right")
+    ax_b.legend(fontsize=FIG02_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
     add_panel_label(ax_b, "b", x=-0.15)
 
     # --- Panel (c): Overlaid polar patterns (0–180° half-plane) ---
@@ -348,16 +370,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         _, _, v_norm, angles_smooth = modes_data[r]
         angles_rad = np.deg2rad(angles_smooth)
         ax_c.plot(angles_rad, v_norm, color=colors[r], linewidth=0.9, label=mode_labels[r])
-    ax_c.set_title("Angle-selective loadings", fontsize=6.2, pad=2.0)
+    ax_c.set_title("Angle-selective loadings", fontsize=FIG02_TYPOGRAPHY["title"], pad=2.0)
     ax_c.grid(True, alpha=0.3, linewidth=0.5)
     ax_c.set_theta_zero_location("N")
     ax_c.set_theta_direction(-1)
     ax_c.set_thetalim(0, np.pi)
     ax_c.set_yticklabels([])
     ax_c.set_xticks(np.deg2rad([0, 45, 90, 135, 180]))
-    ax_c.set_xticklabels(["0\u00b0", "45\u00b0", "90\u00b0", "135\u00b0", "180\u00b0"], fontsize=6)
+    ax_c.set_xticklabels(["0\u00b0", "45\u00b0", "90\u00b0", "135\u00b0", "180\u00b0"], fontsize=FIG02_TYPOGRAPHY["tick_label"])
     ax_c.tick_params(pad=1)
-    ax_c.legend(fontsize=5.5, frameon=False, loc="upper left", bbox_to_anchor=(-0.20, 1.10))
+    ax_c.legend(fontsize=FIG02_TYPOGRAPHY["legend"], frameon=False, loc="upper left", bbox_to_anchor=(-0.20, 1.10))
     add_panel_label(ax_c, "c", x=-0.15, y=1.09)
 
     # --- Panel (d): Full dictionary H heatmap ---
@@ -366,19 +388,19 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         H_mag.T, aspect="auto", origin="lower", cmap="viridis",
         extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
     )
-    ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_d.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_d.set_title("Angle-frequency dictionary H", fontsize=6.5)
+    ax_d.set_xlabel("Frequency (kHz)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_d.set_ylabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_d.set_title("Angle-frequency dictionary H", fontsize=FIG02_TYPOGRAPHY["title"])
     cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.035, pad=0.02)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.ax.tick_params(labelsize=FIG02_TYPOGRAPHY["colorbar_tick"])
     add_panel_label(ax_d, "d", x=-0.15)
 
     # --- Panel (e): All-angle reconstruction fidelity ---
     ax_e = fig.add_subplot(gs[1, 1])
     rank_styles = [
-        (3, "o", "#1f77b4"),
-        (5, "s", "#ff7f0e"),
-        (6, "^", "#2ca02c"),
+        (3, "o", FIG02_COMPONENT_COLORS[0]),
+        (5, "s", FIG02_COMPONENT_COLORS[1]),
+        (6, "^", FIG02_COMPONENT_COLORS[2]),
     ]
     for rank, marker, color in rank_styles:
         rmse_by_angle = _reconstruction_rmse_by_angle(H_centered, U, S, Vt, rank)
@@ -400,11 +422,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             linestyle="None",
             color=color,
         )
-    ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_ylabel("RMSE", fontsize=6, labelpad=1)
-    ax_e.set_title(r"Centered-$|H|$ reconstruction fidelity", fontsize=6.5)
+    ax_e.set_xlabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_e.set_ylabel("RMSE", fontsize=FIG02_TYPOGRAPHY["axis_label"], labelpad=1)
+    ax_e.set_title("Centered-|H| reconstruction fidelity", fontsize=FIG02_TYPOGRAPHY["title"])
     ax_e.set_xticks([0, 45, 90, 135, 180])
-    ax_e.legend(fontsize=5, frameon=False, loc="upper right")
+    ax_e.legend(fontsize=FIG02_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
     ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
     add_panel_label(ax_e, "e", x=-0.15)
 
@@ -417,23 +439,23 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     tick_pos = np.linspace(0, len(angles_deg) - 1, 5, dtype=int).tolist()
     tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos]
     ax_f.set_xticks(tick_pos)
-    ax_f.set_xticklabels(tick_lab, fontsize=5)
+    ax_f.set_xticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
     ax_f.set_yticks(tick_pos)
-    ax_f.set_yticklabels(tick_lab, fontsize=5)
-    ax_f.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_f.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_f.set_title("Inter-angle fingerprint similarity", fontsize=6.5)
+    ax_f.set_yticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
+    ax_f.set_xlabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_f.set_ylabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_f.set_title("Inter-angle fingerprint similarity", fontsize=FIG02_TYPOGRAPHY["title"])
     cax_f = ax_f.inset_axes([1.04, 0.0, 0.045, 1.0])
     cbar = plt.colorbar(im_f, cax=cax_f)
-    cbar.set_label("Pearson r", fontsize=6)
-    cbar.ax.tick_params(labelsize=6)
+    cbar.set_label("Pearson r", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
+    cbar.ax.tick_params(labelsize=FIG02_TYPOGRAPHY["colorbar_tick"])
     ax_f_in = ax_f.inset_axes([0.54, 0.53, 0.38, 0.38])
     angle_cmap = plt.cm.viridis
     angle_norm = plt.Normalize(float(angles_deg.min()), float(angles_deg.max()))
     ax_f_in.plot(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
-        color="0.75",
+        color=STYLE_COLORS["chance_line"],
         linewidth=0.7,
         alpha=0.9,
         zorder=1,
@@ -454,16 +476,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             embedding_coords[idx, 0],
             embedding_coords[idx, 1],
             f"{int(angles_deg[idx])}°",
-            fontsize=4.3,
+            fontsize=FIG02_TYPOGRAPHY["tick_label"],
             ha="left",
             va="bottom",
-            color="0.2",
+            color=STYLE_COLORS["neutral_text"],
         )
     ax_f_in.set_xticks([])
     ax_f_in.set_yticks([])
-    ax_f_in.set_title("2D geometry", fontsize=4.8, pad=1.2)
+    ax_f_in.set_title("2D geometry", fontsize=FIG02_TYPOGRAPHY["tick_label"], pad=1.2)
     for spine in ax_f_in.spines.values():
-        spine.set_color("0.55")
+        spine.set_color(STYLE_COLORS["guide_line"])
         spine.set_linewidth(0.5)
     add_panel_label(ax_f, "f", x=-0.15, y=1.09)
 
@@ -485,7 +507,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Angle (\u00b0)")
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label(r"$|H|$", fontsize=6)
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("|H|", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
     add_panel_label(ax, "d")
     fig_d_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_d_s, panel_dir / "fig02_panel_d_full_H"))
@@ -517,7 +539,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("RMSE")
     ax.set_xticks([0, 45, 90, 135, 180])
-    ax.legend(fontsize=5, frameon=False)
+    ax.legend(fontsize=FIG02_TYPOGRAPHY["legend"], frameon=False)
     add_panel_label(ax, "e")
     fig_e_s.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_e_s, panel_dir / "fig02_panel_e_reconstruction"))
@@ -529,18 +551,18 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     im = ax.imshow(H_corr, cmap="viridis", aspect="equal",
                    vmin=float(H_corr.min()), vmax=1.0)
     ax.set_xticks(tick_pos)
-    ax.set_xticklabels(tick_lab, fontsize=6)
+    ax.set_xticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
     ax.set_yticks(tick_pos)
-    ax.set_yticklabels(tick_lab, fontsize=6)
+    ax.set_yticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
     cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
-    plt.colorbar(im, cax=cax).set_label("Pearson r", fontsize=6)
+    plt.colorbar(im, cax=cax).set_label("Pearson r", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
     ax_in = ax.inset_axes([0.54, 0.53, 0.38, 0.38])
     ax_in.plot(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
-        color="0.75",
+        color=STYLE_COLORS["chance_line"],
         linewidth=0.7,
         alpha=0.9,
         zorder=1,
@@ -561,16 +583,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             embedding_coords[idx, 0],
             embedding_coords[idx, 1],
             f"{int(angles_deg[idx])}°",
-            fontsize=4.3,
+            fontsize=FIG02_TYPOGRAPHY["tick_label"],
             ha="left",
             va="bottom",
-            color="0.2",
+            color=STYLE_COLORS["neutral_text"],
         )
     ax_in.set_xticks([])
     ax_in.set_yticks([])
-    ax_in.set_title("2D geometry", fontsize=4.8, pad=1.2)
+    ax_in.set_title("2D geometry", fontsize=FIG02_TYPOGRAPHY["tick_label"], pad=1.2)
     for spine in ax_in.spines.values():
-        spine.set_color("0.55")
+        spine.set_color(STYLE_COLORS["guide_line"])
         spine.set_linewidth(0.5)
     add_panel_label(ax, "f")
     fig_f_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)

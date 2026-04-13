@@ -22,6 +22,8 @@ ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from figures.layout_contract import contract_version, figure_typography, source_layout_spec
+
 
 def _normalize_figure_ids(raw: str | None) -> set[str] | None:
     if not raw:
@@ -96,10 +98,13 @@ def _write_mixed_panel_manifest(contract: dict[str, Any]) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "composite_asset": contract["manuscript_asset"],
+        "contract_version": contract_version(),
         "figure_id": contract["figure_id"],
         "panel_order": panel_order,
         "panels": panels,
+        "source_layout_spec": source_layout_spec(),
         "storage_mode": "reference_existing_outputs",
+        "typography_pt": figure_typography(contract["figure_id"]),
     }
     manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 

@@ -4,7 +4,7 @@
 This script rebuilds the manuscript assets for the current main-paper figure set
 from generator composite assets whenever possible:
 
-- Fig. 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated)
+- Fig. 1: Paradigm Shift (5 panels: a fixed support + b,c,d,e data-backed)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Fingerprint Discriminability (5 panels: all generated)
 - Fig. 4: Solver Mechanism (5 panels: architecture + broad match + gate + purification + ablation)
@@ -35,6 +35,7 @@ if str(REPO_ROOT) not in sys.path:
 from figures.layout_contract import (
     contract_version,
     figure_section,
+    figure_typography,
     font_pt,
     font_tokens,
     stroke_pt,
@@ -51,34 +52,48 @@ PANEL_LABEL_PT = font_pt("panel_label")
 TYPOGRAPHY_PT = font_tokens()
 ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 
-# --- Figure 1: Paradigm Shift (5 panels: a,b fixed manual + c,d,e generated) ---
+# --- Figure 1: Paradigm Shift (5 panels: a fixed support + b,c,d,e data-backed) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
 FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf"
 FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
 FIG01_COMPOSITE_CDE_LAYOUT = REPO_ROOT / "figures/output/fig01_paradigm_data.layout.json"
-FIG01_WIDTH_MM = 183.0
-FIG01_PANEL_A_WIDTH_MM = 78.0
-FIG01_PANEL_B_WIDTH_MM = 100.0
-FIG01_ROW_HEIGHT_MM = 65.0
-FIG01_ROW_GAP_MM = 5.0
+FIG01_COMPOSE = figure_section("fig01", "compose")
+FIG01_WIDTH_MM = float(FIG01_COMPOSE["width_mm"])
+FIG01_PANEL_A_WIDTH_MM = float(FIG01_COMPOSE["panel_a_width_mm"])
+FIG01_PANEL_B_WIDTH_MM = float(FIG01_COMPOSE["panel_b_width_mm"])
+FIG01_ROW_HEIGHT_MM = float(FIG01_COMPOSE["row_height_mm"])
+FIG01_ROW_GAP_MM = float(FIG01_COMPOSE["row_gap_mm"])
 FIG01_HEIGHT_MM = FIG01_ROW_HEIGHT_MM * 2 + FIG01_ROW_GAP_MM
-FIG01_PANEL_A_CROP = (0.00, 0.10, 1.00, 1.00)
-FIG01_PANEL_B_CROP = (0.00, 0.10, 1.00, 1.00)
+FIG01_PANEL_A_CROP = (0.00, 0.10, 0.60, 0.98)
+FIG01_PANEL_B_CROP = (0.00, 0.04, 1.00, 0.98)
+FIG01_TYPOGRAPHY_PT = figure_typography("fig01")
 
 # --- Figure 2: SVD Spectrum (7 panels: all generated as composite PDF) ---
 FIG02_COMPOSITE = REPO_ROOT / "figures/output/fig02_svd_spectrum.pdf"
+FIG02_COMPOSITE_LAYOUT = FIG02_COMPOSITE.with_suffix(".layout.json")
+FIG02_COMPOSE = figure_section("fig02", "compose")
+FIG02_WIDTH_MM = float(FIG02_COMPOSE["width_mm"])
+FIG02_HEIGHT_MM = float(FIG02_COMPOSE["height_mm"])
 
 # --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
+FIG03_COMPOSITE_LAYOUT = FIG03_COMPOSITE.with_suffix(".layout.json")
+FIG03_COMPOSE = figure_section("fig03", "compose")
+FIG03_WIDTH_MM = float(FIG03_COMPOSE["width_mm"])
+FIG03_HEIGHT_MM = float(FIG03_COMPOSE["height_mm"])
 
 # --- Figure 4: Solver Mechanism (5 panels: all generated as composite PDF) ---
 FIG04_COMPOSITE = REPO_ROOT / "figures/output/fig04_solver_dynamics.pdf"
 FIG04_COMPOSITE_LAYOUT = FIG04_COMPOSITE.with_suffix(".layout.json")
-FIG04_WIDTH_MM = 183.0
+FIG04_COMPOSE = figure_section("fig04", "compose")
+FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
+FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
 # --- Figure 5: Performance + Structure (5 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
-FIG05_WIDTH_MM = 183.0
+FIG05_COMPOSE = figure_section("fig05", "compose")
+FIG05_WIDTH_MM = float(FIG05_COMPOSE["width_mm"])
+FIG05_HEIGHT_MM = float(FIG05_COMPOSE["height_mm"])
 
 # --- Figure 6: Universality (5 panels: all generated under governed layout) ---
 FIG06_COMPOSITE = REPO_ROOT / "figures/output/fig06_universality.pdf"
@@ -111,10 +126,7 @@ except Exception as exc:  # pragma: no cover - only triggered by unrelated fig06
     FIG06_A_HEIGHT_MM = FIG06_B_HEIGHT_MM = FIG06_ROW_CD_HEIGHT_MM = FIG06_PANEL_E_HEIGHT_MM = 0.0
     FIG06_PANEL_D_WIDTH_MM = FIG06_COL_GAP_MM = 0.0
     FIG06_ROW_GAP_MM = 0.0
-FIG06_TYPOGRAPHY_PT = {
-    **font_tokens(),
-    **figure_section("fig06", "typography"),
-}
+FIG06_TYPOGRAPHY_PT = figure_typography("fig06")
 
 
 def _ensure_parent(path: Path) -> None:
@@ -200,6 +212,11 @@ def _render_pdf(pdf_path: Path, scale: float = 3.0) -> Image.Image:
         page = doc[0]
         pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
     return Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+
+def _render_pdf_to_size(pdf_path: Path, width_px: int, height_px: int) -> Image.Image:
+    rendered = _render_pdf(pdf_path, scale=4.0).convert("RGB")
+    return rendered.resize((width_px, height_px), Image.Resampling.LANCZOS)
 
 
 def _resize_to_width(img: Image.Image, target_width: int) -> Image.Image:
@@ -292,6 +309,7 @@ def _write_reference_panel_manifest(
     _ensure_parent(path)
     payload = {
         "composite_asset": composite_asset,
+        "contract_version": contract_version(),
         "figure_id": figure_id,
         "panel_order": [panel["panel_id"] for panel in panels],
         "panels": [
@@ -306,9 +324,58 @@ def _write_reference_panel_manifest(
             }
             for panel in panels
         ],
+        "source_layout_spec": source_layout_spec(),
         "storage_mode": "reference_existing_outputs",
+        "typography_pt": figure_typography(figure_id),
     }
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _layout_payload_with_figure_mm(
+    payload: dict[str, Any],
+    *,
+    figure_width_mm: float,
+    figure_height_mm: float,
+) -> dict[str, Any]:
+    bbox_keys = (
+        "bbox",
+        "decorated_bbox",
+        "title_bbox",
+        "xlabel_bbox",
+        "ylabel_bbox",
+        "xticklabels_bbox",
+        "yticklabels_bbox",
+        "legend_bbox",
+    )
+
+    axes_payload: list[dict[str, Any]] = []
+    for axis in payload.get("axes", []):
+        entry = dict(axis)
+        for key in bbox_keys:
+            norm_key = f"{key}_norm"
+            mm_key = f"{key}_mm"
+            bbox_norm = axis.get(norm_key)
+            if bbox_norm is None:
+                entry[mm_key] = None
+                continue
+            entry[mm_key] = {
+                "x0": round(float(bbox_norm["x0"]) * figure_width_mm, 3),
+                "y0": round(float(bbox_norm["y0"]) * figure_height_mm, 3),
+                "width": round(float(bbox_norm["width"]) * figure_width_mm, 3),
+                "height": round(float(bbox_norm["height"]) * figure_height_mm, 3),
+            }
+        axes_payload.append(entry)
+
+    return {
+        "contract_version": payload.get("contract_version", contract_version()),
+        "figure_mm": {
+            "width": round(float(figure_width_mm), 3),
+            "height": round(float(figure_height_mm), 3),
+        },
+        "axes": axes_payload,
+        "source_layout_spec": payload.get("source_layout_spec", source_layout_spec()),
+        "typography_pt": payload.get("typography_pt", TYPOGRAPHY_PT),
+    }
 
 
 def _transform_bbox_norm_for_manuscript(
@@ -486,10 +553,83 @@ def _save_composite(img: Image.Image, path: Path) -> None:
         raise ValueError(f"Unsupported composite suffix for {path}")
 
 
+def _mask_rectangles_with_overlay(
+    img: Image.Image,
+    rectangles: list[tuple[int, int, int, int]],
+    *,
+    fill: tuple[int, int, int, int],
+    radius: int = 10,
+) -> Image.Image:
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for rect in rectangles:
+        draw.rounded_rectangle(rect, radius=radius, fill=fill)
+    return Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+
+
+def _annotate_fig01_setup_panel(img: Image.Image) -> Image.Image:
+    photo = img.convert("RGB")
+    photo = _mask_rectangles_with_overlay(
+        photo,
+        [
+            (145, 215, 345, 310),
+            (360, 245, 535, 335),
+            (215, 590, 365, 690),
+        ],
+        fill=(16, 16, 16, 210),
+    )
+
+    draw = ImageDraw.Draw(photo)
+    title_font = _load_regular_font(pt_to_px(FIG01_TYPOGRAPHY_PT["annotation"], COMPOSE_DPI))
+    label_font = _load_regular_font(pt_to_px(FIG01_TYPOGRAPHY_PT["tick_label"], COMPOSE_DPI))
+    line_color = STYLE_COLORS["guide_line"]
+    text_color = STYLE_COLORS["neutral_text"]
+    arrow_width = _stroke_px("annotation", COMPOSE_DPI)
+
+    callouts = [
+        ((46, 88), (165, 265), "Speaker"),
+        ((560, 116), (404, 285), "Acrylic plate"),
+        ((560, 212), (386, 254), "LDV spot"),
+        ((48, 648), (258, 644), "Isolated table"),
+    ]
+
+    for anchor, target, label in callouts:
+        draw.line([anchor, target], fill=line_color, width=arrow_width)
+        target_dx = -8 if target[0] < anchor[0] else 8
+        draw.line([target, (target[0] + target_dx, target[1] - 8)], fill=line_color, width=arrow_width)
+        bbox = draw.textbbox(anchor, label, font=label_font)
+        pad_x = 8
+        pad_y = 5
+        draw.rounded_rectangle(
+            (bbox[0] - pad_x, bbox[1] - pad_y, bbox[2] + pad_x, bbox[3] + pad_y),
+            radius=7,
+            fill=(255, 255, 255),
+        )
+        draw.text(anchor, label, fill=text_color, font=label_font)
+
+    caption = "Single-point LDV setup"
+    caption_bbox = draw.textbbox((0, 0), caption, font=title_font)
+    caption_x = max((photo.width - (caption_bbox[2] - caption_bbox[0])) // 2, 0)
+    caption_y = 18
+    draw.rounded_rectangle(
+        (
+            caption_x - 10,
+            caption_y - 6,
+            caption_x + (caption_bbox[2] - caption_bbox[0]) + 10,
+            caption_y + (caption_bbox[3] - caption_bbox[1]) + 6,
+        ),
+        radius=8,
+        fill=(255, 255, 255),
+    )
+    draw.text((caption_x, caption_y), caption, fill=text_color, font=title_font)
+    return photo
+
+
 def compose_fig01(paper_dir: Path) -> list[Path]:
     """Fig 1: mm-driven layout with fixed a,b panels and the generated c,d,e strip."""
     fig01_asset = paper_dir / "fig01_paradigm-shift.jpg"
     fig01_layout_asset = fig01_asset.with_suffix(".layout.json")
+    manuscript_manifest = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json"
 
     panel_a = ImageOps.exif_transpose(Image.open(FIG01_PANEL_A)).convert("RGB")
     panel_b = _render_pdf(FIG01_PANEL_B, scale=4.0).convert("RGB")
@@ -506,6 +646,7 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     figure_height_px = row_height_px * 2 + row_gap_px
 
     panel_a = _contain_in_box(panel_a, panel_a_width_px, row_height_px)
+    panel_a = _annotate_fig01_setup_panel(panel_a)
     panel_b = _contain_in_box(panel_b, panel_b_width_px, row_height_px)
     panel_cde = _resize_to_width(panel_cde, figure_width_px)
 
@@ -548,7 +689,7 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             "panel_id": "b",
             "kind": "data_backed",
             "has_data": True,
-            "title": "Empirical component bridge",
+            "title": "Shared-response reweighting view",
             **_bbox_payload(
                 x0_mm=FIG01_PANEL_A_WIDTH_MM + (FIG01_WIDTH_MM - FIG01_PANEL_A_WIDTH_MM - FIG01_PANEL_B_WIDTH_MM),
                 y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
@@ -602,46 +743,93 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             },
             "axes": axes,
             "source_layout_spec": source_layout_spec(),
-            "typography_pt": FIG06_TYPOGRAPHY_PT,
+            "typography_pt": FIG01_TYPOGRAPHY_PT,
         },
     )
-    return [fig01_asset, fig01_layout_asset]
+    _write_reference_panel_manifest(
+        manuscript_manifest,
+        figure_id="fig01",
+        composite_asset="paper/figures/fig01_paradigm-shift.jpg",
+        panels=[
+            {
+                "panel_id": "a",
+                "title": "Experimental setup",
+                "asset_path": "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png",
+                "provenance_mode": "manual_support",
+            },
+            {
+                "panel_id": "b",
+                "title": "Shared-response reweighting view",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "c",
+                "title": "Input-output spectral shaping",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "d",
+                "title": "Angle-frequency heatmap",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf",
+                "provenance_mode": "data_backed",
+            },
+            {
+                "panel_id": "e",
+                "title": "Frequency-dependent directivity",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf",
+                "provenance_mode": "data_backed",
+            },
+        ],
+    )
+    return [fig01_asset, fig01_layout_asset, manuscript_manifest]
 
 
 def compose_fig02(paper_dir: Path) -> list[Path]:
     """Fig 2: All 6 panels from composite PDF (a-f)."""
     fig02_asset = paper_dir / "fig02_svd-physical-dictionary.jpg"
+    fig02_layout_asset = fig02_asset.with_suffix(".layout.json")
 
-    composite = _trim_white_border(_render_pdf(FIG02_COMPOSITE, scale=4.0), padding=4)
-    target_width = 2200
-    composite = _resize_to_width(composite, target_width)
-
-    margin = 40
-    canvas_w = margin * 2 + composite.width
-    canvas_h = margin * 2 + composite.height
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(composite, (margin, margin))
-
-    _save_composite(canvas, fig02_asset)
-    return [fig02_asset]
+    composite = _render_pdf_to_size(
+        FIG02_COMPOSITE,
+        _mm_to_px(FIG02_WIDTH_MM),
+        _mm_to_px(FIG02_HEIGHT_MM),
+    )
+    _save_composite(composite, fig02_asset)
+    if not FIG02_COMPOSITE_LAYOUT.exists():
+        raise FileNotFoundError(f"Missing Fig. 2 composite layout sidecar: {FIG02_COMPOSITE_LAYOUT}")
+    composite_layout = json.loads(FIG02_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
+    manuscript_layout = _layout_payload_with_figure_mm(
+        composite_layout,
+        figure_width_mm=FIG02_WIDTH_MM,
+        figure_height_mm=FIG02_HEIGHT_MM,
+    )
+    _write_layout_metadata(fig02_layout_asset, manuscript_layout)
+    return [fig02_asset, fig02_layout_asset]
 
 
 def compose_fig03(paper_dir: Path) -> list[Path]:
     """Fig 3: All 5 panels from composite PDF (a-e)."""
     fig03_asset = paper_dir / "fig03_fingerprint-discriminability.jpg"
+    fig03_layout_asset = fig03_asset.with_suffix(".layout.json")
 
-    composite = _trim_white_border(_render_pdf(FIG03_COMPOSITE, scale=4.0), padding=4)
-    target_width = 2200
-    composite = _resize_to_width(composite, target_width)
-
-    margin = 40
-    canvas_w = margin * 2 + composite.width
-    canvas_h = margin * 2 + composite.height
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(composite, (margin, margin))
-
-    _save_composite(canvas, fig03_asset)
-    return [fig03_asset]
+    composite = _render_pdf_to_size(
+        FIG03_COMPOSITE,
+        _mm_to_px(FIG03_WIDTH_MM),
+        _mm_to_px(FIG03_HEIGHT_MM),
+    )
+    _save_composite(composite, fig03_asset)
+    if not FIG03_COMPOSITE_LAYOUT.exists():
+        raise FileNotFoundError(f"Missing Fig. 3 composite layout sidecar: {FIG03_COMPOSITE_LAYOUT}")
+    composite_layout = json.loads(FIG03_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
+    manuscript_layout = _layout_payload_with_figure_mm(
+        composite_layout,
+        figure_width_mm=FIG03_WIDTH_MM,
+        figure_height_mm=FIG03_HEIGHT_MM,
+    )
+    _write_layout_metadata(fig03_layout_asset, manuscript_layout)
+    return [fig03_asset, fig03_layout_asset]
 
 
 def compose_fig04(paper_dir: Path) -> list[Path]:
@@ -651,7 +839,11 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     manuscript_panel_dir = REPO_ROOT / "figures/output/fig04_solver_dynamics_manuscript_panels"
     if not FIG04_COMPOSITE.exists():
         raise FileNotFoundError(f"Missing Fig. 4 composite asset: {FIG04_COMPOSITE}")
-    rendered = _render_pdf(FIG04_COMPOSITE, scale=4.0)
+    rendered = _render_pdf_to_size(
+        FIG04_COMPOSITE,
+        _mm_to_px(FIG04_WIDTH_MM),
+        _mm_to_px(FIG04_HEIGHT_MM),
+    )
     _save_composite(rendered, fig04_asset)
     manuscript_manifest = manuscript_panel_dir / "fig04_panel_manifest.json"
     _write_reference_panel_manifest(
@@ -694,7 +886,14 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
     if not FIG04_COMPOSITE_LAYOUT.exists():
         raise FileNotFoundError(f"Missing Fig. 4 composite layout sidecar: {FIG04_COMPOSITE_LAYOUT}")
     composite_layout = json.loads(FIG04_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
-    _write_layout_metadata(fig04_layout_asset, composite_layout)
+    _write_layout_metadata(
+        fig04_layout_asset,
+        _layout_payload_with_figure_mm(
+            composite_layout,
+            figure_width_mm=FIG04_WIDTH_MM,
+            figure_height_mm=FIG04_HEIGHT_MM,
+        ),
+    )
     return [fig04_asset, fig04_layout_asset, manuscript_manifest]
 
 
@@ -703,34 +902,18 @@ def compose_fig05(paper_dir: Path) -> list[Path]:
     fig05_asset = paper_dir / "fig05_performance-structure.jpg"
     fig05_layout_asset = fig05_asset.with_suffix(".layout.json")
 
-    rendered = _render_pdf(FIG05_COMPOSITE, scale=4.0)
-    composite, crop_box = _trim_white_border_with_bbox(rendered, padding=4)
-    target_width = 2200
-    composite = _resize_to_width(composite, target_width)
-
-    # Keep the same left/right breathing room while trimming the vertical collar
-    # slightly so the final manuscript asset stays under the 170 mm main-figure cap.
-    margin_x = 28
-    margin_y = 28
-    canvas_w = margin_x * 2 + composite.width
-    canvas_h = margin_y * 2 + composite.height
-    canvas = Image.new("RGB", (canvas_w, canvas_h), "white")
-    canvas.paste(composite, (margin_x, margin_y))
-
-    _save_composite(canvas, fig05_asset)
+    composite = _render_pdf_to_size(
+        FIG05_COMPOSITE,
+        _mm_to_px(FIG05_WIDTH_MM),
+        _mm_to_px(FIG05_HEIGHT_MM),
+    )
+    _save_composite(composite, fig05_asset)
     if FIG05_COMPOSITE_LAYOUT.exists():
         composite_layout = json.loads(FIG05_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
-        manuscript_layout = _transform_layout_payload_for_manuscript(
+        manuscript_layout = _layout_payload_with_figure_mm(
             composite_layout,
-            source_width_px=rendered.width,
-            source_height_px=rendered.height,
-            crop_box=crop_box,
-            resized_width_px=composite.width,
-            offset_x_px=margin_x,
-            offset_y_px=margin_y,
-            canvas_width_px=canvas_w,
-            canvas_height_px=canvas_h,
             figure_width_mm=FIG05_WIDTH_MM,
+            figure_height_mm=FIG05_HEIGHT_MM,
         )
         _write_layout_metadata(fig05_layout_asset, manuscript_layout)
         return [fig05_asset, fig05_layout_asset]
@@ -750,7 +933,11 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     manuscript_panel_dir = REPO_ROOT / "figures/output/fig06_universality_manuscript_panels"
     if not FIG06_COMPOSITE.exists():
         raise FileNotFoundError(f"Missing Fig. 6 composite asset: {FIG06_COMPOSITE}")
-    rendered = _render_pdf(FIG06_COMPOSITE, scale=4.0)
+    rendered = _render_pdf_to_size(
+        FIG06_COMPOSITE,
+        _mm_to_px(FIG06_WIDTH_MM),
+        _mm_to_px(FIG06_HEIGHT_MM),
+    )
     _save_composite(rendered, fig06_asset)
     manuscript_manifest = manuscript_panel_dir / "fig06_panel_manifest.json"
     _write_reference_panel_manifest(
@@ -793,7 +980,14 @@ def compose_fig06(paper_dir: Path) -> list[Path]:
     if not FIG06_COMPOSITE_LAYOUT.exists():
         raise FileNotFoundError(f"Missing Fig. 6 composite layout sidecar: {FIG06_COMPOSITE_LAYOUT}")
     composite_layout = json.loads(FIG06_COMPOSITE_LAYOUT.read_text(encoding="utf-8"))
-    _write_layout_metadata(fig06_layout_asset, composite_layout)
+    _write_layout_metadata(
+        fig06_layout_asset,
+        _layout_payload_with_figure_mm(
+            composite_layout,
+            figure_width_mm=FIG06_WIDTH_MM,
+            figure_height_mm=FIG06_HEIGHT_MM,
+        ),
+    )
     return [fig06_asset, fig06_layout_asset, manuscript_manifest]
 
 

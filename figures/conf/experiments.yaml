@@ -19,7 +19,7 @@ fig01_manual:
   width_mode: double
   manuscript_anchor: "Results / Fig. 1"
   claim: "Single-point structural response produces direction-specific spectral fingerprints."
-  legend_summary: "Setup photo, physical principle schematic, and generator-backed spectral evidence."
+  legend_summary: "Setup photo, hybrid governing-principle panel, and generator-backed spectral evidence."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
   generator: figures/generators/fig01_paradigm_data.py
@@ -39,11 +39,12 @@ fig01_manual:
       title: "Experimental setup"
       provenance_mode: manual_support
       asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png
-      note: "Committed setup support panel; no data generator or run artifact."
+      note: "Committed setup support source; the manuscript-facing panel is a governed crop-and-annotation presentation derived during composition."
     b:
-      title: "Empirical component bridge"
+      title: "Shared-response reweighting view"
       provenance_mode: data_backed
       asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf
+      note: "Hybrid panel: a compact explanatory schematic is embedded within the data-backed decomposition asset; quantitative content remains tied to dictionary.npz."
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
     c:
@@ -67,7 +68,7 @@ fig01_manual:
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
-  note: "Panels a-b are manual support assets; panels c-e are generator-backed."
+  note: "Panel a remains a manual-support source but is presented through the same governed manuscript composition path as the other active figures; panels b-e remain data-backed."
 
 fig02_svd:
   figure_id: fig02

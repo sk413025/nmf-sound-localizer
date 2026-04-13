@@ -24,14 +24,16 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy import stats as sp_stats
 
+from figures.layout_contract import contract_version, font_pt, source_layout_spec
 from figures.style import (
-    set_nature_rcparams,
-    make_figure,
-    save_outputs,
     add_panel_label,
-    load_paths,
     DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
+    STYLE_COLORS,
+    load_paths,
+    make_figure,
+    save_outputs,
+    set_nature_rcparams,
 )
 
 
@@ -42,6 +44,16 @@ from figures.style import (
 FIG03_MARGIN_BOOTSTRAP_REPS = 1000
 FIG03_MARGIN_BOOTSTRAP_SEED = 123
 FIG03_PAIRWISE_BETWEEN_SAMPLES = 10
+FIG03_TYPOGRAPHY = {
+    "panel_label": font_pt("panel_label"),
+    "title": font_pt("title"),
+    "axis_label": font_pt("axis_label"),
+    "tick_label": font_pt("tick_label"),
+    "legend": font_pt("legend"),
+    "annotation": font_pt("annotation"),
+    "colorbar_tick": font_pt("colorbar_tick"),
+    "colorbar_label": font_pt("colorbar_label"),
+}
 
 def _load_white_noise_features(
     dataset_root: str | Path,
@@ -415,7 +427,7 @@ def _draw_omp_trace_axis(
     )
     ax.set_ylim(-0.05, 1.05)
     ax.set_yticks([0.0, 1.0])
-    ax.set_yticklabels(["0", "1"], fontsize=5)
+    ax.set_yticklabels(["0", "1"], fontsize=FIG03_TYPOGRAPHY["tick_label"])
     ax.grid(axis="y", linestyle="--", alpha=0.25)
     ax.text(
         0.98,
@@ -424,12 +436,12 @@ def _draw_omp_trace_axis(
         transform=ax.transAxes,
         ha="right",
         va="center",
-        fontsize=5.3,
+        fontsize=FIG03_TYPOGRAPHY["annotation"],
         color=color,
     )
-    ax.tick_params(axis="x", labelsize=5)
+    ax.tick_params(axis="x", labelsize=FIG03_TYPOGRAPHY["tick_label"])
     if show_xlabel:
-        ax.set_xlabel("Angle (\u00b0)", fontsize=6)
+        ax.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
         ax.set_xticks([0, 45, 90, 135, 180])
     else:
         ax.set_xticks([0, 45, 90, 135, 180])
@@ -475,9 +487,9 @@ def _draw_stacked_omp_panel(
         show_xlabel=True,
     )
 
-    ax_top.set_ylabel("Top-1\nmatch rate", fontsize=5.5)
+    ax_top.set_ylabel("Top-1\nmatch rate", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
     ax_bot.set_ylabel("")
-    ax_top.set_title("Greedy correlation diagnostic", fontsize=6.5)
+    ax_top.set_title("Greedy correlation diagnostic", fontsize=FIG03_TYPOGRAPHY["title"])
     ax_top.set_xlim(float(angles[0]), float(angles[-1]))
     add_panel_label(ax_top, panel_label, x=-0.18, y=1.12)
     return ax_top, ax_bot
@@ -514,13 +526,13 @@ def _draw_violin_panel(
     for pc, color in zip(parts["bodies"], violin_colors):
         pc.set_facecolor(color)
         pc.set_alpha(0.6)
-    parts["cmeans"].set_color("black")
+    parts["cmeans"].set_color(STYLE_COLORS["neutral_text"])
     parts["cmeans"].set_linewidth(1.0)
 
     ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Within\nangle", "Between\nangles"], fontsize=5.5)
-    ax.set_ylabel("Pearson r", fontsize=6)
-    ax.set_title(title, fontsize=6.5)
+    ax.set_xticklabels(["Within\nangle", "Between\nangles"], fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
+    ax.set_ylabel("Pearson r", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax.set_title(title, fontsize=FIG03_TYPOGRAPHY["title"])
     ax.grid(axis="y", linestyle="--", alpha=0.3)
 
     # Stats
@@ -534,9 +546,9 @@ def _draw_violin_panel(
     bracket_y = y_max + 0.02
     bar_y = bracket_y + 0.01
     ax.plot([0, 0, 1, 1], [bracket_y, bar_y, bar_y, bracket_y],
-            lw=0.8, c="black")
+            lw=0.8, c=STYLE_COLORS["neutral_text"])
     ax.text(0.5, bar_y + 0.005, f"{stars}\nd = {d_value:.2f}",
-            ha="center", va="bottom", fontsize=6.5, linespacing=1.2)
+            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["annotation"], linespacing=1.2)
 
     if ylim is not None:
         ax.set_ylim(ylim)
@@ -544,9 +556,9 @@ def _draw_violin_panel(
     # Annotate mean values near bottom
     y_annot = ylim[0] + 0.02 if ylim else 0.35
     ax.text(0, y_annot, f"r\u0304={np.mean(within_arr):.3f}",
-            ha="center", va="bottom", fontsize=5, color=SEMANTIC_PALETTE["physics"])
+            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["tick_label"], color=SEMANTIC_PALETTE["physics"])
     ax.text(1, y_annot, f"r\u0304={np.mean(between_arr):.3f}",
-            ha="center", va="bottom", fontsize=5, color=SEMANTIC_PALETTE["ablation"])
+            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["tick_label"], color=SEMANTIC_PALETTE["ablation"])
 
     add_panel_label(ax, panel_label, x=-0.20, y=1.06)
     return p_value, d_value, np.mean(within_arr)
@@ -555,11 +567,14 @@ def _draw_violin_panel(
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
     manifest_path = panel_dir / "fig03_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig03",
         "composite_asset": "figures/output/fig03_fingerprint_discriminability.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": FIG03_TYPOGRAPHY,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -751,12 +766,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
               linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
               label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
-    ax_c.axhline(0, color="black", linewidth=0.5, alpha=0.3)
-    ax_c.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_c.set_ylabel("Discriminability margin\n(within r \u2212 between r)", fontsize=5.5)
-    ax_c.set_title("Per-angle discriminability", fontsize=6.5)
+    ax_c.axhline(0, color=STYLE_COLORS["neutral_text"], linewidth=0.5, alpha=0.3)
+    ax_c.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_c.set_ylabel("Discriminability margin\n(within r \u2212 between r)", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
+    ax_c.set_title("Per-angle discriminability", fontsize=FIG03_TYPOGRAPHY["title"])
     ax_c.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_c.legend(fontsize=5.5, frameon=False, loc="upper right")
+    ax_c.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
     add_panel_label(ax_c, "c", x=-0.12, y=1.06)
 
     # --- Panel (d): Angle-resolved OMP traces (stacked) ---
@@ -784,26 +799,26 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                         vmin=sim_vmin, vmax=1.0)
     # Draw diagonal line to separate the two halves
     ax_e.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
-              color="black", linewidth=0.8, alpha=0.7)
+              color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
     tick_positions = [0, 9, 18, 27, 36]
     tick_labels_e = [f"{int(angles[i])}" for i in tick_positions]
     ax_e.set_xticks(tick_positions)
-    ax_e.set_xticklabels(tick_labels_e, fontsize=5)
+    ax_e.set_xticklabels(tick_labels_e, fontsize=FIG03_TYPOGRAPHY["tick_label"])
     ax_e.set_yticks(tick_positions)
-    ax_e.set_yticklabels(tick_labels_e, fontsize=5)
-    ax_e.set_xlabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_ylabel("Angle (\u00b0)", fontsize=6)
-    ax_e.set_title("Pairwise fingerprint similarity", fontsize=6.5)
+    ax_e.set_yticklabels(tick_labels_e, fontsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_e.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_e.set_ylabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_e.set_title("Pairwise fingerprint similarity", fontsize=FIG03_TYPOGRAPHY["title"])
     cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.02)
-    cbar.ax.tick_params(labelsize=5)
-    cbar.set_label("Pearson r", fontsize=5.5)
+    cbar.ax.tick_params(labelsize=FIG03_TYPOGRAPHY["colorbar_tick"])
+    cbar.set_label("Pearson r", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
     # Labels for the two halves
     ax_e.text(n_angles * 0.75, n_angles * 0.25, "Speech",
-              ha="center", va="center", fontsize=5.5, fontstyle="italic",
-              color="black", alpha=0.7)
+              ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["colorbar_label"], fontstyle="italic",
+              color=STYLE_COLORS["neutral_text"], alpha=0.7)
     ax_e.text(n_angles * 0.25, n_angles * 0.75, "WN",
-              ha="center", va="center", fontsize=5.5, fontstyle="italic",
-              color="black", alpha=0.7)
+              ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["colorbar_label"], fontstyle="italic",
+              color=STYLE_COLORS["neutral_text"], alpha=0.7)
     add_panel_label(ax_e, "e", x=-0.12, y=1.06)
 
     # --- Panel (f): SNR dose-response curve (two lines) ---
@@ -844,13 +859,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     ax_f.set_xticks(snr_x_positions)
     xtick_labels_f = ["\u221e" if lbl == "Inf" else lbl for lbl in snr_labels]
-    ax_f.set_xticklabels(xtick_labels_f, fontsize=5, rotation=45, ha="right")
-    ax_f.set_xlabel("SNR (dB) \u2192 noise", fontsize=6)
-    ax_f.set_ylabel("Top-1 match rate", fontsize=6)
-    ax_f.set_title("Greedy diagnostic dose-response", fontsize=6.5)
+    ax_f.set_xticklabels(xtick_labels_f, fontsize=FIG03_TYPOGRAPHY["tick_label"], rotation=45, ha="right")
+    ax_f.set_xlabel("SNR (dB) \u2192 noise", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_f.set_ylabel("Top-1 match rate", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_f.set_title("Greedy diagnostic dose-response", fontsize=FIG03_TYPOGRAPHY["title"])
     ax_f.set_ylim(-0.02, 1.05)
     ax_f.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_f.legend(fontsize=5, frameon=False, loc="upper right")
+    ax_f.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
 
     add_panel_label(ax_f, "f", x=-0.12, y=1.06)
 
@@ -909,11 +924,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
             linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
             label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
-    ax.axhline(0, color="black", linewidth=0.5, alpha=0.3)
+    ax.axhline(0, color=STYLE_COLORS["neutral_text"], linewidth=0.5, alpha=0.3)
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Discriminability margin (within r \u2212 between r)")
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=5, frameon=False, loc="upper right")
+    ax.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_discrim_margin"))
@@ -945,19 +960,21 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax = fig_e.add_subplot(111)
     im = ax.imshow(split_matrix, cmap=sim_cmap, aspect="auto", vmin=sim_vmin, vmax=1.0)
     ax.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
-            color="black", linewidth=0.8, alpha=0.7)
+            color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(tick_labels_e)
     ax.set_yticks(tick_positions)
     ax.set_yticklabels(tick_labels_e)
     ax.set_xlabel("Angle (\u00b0)")
     ax.set_ylabel("Angle (\u00b0)")
-    ax.set_title("Pairwise fingerprint similarity", fontsize=6.5)
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=6)
+    ax.set_title("Pairwise fingerprint similarity", fontsize=FIG03_TYPOGRAPHY["title"])
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
     ax.text(n_angles * 0.75, n_angles * 0.25, "Speech",
-            ha="center", va="center", fontsize=6, fontstyle="italic", alpha=0.7)
+            ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["axis_label"], fontstyle="italic", alpha=0.7,
+            color=STYLE_COLORS["neutral_text"])
     ax.text(n_angles * 0.25, n_angles * 0.75, "WN",
-            ha="center", va="center", fontsize=6, fontstyle="italic", alpha=0.7)
+            ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["axis_label"], fontstyle="italic", alpha=0.7,
+            color=STYLE_COLORS["neutral_text"])
     add_panel_label(ax, "e")
     fig_e.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
     all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_split_pairwise"))
@@ -996,12 +1013,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 linewidth=1.0, color=SEMANTIC_PALETTE["ablation"],
                 label=f"Speech signal ({sp_omp_accs[0]:.0%})")
     ax.set_xticks(snr_x_positions)
-    ax.set_xticklabels(xtick_labels_f, fontsize=6, rotation=45, ha="right")
+    ax.set_xticklabels(xtick_labels_f, fontsize=FIG03_TYPOGRAPHY["tick_label"], rotation=45, ha="right")
     ax.set_xlabel("SNR (dB) \u2192 noise")
     ax.set_ylabel("Top-1 match rate")
     ax.set_ylim(-0.02, 1.05)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=6, frameon=False, loc="upper right")
+    ax.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
     add_panel_label(ax, "f")
     fig_f.subplots_adjust(left=0.08, right=0.95, bottom=0.20, top=0.92)
     all_paths.extend(save_outputs(fig_f, panel_dir / "fig03_panel_f_dose_response"))

@@ -87,15 +87,14 @@ def in_to_mm(inches: float) -> float:
 def set_nature_rcparams(base_fontsize: int = 8) -> None:
     """Apply Nature Communications–compliant Matplotlib rcParams.
 
-    Fonts: sans-serif (Arial > Helvetica > DejaVu Sans).
+    Fonts: sans-serif (Arial > Helvetica).
     All fonts embedded as TrueType (Type 42) in PDF/PS.
     """
     mpl.rcParams.update(
         {
             # Fonts — sans-serif ONLY (Nature requirement).
             "font.family": "sans-serif",
-            "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
-            "mathtext.fontset": "dejavusans",
+            "font.sans-serif": ["Arial", "Helvetica"],
             # Font sizes (pt).
             "font.size": base_fontsize,
             "axes.titlesize": base_fontsize,

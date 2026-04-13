@@ -12,6 +12,7 @@ paper-check:
 	python scripts/paper/check_governance_links.py
 	python scripts/paper/check_asset_boundaries.py
 	python scripts/paper/verify_provenance.py
+	python scripts/paper/check_manuscript_preview_freshness.py
 	bash scripts/paper/build_docx.sh
 
 paper-governance-gate:
@@ -24,7 +25,7 @@ paper-audit-claims:
 paper-audit-voice:
 	python scripts/paper/audit_claim_floor.py
 
-manuscript: figures paper-build
+manuscript: figures paper-build paper-pdf
 
 figures:
 	$(MAKE) -C figures all

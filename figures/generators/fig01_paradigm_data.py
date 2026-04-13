@@ -1,9 +1,9 @@
-"""Figure 1 — Phenomenon-first opener with an empirical component bridge.
+"""Figure 1 — Phenomenon-first opener with a hybrid governing-principle panel.
 
 Panel (a) remains the committed setup photo support asset.
 This generator produces:
-  (b) a data-backed bridge showing that direction reweights reusable empirical
-      spectral components rather than creating unrelated fingerprints
+  (b) a hybrid schematic-plus-data panel showing that direction reweights
+      shared structural responses rather than creating unrelated fingerprints
   (c) representative input-to-output spectral shaping
   (d) a full angle-frequency heatmap from the white-noise calibration bundle
   (e) band-limited directivity
@@ -20,17 +20,46 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.lines import Line2D
+from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Polygon
 from scipy.signal import savgol_filter
 from scipy.interpolate import CubicSpline
 
+from figures.layout_contract import contract_version, font_pt, source_layout_spec
 from figures.style import (
-    set_nature_rcparams,
+    add_panel_label,
+    DOUBLE_COL_MM,
+    PALETTE_WONG,
+    SEMANTIC_PALETTE,
+    STYLE_COLORS,
+    load_paths,
     make_figure,
     save_outputs,
-    add_panel_label,
-    load_paths,
-    DOUBLE_COL_MM,
+    set_nature_rcparams,
 )
+
+FIG01_TYPOGRAPHY = {
+    "panel_label": font_pt("panel_label"),
+    "title": font_pt("title"),
+    "axis_label": font_pt("axis_label"),
+    "tick_label": font_pt("tick_label"),
+    "legend": font_pt("legend"),
+    "annotation": font_pt("annotation"),
+    "colorbar_tick": font_pt("colorbar_tick"),
+    "colorbar_label": font_pt("colorbar_label"),
+}
+FIG01_COMPONENT_COLORS = [
+    SEMANTIC_PALETTE["physics"],
+    SEMANTIC_PALETTE["ablation"],
+    SEMANTIC_PALETTE["learned"],
+]
+FIG01_REPRESENTATIVE_COLORS = [
+    PALETTE_WONG[5],
+    PALETTE_WONG[2],
+    PALETTE_WONG[6],
+    PALETTE_WONG[1],
+    PALETTE_WONG[3],
+]
 
 
 # ---------------------------------------------------------------------------
@@ -54,11 +83,14 @@ def _smooth_spectrum(y: np.ndarray, window: int = 31, polyorder: int = 3) -> np.
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
     manifest_path = panel_dir / "fig01_panel_manifest.json"
     payload = {
+        "contract_version": contract_version(),
         "figure_id": "fig01",
         "composite_asset": "figures/output/fig01_paradigm_data.pdf",
         "storage_mode": "direct_generator_outputs",
         "panel_order": [item["panel_id"] for item in panel_specs],
         "panels": panel_specs,
+        "source_layout_spec": source_layout_spec(),
+        "typography_pt": FIG01_TYPOGRAPHY,
     }
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
@@ -100,17 +132,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         idx = int(np.argmin(np.abs(angles_deg - target)))
         angle_indices.append(idx)
 
-    colors_5 = ["#0072B2", "#56B4E9", "#D55E00", "#E69F00", "#009E73"]
+    colors_5 = FIG01_REPRESENTATIVE_COLORS
     angle_labels = [f"{angles_deg[i]:.0f}\u00b0" for i in angle_indices]
     component_indices = [0, 1, 5]
-    component_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-    component_labels = ["Comp. 1", "Comp. 2", "Comp. 6"]
+    component_colors = FIG01_COMPONENT_COLORS
+    component_labels = ["Resp. 1", "Resp. 2", "Resp. 6"]
     bridge_angle_targets = [0, 90, 180]
     bridge_angle_indices = [int(np.argmin(np.abs(angles_deg - target))) for target in bridge_angle_targets]
     bridge_angle_labels = [f"{angles_deg[idx]:.0f}\u00b0" for idx in bridge_angle_indices]
     component_profiles = []
     for mode_idx in component_indices:
-        profile = np.abs(U[:, mode_idx])
+        profile = np.abs(U[:, mode_idx] * S[mode_idx])
         profile = _smooth_spectrum(profile, window=41, polyorder=3)
         profile = np.clip(profile, 0.0, None)
         profile = profile / (profile.max() + 1e-10)
@@ -120,6 +152,34 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         axis=1,
     )
     bridge_weights = bridge_weights / (bridge_weights.sum(axis=0, keepdims=True) + 1e-10)
+    bridge_measured_profiles = []
+    bridge_reconstructed_profiles = []
+    for angle_idx in bridge_angle_indices:
+        measured_profile = np.abs(H_centered[:, angle_idx])
+        measured_profile = _smooth_spectrum(measured_profile, window=41, polyorder=3)
+        measured_profile = np.clip(measured_profile, 0.0, None)
+        reconstructed_profile = np.sum(
+            np.stack(
+                [
+                    U[:, mode_idx] * S[mode_idx] * Vt[mode_idx, angle_idx]
+                    for mode_idx in component_indices
+                ],
+                axis=0,
+            ),
+            axis=0,
+        )
+        reconstructed_profile = np.abs(reconstructed_profile)
+        reconstructed_profile = _smooth_spectrum(
+            reconstructed_profile, window=41, polyorder=3
+        )
+        reconstructed_profile = np.clip(reconstructed_profile, 0.0, None)
+        norm = max(
+            float(measured_profile.max()),
+            float(reconstructed_profile.max()),
+            1e-10,
+        )
+        bridge_measured_profiles.append(measured_profile / norm)
+        bridge_reconstructed_profiles.append(reconstructed_profile / norm)
 
     # Load real WN spectra for panel (c): source (original) vs output (box)
     from scipy.signal import stft as scipy_stft
@@ -164,7 +224,12 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ]
     freq_band_masks = []
     freq_labels_e = []
-    colors_4e = ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]
+    colors_4e = [
+        SEMANTIC_PALETTE["physics"],
+        SEMANTIC_PALETTE["ablation"],
+        SEMANTIC_PALETTE["learned"],
+        PALETTE_WONG[7],
+    ]
     for name, lo, hi, inc_upper in band_defs:
         if inc_upper:
             mask = (freqs >= lo) & (freqs <= hi)
@@ -192,7 +257,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         # Source spectrum (smoothed, normalized)
         src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
         src_norm = src_smooth / (src_smooth.max() + 1e-10)
-        ax_c.plot(freqs / 1000, src_norm, color="gray", linewidth=1.5,
+        ax_c.plot(freqs / 1000, src_norm, color=STYLE_COLORS["guide_line"], linewidth=1.5,
                   alpha=0.7, label="Source (WN)", linestyle="--")
 
         # Output spectra at each angle (smoothed, normalized to source max)
@@ -204,10 +269,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             ax_c.plot(freqs / 1000, spec_norm, color=color, linewidth=0.8,
                       label=label, alpha=0.85)
 
-    ax_c.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_c.set_ylabel("Normalized amplitude", fontsize=6)
-    ax_c.set_title("Input \u2192 output spectral shaping", fontsize=6.5)
-    ax_c.legend(fontsize=4, frameon=False, loc="center right", ncol=1)
+    ax_c.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_c.set_ylabel("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_c.set_title("Input \u2192 output spectral shaping", fontsize=FIG01_TYPOGRAPHY["title"])
+    ax_c.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="center right", ncol=1)
     ax_c.grid(axis="y", linestyle="--", alpha=0.3)
     add_panel_label(ax_c, "c", x=-0.10, y=1.06)
 
@@ -242,14 +307,14 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         vmin=0.0,
         vmax=np.percentile(heatmap, 99.5),
     )
-    ax_d.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_d.set_ylabel("Angle (°)", fontsize=6)
-    ax_d.set_title("Angle-frequency heatmap", fontsize=6.5)
+    ax_d.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_d.set_ylabel("Angle (°)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_d.set_title("Angle-frequency heatmap", fontsize=FIG01_TYPOGRAPHY["title"])
     ax_d.set_yticks([0, 45, 90, 135, 180])
-    ax_d.tick_params(labelsize=5)
+    ax_d.tick_params(labelsize=FIG01_TYPOGRAPHY["tick_label"])
     cbar = fig.colorbar(im, ax=ax_d, fraction=0.046, pad=0.02)
-    cbar.set_label("Normalized amplitude", fontsize=5.5)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
+    cbar.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
     add_panel_label(ax_d, "d", x=-0.12, y=1.06)
 
     # --- Panel (e): Directivity polar plot (3 frequency bands, 37 angles) ---
@@ -276,10 +341,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.set_theta_direction(-1)
     ax_e.set_thetalim(0, np.pi)
     ax_e.set_rlabel_position(90)
-    ax_e.tick_params(labelsize=5)
+    ax_e.tick_params(labelsize=FIG01_TYPOGRAPHY["tick_label"])
     ax_e.set_rticks([0.2, 0.4, 0.6, 0.8, 1.0])
-    ax_e.set_title("Directivity", fontsize=6.5, pad=12)
-    ax_e.legend(fontsize=4.5, frameon=False, loc="upper left",
+    ax_e.set_title("Directivity", fontsize=FIG01_TYPOGRAPHY["title"], pad=12)
+    ax_e.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="upper left",
                 bbox_to_anchor=(-0.25, 0.45))
     add_panel_label(ax_e, "e", x=-0.15, y=1.10)
 
@@ -293,24 +358,135 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     panel_dir = output_dir / "fig01_paradigm_data_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    # Panel b standalone: empirical component bridge
-    fig_b = make_figure(width_mm=96, height_mm=65)
+    # Panel b standalone: hybrid schematic + empirical reweighting view
+    fig_b = make_figure(width_mm=110, height_mm=65)
     gs_b = gridspec.GridSpec(
-        1,
         2,
+        3,
         figure=fig_b,
-        width_ratios=[1.95, 0.95],
-        wspace=0.24,
-        left=0.08,
+        width_ratios=[0.92, 1.22, 1.06],
+        height_ratios=[1.06, 0.94],
+        wspace=0.30,
+        hspace=0.34,
+        left=0.05,
         right=0.98,
         bottom=0.18,
         top=0.88,
     )
-    ax_b1 = fig_b.add_subplot(gs_b[0, 0])
-    ax_b2 = fig_b.add_subplot(gs_b[0, 1])
+    ax_bs = fig_b.add_subplot(gs_b[:, 0])
+    ax_b1 = fig_b.add_subplot(gs_b[0, 1:])
+    ax_b2 = fig_b.add_subplot(gs_b[1, 1])
+    ax_b3 = fig_b.add_subplot(gs_b[1, 2])
+
+    # Left schematic: incoming angle -> passive plate -> shared responses -> single-point readout
+    ax_bs.set_xlim(0.0, 1.0)
+    ax_bs.set_ylim(0.0, 1.0)
+    ax_bs.axis("off")
+    box_face = STYLE_COLORS["chance_fill"]
+    box_edge = STYLE_COLORS["guide_line"]
+    flow_color = SEMANTIC_PALETTE["physics"]
+    emphasis_color = SEMANTIC_PALETTE["highlight"]
+
+    ax_bs.text(0.50, 0.96, "Incoming angle", fontsize=FIG01_TYPOGRAPHY["annotation"], ha="center", va="top")
+    ax_bs.add_patch(
+        FancyArrowPatch(
+            (0.12, 0.92),
+            (0.35, 0.81),
+            arrowstyle="-|>",
+            mutation_scale=8,
+            linewidth=0.9,
+            color=flow_color,
+        )
+    )
+    ax_bs.add_patch(
+        FancyArrowPatch(
+            (0.88, 0.92),
+            (0.64, 0.84),
+            arrowstyle="-|>",
+            mutation_scale=8,
+            linewidth=0.9,
+            color=flow_color,
+        )
+    )
+    ax_bs.text(0.10, 0.91, "0°", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=flow_color, ha="left", va="bottom")
+    ax_bs.text(0.90, 0.91, "180°", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=flow_color, ha="right", va="bottom")
+
+    plate = Polygon(
+        [[0.24, 0.74], [0.68, 0.80], [0.60, 0.63], [0.16, 0.57]],
+        closed=True,
+        facecolor=STYLE_COLORS["guide_fill"],
+        edgecolor=box_edge,
+        linewidth=0.9,
+    )
+    ax_bs.add_patch(plate)
+    ax_bs.add_patch(Circle((0.47, 0.70), radius=0.018, color=emphasis_color))
+    ax_bs.text(0.50, 0.73, "Passive plate", fontsize=FIG01_TYPOGRAPHY["tick_label"], ha="center", va="bottom")
+    ax_bs.text(0.70, 0.67, "Fixed LDV spot", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=emphasis_color, ha="left", va="center")
+
+    ax_bs.add_patch(
+        FancyArrowPatch(
+            (0.50, 0.56),
+            (0.50, 0.44),
+            arrowstyle="-|>",
+            mutation_scale=8,
+            linewidth=0.9,
+            color=flow_color,
+        )
+    )
+    responses_box = FancyBboxPatch(
+        (0.18, 0.31),
+        0.64,
+        0.11,
+        boxstyle="round,pad=0.02,rounding_size=0.03",
+        facecolor=box_face,
+        edgecolor=box_edge,
+        linewidth=0.8,
+    )
+    ax_bs.add_patch(responses_box)
+    response_x = np.linspace(0.23, 0.77, 120)
+    base_y = 0.355
+    for offset, color, phase in zip(
+        [0.025, 0.0, -0.025],
+        component_colors,
+        [0.0, 0.9, 1.8],
+        strict=True,
+    ):
+        response_y = base_y + offset + 0.012 * np.sin(
+            np.linspace(0.0, 2.8 * np.pi, response_x.size) + phase
+        )
+        ax_bs.plot(response_x, response_y, color=color, linewidth=1.1, clip_on=False)
+
+    ax_bs.add_patch(
+        FancyArrowPatch(
+            (0.50, 0.29),
+            (0.50, 0.18),
+            arrowstyle="-|>",
+            mutation_scale=8,
+            linewidth=0.9,
+            color=flow_color,
+        )
+    )
+    readout_box = FancyBboxPatch(
+        (0.18, 0.06),
+        0.64,
+        0.10,
+        boxstyle="round,pad=0.02,rounding_size=0.03",
+        facecolor=box_face,
+        edgecolor=box_edge,
+        linewidth=0.8,
+    )
+    ax_bs.add_patch(readout_box)
+    readout_x = np.linspace(0.23, 0.77, 180)
+    readout_y = 0.105 + 0.02 * (
+        0.7 * np.sin(np.linspace(0.0, 2.0 * np.pi, readout_x.size))
+        + 0.35 * np.sin(np.linspace(0.0, 6.4 * np.pi, readout_x.size) + 0.8)
+    )
+    ax_bs.plot(readout_x, readout_y, color=STYLE_COLORS["dense_routing"], linewidth=1.0, clip_on=False)
+    ax_bs.text(0.50, 0.01, "Single-point spectrum", fontsize=FIG01_TYPOGRAPHY["tick_label"], ha="center", va="bottom")
+
     for profile, color, label in zip(component_profiles, component_colors, component_labels, strict=True):
         ax_b1.plot(freqs / 1000.0, profile, color=color, linewidth=1.05)
-        label_x = 2.80
+        label_x = 2.48
         label_idx = int(np.argmin(np.abs(freqs / 1000.0 - label_x)))
         label_y = float(profile[label_idx])
         ax_b1.text(
@@ -318,17 +494,17 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             label_y,
             label,
             color=color,
-            fontsize=4.8,
+            fontsize=FIG01_TYPOGRAPHY["tick_label"],
             ha="left",
             va="center",
         )
-    ax_b1.set_title("Reusable empirical components", fontsize=6.0, pad=1.5)
-    ax_b1.set_xlabel("Frequency (kHz)", fontsize=6)
-    ax_b1.set_ylabel("Relative loading", fontsize=6)
+    ax_b1.set_title("Shared responses", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
+    ax_b1.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_b1.set_ylabel("Relative loading", fontsize=FIG01_TYPOGRAPHY["axis_label"])
     ax_b1.set_xticks([0.5, 1.5, 2.5])
     ax_b1.set_ylim(0.0, 1.05)
     ax_b1.set_xlim(0.28, 3.05)
-    ax_b1.tick_params(axis="both", labelsize=5, pad=1)
+    ax_b1.tick_params(axis="both", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
     ax_b1.grid(True, axis="y", linestyle="--", alpha=0.25)
 
     y = np.arange(len(bridge_angle_indices), dtype=float)
@@ -343,14 +519,76 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             alpha=0.85,
         )
         left += bridge_weights[comp_idx]
-    ax_b2.set_title("Angle shares", fontsize=6.0, pad=1.5)
+    ax_b2.set_title("Angle weights", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
     ax_b2.set_xlim(0.0, 1.0)
-    ax_b2.set_xlabel("Weight share", fontsize=6)
+    ax_b2.set_xlabel("Weight share", fontsize=FIG01_TYPOGRAPHY["axis_label"])
     ax_b2.set_yticks(y)
-    ax_b2.set_yticklabels(bridge_angle_labels, fontsize=5)
-    ax_b2.tick_params(axis="x", labelsize=5, pad=1)
+    ax_b2.set_yticklabels(bridge_angle_labels, fontsize=FIG01_TYPOGRAPHY["tick_label"])
+    ax_b2.tick_params(axis="x", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
     ax_b2.tick_params(axis="y", pad=1)
     ax_b2.grid(True, axis="x", linestyle="--", alpha=0.25)
+    ax_b2.invert_yaxis()
+
+    trace_offsets = np.array([2.10, 1.05, 0.0], dtype=float)
+    for offset, angle_label, color, measured, reconstructed in zip(
+        trace_offsets,
+        bridge_angle_labels,
+        colors_5[: len(bridge_angle_labels)],
+        bridge_measured_profiles,
+        bridge_reconstructed_profiles,
+        strict=True,
+    ):
+        ax_b3.plot(
+            freqs / 1000.0,
+            measured + offset,
+            color=color,
+            linewidth=1.0,
+        )
+        ax_b3.plot(
+            freqs / 1000.0,
+            reconstructed + offset,
+            color=STYLE_COLORS["dense_routing"],
+            linewidth=0.85,
+            linestyle="--",
+        )
+        ax_b3.text(
+            0.31,
+            offset + 0.80,
+            angle_label,
+            fontsize=FIG01_TYPOGRAPHY["tick_label"],
+            color=color,
+            ha="left",
+            va="center",
+        )
+    ax_b3.set_title("Resulting fingerprints", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
+    ax_b3.set_xlim(0.28, 3.05)
+    ax_b3.set_ylim(-0.10, 3.20)
+    ax_b3.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_b3.set_yticks([])
+    ax_b3.set_xticks([0.5, 1.5, 2.5])
+    ax_b3.tick_params(axis="x", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
+    ax_b3.grid(True, axis="y", linestyle="--", alpha=0.18)
+    ax_b3.spines["left"].set_visible(False)
+    legend_handles = [
+        Line2D([0], [0], color=STYLE_COLORS["dense_routing"], linewidth=1.0, label="Measured"),
+        Line2D(
+            [0],
+            [0],
+            color=STYLE_COLORS["dense_routing"],
+            linewidth=0.85,
+            linestyle="--",
+            label="3-response recon.",
+        ),
+    ]
+    ax_b3.legend(
+        handles=legend_handles,
+        fontsize=FIG01_TYPOGRAPHY["legend"],
+        frameon=False,
+        loc="upper right",
+        handlelength=2.2,
+        borderaxespad=0.2,
+    )
+
     all_paths.extend(save_outputs(fig_b, panel_dir / "fig01_panel_b_component_bridge"))
     plt.close(fig_b)
 
@@ -360,7 +598,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     if has_io_data:
         src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
         src_norm = src_smooth / (src_smooth.max() + 1e-10)
-        ax.plot(freqs / 1000, src_norm, color="gray", linewidth=1.5,
+        ax.plot(freqs / 1000, src_norm, color=STYLE_COLORS["guide_line"], linewidth=1.5,
                 alpha=0.7, label="Source (WN)", linestyle="--")
         for aidx, color, label, spec in zip(
             angle_indices, colors_5, angle_labels, output_spectra
@@ -371,7 +609,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                     label=label, alpha=0.85)
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Normalized amplitude")
-    ax.legend(fontsize=5, frameon=False, loc="center right", ncol=1)
+    ax.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="center right", ncol=1)
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_c, panel_dir / "fig01_panel_c_input_output"))
@@ -409,11 +647,11 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     )
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Angle (°)")
-    ax.set_title("Angle-frequency heatmap", fontsize=6.5)
+    ax.set_title("Angle-frequency heatmap", fontsize=FIG01_TYPOGRAPHY["title"])
     ax.set_yticks([0, 45, 90, 135, 180])
     cbar = fig_d.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
-    cbar.set_label("Normalized amplitude", fontsize=6)
-    cbar.ax.tick_params(labelsize=5)
+    cbar.set_label("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
+    cbar.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
     add_panel_label(ax, "d")
     fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
     all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_angle_frequency_heatmap"))
@@ -437,7 +675,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax.set_theta_direction(-1)
     ax.set_thetalim(0, np.pi)
     ax.set_rlabel_position(90)
-    ax.legend(fontsize=6, frameon=False, loc="lower right",
+    ax.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="lower right",
               bbox_to_anchor=(1.3, -0.05))
     add_panel_label(ax, "e")
     fig_e.subplots_adjust(left=0.05, right=0.85, bottom=0.05, top=0.92)
@@ -450,10 +688,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         [
             {
                 "panel_id": "b",
-                "title": "Empirical component bridge",
+                "title": "Shared-response reweighting view",
                 "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Centered-magnitude components 1, 2, and 6 define reusable spectral patterns, and representative angles redistribute their relative weights differently.",
+                "description": "A compact schematic traces incoming angle through the passive plate to a fixed LDV readout, while the adjoining decomposition shows shared responses, angle-specific weights, and representative measured-versus-reconstructed fingerprints.",
             },
             {
                 "panel_id": "c",

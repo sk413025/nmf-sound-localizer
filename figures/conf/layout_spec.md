@@ -70,6 +70,56 @@ style_colors:
   chance_line: "#CFCFCF"
   highlight_fill: "#F7E8AD"
 figures:
+  fig01:
+    compose:
+      width_mm: 183.0
+      height_mm: 135.0
+      row_height_mm: 65.0
+      row_gap_mm: 5.0
+      panel_a_width_mm: 68.0
+      panel_b_width_mm: 110.0
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 65.0
+      composite_grid:
+        left: 0.06
+        right: 0.97
+        bottom: 0.18
+        top: 0.88
+        wspace: 0.40
+        width_ratios: [1.0, 1.0, 1.0]
+  fig02:
+    compose:
+      width_mm: 183.0
+      height_mm: 130.0
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 130.0
+      composite_grid:
+        left: 0.07
+        right: 0.96
+        bottom: 0.07
+        top: 0.95
+        hspace: 0.35
+        wspace: 0.40
+        width_ratios: [1.0, 1.0, 1.0]
+        height_ratios: [1.0, 1.0]
+  fig03:
+    compose:
+      width_mm: 183.0
+      height_mm: 130.0
+    generator:
+      composite_width_mm: 183.0
+      composite_height_mm: 130.0
+      composite_grid:
+        left: 0.07
+        right: 0.96
+        bottom: 0.07
+        top: 0.95
+        hspace: 0.35
+        wspace: 0.40
+        width_ratios: [1.0, 1.0, 1.0]
+        height_ratios: [1.0, 1.0]
   fig04:
     compose:
       width_mm: 183.0
@@ -102,6 +152,9 @@ figures:
           d: {left: 0.085, right: 0.985, bottom: 0.180, top: 0.920}
           e: {left: 0.145, right: 0.985, bottom: 0.180, top: 0.920}
   fig05:
+    compose:
+      width_mm: 183.0
+      height_mm: 168.0
     generator:
       composite_width_mm: 183.0
       composite_height_mm: 168.0
@@ -250,8 +303,9 @@ Composed: external a,b (top) + generated c,d,e (bottom strip)
 ├──────────────────────────────────────────────────────┤
 ┌─────────────────────────┬───────────────────────────┐ ─┬─
 │                         │                           │  │
-│   (a) Setup photo       │   (b) Physical principle   │  │ 65.0 mm
-│   89.0 × 65.0 mm       │   89.0 × 65.0 mm          │  │ (external)
+│   (a) Setup photo       │   (b) Shared-response      │  │ 65.0 mm
+│   68.0 × 65.0 mm       │   reweighting view         │  │ (external)
+│                         │   110.0 × 65.0 mm         │  │
 │                         │                           │  │
 ├─────────────────────────┴───────────────────────────┤ ─┼─  ← 5mm compose gap
 │                                                     │  │
@@ -261,8 +315,8 @@ Composed: external a,b (top) + generated c,d,e (bottom strip)
 │  Usable: 166.5 × 45.5 mm                            │  │
 │                                                     │  │ 65.0 mm
 │  ┌──────────────┬──────────────┬──────────────┐      │  │ (generated)
-│  │(c) Input→Out │(d) Repeat.   │(e) Directiv. │      │  │
-│  │ 5 angles     │ mean±std     │ polar, 4band │      │  │
+│  │(c) Input→Out │(d) Angle-freq│(e) Directiv. │      │  │
+│  │ 5 angles     │ heatmap      │ polar, 4band │      │  │
 │  │ 43.8 × 45.5  │ 43.8 × 45.5  │ 43.8 × 45.5 │      │  │
 │  └──────────────┴──────────────┴──────────────┘      │  │
 │  ├── 43.8mm ──┤wsp├── 43.8mm ──┤wsp├── 43.8mm ──┤   │  │
