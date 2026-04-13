@@ -2,20 +2,20 @@
 
 **A recurring local directional code across passive objects**
 
-These derivations support the paper's central discovery that different passive objects share a local directional code, and that recoverability is governed by how well a readout preserves the measured neighborhood exposed by calibration. Supplementary Methods 1 shows why direction enters a single LDV readout through modal weighting of a continuous structural response. Supplementary Methods 2 shows how calibration turns that response into an angle-indexed dictionary with local neighborhood structure. Supplementary Methods 3 explains why hard OMP breaks when that neighborhood is forced into a one-angle choice, and Supplementary Methods 4 shows why neighborhood-preserving updates remain physically admissible in the full standardized feature space. The supplementary logic is therefore physical support for the main claim, not a parallel decoder narrative.
+These derivations support the paper's central discovery that different passive objects share a local directional code, and that recoverability is governed by how well a readout preserves the measured neighborhood exposed by calibration. Supplementary Methods 1 explains how direction enters a single LDV readout. Supplementary Methods 2 shows how calibration turns that response into an angle-indexed dictionary with local neighborhood structure. Supplementary Methods 3 shows why hard OMP breaks when that neighborhood is forced into a one-angle choice. Supplementary Methods 4 then shows why neighborhood-preserving updates remain physically admissible in the full standardized feature space. The supplement therefore supports the main claim. It does not tell a separate decoder story.
 
 ## Supplementary Methods 1. Single-spectrum response from the continuous plate model
 
 This section gives the physical basis for the main-manuscript claim that passive structural vibration can carry a compact directional code at one fixed measurement point.
 
-Under small-amplitude linear structural dynamics, the out-of-plane displacement field \(W(x,y,\omega;\theta)\) at angular frequency \(\omega\) and incidence direction \(\theta\) satisfies a linear frequency-domain operator equation
+Under small-amplitude linear structural dynamics, the out-of-plane displacement field \(W(x,y,\omega;\theta)\) satisfies a linear frequency-domain operator equation for each angular frequency \(\omega\) and incidence direction \(\theta\),
 
 $$
 \mathcal L_\omega W(\cdot,\cdot,\omega;\theta) = P(\cdot,\cdot,\omega;\theta),
 \tag{S1}
 $$
 
-where \(P\) is the effective distributed loading induced by the incident sound field and \(\mathcal L_\omega\) collects geometry, material parameters, boundary conditions, and damping.
+where \(P\) is the effective distributed loading induced by the incident sound field. The operator \(\mathcal L_\omega\) collects geometry, material parameters, boundary conditions, and damping.
 
 For a thin plate under Kirchhoff-Love assumptions, one representative operator is
 
@@ -26,7 +26,7 @@ D_p\nabla^4 - \rho t\,\omega^2 + i\omega c_d,
 \tag{S2}
 $$
 
-where \(D_p\) is the bending stiffness, \(\rho t\) is the areal mass density, and \(c_d\) is an effective damping term. This operator provides one concrete starting point for the derivation and motivates the approximate linear time-invariant response used over the analyzed window.
+where \(D_p\) is the bending stiffness, \(\rho t\) is the areal mass density, and \(c_d\) is an effective damping term. This operator gives one concrete starting point for the derivation. It also motivates the approximate linear time-invariant response used over the analyzed window.
 
 For a fixed LDV measurement point \((x_L,y_L)\), the single-point velocity response is
 
@@ -72,7 +72,7 @@ Y(\omega;\theta) \approx \sum_{m=1}^{R} s_m(\omega)\,\alpha_m(\theta),
 \tag{S6}
 $$
 
-In words, the measured single-point spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\), each weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
+In words, the measured single-point spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\). Each fingerprint is weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
 
 Sampling frequency at \(\omega_1,\dots,\omega_F\) and direction at \(\theta_1,\dots,\theta_E\) gives the ideal complex transfer matrix
 
@@ -101,7 +101,7 @@ A_{e,m}=a_m(\theta_e),
 \tag{S9}
 $$
 
-The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure at this approximate level. This low-rank physical picture is the reason matched calibration can reveal a compact local code instead of 37 unrelated angle templates. The discrete sparsity model only enters later, after this measured local structure has already been exposed on the angle grid in Supplementary Methods 2.
+The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure at this approximate level. This low-rank physical picture explains why matched calibration can reveal a compact local code instead of 37 unrelated angle templates. The discrete sparsity model enters only later. By that point, the measured local structure has already been exposed on the angle grid in Supplementary Methods 2.
 
 ## Supplementary Methods 2. Standardized fingerprints, \(H\), and the Fig. 2 reduced view
 
@@ -177,7 +177,7 @@ $$
 
 The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. This compact measured structure motivates a local-overlap decoding picture on the calibrated angle grid.
 
-Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints and carries the local angle ordering into measured space. In the full standardized feature space, a held-out fingerprint can be written as
+Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints. In doing so, it carries the local angle ordering into measured space. A held-out fingerprint can then be written in the full standardized feature space as
 
 $$
 \tilde y \approx Hx,
@@ -186,7 +186,7 @@ $$
 \tag{S18}
 $$
 
-where \(x\) is the surrogate coefficient vector, a dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore expresses the compact modal picture as a discrete local-overlap model on the calibrated angle grid rather than as a choice among unrelated angle templates.
+where \(x\) is the surrogate coefficient vector. A dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore turns the compact modal picture into a discrete local-overlap model on the calibrated angle grid rather than a choice among unrelated angle templates.
 
 Projecting the same local-overlap surrogate into a retained singular subspace gives
 
@@ -206,7 +206,7 @@ z \approx A x,
 \tag{S20}
 $$
 
-This projected form makes the reduced-order geometry behind Eq. 2 explicit. It clarifies why nearby calibrated directions compete locally. The decoder used in Figs. 4 and 5 still operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, not on the projected pair \((z, A)\).
+This projected form makes the reduced-order geometry behind Eq. 2 explicit. It also clarifies why nearby calibrated directions compete locally. The decoder used in Figs. 4 and 5 still operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, not on the projected pair \((z, A)\).
 
 ## Supplementary Methods 3. Hard OMP on the reduced-order surrogate
 
@@ -267,7 +267,7 @@ $$
 \tag{S27}
 $$
 
-Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Hard OMP selects one support element and orthogonalizes immediately. That is why it fails first in the local-neighborhood regime: once one group is chosen, evidence that is physically shared across neighboring directions no longer survives intact into the next residual step.
+Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Hard OMP selects one support element and orthogonalizes immediately. That is why it fails first in the local-neighborhood regime. Once one group is chosen, evidence that is physically shared across neighboring directions no longer survives intact into the next residual step.
 
 We therefore use the stage-0 score to expose that failure before any residual refit. Starting from \(r_0=\tilde y\), the stage-0 score aggregates the grouped inner-product magnitudes \(|g_0[e,m]| = |\langle \tilde y,d_{e,m}\rangle|\) within each direction group. When that score concentrates near the matched direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint becomes locally ambiguous and an immediate first choice becomes unstable on held-out speech. The failure is not loss of directional structure. It is loss of locally shared evidence.
 
@@ -275,7 +275,7 @@ For Fig. 3f, we apply the same stage-0 diagnostic on a separate noise-response s
 
 ## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
 
-The guided solver is a physics-guided residual-correction readout with learned local gating. Its role in the paper is narrow: test whether preserving the calibrated neighborhood is enough to keep subtraction physically plausible. It operates directly in the full standardized feature space, so it keeps the measured geometry instead of making an immediate one-angle commitment. Relative to Supplementary Methods 3, the residual-correction scaffold is unchanged. The only added step is to pool locally coupled evidence before subtraction. The purpose is simply to show why subtraction remains admissible only when the measured neighborhood is preserved.
+The guided solver is a physics-guided residual-correction readout with learned local gating. Its role in the paper is narrow: test whether preserving the calibrated neighborhood is enough to keep subtraction physically plausible. It operates directly in the full standardized feature space, so it keeps the measured geometry instead of making an immediate one-angle commitment. Relative to Supplementary Methods 3, the residual-correction scaffold is unchanged. The only added step is to pool locally coupled evidence before subtraction. The point is simply to show why subtraction remains admissible only when the measured neighborhood is preserved.
 
 The guided solver uses a grouped dictionary
 
