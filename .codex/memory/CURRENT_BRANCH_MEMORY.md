@@ -13,7 +13,12 @@
 - the stable protagonist is the discovery, organizing principle, or physical phenomenon rather than the solver, calibration scheme, or workflow
 - the Results spine needs a clear `pivot`, a `discovery cash-out` section, and discovery weight that stays higher than tool-validation weight
 - paper-facing explanation should move by `observation -> inference -> bounded conclusion` in natural scientific English
+- the planned submission direction remains a `Nature Communications` mainline editorial read, not a method-specialist venue pivot
 - the manuscript currently lands most naturally at `second-layer earned` broader significance: passive structure acts as part of the sensing substrate, while downstream application branches should be dropped when they read like added framing rather than natural growth from the discovery
+- the paper's most natural external positioning is `physics-guided scientific discovery` rather than a method-first algorithm paper
+- the closest adjacent editor-facing fit emphasizes cross-disciplinary scientific discovery, physics-guided or physics-structured inference, and data-driven physical insight more than stand-alone algorithm novelty
+- when writing for adjacent physics-informed or physics-guided editorial reads, emphasize discovery-level physical insight, theory-guided or structure-preserving inference, and data-driven scientific interpretation before any claim of algorithmic novelty
+- that adjacent fit is strongest when the solver is presented as the mechanism that preserves and exposes measured physical geometry, not as the paper's main contribution
 - supplementary landing points should stay low-salience and science-first; if the crosswalk becomes audible as reviewer guidance, the paper voice has slipped
 
 ## Stable Narrative Commitments
@@ -24,6 +29,7 @@
 - route broader significance through `core discovery -> second-layer discovery -> downstream consequence`, with any weaker leaf dropped if it harms editor memory for the trunk
 - for high-salience manuscript or supplement rounds, default to matched block rewrites across both surfaces instead of patch-style sentence edits; local patching tends to leave mixed-author voice, manuscript-management phrasing, and reviewer-facing crosswalk prose
 - prefer low noun-stack, cause-effect prose: if a reader must unpack compressed labels before seeing what changed, what caused it, and why it matters, the sentence still needs rewriting
+- when solver language remains in the paper spine, describe it as a physics-guided structured readout that preserves measured local-overlap geometry rather than as an autonomous algorithmic advance
 
 ## Active Figure And Manuscript Fronts
 
@@ -37,6 +43,7 @@
 
 - writing the paper as an experiment log instead of a reader-facing architecture shift
 - letting the solver or workflow become the apparent protagonist
+- describing the solver as generic algorithm novelty rather than as supporting physics-guided inference over the measured local neighborhood
 - using defensive or self-diminishing phrasing that lowers the discovery floor without adding precision
 - promoting applications that do not descend from an evidence-earned second-layer discovery
 - letting supplementary text turn into a support-document checklist or reviewer-navigation guide instead of a natural extension of the paper's scientific voice
