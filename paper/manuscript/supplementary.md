@@ -2,11 +2,11 @@
 
 **A recurring local directional code across passive objects**
 
-These derivations support the paper's central discovery that different passive objects share a local directional code, and that recoverability is governed by how well a readout preserves the measured neighborhood exposed by calibration. Supplementary Methods 1 explains how direction enters a single LDV readout. Supplementary Methods 2 shows how calibration turns that response into an angle-indexed dictionary with local neighborhood structure. Supplementary Methods 3 shows why hard OMP breaks when that neighborhood is forced into a one-angle choice. Supplementary Methods 4 then shows why neighborhood-preserving updates remain physically admissible in the full standardized feature space. The supplement therefore supports the main claim. It does not tell a separate decoder story.
+The same local directional code traced in the main text is developed here from a continuous single-point response into a measured fingerprint dictionary and then into two inference forms: a local-overlap surrogate whose classical hard-commitment limit fractures the measured neighborhood and a grouped full-space surface on which that neighborhood can be preserved before subtraction. The final sections give the descriptive statistics behind Figs. 2 and 3 and the bounded cross-object interpretation behind Fig. 6.
 
 ## Supplementary Methods 1. Single-spectrum response from the continuous plate model
 
-This section gives the physical basis for the main-manuscript claim that passive structural vibration can carry a compact directional code at one fixed measurement point.
+Passive structural vibration can carry a compact directional code at one fixed measurement point before any decoder enters the story. This section derives that single-point physical picture.
 
 Under small-amplitude linear structural dynamics, the out-of-plane displacement field \(W(x,y,\omega;\theta)\) satisfies a linear frequency-domain operator equation for each angular frequency \(\omega\) and incidence direction \(\theta\),
 
@@ -72,7 +72,7 @@ Y(\omega;\theta) \approx \sum_{m=1}^{R} s_m(\omega)\,\alpha_m(\theta),
 \tag{S6}
 $$
 
-In words, the measured single-point spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\). Each fingerprint is weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
+In words, the single-point response spectrum is a superposition of modal spectral fingerprints \(s_m(\omega)\). Each fingerprint is weighted by a direction-dependent participation factor \(\alpha_m(\theta,\omega)\).
 
 Sampling frequency at \(\omega_1,\dots,\omega_F\) and direction at \(\theta_1,\dots,\theta_E\) gives the ideal complex transfer matrix
 
@@ -88,24 +88,26 @@ $$
 \tag{S8}
 $$
 
-If the modal couplings are approximately separable or vary only slowly with frequency over the retained band, so that \(\alpha_m(\theta_e,\omega_k)\approx a_m(\theta_e)\), then
+If the modal couplings are approximately separable or vary only slowly with frequency over the retained band, so that \(\alpha_m(\theta_e,\omega_k)\approx b_m(\theta_e)\), then
 
 $$
-\mathcal H \approx S A^\top,
+\mathcal H \approx S B^\top,
 \qquad
 S_{k,m}=s_m(\omega_k),
 \qquad
-A_{e,m}=a_m(\theta_e),
+B_{e,m}=b_m(\theta_e),
 \qquad
 \mathrm{rank}(\mathcal H)\lesssim R.
 \tag{S9}
 $$
 
-The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same modal structure at this approximate level. This low-rank physical picture explains why matched calibration can reveal a compact local code instead of 37 unrelated angle templates. The discrete sparsity model enters only later. By that point, the measured local structure has already been exposed on the angle grid in Supplementary Methods 2.
+The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same shared modal structure at this approximate level. Directional variation enters mainly through the weights on a limited response basis, so nearby angles remain related before any discrete decoder is imposed. Supplementary Methods 2 follows that same structure through measurement, averaging, logarithmic compression, and standardization to obtain the empirical dictionary \(H\) analyzed in Fig. 2.
 
-## Supplementary Methods 2. Standardized fingerprints, \(H\), and the Fig. 2 reduced view
+## Supplementary Methods 2. Measured fingerprints, local-overlap surrogates, and the Fig. 2 reduced view
 
-The experiments use a standardized fingerprint dictionary \(H\) built from measured single-point spectra, and Fig. 2 summarizes the centered-magnitude matrix \(H_{\mathrm{fig}}\) derived from that dictionary. This is the step where the continuous structural response becomes the measured local code discussed in the main text.
+Matched calibration carries the sampled response of Supplementary Methods 1 into an empirical dictionary of measured fingerprints on the same angle-frequency grid. The carried-over symbols are therefore the sampled direction index \(e\leftrightarrow\theta_e\), the sampled frequency index \(k\leftrightarrow\omega_k\), and the ideal sampled surface \(\mathcal H_{k,e}=Y(\omega_k;\theta_e)\).
+
+The main text suppresses clip indices whenever one measured fingerprint is discussed in isolation. Here those indices are restored explicitly: \(n\) denotes repeated calibration trials at one sampled direction, and \(t\) denotes short-time Fourier frames within a trial. With that notation in place, this section writes the measured local-overlap geometry first in the full standardized feature space, where the fingerprints are naturally observed, and then in the reduced singular subspace used for the Fig. 2 view and the hard-commitment surrogate.
 
 The measured waveform at angle index \(e\) and trial index \(n\) is the single-point LDV velocity signal \(v_{e,n}(t)\). After short-time Fourier transformation, the complex coefficient at frequency bin \(k\) and frame \(t\) is
 
@@ -155,7 +157,25 @@ H=[h_1,\dots,h_E]\in\mathbb{R}^{F\times E},
 \tag{S15}
 $$
 
-where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the experimental dictionary used for downstream analysis and inference. It is built from standardized measured fingerprints. By contrast, \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix.
+where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the empirical dictionary of standardized measured fingerprints that carries local angle ordering on the calibration grid. By contrast, \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix before measurement and nonlinear preprocessing.
+
+In that sense, \(\mathcal H_{k,e}\) and \(H[k,e]\) live on the same sampled angle-frequency grid but not at the same descriptive level. The former is the ideal complex response at sampled \((\omega_k,\theta_e)\). The latter is the empirical prototype that remains after repeated trials, power averaging, logarithmic compression, and standardization have converted those sampled responses into measured fingerprints.
+
+Written as a processing chain rather than an equality, the ideal sampled surface \(\mathcal H_{k,e}\) is carried into the empirical prototype matrix through repeated trials, time-frequency power statistics, logarithmic compression, and standardization:
+
+$$
+\mathcal H_{k,e}
+\;\leadsto\;
+V_{e,n}[k,t]
+\;\leadsto\;
+\widehat{S}_{e,n}[k]
+\;\leadsto\;
+y_{e,n}[k]
+\;\leadsto\;
+\tilde y_{e,n}[k]
+\;\leadsto\;
+h_e.
+$$
 
 To isolate angle-dependent structure from shared magnitude offsets, we analyze the centered-magnitude matrix
 
@@ -175,9 +195,9 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. This compact measured structure motivates a local-overlap decoding picture on the calibrated angle grid.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. The compact structure is not a property of the ideal transfer matrix alone. It is the measured geometry that remains after those processing steps, and that measured geometry is what the local-overlap model must explain.
 
-Calibration turns the smooth physical response in Eq. (S6) into an angle-indexed dictionary of measured fingerprints. In doing so, it carries the local angle ordering into measured space. A held-out fingerprint can then be written in the full standardized feature space as
+Calibration carries the smooth physical response in Eq. (S6) into a discrete dictionary of measured fingerprints while preserving the local angle ordering on the calibration grid. In the full standardized feature space, a held-out fingerprint can then be written as
 
 $$
 \tilde y \approx Hx,
@@ -186,7 +206,7 @@ $$
 \tag{S18}
 $$
 
-where \(x\) is the surrogate coefficient vector. A dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) therefore turns the compact modal picture into a discrete local-overlap model on the calibrated angle grid rather than a choice among unrelated angle templates.
+where \(x\) is the surrogate coefficient vector. A dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) is therefore the full-space local-overlap model in the standardized fingerprint coordinates, not a choice among unrelated angle templates.
 
 Projecting the same local-overlap surrogate into a retained singular subspace gives
 
@@ -206,33 +226,44 @@ z \approx A x,
 \tag{S20}
 $$
 
-This projected form makes the reduced-order geometry behind Eq. 2 explicit. It also clarifies why nearby calibrated directions compete locally. The decoder used in Figs. 4 and 5 still operates in the full \(F=346\) standardized feature space on \(\tilde y\), \(H\), and the grouped dictionary \(D\) introduced below, not on the projected pair \((z, A)\).
+Equations (S18) and (S20) are not two different inference models. They are the same local-overlap surrogate written first in the full standardized coordinates \((\tilde y,H)\) and then in the retained singular coordinates \((z,A)\). The reduced pair \((z,A)\) makes the competition among nearby calibrated directions explicit and supplies the natural surface for the classical hard-commitment baseline in Supplementary Methods 3.
 
-## Supplementary Methods 3. Hard OMP on the reduced-order surrogate
-
-On the reduced-order surrogate, hard OMP iteratively selects the strongest direction on the calibrated angle grid and then refits on the active support. The exact greedy recursion is
+The full standardized surface remains the natural measurement space. For the readout analysis that follows, we enrich that same calibrated surface into a grouped dictionary by assigning each direction group \(e\) a small within-direction atom set indexed by \(m\),
 
 $$
-r_0 = z,
-\qquad
-\mathcal S_0 = \varnothing.
+D=[d_{e,m}] \in \mathbb{R}^{F\times (EM)}.
 \tag{S21}
 $$
 
-For general non-unit-norm columns, the correlation score can be written as
+The grouped dictionary \(D\) lives on the same full standardized surface as \(\tilde y\), but it refines each direction group into \(M\) within-direction atoms instead of collapsing that group to one mean prototype. Supplementary Methods 3 uses this finer grouped surface only to expose the pre-refit failure at stage 0. Supplementary Methods 4 uses the same grouped surface for neighborhood-preserving updates.
+
+The roles of \(H\) and \(D\) are therefore different. The matrix \(H=[h_1,\dots,h_E]\) averages the calibration fingerprints within each sampled angle and provides one empirical prototype \(h_e\) per direction, so it defines the coarse local-overlap geometry across the \(E\) sampled angles. The grouped dictionary \(D=[d_{e,m}]\) stays on that same \(F\)-dimensional standardized calibration surface but keeps a finer within-direction expansion by replacing each single prototype \(h_e\) with an \(M\)-atom set. In that sense, \(D\) is not a second measurement surface or a different physical model. It is a more resolved readout surface built from the same calibrated fingerprint space on which \(H\) was defined.
+
+## Supplementary Methods 3. Hard OMP and stage-0 failure on the local-overlap surrogate
+
+Supplementary Methods 3 begins from the reduced surrogate introduced in Supplementary Methods 2. Equations (S19)-(S20) rewrote the full standardized local-overlap model on the retained singular subspace as the pair \((z,A)\), with \(z=U_r^\top\tilde y\) and \(A=U_r^\top H\). This reduced view does not define a second inference model. It is the same calibrated local-overlap geometry written in the coordinates that make competition among nearby directions easiest to see. Hard OMP is written on that reduced surrogate because premature single-angle commitment is most transparent there. The grouped full-space dictionary \(D=[d_{e,m}]\) is carried forward only afterward, when we return to the full standardized surface to inspect the same failure before any refit has altered the residual.
 
 $$
-c_e(r) = \frac{|\langle a_e,r\rangle|}{\|a_e\|_2+\varepsilon_c}.
+\rho_0 = z,
+\qquad
+\mathcal S_0 = \varnothing.
 \tag{S22}
 $$
 
-If the columns are unit-normalized, (S22) reduces to the raw inner-product magnitude. At stage \(t\), hard-OMP selects
+Let \(a_e\) denote the \(e\)-th column of \(A\). For general non-unit-norm columns, the correlation score can then be written as
 
 $$
-j_t = \arg\max_{e\in\{1,\dots,E\}} c_e(r_{t-1}),
+c_e(\rho) = \frac{|\langle a_e,\rho\rangle|}{\|a_e\|_2+\varepsilon_c}.
+\tag{S23}
+$$
+
+If the columns are unit-normalized, (S23) reduces to the raw inner-product magnitude. At stage \(t\), hard OMP selects
+
+$$
+j_t = \arg\max_{e\in\{1,\dots,E\}} c_e(\rho_{t-1}),
 \qquad
 \mathcal S_t = \mathcal S_{t-1}\cup\{j_t\}.
-\tag{S23}
+\tag{S24}
 $$
 
 The coefficient estimate on the active support is the least-squares solution
@@ -243,110 +274,155 @@ x_{\mathcal S_t}^{(t)}
 \arg\min_{u\in\mathbb{R}^{|\mathcal S_t|}} \|z-A_{\mathcal S_t}u\|_2^2
 =
 \left(A_{\mathcal S_t}^\top A_{\mathcal S_t}\right)^{-1}A_{\mathcal S_t}^\top z,
-\tag{S24}
+\tag{S25}
 $$
 
 with all inactive entries set to zero. The updated residual is
 
 $$
-r_t = z - A_{\mathcal S_t}x_{\mathcal S_t}^{(t)}.
-\tag{S25}
-$$
-
-By the normal equations for (S24),
-
-$$
-A_{\mathcal S_t}^\top r_t = 0,
+\rho_t = z - A_{\mathcal S_t}x_{\mathcal S_t}^{(t)}.
 \tag{S26}
+$$
+
+By the normal equations for (S25),
+
+$$
+A_{\mathcal S_t}^\top \rho_t = 0,
+\tag{S27}
 $$
 
 so the residual is orthogonal to the currently selected span. After \(K\) stages, the angle prediction is
 
 $$
 \hat\theta = \theta_{\arg\max_e |x_e^{(K)}|}.
-\tag{S27}
-$$
-
-Equations (S21)-(S27) define the exact hard-OMP recursion for the reduced-order surrogate \((z,A,x)\). Hard OMP selects one support element and orthogonalizes immediately. That is why it fails first in the local-neighborhood regime. Once one group is chosen, evidence that is physically shared across neighboring directions no longer survives intact into the next residual step.
-
-We therefore use the stage-0 score to expose that failure before any residual refit. Starting from \(r_0=\tilde y\), the stage-0 score aggregates the grouped inner-product magnitudes \(|g_0[e,m]| = |\langle \tilde y,d_{e,m}\rangle|\) within each direction group. When that score concentrates near the matched direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint becomes locally ambiguous and an immediate first choice becomes unstable on held-out speech. The failure is not loss of directional structure. It is loss of locally shared evidence.
-
-For Fig. 3f, we apply the same stage-0 diagnostic on a separate noise-response surface. The white-noise branch is recomputed on synthetic noisy white-noise datasets. The speech branch comes from a separate five-seed speech-plus-babble sweep. Added noise therefore extends the same neighborhood-coupled failure regime to lower SNR.
-
-## Supplementary Methods 4. Routed updates in the full standardized fingerprint space
-
-The guided solver is a physics-guided residual-correction readout with learned local gating. Its role in the paper is narrow: test whether preserving the calibrated neighborhood is enough to keep subtraction physically plausible. It operates directly in the full standardized feature space, so it keeps the measured geometry instead of making an immediate one-angle commitment. Relative to Supplementary Methods 3, the residual-correction scaffold is unchanged. The only added step is to pool locally coupled evidence before subtraction. The point is simply to show why subtraction remains admissible only when the measured neighborhood is preserved.
-
-The guided solver uses a grouped dictionary
-
-$$
-D=[d_{e,m}] \in \mathbb{R}^{F\times (EM)},
 \tag{S28}
 $$
 
-whose columns are partitioned by direction \(e\in\{1,\dots,E\}\) and source-atom index \(m\in\{1,\dots,M\}\). The coefficient vector is partitioned accordingly as \(x_t=\{x_t^{(e,m)}\}\), and the initialization is
+Equations (S22)-(S28) therefore isolate the classical hard-commitment limit of the same reduced surrogate introduced in Supplementary Methods 2. The reduced coordinates make the local competition explicit, but they do not remove the shared neighborhood structure inherited from the calibrated dictionary. The failure comes from the commitment rule: selection and orthogonalization occur too early, before locally shared evidence has been consolidated across neighboring directions. Once one direction is chosen, evidence that is physically shared across that neighborhood is forced into the reduced residual \(\rho_t\) rather than retained as a coherent local band.
+
+That same failure is already visible before the first refit. To expose that pre-refit geometry, we now return from the reduced surrogate \((z,A)\) to the grouped full standardized surface built in Supplementary Methods 2 and ask how the measured fingerprint aligns with the grouped dictionary before any support update has modified it. The ungated stage-0 grouped match is
+
+$$
+g_0 = D^\top \tilde y,
+\tag{S29}
+$$
+
+which is the \(t=0\) case of the same grouped correlation surface that drives the routed updates below. The direction-level stage-0 diagnostic used in Fig. 3 is the corresponding ungated group summary
+
+$$
+g_0^{(\mathrm{grp})}[e]
+=
+\left(
+\sum_{m=1}^{M}
+\left|g_0[e,m]\right|^2
+\right)^{1/2}.
+$$
+
+When that diagnostic concentrates near one direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint remains locally ordered but immediate commitment becomes unstable. The directional code is still present. What fails is the rule that one direction should be chosen before that shared neighborhood evidence has been pooled.
+
+For Fig. 3f, we apply the same stage-0 diagnostic on a separate noise-response surface. The white-noise branch is recomputed on synthetic noisy white-noise datasets. The speech branch comes from a separate five-seed speech-plus-babble sweep. Added noise therefore extends the same neighborhood-coupled failure regime to lower SNR.
+
+## Supplementary Methods 4. Routed updates on the grouped full standardized surface
+
+Supplementary Methods 4 stays on the same calibrated local-overlap geometry introduced in Supplementary Methods 2. There that geometry was written in reduced form as \((z,A)\) to expose competition among nearby directions, and Supplementary Methods 3 used that reduced view to isolate how hard commitment fails. Here we return to the grouped full standardized surface \(D=[d_{e,m}]\) and the full fingerprint \(\tilde y\), because subtraction should act where the measured neighborhood itself is still visible rather than after that neighborhood has already been collapsed into a one-angle choice.
+
+The mathematical change from Supplementary Methods 3 is only the commitment rule. Hard OMP chose one direction and refit immediately on the reduced surrogate. The routed update first consolidates evidence across the measured neighborhood and subtracts only afterward. At the paper-facing level, the corresponding direction-level score is denoted \(s_t[e]\). Here that same score is developed from the grouped atom-level routing quantities that produce it.
+
+Its columns are partitioned by direction \(e\in\{1,\dots,E\}\) and source-atom index \(m\in\{1,\dots,M\}\). The grouped coefficient state \(x_t=\{x_t^{(e,m)}\}\) now lives on \(D\) rather than on the direction-level matrices \(H\) or \(A\). The initialization is
 
 $$
 r_0=\tilde y,
 \qquad
 x_0=0.
-\tag{S29}
-$$
-
-Step 1 is the physical match score: at stage \(t\), the correlation between the current residual and the grouped dictionary is
-
-$$
-g_t = D^\top r_t.
 \tag{S30}
 $$
 
-Unlike the reduced-order hard-OMP recursion in Supplementary Methods 3, the routed solver does not commit to one support element and refit. Instead it preserves a local neighborhood of angle groups long enough for subtraction to act on the measured geometry. That is the whole scientific job of the routed step.
-
-Step 2 is direction-level pooling and local gating. The routing branch preserves the physical match score in (S30) and redistributes that evidence across nearby directions. Subtraction therefore acts only after broad support has been consolidated within a plausible neighborhood. The model first computes atom-level compatibility scores from the current residual and the dictionary tokens. It then pools those scores within each direction to produce one routing score \(s_t^{(\mathrm{exp})}[e]\) per direction. In the reported implementation, that pooling step is an L2 norm over the per-direction atom scores. Those pooled direction scores are then converted into routing weights with a Gumbel-family gating rule,
+Each stage of the routed update has four parts: compute the physical match score, pool that score across neighboring directions, convert the pooled evidence into a gated local update, and then redefine the residual. The formulas below follow that order. At stage \(t\), the correlation between the current residual and the grouped dictionary is
 
 $$
-w_t = \mathrm{GumbelSoftmax}\!\left(s_t^{(\mathrm{exp})};\tau\right),
-\qquad
-w_t \in \Delta^{E-1}.
+g_t = D^\top r_t.
 \tag{S31}
 $$
 
-Operationally, this gate focuses a broad local match onto one physically plausible neighborhood before subtraction.
+This is the same grouped correlation surface whose ungated \(t=0\) case appeared in (S29). It is the physical evidence term in the routed recursion: \(g_t[e,m]\) measures how strongly the current residual aligns with grouped atom \((e,m)\). The difference from hard commitment is what happens next. Instead of collapsing that evidence to one support element before subtraction, the routed update preserves a broad local band long enough for the residual update to act on the measured geometry rather than on an artificially sharpened support.
 
-For the Fig. 5f alignment summary, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed full-matrix and local-band correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
+Direction-level pooling and local gating then consolidate that match score across nearby directions. The routing branch first forms atom-level compatibility scores
 
-Step 3 is the gated local update. Within each selected direction group, the model forms an atom-level gate \(u_t^{(e)}\in\Delta^{M-1}\) in the same way. The combined gate is therefore
+$$
+s_t^{(\mathrm{atom})}[e,m]
+=
+\frac{\langle q_t,k_{e,m}\rangle}{\sqrt{d_k}},
+\tag{S32}
+$$
+
+where \(q_t\) is a learned query derived from the current residual, \(k_{e,m}\) is the learned key associated with atom \((e,m)\), and \(d_k\) is the key dimension. The quantities \(g_t[e,m]\) and \(s_t^{(\mathrm{atom})}[e,m]\) therefore play different roles: \(g_t[e,m]\) is the physical correlation between the current residual and grouped atom \((e,m)\), whereas \(s_t^{(\mathrm{atom})}[e,m]\) is the learned routing score that controls how that physical evidence is pooled and gated before subtraction. Only \(g_t\) enters the coefficient update in (S37). The routing scores do not replace the physical match; they regulate how strongly each part of that match is allowed to contribute.
+
+Pooling the atom-level routing scores within each direction group produces the direction-level routing score \(s_t[e]\) that is tracked across stages in the main text. At this grouped resolution, the atom index \(m\) remains explicit and the direction score simply records the total routed evidence accumulated within each local neighborhood.
+
+$$
+s_t[e]
+=
+\left(
+\sum_{m=1}^{M}
+\left|s_t^{(\mathrm{atom})}[e,m]\right|^2
+\right)^{1/2}.
+\tag{S33}
+$$
+
+The pooled direction scores are then converted into routing weights with a Gumbel-family gating rule,
+
+$$
+w_t = \mathrm{GumbelSoftmax}\!\left(s_t;\tau\right),
+\qquad
+w_t \in \Delta^{E-1}.
+\tag{S34}
+$$
+
+Operationally, this gate concentrates a broad local match onto one physically plausible neighborhood before subtraction. It is not the same object as the stage-0 physical summary \(g_0^{(\mathrm{grp})}\) above. The latter reports how the raw physical match is distributed across direction groups before any routing. The former determines how that physical match is pooled and gated once the routed update is allowed to act.
+
+Within each retained direction group, the same atom-level compatibility scores define an atom gate
+
+$$
+u_t^{(e)}
+=
+\mathrm{GumbelSoftmax}\!\left(\left|s_t^{(\mathrm{atom})}[e,:]\right|;\tau_a\right),
+\qquad
+u_t^{(e)} \in \Delta^{M-1}.
+\tag{S35}
+$$
+
+The combined gate is therefore
 
 $$
 W_t[e,m] = w_t[e]\,u_t^{(e)}[m].
-\tag{S32}
+\tag{S36}
 $$
 
 The routed sparse update is
 
 $$
 \Delta x_t[e,m] = W_t[e,m]\; g_t[e,m],
-\tag{S33}
+\tag{S37}
 $$
 
-Step 4 is residual redefinition. The coefficient and residual recursions are
+The gated local update then enters the coefficient and residual recursions,
 
 $$
 x_{t+1} = x_t + \eta\,\Delta x_t,
 \qquad
 r_{t+1} = r_t - D(\eta\,\Delta x_t) = \tilde y - D x_{t+1},
-\tag{S34}
+\tag{S38}
 $$
 
-where \(\eta\) is a learned step size. These equations define the staged residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage. The routing step matters here only because it lets subtraction respect the measured local code rather than destroy it.
+where \(\eta\) is a learned step size. These equations close the staged residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage. The routing step matters here only because it lets subtraction respect the measured local code rather than destroy it.
 
 Training and evaluation do not decode direction from \(\|x_K^{(e)}\|_2\). Instead they read out expert-level routing scores. Let
 
 $$
-\bar s[e] = \frac{1}{K_{\mathrm{sup}}}\sum_{t=1}^{K_{\mathrm{sup}}} s_t^{(\mathrm{exp})}[e],
+\bar s[e] = \frac{1}{K_{\mathrm{sup}}}\sum_{t=1}^{K_{\mathrm{sup}}} s_t[e],
 \qquad
 \hat\theta = \theta_{\arg\max_e \bar s[e]},
-\tag{S35}
+\tag{S39}
 $$
 
 where \(K_{\mathrm{sup}}=1\) in the configuration studied here, so the readout is the first-stage expert score. The composite training objective is
@@ -355,7 +431,7 @@ $$
 \mathcal L = \alpha\,\mathcal L_{\mathrm{rec}} + \beta\,\mathcal L_{\mathrm{mono}} + \gamma\,\mathcal L_{\mathrm{cls}},
 \qquad
 (\alpha,\beta,\gamma)=(1.0,\,0.2,\,0.5),
-\tag{S36}
+\tag{S40}
 $$
 
 with
@@ -364,7 +440,7 @@ $$
 \mathcal L_{\mathrm{rec}} = \|r_K\|_2^2,
 \qquad
 \mathcal L_{\mathrm{cls}} = \mathrm{CE}(\bar s,e^\star),
-\tag{S37}
+\tag{S41}
 $$
 
 and stagewise monotonicity regularizer
@@ -374,14 +450,16 @@ $$
 =
 \sum_{t=0}^{K-2}
 \max\!\left(0,\|r_{t+1}\|_2-\|r_t\|_2\right).
-\tag{S38}
+\tag{S42}
 $$
 
-Equation (S36) gives the main loss. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver keeps the OMP residual-correction scaffold but replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides that routing function and a straight-through Gumbel approximation converts the resulting neighborhood scores into stagewise gates, so that broad local matches can be focused before subtraction within the staged residual updates. The learned routing is useful here only because it preserves the measured neighborhood that calibration already exposed.
+Equations (S39)-(S42) close the same recursion with a readout, a reconstruction loss, and a monotonic residual regularizer defined on the neighborhood-preserving updates. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver still follows the OMP-style residual-correction scaffold, but it replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides the atom-level compatibility scores in (S32), and straight-through Gumbel approximations convert those scores into the stagewise gates in (S34) and (S35), so that broad local matches can be focused before subtraction within the staged residual updates. That implementation detail matters here only because it preserves the measured neighborhood that calibration had already exposed.
+
+For the Fig. 5f alignment summary, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed full-matrix and local-band correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 summary statistics
 
-Figs. 2 and 3 summarize angle separability and similarity with the following descriptive statistics.
+The Fig. 2 and Fig. 3 separability results are measured properties of the executed standardized fingerprints rather than impressionistic visual summaries. This section defines the descriptive statistics used to quantify angle separability and similarity.
 
 Let \(\tilde y_{e,n}\in\mathbb{R}^F\) denote the standardized fingerprint of trial \(n\) at angle \(e\). For any two vectors \(u,v\in\mathbb{R}^F\), the Pearson correlation coefficient is
 
@@ -390,7 +468,7 @@ $$
 =
 \frac{\sum_{k=1}^{F}(u_k-\bar u)(v_k-\bar v)}
 {\sqrt{\sum_{k=1}^{F}(u_k-\bar u)^2}\sqrt{\sum_{k=1}^{F}(v_k-\bar v)^2}},
-\tag{S39}
+\tag{S43}
 $$
 
 where \(\bar u\) and \(\bar v\) are sample means across frequency bins.
@@ -405,14 +483,14 @@ $$
 \;:\;
 n<n'
 \right\},
-\tag{S40}
+\tag{S44}
 $$
 
 and the corresponding mean is
 
 $$
 \bar r_{\mathrm{within}}(e) = \frac{1}{|\mathcal W_e|}\sum_{\rho\in\mathcal W_e}\rho.
-\tag{S41}
+\tag{S45}
 $$
 
 The between-angle correlation set anchored at angle \(e\) is
@@ -425,21 +503,21 @@ $$
 \;:\;
 e'\neq e
 \right\},
-\tag{S42}
+\tag{S46}
 $$
 
 with mean
 
 $$
 \bar r_{\mathrm{between}}(e) = \frac{1}{|\mathcal B_e|}\sum_{\rho\in\mathcal B_e}\rho.
-\tag{S43}
+\tag{S47}
 $$
 
 The per-angle discriminability margin plotted in Fig. 3c is
 
 $$
 \Delta r(e) = \bar r_{\mathrm{within}}(e) - \bar r_{\mathrm{between}}(e).
-\tag{S44}
+\tag{S48}
 $$
 
 The pooled violin-plot summaries in Fig. 3a,b are obtained by aggregating all elements of \(\mathcal W_e\) and \(\mathcal B_e\) over angles. For two pooled correlation samples \(X\) and \(Y\), Cohen's \(d\) is
@@ -449,14 +527,38 @@ d = \frac{\bar X-\bar Y}{s_p},
 \qquad
 s_p^2 =
 \frac{(n_X-1)s_X^2 + (n_Y-1)s_Y^2}{n_X+n_Y-2}.
-\tag{S45}
+\tag{S49}
 $$
 
 The reported \(P\)-values come from the two-sided Mann-Whitney \(U\) test applied to the same pooled samples. The inter-angle similarity statistic used for Fig. 2f is the correlation matrix of the angle-indexed prototypes,
 
 $$
 S_{e,e'} = \rho(h_e,h_{e'}).
-\tag{S46}
+\tag{S50}
 $$
 
 These are descriptive statistics on the executed standardized fingerprints. They summarize directional separability in the experimentally constructed feature space and do not by themselves constitute a first-principles identifiability theorem.
+
+## Supplementary Methods 6. Cross-object descriptor interpretation for Fig. 6
+
+Figure 6 should be read as recurrence across a tested set of structurally distinct passive-object archetypes rather than as a constitutive catalog of five nominal materials.
+
+The five objects in Fig. 6 span visibly different structural layouts: flat plate, curved shell, corrugated hollow shell, orthotropic board, and thin consumer-device shell with cavity. In the manuscript, they are therefore interpreted at the level of coupled material-structure archetypes rather than nominal material name alone. The claim is deliberately conservative. The data show that local directional coding recurs across this tested archetype set. They do not establish a universal law for all passive objects.
+
+The descriptor axes used in Fig. 6a and the summary quantities used in Fig. 6d are response-level summaries derived from the executed measurements. The correlation-decay width and effective rank summarize how broad or compact the measured directional response is on the calibrated angle grid. The mean top-3 overlap burden summarizes how strongly neighboring directions compete under the same matched-calibration readout. The compression and separability summaries in the bridge analysis should therefore be read as descriptors of measured response geometry, not as intrinsic material constants.
+
+That distinction sets the correct reading of the figure. The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
+
+The same cross-object view also clarifies what orders performance. Fig. 6d should not be read as evidence that overall response energy determines usability. The paper-cup branch makes the opposite point: it carries the strongest overall \(|H|\) energy in this set, yet its neighboring directions overlap more broadly and its readout is worse than cardboard. Across this tested archetype set, local separability tracks directional usability more closely than energy alone.
+
+Finally, Fig. 6e shows that recurrence does not require one shared informative band. The selected contrast window shifts across objects, and the recovered band-limited directional codes take different spectral forms. What persists across the set is not one universal spectrum. It is one local directional principle expressed through different structural bands. That is the level at which the main-text cross-object claim should be read.
+
+## Supplementary Table 1. Cross-object archetype descriptors and executed response summaries
+
+| Object | Structural archetype | Stiffness class | Damping class | Anisotropy class | CompressionIndex | SeparabilityIndex | Top-1 (%) | Within 10° (%) | MAE (deg) |
+| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Cardboard box | Corrugated hollow packaging shell | Low | High | High | 0.0 | 45.8 | 81.1 | 95.5 | 2.61 |
+| Wooden board | Orthotropic solid board | Mid-high | Moderate | High | 75.0 | 22.2 | 79.3 | 97.3 | 5.09 |
+| Acrylic plate | Homogeneous flat polymer plate | Mid | Moderate | Low | 100.0 | 44.4 | 78.4 | 93.7 | 3.83 |
+| Paper cup | Curved coated paperboard shell | Low | Moderate-high | Medium | 37.5 | 69.4 | 77.5 | 91.9 | 5.99 |
+| Laptop shell | Thin consumer-device shell with cavity | High | Low | Low-mid | 37.5 | 68.1 | 67.6 | 92.8 | 5.23 |
