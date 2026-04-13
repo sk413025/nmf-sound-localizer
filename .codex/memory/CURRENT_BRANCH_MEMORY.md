@@ -13,6 +13,7 @@
 - the Results spine needs a clear `pivot`, a `discovery cash-out` section, and discovery weight that stays higher than tool-validation weight
 - paper-facing explanation should move by `observation -> inference -> bounded conclusion` in natural scientific English
 - the manuscript currently lands most naturally at `second-layer earned` broader significance: passive structure acts as part of the sensing substrate, while downstream application branches should be dropped when they read like added framing rather than natural growth from the discovery
+- supplementary landing points should stay low-salience and science-first; if the crosswalk becomes audible as reviewer guidance, the paper voice has slipped
 
 ## Stable Narrative Commitments
 
@@ -20,12 +21,13 @@
 - lead with the strongest evidence-backed discovery sentence, then boundary it
 - do not let broader significance degrade into an application inventory
 - route broader significance through `core discovery -> second-layer discovery -> downstream consequence`, with any weaker leaf dropped if it harms editor memory for the trunk
-- for high-salience manuscript rounds, default to whole-paragraph rewrites instead of patch-style sentence edits; local patching tends to leave mixed-author voice and manuscript-management phrasing
+- for high-salience manuscript or supplement rounds, default to matched block rewrites across both surfaces instead of patch-style sentence edits; local patching tends to leave mixed-author voice, manuscript-management phrasing, and reviewer-facing crosswalk prose
+- prefer low noun-stack, cause-effect prose: if a reader must unpack compressed labels before seeing what changed, what caused it, and why it matters, the sentence still needs rewriting
 
 ## Active Figure And Manuscript Fronts
 
 - `Fig. 4`: reconstruction, panel hierarchy, panel-a historical backtrace, and main-text suitability
-- `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and bounded significance claims
+- `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
 
 ## Known Failure Modes
@@ -34,6 +36,8 @@
 - letting the solver or workflow become the apparent protagonist
 - using defensive or self-diminishing phrasing that lowers the discovery floor without adding precision
 - promoting applications that do not descend from an evidence-earned second-layer discovery
+- letting supplementary text turn into a support-document checklist or reviewer-navigation guide instead of a natural extension of the paper's scientific voice
+- letting noun stacks or compressed technical labels replace explicit cause-effect explanation, forcing readers to decode terminology before they can follow the scientific inference
 - broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
 
 ## Open Unresolved Items
