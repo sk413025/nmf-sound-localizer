@@ -37,6 +37,8 @@
 - keep `Fig. 4` as the neighborhood-preserving admissibility chapter rather than a solver-tour chapter: the figure must read as `preserve the broadened neighborhood before subtraction`, with the measured neighborhood as protagonist and the guided solver only as the supporting device that makes that admissibility condition visible
 - keep `Fig. 5` as the structure-first continuation of `Fig. 4`: panel `a` carries the guided neighborhood bridge, `b-c-d` turn that bridge into a family-wide locality-and-consequence block, `e` anchors the measured neighborhood, `f` compares each family back to that measured neighborhood, and `g` is the noisy consequence panel
 - treat `local separability` as the key bridge concept between the discovery chapter and the readout chapter: once nearby directions remain jointly plausible under speech, the paper should say that the code survives as structured local ambiguity rather than implying that directional information has disappeared
+- active main-paper figure planning now routes through `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`; panel redesign should not be approved on visual density or readability alone when panel scientific job, method anchor, supplementary anchor, or overlap verdict would change
+- the `Fig. 1–6` surface is now governed not only by a figure spine but also by an explicit method spine; branch memory may note that routing lesson, but the crosswalk file remains the only canonical per-panel ledger
 
 ## Active Figure And Manuscript Fronts
 
@@ -51,12 +53,13 @@
   Panels `d-f` are the local-separability closure and should stay on the frozen ungated grouped stage-0 support family.
   The figure should not drift back toward pooled within/between correlation, per-angle discriminability margins, or separate noise-response sweeps in the main paper.
 - `Fig. 4`: keep the rebuilt six-panel board on one admissibility sentence.
-  Panel `a` defines admissible contraction on one shared angle frame.
-  Panels `b-c` keep one representative 70° clip only as a before/after shape witness.
-  Panel `d` is the load-bearing validation-wide contraction curve on the shared radius axis.
+  Panel `a` is now a high-information admissibility synthesis that combines validation-mean broad-versus-contracted support with one representative 70° clip on the same local frame.
+  Panel `b` shows how the routed local update is carved from within the broad physical support rather than inventing a new neighborhood.
+  Panel `c` compresses first-step recovery onto exact, 5°, 10°, and 15° operating points.
+  Panel `d` remains the load-bearing validation-wide contraction curve on the shared radius axis.
   Panel `e` fixes the operative 15° neighborhood and shows the same inward shift across the directional grid.
   Panel `f` shows that the same 15° gain is positive for nearly all clips.
-  The figure should stay population-led and exemplar-light, and it should not drift back toward solver-tour, repeated measured-neighborhood reference boards, residual-cleanup, or architecture-branding panel jobs.
+  The figure should stay admissibility-first and mechanism-bounded, and it should not drift back toward solver-tour, repeated measured-neighborhood reference boards, residual-cleanup, or low-information panel splitting.
 - `Fig. 5`: the active paper-facing figure now uses a 7-panel structure-first architecture. Panel `a` keeps the guided bridge from `Fig. 4`; panels `b-d` form the coherent family-backed locality and exact-consequence block rebuilt from the governed legacy babble sweep; panel `e` is the measured neighborhood anchor; panel `f` is the family-to-measured alignment panel with local retention as the primary term and profile agreement as a secondary weighting; panel `g` is the noisy babble consequence panel.
 - the previous source-drift problem for `Fig. 5c` and `Fig. 5g` is now resolved at the active-figure level by rebuilding family-backed consequence panels from the governed legacy babble families rather than later reevaluation summaries.
 - for any later `Fig. 5` work, keep the family-backed consequence block and the measured-neighborhood explanation surfaces distinct in provenance handling even when the main-text prose reads as one continuous chapter.
