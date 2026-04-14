@@ -25,7 +25,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Calibration fingerprints occupy a compact angle-ordered space | a-f | `figures/conf/layout_spec.md` |
 | 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Speech preserves the local code while broadening nearby-angle overlap | a-f | `figures/conf/layout_spec.md` |
 | 4 | `paper/figures/fig04_solver-dynamics.jpg` | Preserving the broadened neighborhood keeps subtraction admissible | a-e | `figures/conf/layout_spec.md` |
-| 5 | `paper/figures/fig05_performance-structure.jpg` | Prediction structure stays organized around the measured local band | a-e | `figures/conf/layout_spec.md` |
+| 5 | `paper/figures/fig05_performance-structure.jpg` | Final prediction succeeds by preserving the measured neighborhood | a-g | `figures/conf/layout_spec.md` |
 | 6 | `paper/figures/fig06_universality.jpg` | Matched calibration extends object-conditioned directional readout beyond the acrylic reference object | a-e | `figures/conf/layout_spec.md` |
 
 ## Canonical Model And Method Terms
@@ -37,7 +37,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | router-bypass ablation | router-bypass ablation | router-bypass | the ablation that bypasses the transformer router | no-transformer, identity model |
 | dense-routing ablation | dense routing | dense routing | the ablation that disables sparse routing and spreads weight across all experts | dense model, uniform router |
 | learned router | learned router | QK learned structure | the routing submodule inside the guided solver | solver, model, attention router as a peer-method name |
-| angle-specific conditional output distributions | conditional output distributions | conditional outputs | Fig. 5d style mechanistic panels | routing distributions, mechanism figure, angle-specific mechanism as a whole-figure name |
+| guided neighborhood geometry | guided neighborhood geometry | guided geometry | Fig. 5e style learned local-geometry panels | routing distributions, mechanism figure, angle-specific mechanism as a whole-figure name |
 
 ## Naming Rules
 
@@ -47,6 +47,7 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 - Treat the active Figs. 4-5 `OMP baseline` label as a collapsed soft-OMP family name, not as a default claim of exact hard OMP. Name exact hard OMP explicitly only when that narrower algorithm is the actual surface under discussion.
 - Treat Fig. 3 as the speech-side continuation of Fig. 2: compactness, broadened local neighborhood, neighborhood coherence, and stage-0 local separability on the frozen grouped-match surface.
 - Treat Fig. 4 as a neighborhood-preserving admissibility chapter: panel `a` anchors the measured neighborhood, panels `b-c` show representative broad-match and contraction, and panels `d-e` give validation-wide neighborhood sharpening summaries.
+- Treat Fig. 5 as the structure-first bridge from admissibility to consequence: panels `a-b` keep the shared radius-based neighborhood metric visible through stage-0 support, first-step contraction, and final family-level prediction locality; panel `c` is the representative final-prediction locality consequence; panels `d-e` are the measured-versus-guided geometry pair that explains panel `c`; panel `f` is the quantitative closure of that pair; panel `g` is the downstream clean/noisy consequence summary.
 - Use `router-bypass ablation` for the family previously referred to by the experiment-facing key `No Transformer`.
 - Treat `figures/conf/model_display_crosswalk.yaml` as the active display-label authority for Fig. 4-6 generators and panel manifests. It maps provenance keys or derived comparison roles to paper-facing labels without renaming upstream artifacts.
 - Treat `H physical structure`, `QK learned structure`, and OMP-selection references as structure or derived-comparison labels rather than peer model names.

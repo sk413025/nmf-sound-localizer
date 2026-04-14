@@ -453,6 +453,14 @@ $$
 
 Equations (S39)-(S42) close the same recursion with a readout, a reconstruction loss, and a monotonic residual regularizer defined on the neighborhood-preserving updates. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver still follows the OMP-style residual-correction scaffold, but it replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides the atom-level compatibility scores in (S32), and straight-through Gumbel approximations convert those scores into the stagewise gates in (S34) and (S35), so that broad local matches can be focused before subtraction within the staged residual updates. That implementation detail matters here only because it preserves the measured neighborhood that calibration had already exposed.
 
+Figure 5 extends the same neighborhood metric from admissibility to final prediction. For any row-normalized support distribution \(p_i[e]\) on the angle grid \(\{\theta_e\}_{e=1}^E\), we summarize prediction locality by the cumulative neighborhood mass
+
+$$
+m_i(r)=\sum_{e:\,|\theta_e-\theta_i|\le r} p_i[e].
+$$
+
+Figure 5a applies this same statistic to three aligned surfaces: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies the same row-normalized statistic to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays on the same neighborhood axis rather than changing quantities between chapters. The figure therefore asks one question across three stages: whether local support exposed before subtraction remains local after contraction and at final prediction.
+
 For the Fig. 5f alignment summary, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed full-matrix and local-band correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 compactness, neighborhood, and local-separability summaries

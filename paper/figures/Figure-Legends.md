@@ -36,15 +36,16 @@ c, Local contraction for the same representative clip. The routed update contrac
 d, Validation-wide neighborhood contraction. Cumulative update mass within radius is plotted before and after one guided step across the validation set. The entire curve shifts inward, showing that the first routed update sharpens support toward the local band exposed by calibration.
 e, Within-15° mass gain across validation clips. Per-clip before/after summaries show that the first guided step consistently increases mass inside the physically plausible neighborhood.
 
-## Fig. 5 (6 panels)
+## Fig. 5 (7 panels)
 
-**Fig. 5 | The admissible readout follows the measured neighborhood.**
-a, Five-seed SNR sweep for the same four overlap-handling rules. The delayed-commitment rule degrades least as noise increases, consistent with preserving local overlap before subtraction.
-b, Per-angle clean accuracy across the 37 measured angles. After light 3-angle smoothing, the delayed-commitment rule remains highest across most angles, whereas dense routing stays near chance across much of the grid; light shading shows \(\pm 1\) s.e.m. around the five-seed mean \(P(\mathrm{correct})\). The neighborhood therefore governs readout across the grid, not only in one average metric.
-c, Clean confusion comparison (row-normalized) of the OMP baseline and guided solver. Guided decoding concentrates near the diagonal, whereas the OMP baseline shows broader off-diagonal fracture after early commitment.
-d, Measured local structure in the calibrated fingerprint space. The near-diagonal band summarizes the physical neighborhood that nearby angles share.
-e, Learned neighborhood-emphasis map from the guided solver on the same angle frame and correlation scale as panel d. The learned map keeps a similar coarse near-diagonal ordering instead of dispersing weight broadly across the grid.
-f, Quantitative structure alignment. Top, normalized local-band summaries from the measured and learned maps across angle. Bottom, concordance scatter of the same per-angle scores. The learned map follows the same measured neighborhood identified by calibration: the full-matrix agreement reaches \(r = 0.47\), the per-angle summaries reach \(r = 0.46\), and the mean absolute gap is 0.23. Both correlations exceed the corresponding 95th-percentile permutation nulls (\(r = 0.41\) globally and \(r = 0.32\) for the local-band profile), so the alignment is stronger than shuffled angle structure would permit.
+**Fig. 5 | Final prediction succeeds by preserving the measured neighborhood.**
+a, Neighborhood-preservation cascade on one shared radius axis. Row-normalized mass within a given angular radius is plotted for speech stage-0 grouped support, after one guided step, and at final guided prediction. Early speech support is broad but still local; the guided update contracts that same support, and the final predictions remain inside the same neighborhood.
+b, Family-level final neighborhood preservation. The same cumulative mass-within-radius statistic is computed from the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing. Decoder success is ordered by how much local mass each family retains.
+c, Final prediction locality. Clean row-normalized confusion maps compare the OMP baseline and guided solver. Guided decoding concentrates near the diagonal, whereas the OMP baseline shows broader off-diagonal fracture after early commitment.
+d, Measured neighborhood geometry. The angle-angle correlation map of calibrated \(H\) shows the near-diagonal physical neighborhood that nearby angles share.
+e, Guided neighborhood geometry. The angle-angle correlation map of the guided score surface is shown on the same angle frame and correlation scale as panel d. The learned geometry keeps a similar coarse near-diagonal ordering instead of dispersing weight broadly across the grid.
+f, Quantitative neighborhood alignment. Top, normalized local-band summaries from the measured and guided geometry maps across angle. Bottom, concordance scatter of the same per-angle scores. The guided geometry follows the same measured neighborhood identified by calibration: the full-matrix agreement reaches \(r = 0.47\), the per-angle summaries reach \(r = 0.46\), and the mean absolute gap is 0.23. Both correlations exceed the corresponding 95th-percentile permutation nulls (\(r = 0.41\) globally and \(r = 0.32\) for the local-band profile), so the alignment is stronger than shuffled angle structure would permit.
+g, Performance consequences. Top, five-seed SNR sweep for the same four overlap-handling rules. Bottom, per-angle clean accuracy across the 37 measured angles with light shading showing \(\pm 1\) s.e.m. around the five-seed mean \(P(\mathrm{correct})\). The same neighborhood-preserving hierarchy remains visible in both noisy and clean evaluation.
 
 ## Fig. 6 (5 panels)
 
