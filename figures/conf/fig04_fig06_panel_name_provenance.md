@@ -35,25 +35,22 @@ decisions, not to replace manuscript prose.
   - `results/fig04_stepwise_mechanics.npz`
     - governed derived artifact rebuilt from the active primary run
 - Panel notes:
-  - `a`: generator-produced architecture/physics correspondence panel; it pairs
-    the measured local band in `H` with the staged broad-match, local-gate,
-    and local-update profiles on the same angle frame
-  - `b`: representative broad-match panel; it shows the active 70° exemplar
-    before local pooling, with the nearby co-active atoms displayed explicitly
-    inside the measured local neighborhood
-  - `c`: local-gate convergence panel; it overlays the broad match, local gate,
-    and localized update for the same 70° exemplar so the delayed-commitment
-    narrowing is visible on one shared axis
-  - `d`: residual-purification panel; left = exemplar residual-norm drop across
-    the guided steps, right = validation-wide local-mass concentration before
-    versus after the guided local step
-  - `e`: clean decoder-comparison panel; the upstream sweep still stores the
-    artifact keys `Baseline`, `No Type Bias`, `No Transformer`,
-    `Fixed Heuristic`, `G-Fixed`, `G-Teacher`, and `Dense Routing`, but the
-    active paper-facing panel collapses them to four families:
-    `No Type Bias -> guided solver`, `No Transformer -> router-bypass`,
-    `Fixed Heuristic/G-Fixed/G-Teacher -> paper-facing OMP baseline`, and
-    `Dense Routing -> dense routing`
+  - `a`: admissibility thesis panel; it keeps the measured neighborhood only as
+    a guide band and overlays validation-mean broad support with the first-step
+    contracted support on one shared angle frame
+  - `b`: representative broad-support witness; it shows the chosen 70°
+    validation clip before the first guided step, without turning the exemplar
+    into the main chapter proof
+  - `c`: representative contracted-support witness; it shows the same 70°
+    validation clip after one guided step so the broad-to-local transition is
+    explicit rather than hidden inside panel `a`
+  - `d`: validation-wide contraction panel; it shows the cumulative local-mass
+    shift before versus after the first guided step on the shared radius axis
+  - `e`: angle-resolved within-15° contraction; it fixes the operative 15°
+    neighborhood and shows before-versus-after local mass by target angle so
+    the inward shift reads as a systematic across-angle effect
+  - `f`: clip-level within-15° gain CDF; it summarizes the per-clip gain
+    distribution so the contraction claim is not carried only by means
 
 ## Fig. 5
 

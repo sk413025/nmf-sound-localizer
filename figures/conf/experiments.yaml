@@ -136,10 +136,10 @@ fig04_ablation:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "Once speech broadens local overlap, the admissible update is the one that preserves and contracts support inside the measured neighborhood before subtraction: panel a ties the measured neighborhood to the staged broad-match, gate, and update views; panels b-c show representative contraction; panels d-e show validation-wide neighborhood sharpening."
-  legend_summary: "Neighborhood admissibility strip, representative broad-match and local-contraction views, validation-wide neighborhood contraction, and within-15-degree mass gain."
-  panel_order: ["a", "b", "c", "d", "e"]
-  panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
+  claim: "Once speech broadens local overlap, the admissible update is the one that preserves and contracts support inside the measured neighborhood before subtraction: panels a-c define and visualize the broad-to-local first-step transition, panel d shows the validation-wide inward shift over radius, panel e shows the same effect across target angle at 15°, and panel f shows that the local 15-degree gain is positive for nearly all clips."
+  legend_summary: "Admissible neighborhood contraction, representative broad support, representative contracted support, validation-wide neighborhood contraction, angle-resolved within-15° contraction, and clip-level within-15° gain CDF."
+  panel_order: ["a", "b", "c", "d", "e", "f"]
+  panel_manifest: figures/output/fig04_solver_dynamics_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
   compose_script: scripts/paper/compose_master_figure3_family.py
   generator_outputs:
@@ -169,37 +169,43 @@ fig04_ablation:
       description: "Governed derived artifact containing representative stage-0 / guided-step traces plus validation-wide aligned neighborhood-mass summaries."
   panel_provenance:
     a:
-      title: "Neighborhood admissibility strip"
+      title: "Admissible neighborhood contraction"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_architecture_physics.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_admissible_contraction.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
     b:
-      title: "Broad initial match"
+      title: "Representative broad support"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_broad_match.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_representative_broad_support.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Local contraction"
+      title: "Representative contracted support"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_local_gate.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_representative_contracted_support.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     d:
       title: "Validation-wide neighborhood contraction"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_residual_purification.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_validation_contraction.pdf
+      evidence_sources:
+        - results/fig04_stepwise_mechanics.npz
+    e:
+      title: "Angle-resolved within-15° contraction"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_angle_resolved_within15.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
-    e:
-      title: "Within-15° mass gain"
+    f:
+      title: "Clip-level within-15° gain CDF"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_f_clip_gain_cdf.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
 

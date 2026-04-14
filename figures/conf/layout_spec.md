@@ -124,34 +124,31 @@ figures:
   fig04:
     compose:
       width_mm: 183.0
-      height_mm: 148.0
+      height_mm: 140.0
       outer_margin_x_mm: 4.0
       outer_margin_y_mm: 4.0
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 148.0
+      composite_height_mm: 140.0
       composite_grid:
-        left: 0.045
+        left: 0.055
         right: 0.985
-        bottom: 0.075
+        bottom: 0.085
         top: 0.965
-        hspace: 0.38
-        height_ratios: [38.0, 45.0, 45.0]
-      middle_row:
-        wspace: 0.16
-        width_ratios: [89.0, 89.0]
-      bottom_row:
-        wspace: 0.16
-        width_ratios: [89.0, 89.0]
+        hspace: 0.34
+        wspace: 0.28
+        width_ratios: [1.0, 1.0, 1.0]
+        height_ratios: [1.0, 1.0]
       split:
-        panel_slot_width_mm: {a: 171.0, b: 84.0, c: 84.0, d: 84.0, e: 84.0}
-        panel_slot_height_mm: {a: 38.0, b: 45.0, c: 45.0, d: 45.0, e: 45.0}
+        panel_slot_width_mm: {a: 56.0, b: 56.0, c: 56.0, d: 56.0, e: 56.0, f: 56.0}
+        panel_slot_height_mm: {a: 54.0, b: 54.0, c: 54.0, d: 54.0, e: 54.0, f: 54.0}
         standalone_subplots:
-          a: {left: 0.050, right: 0.985, bottom: 0.150, top: 0.925}
-          b: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
-          c: {left: 0.095, right: 0.985, bottom: 0.175, top: 0.920}
-          d: {left: 0.085, right: 0.985, bottom: 0.180, top: 0.920}
-          e: {left: 0.145, right: 0.985, bottom: 0.180, top: 0.920}
+          a: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
+          b: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
+          c: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
+          d: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
+          e: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
+          f: {left: 0.130, right: 0.970, bottom: 0.180, top: 0.900}
   fig05:
     compose:
       width_mm: 183.0
@@ -436,49 +433,44 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 
 ---
 
-## Figure 4 — Solver Mechanism (4 panels)
+## Figure 4 — Solver Dynamics (4 panels)
 
-Composed: a compact physics-first overview `a`, stacked mechanism panels `b/c`
-on the left, and a tall decoder-family payoff panel `d` on the right. The
-design keeps the manuscript collar and dedicated panel-label lane, but it no
-longer hides the clean-condition family comparison in a footer strip. The
-figure should now read as broad physical match -> local concentration ->
-cleaner residual -> readout consequence, with `d` carrying comparable visual
-authority to the mechanism panels.
+Composed: a full-width admissibility thesis strip `a`, followed by three
+equal-weight lower panels `b/c/d`. The figure should read as
+measured neighborhood -> representative broad-to-local transition ->
+validation-wide contraction -> angle-resolved within-15° contraction. The design is
+population-led, but it keeps one light exemplar so the broad-to-local shape
+remains visible before the chapter hands its radius-based logic to Fig. 5.
 
 ```
                          183.0 mm
 ┌──────────────────────────────────────────────────────┐
 │                4.0 mm manuscript collar              │
 │  ┌────────────────────────────────────────────────┐  │
-│  │ (a) Mechanism strip                            │  │ 18.0 mm slot
-│  │              175.0 × 18.0 mm                  │  │
+│  │ (a) Admissibility strip                        │  │ 36.0 mm slot
+│  │              175.0 × 36.0 mm                  │  │
 │  └────────────────────────────────────────────────┘  │
 │                    4.0 mm row gap                    │
-│  ┌────────────────────────┬──────────────────────┐  │
-│  │ (b) Broad match +      │ (d) Decoder-family   │  │
-│  │ local update overlay   │ comparison           │  │ 56.0 mm
-│  │ 85.5 × 56.0 mm         │ 85.5 × 116.0 mm      │  │
-│  ├────────────────────────┤                      │  │
-│  │ (c) Residual after     │                      │  │ 56.0 mm
-│  │ one local step         │                      │  │
-│  │ 85.5 × 56.0 mm         │                      │  │
-│  └────────────────────────┴──────────────────────┘  │
+│  ┌────────────────┬────────────────┬─────────────┐  │
+│  │ (b) Exemplary  │ (c) Validation │ (d) Angle × │  │
+│  │ broad-to-local │ wide           │ radius      │  │ 52.0 mm
+│  │ transition     │ contraction    │ map         │  │
+│  │ 55.7 × 52.0 mm │ 55.7 × 52.0 mm │ 55.7 × 52.0 │  │
+│  └────────────────┴────────────────┴─────────────┘  │
 │                4.0 mm manuscript collar              │
 └──────────────────────────────────────────────────────┘
-                              total = 146.0 mm
+                              total = 132.0 mm
 ```
 
 | Parameter      | Value                                  |
 |----------------|----------------------------------------|
 | width_mm       | 183                                    |
-| height_mm      | **146**                                |
+| height_mm      | **132**                                |
 | Outer collar   | **4.0 mm** on all four sides           |
-| Panel (a) slot | **175.0 × 18.0 mm**                    |
+| Panel (a) slot | **175.0 × 36.0 mm**                    |
 | Row gap        | **4.0 mm**                             |
-| Panels (b,c)   | **85.5 × 56.0 mm**                     |
-| Panel (d)      | **85.5 × 116.0 mm**                    |
-| Column gap     | **4.0 mm** between middle panels       |
+| Panels (b-d)   | **55.7 × 52.0 mm**                     |
+| Column gap     | **4.0 mm** between lower panels        |
 | Label lane     | **4.5 mm** at the top of each slot     |
 | Content inset  | **1.5 mm** left/right/bottom           |
 
