@@ -1,17 +1,11 @@
-"""Figure 3 — White Noise vs Speech Discriminability (6 panels).
+"""Figure 3 — speech-side compactness, neighborhood broadening, and local separability.
 
-Panel (a): White noise within vs between Pearson r (violin + stats).
-Panel (b): Speech within vs between Pearson r (violin + stats).
-Panel (c): Per-angle discriminability margin (within_r - between_r) for WN & Speech, with bootstrap uncertainty bands.
-Panel (d): Angle-resolved stage-0 first-choice traces for white noise and held-out speech.
-           (stacked WN and Speech) with clip-level uncertainty bands.
-Panel (e): Split-triangle pairwise similarity matrix (WN lower-left, Speech upper-right).
-Panel (f): Separate stage-0 noise-response curves for white-noise and speech-plus-babble sweeps.
-           across SNR levels, with WN clip-level SEM shading and speech
-           5-seed mean ± SEM shading.
-
-Data: dictionary.npz (D, angles) + modal_routing_val.npz (Y_val, labels,
-      g_energy_expert) + white noise raw waveforms (.npy -> STFT inline).
+Panel (a): Mirrored compactness (calibration vs speech).
+Panel (b): Stimulus-conditioned local-ordering decay.
+Panel (c): Neighborhood-coherence map (calibration lower-left, speech upper-right).
+Panel (d): Stage-0 grouped-match mass within radius.
+Panel (e): Angle-resolved exact first-choice failure.
+Panel (f): Speech exact vs local tolerance on the same stage-0 diagnostic.
 """
 
 from __future__ import annotations
@@ -19,17 +13,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from scipy import stats as sp_stats
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import stft as scipy_stft
 
 from figures.layout_contract import contract_version, font_pt, source_layout_spec
 from figures.style import (
-    add_panel_label,
     DOUBLE_COL_MM,
     SEMANTIC_PALETTE,
     STYLE_COLORS,
+    add_panel_label,
     load_paths,
     make_figure,
     save_outputs,
@@ -37,13 +31,8 @@ from figures.style import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Computation helpers
-# ---------------------------------------------------------------------------
-
-FIG03_MARGIN_BOOTSTRAP_REPS = 1000
-FIG03_MARGIN_BOOTSTRAP_SEED = 123
-FIG03_PAIRWISE_BETWEEN_SAMPLES = 10
+FIG03_LOCAL_RADII_DEG = np.arange(0.0, 31.0, 5.0, dtype=np.float32)
+FIG03_LOCAL_TOLERANCE_DEG = 10.0
 FIG03_TYPOGRAPHY = {
     "panel_label": font_pt("panel_label"),
     "title": font_pt("title"),
@@ -55,23 +44,16 @@ FIG03_TYPOGRAPHY = {
     "colorbar_label": font_pt("colorbar_label"),
 }
 
+
 def _load_white_noise_features(
     dataset_root: str | Path,
+    *,
     fs: float = 16000.0,
     n_fft: int = 2048,
     freq_min: float = 300.0,
     freq_max: float = 3000.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Load white noise waveforms and compute STFT-based features.
-
-    Applies scipy.signal.stft with fs=16000 directly on the raw waveforms
-    (no resampling), matching the training pipeline in omp-transformer-ldv.py.
-    Time-averages the magnitude spectrogram and L2-normalises each sample.
-
-    Returns (Y_wn, labels_wn, angles_deg) where Y_wn has shape (N, F).
-    """
-    from scipy.signal import stft as scipy_stft
-
+    """Load white-noise waveforms and reduce them to normalized spectral features."""
     dataset_root = Path(dataset_root)
     angle_dirs = sorted(
         [d for d in dataset_root.iterdir() if d.is_dir() and d.name.startswith("angle_")],
@@ -87,422 +69,148 @@ def _load_white_noise_features(
         angles_deg.append(float(angle_val))
         for fpath in sorted(adir.glob("*.npy")):
             wav = np.load(fpath).astype(np.float64)
-            f, _t, Zxx = scipy_stft(
-                wav, fs=fs, window="hann", nperseg=n_fft,
-                noverlap=n_fft // 2, nfft=n_fft, detrend="constant",
-                return_onesided=True, boundary=None, padded=False,
+            freqs, _times, zxx = scipy_stft(
+                wav,
+                fs=fs,
+                window="hann",
+                nperseg=n_fft,
+                noverlap=n_fft // 2,
+                nfft=n_fft,
+                detrend="constant",
+                return_onesided=True,
+                boundary=None,
+                padded=False,
             )
-            mag = np.abs(Zxx)
-            mask = (f >= freq_min) & (f <= freq_max)
-            y = mag[mask].mean(axis=1).astype(np.float32)
-            norm = np.linalg.norm(y)
+            mag = np.abs(zxx)
+            mask = (freqs >= freq_min) & (freqs <= freq_max)
+            feat = mag[mask].mean(axis=1).astype(np.float32)
+            norm = np.linalg.norm(feat)
             if norm > 1e-12:
-                y = y / norm
-            features_list.append(y)
+                feat = feat / norm
+            features_list.append(feat)
             labels_list.append(angle_idx)
 
-    Y_wn = np.stack(features_list)  # (N, F)
-    labels_wn = np.array(labels_list, dtype=int)
-    angles_arr = np.array(angles_deg, dtype=np.float32)
-    return Y_wn, labels_wn, angles_arr
+    return (
+        np.stack(features_list).astype(np.float32),
+        np.asarray(labels_list, dtype=np.int64),
+        np.asarray(angles_deg, dtype=np.float32),
+    )
 
 
-def _compute_omp_accuracy(
-    Y: np.ndarray, labels: np.ndarray,
-    D: np.ndarray, n_experts: int, n_atoms: int,
+def _centered_abs_dictionary(H: np.ndarray) -> np.ndarray:
+    arr = np.abs(np.asarray(H, dtype=np.float64))
+    return (arr - arr.mean(axis=1, keepdims=True)).astype(np.float32)
+
+
+def _angle_mean_centered_representation(
+    Y: np.ndarray,
+    labels: np.ndarray,
+    n_angles: int,
 ) -> np.ndarray:
-    """Compute greedy correlation top-1 matches: g = |Y @ D|.reshape(N,E,M).sum(2)."""
-    g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
-    pred = np.argmax(g, axis=1)
-    per_angle_acc = np.array([
-        np.mean(pred[labels == a] == a) if np.sum(labels == a) > 0 else 0.0
-        for a in range(n_experts)
-    ])
-    return per_angle_acc
-
-
-def _compute_omp_mean_accuracy(
-    Y: np.ndarray, labels: np.ndarray,
-    D: np.ndarray, n_experts: int, n_atoms: int,
-) -> float:
-    """Compute mean greedy diagnostic match rate across all angles."""
-    return float(np.mean(_compute_omp_accuracy(Y, labels, D, n_experts, n_atoms)))
-
-
-def _compute_omp_clip_accuracy_sem(
-    Y: np.ndarray, labels: np.ndarray,
-    D: np.ndarray, n_experts: int, n_atoms: int,
-) -> tuple[float, float]:
-    """Compute overall greedy diagnostic match rate and clip-level SEM."""
-    g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
-    pred = np.argmax(g, axis=1)
-    correct = (pred == labels).astype(float)
-    mean_acc = float(np.mean(correct))
-    sem = float(np.std(correct, ddof=1) / np.sqrt(correct.size)) if correct.size > 1 else 0.0
-    return mean_acc, sem
-
-
-def _compute_omp_accuracy_sem(
-    Y: np.ndarray, labels: np.ndarray,
-    D: np.ndarray, n_experts: int, n_atoms: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute per-angle greedy diagnostic match rates and clip-level SEM."""
-    g = np.abs(Y @ D).reshape(len(Y), n_experts, n_atoms).sum(axis=2)
-    pred = np.argmax(g, axis=1)
-
-    per_angle_acc = np.zeros(n_experts, dtype=float)
-    per_angle_sem = np.zeros(n_experts, dtype=float)
-    for a in range(n_experts):
-        mask = labels == a
-        if np.sum(mask) == 0:
+    """Angle-mean centered magnitude summary used for speech-side neighborhood plots."""
+    means = np.zeros((Y.shape[1], n_angles), dtype=np.float32)
+    for angle_idx in range(n_angles):
+        mask = labels == angle_idx
+        if not np.any(mask):
             continue
-        correct = (pred[mask] == a).astype(float)
-        per_angle_acc[a] = float(np.mean(correct))
-        if correct.size > 1:
-            per_angle_sem[a] = float(np.std(correct, ddof=1) / np.sqrt(correct.size))
-
-    return per_angle_acc, per_angle_sem
+        means[:, angle_idx] = np.mean(np.abs(Y[mask]), axis=0).astype(np.float32)
+    means = means - means.mean(axis=1, keepdims=True)
+    return means.astype(np.float32)
 
 
-def _compute_pairwise_corr(Y_val: np.ndarray, labels: np.ndarray,
-                           n_angles: int) -> tuple[list[float], list[float],
-                                                    np.ndarray, np.ndarray,
-                                                    np.ndarray]:
-    """Compute within-angle and between-angle Pearson r distributions."""
-    within_all: list[float] = []
-    between_all: list[float] = []
-    per_angle_mean = np.full(n_angles, np.nan)
-    per_angle_std = np.full(n_angles, np.nan)
-    per_angle_n_pairs = np.zeros(n_angles, dtype=int)
-
-    angle_indices: dict[int, np.ndarray] = {}
-    for a in range(n_angles):
-        idx = np.where(labels == a)[0]
-        if len(idx) > 1:
-            angle_indices[a] = idx
-
-    for a, idx in angle_indices.items():
-        clips = Y_val[idx]
-        corr_mat = np.corrcoef(clips)
-        n = len(idx)
-        triu_idx = np.triu_indices(n, k=1)
-        within_r = corr_mat[triu_idx].tolist()
-        within_all.extend(within_r)
-        per_angle_mean[a] = np.mean(within_r)
-        per_angle_std[a] = np.std(within_r)
-        per_angle_n_pairs[a] = len(within_r)
-
-    rng = np.random.default_rng(42)
-    angle_keys = sorted(angle_indices.keys())
-    max_between = 5000
-    count = 0
-    for i, a1 in enumerate(angle_keys):
-        for a2 in angle_keys[i + 1:]:
-            idx1 = angle_indices[a1]
-            idx2 = angle_indices[a2]
-            n_pairs = min(3, len(idx1), len(idx2))
-            sel1 = rng.choice(idx1, size=n_pairs, replace=False)
-            sel2 = rng.choice(idx2, size=n_pairs, replace=False)
-            for s1, s2 in zip(sel1, sel2):
-                r = np.corrcoef(Y_val[s1], Y_val[s2])[0, 1]
-                between_all.append(r)
-                count += 1
-                if count >= max_between:
-                    break
-            if count >= max_between:
-                break
-        if count >= max_between:
-            break
-
-    return within_all, between_all, per_angle_mean, per_angle_std, per_angle_n_pairs
+def _cumulative_energy(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    _, svals, _ = np.linalg.svd(np.asarray(matrix, dtype=np.float64), full_matrices=False)
+    energy = np.cumsum(svals**2)
+    energy /= max(float(energy[-1]), 1e-12)
+    ranks = np.arange(1, len(svals) + 1, dtype=np.int32)
+    return ranks, energy.astype(np.float32)
 
 
-def _compute_anglewise_corr_pools(
-    Y_val: np.ndarray,
+def _corrcoef_columns(matrix: np.ndarray) -> np.ndarray:
+    return np.corrcoef(np.asarray(matrix, dtype=np.float64).T).astype(np.float32)
+
+
+def _local_ordering_decay(
+    similarity: np.ndarray,
+    angle_step_deg: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float | None]:
+    n_angles = int(similarity.shape[0])
+    seps_deg = np.arange(1, n_angles, dtype=np.float32) * float(angle_step_deg)
+    means = np.zeros_like(seps_deg, dtype=np.float32)
+    sems = np.zeros_like(seps_deg, dtype=np.float32)
+    first_nonpositive: float | None = None
+
+    for lag in range(1, n_angles):
+        vals = np.asarray([similarity[idx, idx + lag] for idx in range(n_angles - lag)], dtype=np.float32)
+        means[lag - 1] = float(np.mean(vals))
+        if vals.size > 1:
+            sems[lag - 1] = float(np.std(vals, ddof=1) / np.sqrt(vals.size))
+        if first_nonpositive is None and means[lag - 1] <= 0.0:
+            first_nonpositive = float(seps_deg[lag - 1])
+
+    return seps_deg, means, sems, first_nonpositive
+
+
+def _grouped_match_surface(
+    Y: np.ndarray,
+    D: np.ndarray,
+    n_experts: int,
+) -> np.ndarray:
+    n_atoms = int(D.shape[1] // n_experts)
+    grouped = np.abs(np.asarray(Y, dtype=np.float32) @ np.asarray(D, dtype=np.float32))
+    return grouped.reshape(len(Y), n_experts, n_atoms).sum(axis=2).astype(np.float32)
+
+
+def _radius_mass_curves(
+    grouped_match: np.ndarray,
+    labels: np.ndarray,
+    angle_step_deg: float,
+    radii_deg: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    probs = grouped_match / np.maximum(grouped_match.sum(axis=1, keepdims=True), 1e-8)
+    expert_idx = np.arange(grouped_match.shape[1], dtype=np.float32)
+    curves = np.zeros((grouped_match.shape[0], len(radii_deg)), dtype=np.float32)
+    for clip_idx, label_idx in enumerate(labels.astype(int)):
+        distance = np.abs(expert_idx - float(label_idx)) * float(angle_step_deg)
+        for ridx, radius in enumerate(radii_deg):
+            curves[clip_idx, ridx] = float(probs[clip_idx, distance <= radius].sum())
+    means = curves.mean(axis=0, dtype=np.float64).astype(np.float32)
+    sems = np.zeros_like(means)
+    if curves.shape[0] > 1:
+        sems = (curves.std(axis=0, ddof=1, dtype=np.float64) / np.sqrt(curves.shape[0])).astype(np.float32)
+    return means, sems
+
+
+def _per_angle_accuracy(
+    grouped_match: np.ndarray,
     labels: np.ndarray,
     n_angles: int,
     *,
-    between_samples_per_pair: int = FIG03_PAIRWISE_BETWEEN_SAMPLES,
-    seed: int = 42,
-) -> tuple[list[np.ndarray], list[np.ndarray]]:
-    """Collect per-angle within/between Pearson-r pools for margin estimation."""
-    angle_indices: dict[int, np.ndarray] = {}
-    for a in range(n_angles):
-        idx = np.where(labels == a)[0]
-        if len(idx) > 0:
-            angle_indices[a] = idx
-
-    within_pools: list[np.ndarray] = [np.array([], dtype=float) for _ in range(n_angles)]
-    between_buffers: list[list[float]] = [[] for _ in range(n_angles)]
-
-    for a, idx in angle_indices.items():
-        if len(idx) < 2:
-            continue
-        clips = Y_val[idx]
-        corr_mat = np.corrcoef(clips)
-        triu_idx = np.triu_indices(len(idx), k=1)
-        within_pools[a] = np.asarray(corr_mat[triu_idx], dtype=float)
-
-    rng = np.random.default_rng(seed)
-    sorted_angles = sorted(angle_indices.keys())
-    for i, a1 in enumerate(sorted_angles):
-        idx1 = angle_indices[a1]
-        for a2 in sorted_angles[i + 1:]:
-            idx2 = angle_indices[a2]
-            n_sample = min(between_samples_per_pair, len(idx1), len(idx2))
-            if n_sample <= 0:
-                continue
-            sel1 = rng.choice(idx1, size=n_sample, replace=False)
-            sel2 = rng.choice(idx2, size=n_sample, replace=False)
-            pair_vals = np.asarray(
-                [np.corrcoef(Y_val[s1], Y_val[s2])[0, 1] for s1, s2 in zip(sel1, sel2)],
-                dtype=float,
-            )
-            between_buffers[a1].extend(pair_vals.tolist())
-            between_buffers[a2].extend(pair_vals.tolist())
-
-    between_pools = [np.asarray(vals, dtype=float) for vals in between_buffers]
-    return within_pools, between_pools
-
-
-def _margin_from_corr_pools(
-    within_pools: list[np.ndarray],
-    between_pools: list[np.ndarray],
-) -> np.ndarray:
-    """Compute per-angle discriminability margins from anglewise correlation pools."""
-    margin = np.full(len(within_pools), np.nan, dtype=float)
-    for idx, (within_vals, between_vals) in enumerate(zip(within_pools, between_pools)):
-        if len(within_vals) == 0 or len(between_vals) == 0:
-            continue
-        margin[idx] = float(np.mean(within_vals) - np.mean(between_vals))
-    return margin
-
-
-def _bootstrap_margin_interval(
-    within_pools: list[np.ndarray],
-    between_pools: list[np.ndarray],
-    *,
-    n_boot: int = FIG03_MARGIN_BOOTSTRAP_REPS,
-    seed: int = FIG03_MARGIN_BOOTSTRAP_SEED,
-    ci: float = 95.0,
+    tolerance_deg: float,
+    angle_step_deg: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Bootstrap per-angle discriminability-margin confidence intervals."""
-    lower = np.full(len(within_pools), np.nan, dtype=float)
-    upper = np.full(len(within_pools), np.nan, dtype=float)
-    alpha = 0.5 * (100.0 - ci)
-    rng = np.random.default_rng(seed)
-
-    for idx, (within_vals, between_vals) in enumerate(zip(within_pools, between_pools)):
-        if len(within_vals) == 0 or len(between_vals) == 0:
+    pred = np.argmax(grouped_match, axis=1)
+    angle_error = np.abs(pred - labels.astype(int)) * float(angle_step_deg)
+    acc = np.zeros(n_angles, dtype=np.float32)
+    sem = np.zeros(n_angles, dtype=np.float32)
+    for angle_idx in range(n_angles):
+        mask = labels == angle_idx
+        if not np.any(mask):
             continue
-        boot = np.empty(n_boot, dtype=float)
-        for rep in range(n_boot):
-            within_sample = rng.choice(within_vals, size=len(within_vals), replace=True)
-            between_sample = rng.choice(between_vals, size=len(between_vals), replace=True)
-            boot[rep] = np.mean(within_sample) - np.mean(between_sample)
-        lower[idx], upper[idx] = np.percentile(boot, [alpha, 100.0 - alpha])
-
-    return lower, upper
+        correct = (angle_error[mask] <= tolerance_deg + 1e-9).astype(np.float32)
+        acc[angle_idx] = float(np.mean(correct))
+        if correct.size > 1:
+            sem[angle_idx] = float(np.std(correct, ddof=1) / np.sqrt(correct.size))
+    return acc, sem
 
 
-def _compute_trial_pairwise_matrix(Y_val: np.ndarray, labels: np.ndarray,
-                                    n_angles: int) -> np.ndarray:
-    """Compute mean Pearson r between all angle pairs from trial-level data."""
-    sim_matrix = np.full((n_angles, n_angles), np.nan)
-    rng = np.random.default_rng(42)
-
-    angle_indices: dict[int, np.ndarray] = {}
-    for a in range(n_angles):
-        idx = np.where(labels == a)[0]
-        if len(idx) > 0:
-            angle_indices[a] = idx
-
-    for a1 in range(n_angles):
-        if a1 not in angle_indices:
-            continue
-        for a2 in range(a1, n_angles):
-            if a2 not in angle_indices:
-                continue
-            idx1 = angle_indices[a1]
-            idx2 = angle_indices[a2]
-            if a1 == a2:
-                if len(idx1) < 2:
-                    continue
-                clips = Y_val[idx1]
-                corr_mat = np.corrcoef(clips)
-                triu = np.triu_indices(len(idx1), k=1)
-                sim_matrix[a1, a2] = np.mean(corr_mat[triu])
-            else:
-                n_sample = min(10, len(idx1), len(idx2))
-                sel1 = rng.choice(idx1, size=n_sample, replace=False)
-                sel2 = rng.choice(idx2, size=n_sample, replace=False)
-                r_vals = []
-                for s1, s2 in zip(sel1, sel2):
-                    r_vals.append(np.corrcoef(Y_val[s1], Y_val[s2])[0, 1])
-                sim_matrix[a1, a2] = np.mean(r_vals)
-                sim_matrix[a2, a1] = sim_matrix[a1, a2]
-
-    return sim_matrix
-
-
-def _discriminability_margin(sim_matrix: np.ndarray) -> np.ndarray:
-    """Compute per-angle discriminability margin from a pairwise similarity matrix.
-
-    margin[a] = within_r[a] - mean(between_r[a])
-    where within_r is the diagonal and between_r is the off-diagonal row mean.
-    """
-    n = sim_matrix.shape[0]
-    within_r = np.diag(sim_matrix)
-    between_r = np.array([
-        np.nanmean(np.concatenate([sim_matrix[a, :a], sim_matrix[a, a + 1:]]))
-        for a in range(n)
-    ])
-    return within_r - between_r
-
-
-def _cohens_d(a: np.ndarray, b: np.ndarray) -> float:
-    na, nb = len(a), len(b)
-    pooled_std = np.sqrt(((na - 1) * np.var(a, ddof=1) +
-                          (nb - 1) * np.var(b, ddof=1)) / (na + nb - 2))
-    if pooled_std == 0:
-        return 0.0
-    return (np.mean(a) - np.mean(b)) / pooled_std
-
-
-def _p_to_stars(p: float) -> str:
-    if p < 1e-4:
-        return "****"
-    if p < 1e-3:
-        return "***"
-    if p < 0.01:
-        return "**"
-    if p < 0.05:
-        return "*"
-    return "n.s."
-
-
-def _draw_omp_trace_axis(
-    ax,
-    angles: np.ndarray,
-    acc: np.ndarray,
-    *,
-    sem: np.ndarray | None = None,
-    band_lower: np.ndarray | None = None,
-    band_upper: np.ndarray | None = None,
-    color: str,
-    marker: str,
-    label: str,
-    show_xlabel: bool = False,
-) -> None:
-    """Draw one condition-specific angle-resolved OMP trace."""
-    if band_lower is not None and band_upper is not None:
-        ax.fill_between(
-            angles,
-            np.clip(band_lower, 0.0, 1.0),
-            np.clip(band_upper, 0.0, 1.0),
-            color=color,
-            alpha=0.12,
-            linewidth=0,
-            zorder=1,
-        )
-    elif sem is not None:
-        ax.fill_between(
-            angles,
-            np.clip(acc - sem, 0.0, 1.0),
-            np.clip(acc + sem, 0.0, 1.0),
-            color=color,
-            alpha=0.12,
-            linewidth=0,
-            zorder=1,
-        )
-    ax.plot(
-        angles,
-        acc,
-        f"-{marker}",
-        color=color,
-        linewidth=0.9,
-        markersize=2.6,
-        markeredgewidth=0.0,
-        zorder=2,
-    )
-    ax.set_ylim(-0.05, 1.05)
-    ax.set_yticks([0.0, 1.0])
-    ax.set_yticklabels(["0", "1"], fontsize=FIG03_TYPOGRAPHY["tick_label"])
-    ax.grid(axis="y", linestyle="--", alpha=0.25)
-    ax.text(
-        0.98,
-        0.80,
-        label,
-        transform=ax.transAxes,
-        ha="right",
-        va="center",
-        fontsize=FIG03_TYPOGRAPHY["annotation"],
-        color=color,
-    )
-    ax.tick_params(axis="x", labelsize=FIG03_TYPOGRAPHY["tick_label"])
-    if show_xlabel:
-        ax.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-        ax.set_xticks([0, 45, 90, 135, 180])
-    else:
-        ax.set_xticks([0, 45, 90, 135, 180])
-        ax.tick_params(axis="x", which="both", labelbottom=False)
-
-
-def _draw_stacked_omp_panel(
-    fig: plt.Figure,
-    subplot_spec,
-    *,
-    angles: np.ndarray,
-    omp_acc_wn: np.ndarray,
-    omp_acc_sp: np.ndarray,
-    omp_sem_wn: np.ndarray,
-    omp_sem_sp: np.ndarray,
-    omp_mean_wn: float,
-    omp_mean_sp: float,
-    panel_label: str,
-):
-    """Draw panel d as stacked angle-resolved greedy diagnostic traces."""
-    subgs = subplot_spec.subgridspec(2, 1, hspace=0.08, height_ratios=[1.0, 1.0])
-    ax_top = fig.add_subplot(subgs[0, 0])
-    ax_bot = fig.add_subplot(subgs[1, 0], sharex=ax_top)
-
-    _draw_omp_trace_axis(
-        ax_top,
-        angles,
-        omp_acc_wn,
-        sem=omp_sem_wn,
-        color=SEMANTIC_PALETTE["physics"],
-        marker="o",
-        label=f"White noise ({omp_mean_wn:.1%})",
-        show_xlabel=False,
-    )
-    _draw_omp_trace_axis(
-        ax_bot,
-        angles,
-        omp_acc_sp,
-        sem=omp_sem_sp,
-        color=SEMANTIC_PALETTE["ablation"],
-        marker="s",
-        label=f"Speech ({omp_mean_sp:.1%})",
-        show_xlabel=True,
-    )
-
-    ax_top.set_ylabel("Top-1\nmatch rate", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
-    ax_bot.set_ylabel("")
-    ax_top.set_title("Greedy correlation diagnostic", fontsize=FIG03_TYPOGRAPHY["title"])
-    ax_top.set_xlim(float(angles[0]), float(angles[-1]))
-    add_panel_label(ax_top, panel_label, x=-0.18, y=1.12)
-    return ax_top, ax_bot
-
-
-def _build_split_similarity_matrix(sim_matrix_wn: np.ndarray, sim_matrix_sp: np.ndarray) -> np.ndarray:
-    """Build split-triangle similarity matrix with masked diagonal separator."""
-    split_matrix = np.full(sim_matrix_wn.shape, np.nan)
-    lower = np.tril_indices_from(split_matrix, k=-1)
-    upper = np.triu_indices_from(split_matrix, k=1)
-    split_matrix[lower] = sim_matrix_wn[lower]
-    split_matrix[upper] = sim_matrix_sp[upper]
-    return split_matrix
+def _build_split_similarity_matrix(lower_left: np.ndarray, upper_right: np.ndarray) -> np.ndarray:
+    split = np.full(lower_left.shape, np.nan, dtype=np.float32)
+    lower = np.tril_indices_from(split, k=-1)
+    upper = np.triu_indices_from(split, k=1)
+    split[lower] = lower_left[lower]
+    split[upper] = upper_right[upper]
+    return split
 
 
 def _positive_similarity_cmap():
@@ -511,57 +219,16 @@ def _positive_similarity_cmap():
     return cmap
 
 
-def _draw_violin_panel(
-    ax, within_all, between_all, title: str, panel_label: str,
-    *, ylim: tuple[float, float] | None = None,
-):
-    """Draw within vs between violin + stats annotation on given axes."""
-    within_arr = np.array(within_all)
-    between_arr = np.array(between_all)
-
-    data_violin = [within_all, between_all]
-    parts = ax.violinplot(data_violin, positions=[0, 1], showmeans=True,
-                          showmedians=False, showextrema=False)
-    violin_colors = [SEMANTIC_PALETTE["physics"], SEMANTIC_PALETTE["ablation"]]
-    for pc, color in zip(parts["bodies"], violin_colors):
-        pc.set_facecolor(color)
-        pc.set_alpha(0.6)
-    parts["cmeans"].set_color(STYLE_COLORS["neutral_text"])
-    parts["cmeans"].set_linewidth(1.0)
-
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Within\nangle", "Between\nangles"], fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
-    ax.set_ylabel("Pearson r", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax.set_title(title, fontsize=FIG03_TYPOGRAPHY["title"])
-    ax.grid(axis="y", linestyle="--", alpha=0.3)
-
-    # Stats
-    U_stat, p_value = sp_stats.mannwhitneyu(
-        within_arr, between_arr, alternative="greater"
+def _fill_curve(ax: plt.Axes, x: np.ndarray, mean: np.ndarray, sem: np.ndarray, *, color: str, alpha: float) -> None:
+    ax.fill_between(
+        x,
+        mean - sem,
+        mean + sem,
+        color=color,
+        alpha=alpha,
+        linewidth=0.0,
+        zorder=1,
     )
-    d_value = _cohens_d(within_arr, between_arr)
-    stars = _p_to_stars(p_value)
-
-    y_max = max(np.max(within_all), np.max(between_all))
-    bracket_y = y_max + 0.02
-    bar_y = bracket_y + 0.01
-    ax.plot([0, 0, 1, 1], [bracket_y, bar_y, bar_y, bracket_y],
-            lw=0.8, c=STYLE_COLORS["neutral_text"])
-    ax.text(0.5, bar_y + 0.005, f"{stars}\nd = {d_value:.2f}",
-            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["annotation"], linespacing=1.2)
-
-    if ylim is not None:
-        ax.set_ylim(ylim)
-
-    # Annotate mean values near bottom
-    y_annot = ylim[0] + 0.02 if ylim else 0.35
-    ax.text(0, y_annot, f"r\u0304={np.mean(within_arr):.3f}",
-            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["tick_label"], color=SEMANTIC_PALETTE["physics"])
-    ax.text(1, y_annot, f"r\u0304={np.mean(between_arr):.3f}",
-            ha="center", va="bottom", fontsize=FIG03_TYPOGRAPHY["tick_label"], color=SEMANTIC_PALETTE["ablation"])
-
-    add_panel_label(ax, panel_label, x=-0.20, y=1.06)
-    return p_value, d_value, np.mean(within_arr)
 
 
 def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
@@ -576,509 +243,357 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
         "source_layout_spec": source_layout_spec(),
         "typography_pt": FIG03_TYPOGRAPHY,
     }
-    manifest_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return manifest_path
 
 
-# ---------------------------------------------------------------------------
-# Public interface
-# ---------------------------------------------------------------------------
-
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 3 — WN vs Speech Discriminability (6 panels)."""
-    set_nature_rcparams(base_fontsize=7)
+    """Generate Figure 3 paper-facing panels."""
+    set_nature_rcparams(base_fontsize=int(round(FIG03_TYPOGRAPHY["title"])))
+    paths = load_paths()
+    run_dir = data_root / paths["primary_run"]
+    dictionary = np.load(run_dir / "dictionary.npz", allow_pickle=True)
+    modal = np.load(run_dir / "modal_routing_val.npz", allow_pickle=True)
 
-    paths_cfg = load_paths()
-    run_dir = data_root / paths_cfg["primary_run"]
+    H = np.asarray(dictionary["H"], dtype=np.float32)
+    D = np.asarray(dictionary["D"], dtype=np.float32)
+    angles = np.asarray(dictionary["angles"], dtype=np.float32)
+    labels_sp = np.asarray(modal["labels"], dtype=np.int64)
+    Y_sp = np.asarray(modal["Y_val"], dtype=np.float32)
 
-    routing_path = run_dir / "modal_routing_val.npz"
-    dict_path = run_dir / "dictionary.npz"
+    Y_wn, labels_wn, angles_wn = _load_white_noise_features(paths["white_noise_dataset"])
+    if not np.allclose(angles, angles_wn):
+        raise ValueError("White-noise angle grid does not match the active dictionary angle grid")
 
-    if not routing_path.exists() or not dict_path.exists():
-        print(f"[fig03] SKIP: data not found at {run_dir}")
-        return []
+    n_angles = int(len(angles))
+    angle_step_deg = float(np.median(np.diff(angles)))
 
-    # --- Load speech data ---
-    routing_data = dict(np.load(routing_path, allow_pickle=True))
-    dict_data = dict(np.load(dict_path, allow_pickle=True))
-    Y_val = routing_data["Y_val"]
-    labels = routing_data["labels"].astype(int)
-    D = dict_data["D"]           # (346, 296)
-    angles = dict_data["angles"]  # (37,)
-    n_angles = len(angles)
-    n_atoms = D.shape[1] // n_angles  # 8
+    H_fig = _centered_abs_dictionary(H)
+    Y_sp_fig = _angle_mean_centered_representation(Y_sp, labels_sp, n_angles)
 
-    # --- Load white noise data (pure WN = snrInf) ---
-    wn_dataset = paths_cfg.get("white_noise_dataset", "")
-    if not Path(wn_dataset).exists():
-        print(f"[fig03] SKIP: white noise dataset not found at {wn_dataset}")
-        return []
+    ranks_h, cum_h = _cumulative_energy(H_fig)
+    ranks_sp, cum_sp = _cumulative_energy(Y_sp_fig)
+    r80_h = int(np.searchsorted(cum_h, 0.80) + 1)
+    r80_sp = int(np.searchsorted(cum_sp, 0.80) + 1)
 
-    print("[fig03] Loading white noise features (STFT inline)...")
-    Y_wn, labels_wn, _ = _load_white_noise_features(wn_dataset)
-    print(f"[fig03] White noise features: {Y_wn.shape}")
+    S_h = _corrcoef_columns(H_fig)
+    S_sp = _corrcoef_columns(Y_sp_fig)
+    decay_x_h, decay_mean_h, decay_sem_h, zero_h = _local_ordering_decay(S_h, angle_step_deg)
+    decay_x_sp, decay_mean_sp, decay_sem_sp, zero_sp = _local_ordering_decay(S_sp, angle_step_deg)
 
-    # --- Compute discriminability for both ---
-    within_wn, between_wn, pa_mean_wn, pa_std_wn, pa_n_wn = \
-        _compute_pairwise_corr(Y_wn, labels_wn, n_angles)
-    within_sp, between_sp, pa_mean_sp, pa_std_sp, pa_n_sp = \
-        _compute_pairwise_corr(Y_val, labels, n_angles)
+    G_wn = _grouped_match_surface(Y_wn, D, n_angles)
+    G_sp = _grouped_match_surface(Y_sp, D, n_angles)
+    local_mass_wn, local_mass_sem_wn = _radius_mass_curves(G_wn, labels_wn, angle_step_deg, FIG03_LOCAL_RADII_DEG)
+    local_mass_sp, local_mass_sem_sp = _radius_mass_curves(G_sp, labels_sp, angle_step_deg, FIG03_LOCAL_RADII_DEG)
 
-    pa_sem_wn = np.where(pa_n_wn > 0, pa_std_wn / np.sqrt(pa_n_wn), 0.0)
-    pa_sem_sp = np.where(pa_n_sp > 0, pa_std_sp / np.sqrt(pa_n_sp), 0.0)
-
-    # --- OMP accuracy (WN and Speech) ---
-    omp_acc_wn, omp_sem_wn = _compute_omp_accuracy_sem(Y_wn, labels_wn, D, n_angles, n_atoms)
-    omp_acc_sp, omp_sem_sp = _compute_omp_accuracy_sem(Y_val, labels, D, n_angles, n_atoms)
-    omp_mean_wn = float(np.mean(omp_acc_wn))
-    omp_mean_sp = float(np.mean(omp_acc_sp))
-    print(f"[fig03] OMP accuracy — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
-
-    # --- Pairwise similarity matrices (both) ---
-    sim_matrix_sp = _compute_trial_pairwise_matrix(Y_val, labels, n_angles)
-    sim_matrix_wn = _compute_trial_pairwise_matrix(Y_wn, labels_wn, n_angles)
-
-    # --- Discriminability margin (panel c) ---
-    within_pools_wn, between_pools_wn = _compute_anglewise_corr_pools(Y_wn, labels_wn, n_angles)
-    within_pools_sp, between_pools_sp = _compute_anglewise_corr_pools(Y_val, labels, n_angles)
-    margin_wn = _margin_from_corr_pools(within_pools_wn, between_pools_wn)
-    margin_sp = _margin_from_corr_pools(within_pools_sp, between_pools_sp)
-    margin_ci_lo_wn, margin_ci_hi_wn = _bootstrap_margin_interval(within_pools_wn, between_pools_wn)
-    margin_ci_lo_sp, margin_ci_hi_sp = _bootstrap_margin_interval(within_pools_sp, between_pools_sp)
-    print(f"[fig03] Discrim. margin — WN: {np.nanmean(margin_wn):.3f}, "
-          f"Speech: {np.nanmean(margin_sp):.3f}")
-
-    # --- SNR sweep dose-response (panel f) ---
-    # Line 1: WN signal + speech noise (OMP computed inline)
-    snr_base = paths_cfg.get("snr_sweep_base", "")
-    snr_levels_cfg = paths_cfg.get("snr_sweep_levels", [])
-
-    snr_labels: list[str] = []
-    wn_omp_accs: list[float] = []
-    wn_omp_sems: list[float] = []
-
-    print("[fig03] Computing WN SNR dose-response curve...")
-    for item in snr_levels_cfg:
-        snr_db = str(item["snr_db"])
-        suffix = item["dir_suffix"]
-        ds_path = Path(snr_base) / f"white_noise_box_{suffix}_sync_vad_normalized"
-        if not ds_path.exists():
-            print(f"[fig03]   SKIP SNR={snr_db}: {ds_path} not found")
-            continue
-        Y_snr, lab_snr, _ = _load_white_noise_features(str(ds_path))
-        acc, sem = _compute_omp_clip_accuracy_sem(Y_snr, lab_snr, D, n_angles, n_atoms)
-        snr_labels.append(snr_db)
-        wn_omp_accs.append(acc)
-        wn_omp_sems.append(sem)
-        print(f"[fig03]   WN SNR={snr_db:>3s}: OMP acc = {acc:.3f}, SEM = {sem:.3f}")
-
-    # Line 2: Speech signal + babble noise (from pre-computed 5-seed data)
-    sp_babble_path = data_root / paths_cfg.get("speech_babble_omp_snr", "")
-    sp_omp_accs: list[float] = []
-    sp_omp_sems: list[float] = []
-
-    if sp_babble_path.exists():
-        with open(sp_babble_path) as f:
-            sp_babble_data = json.load(f)
-        snr_key_map = {"Inf": "Inf", "30": "30dB", "20": "20dB",
-                        "15": "15dB", "10": "10dB", "5": "5dB", "0": "0dB"}
-        for lbl in snr_labels:
-            key = snr_key_map.get(lbl, "")
-            if key in sp_babble_data:
-                entry = sp_babble_data[key]
-                sp_omp_accs.append(entry["mean"])
-                n_seeds = entry["n"]
-                sp_omp_sems.append(entry["std"] / np.sqrt(n_seeds) if n_seeds > 1 else 0.0)
-            else:
-                sp_omp_accs.append(np.nan)
-                sp_omp_sems.append(0.0)
-        print("[fig03] Speech+babble OMP loaded:")
-        for lbl, acc in zip(snr_labels, sp_omp_accs):
-            print(f"[fig03]   Sp SNR={lbl:>3s}: OMP acc = {acc:.3f}")
-    else:
-        print(f"[fig03] WARN: speech_babble_omp_snr not found at {sp_babble_path}")
-
-    # X positions: evenly spaced categorical axis
-    n_snr_points = len(snr_labels)
-    snr_x_positions = list(range(n_snr_points))
-
-    # X positions: evenly spaced categorical axis
-    n_snr_points = len(snr_labels)
-    snr_x_positions = list(range(n_snr_points))
-
-    # -----------------------------------------------------------------------
-    # Build composite figure (2x3 grid, 6 panels)
-    # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=130)
-    gs = gridspec.GridSpec(
-        2, 3, figure=fig,
-        height_ratios=[1.0, 1.0],
-        hspace=0.35, wspace=0.40,
-        left=0.07, right=0.96, bottom=0.07, top=0.95,
+    exact_wn, exact_sem_wn = _per_angle_accuracy(G_wn, labels_wn, n_angles, tolerance_deg=0.0, angle_step_deg=angle_step_deg)
+    exact_sp, exact_sem_sp = _per_angle_accuracy(G_sp, labels_sp, n_angles, tolerance_deg=0.0, angle_step_deg=angle_step_deg)
+    local_sp, local_sem_sp = _per_angle_accuracy(
+        G_sp,
+        labels_sp,
+        n_angles,
+        tolerance_deg=FIG03_LOCAL_TOLERANCE_DEG,
+        angle_step_deg=angle_step_deg,
     )
 
-    # Shared y-axis range for both violin panels
-    all_r = within_wn + between_wn + within_sp + between_sp
-    violin_ylim = (min(all_r) - 0.05, max(all_r) + 0.10)
-
-    # --- Panel (a): White noise violin ---
-    ax_a = fig.add_subplot(gs[0, 0])
-    p_wn, d_wn, mean_within_wn = _draw_violin_panel(
-        ax_a, within_wn, between_wn, "White noise", "a",
-        ylim=violin_ylim,
-    )
-
-    # --- Panel (b): Speech violin ---
-    ax_b = fig.add_subplot(gs[0, 1])
-    p_sp, d_sp, mean_within_sp = _draw_violin_panel(
-        ax_b, within_sp, between_sp, "Speech", "b",
-        ylim=violin_ylim,
-    )
-
-    # --- Panel (c): Discriminability margin per angle ---
-    ax_c = fig.add_subplot(gs[0, 2])
-    valid_wn = ~np.isnan(margin_wn)
-    valid_sp = ~np.isnan(margin_sp)
-
-    ax_c.fill_between(
-        angles[valid_wn],
-        margin_ci_lo_wn[valid_wn],
-        margin_ci_hi_wn[valid_wn],
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.14,
-        linewidth=0,
-        zorder=0,
-    )
-    ax_c.fill_between(
-        angles[valid_sp],
-        margin_ci_lo_sp[valid_sp],
-        margin_ci_hi_sp[valid_sp],
-        color=SEMANTIC_PALETTE["ablation"],
-        alpha=0.12,
-        linewidth=0,
-        zorder=0,
-    )
-    ax_c.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
-              linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
-              label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
-    ax_c.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
-              linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
-              label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
-    ax_c.axhline(0, color=STYLE_COLORS["neutral_text"], linewidth=0.5, alpha=0.3)
-    ax_c.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax_c.set_ylabel("Discriminability margin\n(within r \u2212 between r)", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
-    ax_c.set_title("Per-angle discriminability", fontsize=FIG03_TYPOGRAPHY["title"])
-    ax_c.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_c.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
-    add_panel_label(ax_c, "c", x=-0.12, y=1.06)
-
-    # --- Panel (d): Angle-resolved OMP traces (stacked) ---
-    _draw_stacked_omp_panel(
-        fig,
-        gs[1, 0],
-        angles=angles,
-        omp_acc_wn=omp_acc_wn,
-        omp_acc_sp=omp_acc_sp,
-        omp_sem_wn=omp_sem_wn,
-        omp_sem_sp=omp_sem_sp,
-        omp_mean_wn=omp_mean_wn,
-        omp_mean_sp=omp_mean_sp,
-        panel_label="d",
-    )
-
-    # --- Panel (e): Split-triangle pairwise matrix (WN lower-left, Speech upper-right) ---
-    ax_e = fig.add_subplot(gs[1, 1])
-    # Build composite matrix: lower-left = WN, upper-right = Speech
-    split_matrix = _build_split_similarity_matrix(sim_matrix_wn, sim_matrix_sp)
-    sim_vmin = float(min(np.nanmin(sim_matrix_wn), np.nanmin(sim_matrix_sp)))
+    split_matrix = _build_split_similarity_matrix(S_h, S_sp)
+    sim_vmin = float(min(np.nanmin(S_h), np.nanmin(S_sp)))
     sim_cmap = _positive_similarity_cmap()
 
-    im_e = ax_e.imshow(split_matrix, cmap=sim_cmap, aspect="auto",
-                        vmin=sim_vmin, vmax=1.0)
-    # Draw diagonal line to separate the two halves
-    ax_e.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
-              color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    all_paths: list[Path] = []
+    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=130.0)
+    gs = gridspec.GridSpec(
+        2,
+        3,
+        figure=fig,
+        left=0.07,
+        right=0.96,
+        bottom=0.07,
+        top=0.95,
+        hspace=0.35,
+        wspace=0.40,
+    )
+
+    # Panel a
+    ax_a = fig.add_subplot(gs[0, 0])
+    ax_a.plot(ranks_h, cum_h, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=2.4, label="Calibration")
+    ax_a.plot(ranks_sp, cum_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=2.4, label="Speech")
+    ax_a.axhline(0.80, color=STYLE_COLORS["chance_line"], linestyle="--", linewidth=0.6, alpha=0.8)
+    ax_a.axvline(r80_h, color=SEMANTIC_PALETTE["physics"], linestyle=":", linewidth=0.7, alpha=0.8)
+    ax_a.axvline(r80_sp, color=SEMANTIC_PALETTE["ablation"], linestyle=":", linewidth=0.7, alpha=0.8)
+    ax_a.text(r80_h + 0.2, 0.825, f"r80={r80_h}", fontsize=FIG03_TYPOGRAPHY["annotation"], color=SEMANTIC_PALETTE["physics"])
+    ax_a.text(r80_sp + 0.2, 0.745, f"r80={r80_sp}", fontsize=FIG03_TYPOGRAPHY["annotation"], color=SEMANTIC_PALETTE["ablation"])
+    ax_a.set_xlim(1, min(16, len(ranks_h)))
+    ax_a.set_ylim(0.0, 1.02)
+    ax_a.set_xlabel("Component index r", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_a.set_ylabel("Cum. energy fraction", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_a.set_title("Mirrored compactness", fontsize=FIG03_TYPOGRAPHY["title"])
+    ax_a.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_a.tick_params(labelsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_a.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="lower right")
+    add_panel_label(ax_a, "a", x=-0.14, y=1.06)
+
+    # Panel b
+    ax_b = fig.add_subplot(gs[0, 1])
+    _fill_curve(ax_b, decay_x_h, decay_mean_h, decay_sem_h, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax_b, decay_x_sp, decay_mean_sp, decay_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax_b.plot(decay_x_h, decay_mean_h, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=2.4, label="Calibration")
+    ax_b.plot(decay_x_sp, decay_mean_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=2.4, label="Speech")
+    ax_b.axhline(0.0, color=STYLE_COLORS["chance_line"], linestyle="--", linewidth=0.6, alpha=0.8)
+    ax_b.axvspan(0.0, 15.0, color=SEMANTIC_PALETTE["highlight"], alpha=0.12, linewidth=0.0)
+    if zero_h is not None:
+        idx_h = int(np.argmin(np.abs(decay_x_h - zero_h)))
+        ax_b.plot(decay_x_h[idx_h], decay_mean_h[idx_h], marker="o", markersize=5.0, markerfacecolor="white", markeredgecolor=SEMANTIC_PALETTE["physics"])
+    if zero_sp is not None:
+        idx_sp = int(np.argmin(np.abs(decay_x_sp - zero_sp)))
+        ax_b.plot(decay_x_sp[idx_sp], decay_mean_sp[idx_sp], marker="o", markersize=5.0, markerfacecolor="white", markeredgecolor=SEMANTIC_PALETTE["ablation"])
+    ax_b.set_xlim(5.0, 90.0)
+    ax_b.set_xlabel("Angular separation |Δθ| (deg)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_b.set_ylabel("Mean centered corr.", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_b.set_title("Speech-side local-ordering decay", fontsize=FIG03_TYPOGRAPHY["title"])
+    ax_b.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_b.tick_params(labelsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_b.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
+    add_panel_label(ax_b, "b", x=-0.14, y=1.06)
+
+    # Panel c
+    ax_c = fig.add_subplot(gs[0, 2])
+    im_c = ax_c.imshow(split_matrix, cmap=sim_cmap, aspect="auto", vmin=sim_vmin, vmax=1.0)
+    ax_c.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5], color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
     tick_positions = [0, 9, 18, 27, 36]
-    tick_labels_e = [f"{int(angles[i])}" for i in tick_positions]
-    ax_e.set_xticks(tick_positions)
-    ax_e.set_xticklabels(tick_labels_e, fontsize=FIG03_TYPOGRAPHY["tick_label"])
-    ax_e.set_yticks(tick_positions)
-    ax_e.set_yticklabels(tick_labels_e, fontsize=FIG03_TYPOGRAPHY["tick_label"])
-    ax_e.set_xlabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax_e.set_ylabel("Angle (\u00b0)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax_e.set_title("Pairwise fingerprint similarity", fontsize=FIG03_TYPOGRAPHY["title"])
-    cbar = plt.colorbar(im_e, ax=ax_e, fraction=0.046, pad=0.02)
+    tick_labels = [f"{int(angles[i])}" for i in tick_positions]
+    ax_c.set_xticks(tick_positions)
+    ax_c.set_xticklabels(tick_labels, fontsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_c.set_yticks(tick_positions)
+    ax_c.set_yticklabels(tick_labels, fontsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_c.set_xlabel("Angle (°)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_c.set_ylabel("Angle (°)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_c.set_title("Neighborhood-coherence map", fontsize=FIG03_TYPOGRAPHY["title"])
+    ax_c.text(n_angles * 0.76, n_angles * 0.24, "Speech", ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["annotation"], fontstyle="italic", color=STYLE_COLORS["neutral_text"], alpha=0.7)
+    ax_c.text(n_angles * 0.24, n_angles * 0.76, "Calib", ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["annotation"], fontstyle="italic", color=STYLE_COLORS["neutral_text"], alpha=0.7)
+    cbar = plt.colorbar(im_c, ax=ax_c, fraction=0.046, pad=0.02)
     cbar.ax.tick_params(labelsize=FIG03_TYPOGRAPHY["colorbar_tick"])
     cbar.set_label("Pearson r", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
-    # Labels for the two halves
-    ax_e.text(n_angles * 0.75, n_angles * 0.25, "Speech",
-              ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["colorbar_label"], fontstyle="italic",
-              color=STYLE_COLORS["neutral_text"], alpha=0.7)
-    ax_e.text(n_angles * 0.25, n_angles * 0.75, "WN",
-              ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["colorbar_label"], fontstyle="italic",
-              color=STYLE_COLORS["neutral_text"], alpha=0.7)
-    add_panel_label(ax_e, "e", x=-0.12, y=1.06)
+    add_panel_label(ax_c, "c", x=-0.14, y=1.06)
 
-    # --- Panel (f): SNR dose-response curve (two lines) ---
+    # Panel d
+    ax_d = fig.add_subplot(gs[1, 0])
+    _fill_curve(ax_d, FIG03_LOCAL_RADII_DEG, local_mass_wn, local_mass_sem_wn, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax_d, FIG03_LOCAL_RADII_DEG, local_mass_sp, local_mass_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax_d.plot(FIG03_LOCAL_RADII_DEG, local_mass_wn, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=2.8, label="Calibration")
+    ax_d.plot(FIG03_LOCAL_RADII_DEG, local_mass_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=2.8, label="Speech")
+    ax_d.axvspan(0.0, 15.0, color=SEMANTIC_PALETTE["highlight"], alpha=0.12, linewidth=0.0)
+    ax_d.set_xlim(float(FIG03_LOCAL_RADII_DEG[0]), float(FIG03_LOCAL_RADII_DEG[-1]))
+    ax_d.set_ylim(0.0, 1.02)
+    ax_d.set_xlabel("Neighborhood radius (°)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_d.set_ylabel("Stage-0 mass within radius", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_d.set_title("Stage-0 local separability", fontsize=FIG03_TYPOGRAPHY["title"])
+    ax_d.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_d.tick_params(labelsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_d.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="lower right")
+    add_panel_label(ax_d, "d", x=-0.14, y=1.06)
+
+    # Panel e
+    ax_e = fig.add_subplot(gs[1, 1])
+    _fill_curve(ax_e, angles, exact_wn, exact_sem_wn, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax_e, angles, exact_sp, exact_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax_e.plot(angles, exact_wn, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=0.95, markersize=2.2, label=f"Calibration ({np.mean(exact_wn):.1%})")
+    ax_e.plot(angles, exact_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=0.95, markersize=2.2, label=f"Speech ({np.mean(exact_sp):.1%})")
+    ax_e.set_xlim(float(angles[0]), float(angles[-1]))
+    ax_e.set_ylim(-0.02, 1.02)
+    ax_e.set_xticks([0, 45, 90, 135, 180])
+    ax_e.set_xlabel("Angle (°)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_e.set_ylabel("Exact Top-1 rate", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_e.set_title("Exact first-choice collapse", fontsize=FIG03_TYPOGRAPHY["title"])
+    ax_e.grid(axis="y", linestyle="--", alpha=0.3)
+    ax_e.tick_params(labelsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_e.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
+    add_panel_label(ax_e, "e", x=-0.14, y=1.06)
+
+    # Panel f
     ax_f = fig.add_subplot(gs[1, 2])
-
-    # Line 1: WN signal (blue)
-    wn_omp_arr = np.asarray(wn_omp_accs, dtype=float)
-    wn_omp_sem_arr = np.asarray(wn_omp_sems, dtype=float)
-    ax_f.fill_between(
-        snr_x_positions,
-        np.clip(wn_omp_arr - wn_omp_sem_arr, 0.0, 1.0),
-        np.clip(wn_omp_arr + wn_omp_sem_arr, 0.0, 1.0),
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.10,
-        linewidth=0,
-        zorder=0,
-    )
-    ax_f.plot(snr_x_positions, wn_omp_accs, "-o", markersize=3,
-              linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
-              label=f"WN signal ({wn_omp_accs[0]:.0%})", zorder=2)
-
-    # Line 2: Speech signal + babble (orange, 5-seed mean ± SEM band)
-    if sp_omp_accs:
-        sp_omp_arr = np.asarray(sp_omp_accs, dtype=float)
-        sp_omp_sem_arr = np.asarray(sp_omp_sems, dtype=float)
-        ax_f.fill_between(
-            snr_x_positions,
-            np.clip(sp_omp_arr - sp_omp_sem_arr, 0.0, 1.0),
-            np.clip(sp_omp_arr + sp_omp_sem_arr, 0.0, 1.0),
-            color=SEMANTIC_PALETTE["ablation"],
-            alpha=0.12,
-            linewidth=0,
-            zorder=0,
-        )
-        ax_f.plot(snr_x_positions, sp_omp_arr, "-s", markersize=3,
-                  linewidth=1.0, color=SEMANTIC_PALETTE["ablation"],
-                  label=f"Speech signal ({sp_omp_accs[0]:.0%})", zorder=2)
-
-    ax_f.set_xticks(snr_x_positions)
-    xtick_labels_f = ["\u221e" if lbl == "Inf" else lbl for lbl in snr_labels]
-    ax_f.set_xticklabels(xtick_labels_f, fontsize=FIG03_TYPOGRAPHY["tick_label"], rotation=45, ha="right")
-    ax_f.set_xlabel("SNR (dB) \u2192 noise", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax_f.set_ylabel("Top-1 match rate", fontsize=FIG03_TYPOGRAPHY["axis_label"])
-    ax_f.set_title("Greedy diagnostic dose-response", fontsize=FIG03_TYPOGRAPHY["title"])
-    ax_f.set_ylim(-0.02, 1.05)
+    _fill_curve(ax_f, angles, exact_sp, exact_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.10)
+    _fill_curve(ax_f, angles, local_sp, local_sem_sp, color=SEMANTIC_PALETTE["learned"], alpha=0.12)
+    ax_f.plot(angles, exact_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=0.95, markersize=2.2, label=f"Exact ({np.mean(exact_sp):.1%})")
+    ax_f.plot(angles, local_sp, "-^", color=SEMANTIC_PALETTE["learned"], linewidth=0.95, markersize=2.4, label=f"Within {int(FIG03_LOCAL_TOLERANCE_DEG)}° ({np.mean(local_sp):.1%})")
+    ax_f.set_xlim(float(angles[0]), float(angles[-1]))
+    ax_f.set_ylim(-0.02, 1.02)
+    ax_f.set_xticks([0, 45, 90, 135, 180])
+    ax_f.set_xlabel("Angle (°)", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_f.set_ylabel("Speech match rate", fontsize=FIG03_TYPOGRAPHY["axis_label"])
+    ax_f.set_title("Speech exact vs local tolerance", fontsize=FIG03_TYPOGRAPHY["title"])
     ax_f.grid(axis="y", linestyle="--", alpha=0.3)
-    ax_f.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
+    ax_f.tick_params(labelsize=FIG03_TYPOGRAPHY["tick_label"])
+    ax_f.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
+    add_panel_label(ax_f, "f", x=-0.14, y=1.06)
 
-    add_panel_label(ax_f, "f", x=-0.12, y=1.06)
-
-    # Save composite
-    all_paths = save_outputs(fig, output_dir / "fig03_fingerprint_discriminability")
+    all_paths.extend(save_outputs(fig, output_dir / "fig03_fingerprint_discriminability"))
     plt.close(fig)
 
-    # -----------------------------------------------------------------------
-    # Standalone panels
-    # -----------------------------------------------------------------------
     panel_dir = output_dir / "fig03_fingerprint_discriminability_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    # Panel a standalone
-    fig_a = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    # Standalone a
+    fig_a = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
     ax = fig_a.add_subplot(111)
-    _draw_violin_panel(ax, within_wn, between_wn, "White noise", "a",
-                       ylim=violin_ylim)
+    ax.plot(ranks_h, cum_h, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=3.0, label="Calibration")
+    ax.plot(ranks_sp, cum_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=3.0, label="Speech")
+    ax.axhline(0.80, color=STYLE_COLORS["chance_line"], linestyle="--", linewidth=0.6, alpha=0.8)
+    ax.axvline(r80_h, color=SEMANTIC_PALETTE["physics"], linestyle=":", linewidth=0.7, alpha=0.8)
+    ax.axvline(r80_sp, color=SEMANTIC_PALETTE["ablation"], linestyle=":", linewidth=0.7, alpha=0.8)
+    ax.set_xlim(1, min(16, len(ranks_h)))
+    ax.set_ylim(0.0, 1.02)
+    ax.set_xlabel("Component index r")
+    ax.set_ylabel("Cum. energy fraction")
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="lower right")
+    add_panel_label(ax, "a")
     fig_a.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_a, panel_dir / "fig03_panel_a_wn_violin"))
+    all_paths.extend(save_outputs(fig_a, panel_dir / "fig03_panel_a_mirrored_compactness"))
     plt.close(fig_a)
 
-    # Panel b standalone
-    fig_b = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    # Standalone b
+    fig_b = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
     ax = fig_b.add_subplot(111)
-    _draw_violin_panel(ax, within_sp, between_sp, "Speech", "b",
-                       ylim=violin_ylim)
+    _fill_curve(ax, decay_x_h, decay_mean_h, decay_sem_h, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax, decay_x_sp, decay_mean_sp, decay_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax.plot(decay_x_h, decay_mean_h, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=3.0, label="Calibration")
+    ax.plot(decay_x_sp, decay_mean_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=3.0, label="Speech")
+    ax.axhline(0.0, color=STYLE_COLORS["chance_line"], linestyle="--", linewidth=0.6, alpha=0.8)
+    ax.axvspan(0.0, 15.0, color=SEMANTIC_PALETTE["highlight"], alpha=0.12, linewidth=0.0)
+    ax.set_xlim(5.0, 90.0)
+    ax.set_xlabel("Angular separation |Δθ| (deg)")
+    ax.set_ylabel("Mean centered corr.")
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
+    add_panel_label(ax, "b")
     fig_b.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig03_panel_b_speech_violin"))
+    all_paths.extend(save_outputs(fig_b, panel_dir / "fig03_panel_b_local_ordering_decay"))
     plt.close(fig_b)
 
-    # Panel c standalone
-    fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    # Standalone c
+    fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
     ax = fig_c.add_subplot(111)
-    ax.fill_between(
-        angles[valid_wn],
-        margin_ci_lo_wn[valid_wn],
-        margin_ci_hi_wn[valid_wn],
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.14,
-        linewidth=0,
-        zorder=0,
-    )
-    ax.fill_between(
-        angles[valid_sp],
-        margin_ci_lo_sp[valid_sp],
-        margin_ci_hi_sp[valid_sp],
-        color=SEMANTIC_PALETTE["ablation"],
-        alpha=0.12,
-        linewidth=0,
-        zorder=0,
-    )
-    ax.plot(angles[valid_wn], margin_wn[valid_wn], "-o", markersize=2,
-            linewidth=0.9, color=SEMANTIC_PALETTE["physics"],
-            label=f"WN (\u0394r\u0304={np.nanmean(margin_wn):.2f})")
-    ax.plot(angles[valid_sp], margin_sp[valid_sp], "-s", markersize=2,
-            linewidth=0.9, color=SEMANTIC_PALETTE["ablation"],
-            label=f"Speech (\u0394r\u0304={np.nanmean(margin_sp):.2f})")
-    ax.axhline(0, color=STYLE_COLORS["neutral_text"], linewidth=0.5, alpha=0.3)
-    ax.set_xlabel("Angle (\u00b0)")
-    ax.set_ylabel("Discriminability margin (within r \u2212 between r)")
-    ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
+    im = ax.imshow(split_matrix, cmap=sim_cmap, aspect="auto", vmin=sim_vmin, vmax=1.0)
+    ax.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5], color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticks(tick_positions)
+    ax.set_yticklabels(tick_labels)
+    ax.set_xlabel("Angle (°)")
+    ax.set_ylabel("Angle (°)")
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
     add_panel_label(ax, "c")
-    fig_c.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_discrim_margin"))
+    fig_c.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig03_panel_c_neighborhood_coherence"))
     plt.close(fig_c)
 
-    # Panel d standalone
-    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=90)
-    outer = gridspec.GridSpec(
-        1, 1, figure=fig_d,
-        left=0.10, right=0.96, bottom=0.14, top=0.92,
-    )
-    _draw_stacked_omp_panel(
-        fig_d,
-        outer[0, 0],
-        angles=angles,
-        omp_acc_wn=omp_acc_wn,
-        omp_acc_sp=omp_acc_sp,
-        omp_sem_wn=omp_sem_wn,
-        omp_sem_sp=omp_sem_sp,
-        omp_mean_wn=omp_mean_wn,
-        omp_mean_sp=omp_mean_sp,
-        panel_label="d",
-    )
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig03_panel_d_omp_comparison"))
+    # Standalone d
+    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
+    ax = fig_d.add_subplot(111)
+    _fill_curve(ax, FIG03_LOCAL_RADII_DEG, local_mass_wn, local_mass_sem_wn, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax, FIG03_LOCAL_RADII_DEG, local_mass_sp, local_mass_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax.plot(FIG03_LOCAL_RADII_DEG, local_mass_wn, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=1.0, markersize=3.0, label="Calibration")
+    ax.plot(FIG03_LOCAL_RADII_DEG, local_mass_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=1.0, markersize=3.0, label="Speech")
+    ax.axvspan(0.0, 15.0, color=SEMANTIC_PALETTE["highlight"], alpha=0.12, linewidth=0.0)
+    ax.set_xlim(float(FIG03_LOCAL_RADII_DEG[0]), float(FIG03_LOCAL_RADII_DEG[-1]))
+    ax.set_ylim(0.0, 1.02)
+    ax.set_xlabel("Neighborhood radius (°)")
+    ax.set_ylabel("Stage-0 mass within radius")
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="lower right")
+    add_panel_label(ax, "d")
+    fig_d.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig03_panel_d_local_separability"))
     plt.close(fig_d)
 
-    # Panel e standalone
-    fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    # Standalone e
+    fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
     ax = fig_e.add_subplot(111)
-    im = ax.imshow(split_matrix, cmap=sim_cmap, aspect="auto", vmin=sim_vmin, vmax=1.0)
-    ax.plot([-0.5, n_angles - 0.5], [-0.5, n_angles - 0.5],
-            color=STYLE_COLORS["neutral_text"], linewidth=0.8, alpha=0.7)
-    ax.set_xticks(tick_positions)
-    ax.set_xticklabels(tick_labels_e)
-    ax.set_yticks(tick_positions)
-    ax.set_yticklabels(tick_labels_e)
-    ax.set_xlabel("Angle (\u00b0)")
-    ax.set_ylabel("Angle (\u00b0)")
-    ax.set_title("Pairwise fingerprint similarity", fontsize=FIG03_TYPOGRAPHY["title"])
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("Pearson r", fontsize=FIG03_TYPOGRAPHY["colorbar_label"])
-    ax.text(n_angles * 0.75, n_angles * 0.25, "Speech",
-            ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["axis_label"], fontstyle="italic", alpha=0.7,
-            color=STYLE_COLORS["neutral_text"])
-    ax.text(n_angles * 0.25, n_angles * 0.75, "WN",
-            ha="center", va="center", fontsize=FIG03_TYPOGRAPHY["axis_label"], fontstyle="italic", alpha=0.7,
-            color=STYLE_COLORS["neutral_text"])
+    _fill_curve(ax, angles, exact_wn, exact_sem_wn, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
+    _fill_curve(ax, angles, exact_sp, exact_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.12)
+    ax.plot(angles, exact_wn, "-o", color=SEMANTIC_PALETTE["physics"], linewidth=0.95, markersize=2.6, label="Calibration")
+    ax.plot(angles, exact_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=0.95, markersize=2.6, label="Speech")
+    ax.set_xlim(float(angles[0]), float(angles[-1]))
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_xticks([0, 45, 90, 135, 180])
+    ax.set_xlabel("Angle (°)")
+    ax.set_ylabel("Exact Top-1 rate")
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
     add_panel_label(ax, "e")
-    fig_e.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
-    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_split_pairwise"))
+    fig_e.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig03_panel_e_exact_first_choice"))
     plt.close(fig_e)
 
-    # Panel f standalone
-    fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    # Standalone f
+    fig_f = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80.0)
     ax = fig_f.add_subplot(111)
-    wn_omp_arr = np.asarray(wn_omp_accs, dtype=float)
-    wn_omp_sem_arr = np.asarray(wn_omp_sems, dtype=float)
-    ax.fill_between(
-        snr_x_positions,
-        np.clip(wn_omp_arr - wn_omp_sem_arr, 0.0, 1.0),
-        np.clip(wn_omp_arr + wn_omp_sem_arr, 0.0, 1.0),
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.10,
-        linewidth=0,
-        zorder=0,
-    )
-    ax.plot(snr_x_positions, wn_omp_accs, "-o", markersize=4,
-            linewidth=1.0, color=SEMANTIC_PALETTE["physics"],
-            label=f"WN signal ({wn_omp_accs[0]:.0%})")
-    if sp_omp_accs:
-        sp_omp_arr = np.asarray(sp_omp_accs, dtype=float)
-        sp_omp_sem_arr = np.asarray(sp_omp_sems, dtype=float)
-        ax.fill_between(
-            snr_x_positions,
-            np.clip(sp_omp_arr - sp_omp_sem_arr, 0.0, 1.0),
-            np.clip(sp_omp_arr + sp_omp_sem_arr, 0.0, 1.0),
-            color=SEMANTIC_PALETTE["ablation"],
-            alpha=0.12,
-            linewidth=0,
-            zorder=0,
-        )
-        ax.plot(snr_x_positions, sp_omp_arr, "-s", markersize=4,
-                linewidth=1.0, color=SEMANTIC_PALETTE["ablation"],
-                label=f"Speech signal ({sp_omp_accs[0]:.0%})")
-    ax.set_xticks(snr_x_positions)
-    ax.set_xticklabels(xtick_labels_f, fontsize=FIG03_TYPOGRAPHY["tick_label"], rotation=45, ha="right")
-    ax.set_xlabel("SNR (dB) \u2192 noise")
-    ax.set_ylabel("Top-1 match rate")
-    ax.set_ylim(-0.02, 1.05)
+    _fill_curve(ax, angles, exact_sp, exact_sem_sp, color=SEMANTIC_PALETTE["ablation"], alpha=0.10)
+    _fill_curve(ax, angles, local_sp, local_sem_sp, color=SEMANTIC_PALETTE["learned"], alpha=0.12)
+    ax.plot(angles, exact_sp, "-s", color=SEMANTIC_PALETTE["ablation"], linewidth=0.95, markersize=2.6, label="Exact")
+    ax.plot(angles, local_sp, "-^", color=SEMANTIC_PALETTE["learned"], linewidth=0.95, markersize=2.6, label=f"Within {int(FIG03_LOCAL_TOLERANCE_DEG)}°")
+    ax.set_xlim(float(angles[0]), float(angles[-1]))
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_xticks([0, 45, 90, 135, 180])
+    ax.set_xlabel("Angle (°)")
+    ax.set_ylabel("Speech match rate")
     ax.grid(axis="y", linestyle="--", alpha=0.3)
-    ax.legend(fontsize=FIG03_TYPOGRAPHY["legend"], frameon=False, loc="upper right")
+    ax.legend(frameon=False, fontsize=FIG03_TYPOGRAPHY["legend"], loc="upper right")
     add_panel_label(ax, "f")
-    fig_f.subplots_adjust(left=0.08, right=0.95, bottom=0.20, top=0.92)
-    all_paths.extend(save_outputs(fig_f, panel_dir / "fig03_panel_f_dose_response"))
+    fig_f.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_f, panel_dir / "fig03_panel_f_local_tolerance"))
     plt.close(fig_f)
 
-    # Panel manifest
     manifest = _save_panel_manifest(
         panel_dir,
         [
             {
                 "panel_id": "a",
-                "title": "White noise within vs between similarity",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_a_wn_violin.pdf",
+                "title": "Mirrored compactness",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_a_mirrored_compactness.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Violin plot of within vs between-angle Pearson r for white noise stimuli.",
+                "description": "Cumulative energy saturation for the calibration centered dictionary and the speech angle-mean centered summary, showing that compact shared structure survives speech.",
             },
             {
                 "panel_id": "b",
-                "title": "Speech within vs between similarity",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_b_speech_violin.pdf",
+                "title": "Speech-side local-ordering decay",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_b_local_ordering_decay.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Violin plot of within vs between-angle Pearson r for speech stimuli.",
+                "description": "Mean centered correlation versus angular separation for calibration and speech, showing that the finite neighborhood survives but broadens under speech.",
             },
             {
                 "panel_id": "c",
-                "title": "Per-angle discriminability margin",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_discrim_margin.pdf",
+                "title": "Neighborhood-coherence map",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_c_neighborhood_coherence.pdf",
                 "provenance_mode": "data_backed",
-                "description": "WN vs Speech discriminability margin (within_r - between_r) per angle with bootstrap uncertainty bands.",
+                "description": "Split-triangle angle-angle similarity map with calibration in the lower-left and speech in the upper-right, showing retained coarse ordering under speech.",
             },
             {
                 "panel_id": "d",
-                "title": "Angle-resolved stage-0 first-choice traces",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_omp_comparison.pdf",
+                "title": "Stage-0 local separability",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_d_local_separability.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Stacked white-noise and held-out-speech stage-0 first-choice traces over the calibrated angle grid with clip-level uncertainty bands.",
+                "description": "Mean grouped-match mass within neighborhood radius for calibration and speech on the frozen stage-0 diagnostic surface.",
             },
             {
                 "panel_id": "e",
-                "title": "Pairwise fingerprint similarity",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_split_pairwise.pdf",
+                "title": "Exact first-choice collapse",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_e_exact_first_choice.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 split-triangle fingerprint-similarity map with lower-left=WN, upper-right=Speech, and a masked diagonal separator.",
+                "description": "Angle-resolved exact stage-0 first-choice rate for calibration and speech, showing collapse of immediate one-angle commitment under speech.",
             },
             {
                 "panel_id": "f",
-                "title": "Stage-0 diagnostic noise-response curves",
-                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_f_dose_response.pdf",
+                "title": "Speech exact vs local tolerance",
+                "asset_path": "figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_f_local_tolerance.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Separate stage-0 first-choice noise-response curves: white-noise match rate recomputed on synthetic noisy white-noise datasets plus a distinct five-seed speech-plus-babble sweep, with white-noise clip-level SEM shading and speech mean ± SEM shading.",
+                "description": "Speech stage-0 exact versus within-10-degree match rates over angle, showing that local support remains even when exact commitment fails.",
             },
         ],
     )
     all_paths.append(manifest)
-
     print(f"[fig03] Generated {len(all_paths)} files")
-    print(f"[fig03] WN: p={p_wn:.2e}, d={d_wn:.2f}, mean_within_r={mean_within_wn:.3f}")
-    print(f"[fig03] Speech: p={p_sp:.2e}, d={d_sp:.2f}, mean_within_r={mean_within_sp:.3f}")
-    print(f"[fig03] Greedy diagnostic — WN: {omp_mean_wn:.3f}, Speech: {omp_mean_sp:.3f}")
-    print(f"[fig03] WN dose-response: {' -> '.join(f'{a:.1%}' for a in wn_omp_accs)}")
-    if sp_omp_accs:
-        print(f"[fig03] Sp dose-response: {' -> '.join(f'{a:.1%}' for a in sp_omp_accs)}")
     return all_paths
+

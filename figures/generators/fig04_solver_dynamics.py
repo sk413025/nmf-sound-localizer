@@ -1,12 +1,12 @@
-"""Figure 4 — Physics-guided delayed commitment under local overlap.
+"""Figure 4 — neighborhood-preserving admissibility before subtraction.
 
-This generator produces the five paper-facing, governed panels:
+This generator produces the five paper-facing governed panels:
 
-- (a) architecture and physics correspondence
+- (a) neighborhood admissibility strip
 - (b) broad initial match
-- (c) local gate convergence
-- (d) residual purification
-- (e) ablation consequence
+- (c) local contraction
+- (d) validation-wide neighborhood contraction
+- (e) within-15-degree mass gain
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from pathlib import Path
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 from figures.fig04_stepwise_mechanics import build_stepwise_mechanics_artifact
 from figures.layout_contract import (
@@ -39,12 +38,6 @@ from figures.style import (
 )
 
 
-DECODER_VARIANTS = [
-    ("No Type Bias", "guided solver", SEMANTIC_PALETTE["learned"]),
-    ("No Transformer", "router bypass", SEMANTIC_PALETTE["ablation"]),
-    ("Fixed Heuristic", "OMP baseline", SEMANTIC_PALETTE["classical"]),
-    ("Dense Routing", "dense routing", STYLE_COLORS["dense_routing"]),
-]
 EPS = 1e-8
 FIG04_HEAVY_LINEWIDTH = STROKE_TOKENS["emphasis"]
 FIG04_BASE_LINEWIDTH = STROKE_TOKENS["data"]
@@ -53,7 +46,6 @@ FIG04_RULE_LINEWIDTH = STROKE_TOKENS["base"]
 FIG04_MARKER_EDGEWIDTH = STROKE_TOKENS["grid"]
 FIG04_POINT_MARKER_SIZE = FAMILY_STYLE["compact_marker_pt"] ** 2
 FIG04_MEAN_MARKER_SIZE = FAMILY_STYLE["standard_marker_pt"]
-FIG04_ERRORBAR_CAPSIZE = FAMILY_STYLE["compact_capsize_pt"]
 FIG04_GUIDE_LINE_COLOR = STYLE_COLORS["guide_line"]
 FIG04_GUIDE_FILL_COLOR = STYLE_COLORS["guide_fill"]
 FIG04_TARGET_RADIUS_DEG = 15.0
@@ -119,9 +111,7 @@ def _load_h_similarity(data_root: Path) -> np.ndarray:
     dict_path = data_root / paths_cfg["primary_run"] / "dictionary.npz"
     dict_data = np.load(dict_path, allow_pickle=True)
     H = np.asarray(dict_data["H"], dtype=np.float64)
-    norms = np.linalg.norm(H, axis=0, keepdims=True)
-    H_normed = H / np.maximum(norms, 1e-8)
-    return (H_normed.T @ H_normed).astype(np.float32)
+    return np.corrcoef(H.T).astype(np.float32)
 
 
 def _local_band_profile(
@@ -131,15 +121,6 @@ def _local_band_profile(
 ) -> np.ndarray:
     target_idx = int(np.argmin(np.abs(angles_deg - target_angle)))
     return _normalize_1d(h_similarity[target_idx])
-
-
-def _stage_trace(
-    mechanics: dict[str, np.ndarray],
-    key: str,
-    *,
-    representative_step: int = 0,
-) -> np.ndarray:
-    return _normalize_1d(np.asarray(mechanics[key][0, representative_step], dtype=np.float32))
 
 
 def _configure_profile_axis(
@@ -210,8 +191,8 @@ def _draw_local_band_guide(
     if guide_label:
         ax.text(
             0.98,
-            0.11,
-            "measured local band in H",
+            0.10,
+            "measured neighborhood in H",
             transform=ax.transAxes,
             fontsize=legend_pt if legend_pt is not None else 5.6,
             ha="right",
@@ -272,9 +253,8 @@ def _plot_panel_a(
     legend_pt: float,
     add_label: bool,
 ) -> list[plt.Axes]:
-    outer = slot_spec.subgridspec(1, 2, width_ratios=[0.92, 1.68], wspace=0.14)
+    outer = slot_spec.subgridspec(1, 2, width_ratios=[0.96, 1.64], wspace=0.14)
     left_ax = fig.add_subplot(outer[0, 0])
-    left_ax.set_gid("fig04.panel_a.main")
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     img = left_ax.imshow(
         h_similarity,
@@ -309,7 +289,7 @@ def _plot_panel_a(
     left_ax.tick_params(labelsize=tick_label_pt, length=2)
     left_ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
     left_ax.set_ylabel("Angle (°)", fontsize=axis_label_pt)
-    left_ax.set_title("Measured local structure", fontsize=title_pt, pad=2.0)
+    left_ax.set_title("Measured neighborhood", fontsize=title_pt, pad=2.0)
     left_ax.text(
         0.03,
         0.95,
@@ -324,47 +304,21 @@ def _plot_panel_a(
     right = outer[0, 1].subgridspec(1, 3, wspace=0.08)
     local_band = _local_band_profile(h_similarity, mechanics["angles_deg"], target_angle)
     stage_specs = [
-        ("match", _normalize_1d(mechanics["stage0_g_norm_mean"][0]), SEMANTIC_PALETTE["physics"], "--", FIG04_BASE_LINEWIDTH, "fig04.panel_a.stage_broad"),
-        ("gate", _normalize_1d(mechanics["stage0_w_theta_norm_mean"][0]), SEMANTIC_PALETTE["ablation"], ":", FIG04_LIGHT_LINEWIDTH, "fig04.panel_a.stage_gate"),
-        ("update", _normalize_1d(mechanics["stage0_delta_norm_mean"][0]), SEMANTIC_PALETTE["learned"], "-", FIG04_HEAVY_LINEWIDTH, "fig04.panel_a.stage_update"),
+        ("broad match", _normalize_1d(mechanics["stage0_g_norm_mean"][0]), SEMANTIC_PALETTE["physics"], "--", FIG04_BASE_LINEWIDTH),
+        ("local gate", _normalize_1d(mechanics["stage0_w_theta_norm_mean"][0]), SEMANTIC_PALETTE["ablation"], ":", FIG04_LIGHT_LINEWIDTH),
+        ("local update", _normalize_1d(mechanics["stage0_delta_norm_mean"][0]), SEMANTIC_PALETTE["learned"], "-", FIG04_HEAVY_LINEWIDTH),
     ]
     stage_axes: list[plt.Axes] = []
     focus = (45.0, 95.0)
-    for idx, (title, values, color, linestyle, linewidth, gid) in enumerate(stage_specs):
+    for idx, (title, values, color, linestyle, linewidth) in enumerate(stage_specs):
         ax = fig.add_subplot(right[0, idx])
-        ax.set_gid(gid)
-        _draw_local_band_guide(
-            ax,
-            mechanics["angles_deg"],
-            local_band,
-            target_angle=target_angle,
-        )
-        _plot_trace(
-            ax,
-            mechanics["angles_deg"],
-            values,
-            color=color,
-            linestyle=linestyle,
-            linewidth=linewidth,
-        )
-        _fill_trace(
-            ax,
-            mechanics["angles_deg"],
-            values,
-            color=color,
-            alpha=0.08 if idx < 2 else 0.12,
-        )
-        _configure_profile_axis(
-            ax,
-            tick_label_pt=tick_label_pt - 0.2,
-            show_yticks=(idx == 0),
-            local_focus=focus,
-        )
+        _draw_local_band_guide(ax, mechanics["angles_deg"], local_band, target_angle=target_angle)
+        _plot_trace(ax, mechanics["angles_deg"], values, color=color, linestyle=linestyle, linewidth=linewidth)
+        _fill_trace(ax, mechanics["angles_deg"], values, color=color, alpha=0.08 if idx < 2 else 0.12)
+        _configure_profile_axis(ax, tick_label_pt=tick_label_pt - 0.2, show_yticks=(idx == 0), local_focus=focus)
         ax.set_title(title, fontsize=title_pt - 0.35, pad=1.2, color=STYLE_COLORS["muted_text"])
         if idx == 0:
             ax.set_ylabel("Normalized support", fontsize=axis_label_pt - 0.3)
-        else:
-            ax.set_xlabel("")
         stage_axes.append(ax)
 
     if add_label:
@@ -385,7 +339,6 @@ def _plot_panel_b(
     add_label: bool,
 ) -> list[plt.Axes]:
     ax = fig.add_subplot(slot_spec)
-    ax.set_gid("fig04.panel_b.main")
     angles_deg = np.asarray(mechanics["angles_deg"], dtype=np.float32)
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     local_band = _local_band_profile(h_similarity, angles_deg, target_angle)
@@ -396,10 +349,6 @@ def _plot_panel_b(
         x_min,
         x_max,
     )
-    local_mask = np.abs(angles_deg - target_angle) <= FIG04_TARGET_RADIUS_DEG
-    local_angles = angles_deg[local_mask]
-    local_values = broad[local_mask]
-
     _draw_local_band_guide(
         ax,
         angles_deg,
@@ -417,31 +366,7 @@ def _plot_panel_b(
         linewidth=FIG04_BASE_LINEWIDTH,
         label="broad match",
     )
-    _fill_trace(
-        ax,
-        angles_deg,
-        broad,
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.10,
-    )
-    ax.vlines(
-        local_angles,
-        0.0,
-        local_values,
-        color=SEMANTIC_PALETTE["physics"],
-        alpha=0.24,
-        linewidth=FIG04_LIGHT_LINEWIDTH,
-        zorder=2,
-    )
-    ax.scatter(
-        local_angles,
-        local_values,
-        color=SEMANTIC_PALETTE["physics"],
-        s=FIG04_POINT_MARKER_SIZE * 0.45,
-        alpha=0.85,
-        zorder=4,
-        linewidths=0.0,
-    )
+    _fill_trace(ax, angles_deg, broad, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
     _configure_profile_axis(ax, tick_label_pt=tick_label_pt, local_focus=(x_min, x_max))
     ax.set_title("Broad initial match", fontsize=title_pt, pad=2.0)
     ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
@@ -449,7 +374,7 @@ def _plot_panel_b(
     ax.text(
         0.03,
         0.94,
-        "representative clip",
+        "representative speech clip",
         transform=ax.transAxes,
         fontsize=legend_pt - 0.2,
         va="top",
@@ -475,43 +400,21 @@ def _plot_panel_c(
     add_label: bool,
 ) -> list[plt.Axes]:
     ax = fig.add_subplot(slot_spec)
-    ax.set_gid("fig04.panel_c.main")
     angles_deg = np.asarray(mechanics["angles_deg"], dtype=np.float32)
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     local_band = _local_band_profile(h_similarity, angles_deg, target_angle)
     x_min, x_max = 45.0, 95.0
-    broad = _normalize_in_window(
-        np.asarray(mechanics["sample_g_expert_steps"][0, 0], dtype=np.float32),
-        angles_deg,
-        x_min,
-        x_max,
-    )
-    gate = _normalize_in_window(
-        np.asarray(mechanics["sample_w_theta_steps"][0, 0], dtype=np.float32),
-        angles_deg,
-        x_min,
-        x_max,
-    )
-    update = _normalize_in_window(
-        np.asarray(mechanics["sample_delta_expert_steps"][0, 0], dtype=np.float32),
-        angles_deg,
-        x_min,
-        x_max,
-    )
-    _draw_local_band_guide(
-        ax,
-        angles_deg,
-        local_band,
-        target_angle=target_angle,
-        guide_label=False,
-    )
+    broad = _normalize_in_window(np.asarray(mechanics["sample_g_expert_steps"][0, 0], dtype=np.float32), angles_deg, x_min, x_max)
+    gate = _normalize_in_window(np.asarray(mechanics["sample_w_theta_steps"][0, 0], dtype=np.float32), angles_deg, x_min, x_max)
+    update = _normalize_in_window(np.asarray(mechanics["sample_delta_expert_steps"][0, 0], dtype=np.float32), angles_deg, x_min, x_max)
+    _draw_local_band_guide(ax, angles_deg, local_band, target_angle=target_angle)
     _plot_trace(ax, angles_deg, broad, color=SEMANTIC_PALETTE["physics"], linestyle="--", linewidth=FIG04_BASE_LINEWIDTH, label="broad match")
     _plot_trace(ax, angles_deg, gate, color=SEMANTIC_PALETTE["ablation"], linestyle=":", linewidth=FIG04_LIGHT_LINEWIDTH, label="local gate")
     _plot_trace(ax, angles_deg, update, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH, label="local update")
     _fill_trace(ax, angles_deg, gate, color=SEMANTIC_PALETTE["ablation"], alpha=0.06)
     _fill_trace(ax, angles_deg, update, color=SEMANTIC_PALETTE["learned"], alpha=0.10)
     _configure_profile_axis(ax, tick_label_pt=tick_label_pt, local_focus=(x_min, x_max))
-    ax.set_title("Local gate convergence", fontsize=title_pt, pad=2.0)
+    ax.set_title("Local contraction", fontsize=title_pt, pad=2.0)
     ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
     ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
     ax.legend(frameon=False, fontsize=legend_pt - 0.2, loc="upper right", handlelength=2.0)
@@ -521,8 +424,7 @@ def _plot_panel_c(
 
 
 def _plot_panel_d(
-    fig: plt.Figure,
-    slot_spec,
+    ax: plt.Axes,
     mechanics: dict[str, np.ndarray],
     *,
     axis_label_pt: float,
@@ -530,51 +432,14 @@ def _plot_panel_d(
     title_pt: float,
     legend_pt: float,
     add_label: bool,
-) -> list[plt.Axes]:
-    inner = slot_spec.subgridspec(1, 2, width_ratios=[0.9, 1.1], wspace=0.24)
-    left_ax = fig.add_subplot(inner[0, 0])
-    left_ax.set_gid("fig04.panel_d.block")
-    initial = float(np.asarray(mechanics["sample_initial_res_norm"]).item())
-    after = np.asarray(mechanics["sample_res_norms"], dtype=np.float32)[0]
-    residual_steps = np.asarray([initial, after[0], after[1]], dtype=np.float32)
-    step_x = np.arange(residual_steps.size, dtype=np.float32)
-    left_ax.plot(
-        step_x,
-        residual_steps,
-        color=SEMANTIC_PALETTE["learned"],
-        linewidth=FIG04_HEAVY_LINEWIDTH,
-        marker="o",
-        markersize=FIG04_MEAN_MARKER_SIZE,
-    )
-    left_ax.set_xticks(step_x)
-    left_ax.set_xticklabels(["initial", "after 1", "after 2"])
-    left_ax.set_ylim(0.0, 1.05)
-    left_ax.set_yticks([0.0, 0.5, 1.0])
-    left_ax.tick_params(axis="x", labelsize=tick_label_pt - 0.2, length=0)
-    left_ax.tick_params(axis="y", labelsize=tick_label_pt, length=2)
-    left_ax.grid(axis="y", linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
-    left_ax.set_title("Residual norm", fontsize=title_pt - 0.2, pad=2.0)
-    left_ax.set_ylabel("Relative norm", fontsize=axis_label_pt)
-    left_ax.text(
-        0.03,
-        0.95,
-        f"1.00 → {after[0]:.2f} → {after[1]:.2f}",
-        transform=left_ax.transAxes,
-        fontsize=legend_pt - 0.2,
-        va="top",
-        ha="left",
-        color=STYLE_COLORS["muted_text"],
-    )
-
-    right_ax = fig.add_subplot(inner[0, 1])
-    right_ax.set_gid("fig04.panel_d.block")
+) -> None:
     radius_deg = np.asarray(mechanics["aligned_radius_deg"], dtype=np.float32)
     g_mean = np.asarray(mechanics["aligned_cum_mass_g_mean"], dtype=np.float32)
     g_sem = np.asarray(mechanics["aligned_cum_mass_g_sem"], dtype=np.float32)
     delta_mean = np.asarray(mechanics["aligned_cum_mass_delta_mean"], dtype=np.float32)
     delta_sem = np.asarray(mechanics["aligned_cum_mass_delta_sem"], dtype=np.float32)
     clip_count = int(np.asarray(mechanics["aligned_clip_count"]).item())
-    right_ax.fill_between(
+    ax.fill_between(
         radius_deg,
         np.clip(delta_mean - delta_sem, 0.0, 1.05),
         np.clip(delta_mean + delta_sem, 0.0, 1.05),
@@ -582,8 +447,8 @@ def _plot_panel_d(
         alpha=FAMILY_STYLE["fill_alpha_primary"],
         linewidth=0.0,
     )
-    right_ax.plot(radius_deg, delta_mean, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH, label="after")
-    right_ax.fill_between(
+    ax.plot(radius_deg, delta_mean, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH, label="after first guided step")
+    ax.fill_between(
         radius_deg,
         np.clip(g_mean - g_sem, 0.0, 1.05),
         np.clip(g_mean + g_sem, 0.0, 1.05),
@@ -591,39 +456,37 @@ def _plot_panel_d(
         alpha=FAMILY_STYLE["fill_alpha_secondary"],
         linewidth=0.0,
     )
-    right_ax.plot(radius_deg, g_mean, color=SEMANTIC_PALETTE["physics"], linestyle="--", linewidth=FIG04_BASE_LINEWIDTH, label="before")
-    right_ax.axvspan(0.0, FIG04_TARGET_RADIUS_DEG, color=SEMANTIC_PALETTE["highlight"], alpha=FAMILY_STYLE["fill_alpha_secondary"], linewidth=0.0)
-    right_ax.axvline(FIG04_TARGET_RADIUS_DEG, color=STYLE_COLORS["chance_line"], linewidth=FIG04_RULE_LINEWIDTH, linestyle=":")
+    ax.plot(radius_deg, g_mean, color=SEMANTIC_PALETTE["physics"], linestyle="--", linewidth=FIG04_BASE_LINEWIDTH, label="before")
+    ax.axvspan(0.0, FIG04_TARGET_RADIUS_DEG, color=SEMANTIC_PALETTE["highlight"], alpha=FAMILY_STYLE["fill_alpha_secondary"], linewidth=0.0)
+    ax.axvline(FIG04_TARGET_RADIUS_DEG, color=STYLE_COLORS["chance_line"], linewidth=FIG04_RULE_LINEWIDTH, linestyle=":")
     idx15 = int(np.argmin(np.abs(radius_deg - FIG04_TARGET_RADIUS_DEG)))
-    right_ax.text(
+    ax.text(
         0.03,
         0.95,
         f"validation-wide, n = {clip_count:,}\nwithin 15°: {g_mean[idx15]:.2f} → {delta_mean[idx15]:.2f}",
-        transform=right_ax.transAxes,
+        transform=ax.transAxes,
         fontsize=legend_pt - 0.2,
         va="top",
         ha="left",
         color=STYLE_COLORS["muted_text"],
     )
-    right_ax.set_xlim(0.0, 45.0)
-    right_ax.set_ylim(0.0, 1.05)
-    right_ax.set_xticks([0, 15, 30, 45])
-    right_ax.set_yticks([0.0, 0.5, 1.0])
-    right_ax.tick_params(labelsize=tick_label_pt, length=2)
-    right_ax.grid(axis="y", linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
-    right_ax.set_title("Validation-wide local mass", fontsize=title_pt - 0.2, pad=2.0)
-    right_ax.set_xlabel("Neighborhood radius (°)", fontsize=axis_label_pt)
-    right_ax.set_ylabel("Mass within radius", fontsize=axis_label_pt)
-    right_ax.legend(frameon=False, fontsize=legend_pt - 0.2, loc="lower right")
-
+    ax.set_xlim(0.0, 45.0)
+    ax.set_ylim(0.0, 1.05)
+    ax.set_xticks([0, 15, 30, 45])
+    ax.set_yticks([0.0, 0.5, 1.0])
+    ax.tick_params(labelsize=tick_label_pt, length=2)
+    ax.grid(axis="y", linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+    ax.set_title("Validation-wide neighborhood contraction", fontsize=title_pt, pad=2.0)
+    ax.set_xlabel("Neighborhood radius (°)", fontsize=axis_label_pt)
+    ax.set_ylabel("Mass within radius", fontsize=axis_label_pt)
+    ax.legend(frameon=False, fontsize=legend_pt - 0.2, loc="lower right")
     if add_label:
-        add_panel_label(left_ax, "d", x=0.02, y=1.01)
-    return [left_ax, right_ax]
+        add_panel_label(ax, "d", x=0.02, y=1.01)
 
 
 def _plot_panel_e(
     ax: plt.Axes,
-    ablation_data: dict[str, list[float]],
+    mechanics: dict[str, np.ndarray],
     *,
     axis_label_pt: float,
     tick_label_pt: float,
@@ -631,103 +494,67 @@ def _plot_panel_e(
     legend_pt: float,
     add_label: bool,
 ) -> None:
-    ax.set_gid("fig04.panel_e.main")
-    chance_level = min(
-        float(np.asarray(ablation_data.get("Dense Routing", [0.0]), dtype=np.float32).mean()),
-        0.08,
-    )
-    display_labels = ["guided", "bypass", "OMP", "dense"]
-    x_positions = np.arange(len(DECODER_VARIANTS), dtype=np.float32)
-    ax.axhspan(0.0, chance_level, color=STYLE_COLORS["chance_fill"], zorder=0)
-    ax.axhline(
-        chance_level,
-        color=STYLE_COLORS["chance_line"],
-        linestyle="--",
-        linewidth=FIG04_RULE_LINEWIDTH,
-        zorder=1,
-    )
-    for (variant_key, _display_label, color), x_pos in zip(DECODER_VARIANTS, x_positions, strict=False):
-        seeds = ablation_data.get(variant_key, [])
-        if not seeds:
-            continue
-        seed_arr = np.asarray(seeds, dtype=np.float32)
-        mean_val = float(seed_arr.mean())
-        sem_val = 0.0 if seed_arr.size <= 1 else float(seed_arr.std(ddof=1) / np.sqrt(seed_arr.size))
-        x_offsets = np.linspace(-0.10, 0.10, num=seed_arr.size, dtype=np.float32) if seed_arr.size > 1 else np.zeros(1, dtype=np.float32)
+    radius_deg = np.asarray(mechanics["aligned_radius_deg"], dtype=np.float32)
+    idx15 = int(np.argmin(np.abs(radius_deg - FIG04_TARGET_RADIUS_DEG)))
+    before = np.asarray(mechanics["aligned_cum_mass_g_rows"], dtype=np.float32)[:, idx15]
+    after = np.asarray(mechanics["aligned_cum_mass_delta_rows"], dtype=np.float32)[:, idx15]
+    data = [before, after]
+    parts = ax.violinplot(data, positions=[0, 1], showmeans=True, showmedians=False, showextrema=False)
+    violin_colors = [SEMANTIC_PALETTE["physics"], SEMANTIC_PALETTE["learned"]]
+    for body, color in zip(parts["bodies"], violin_colors, strict=False):
+        body.set_facecolor(color)
+        body.set_alpha(0.55)
+    parts["cmeans"].set_color(STYLE_COLORS["neutral_text"])
+    parts["cmeans"].set_linewidth(FIG04_BASE_LINEWIDTH)
+
+    rng = np.random.default_rng(42)
+    for xpos, values, color in zip([0, 1], data, violin_colors, strict=False):
+        sample = values if values.size <= 300 else rng.choice(values, size=300, replace=False)
+        jitter = rng.uniform(-0.08, 0.08, size=sample.size)
         ax.scatter(
-            np.full(seed_arr.size, x_pos, dtype=np.float32) + x_offsets,
-            seed_arr,
+            np.full(sample.size, xpos, dtype=np.float32) + jitter,
+            sample,
             color=color,
-            s=FIG04_POINT_MARKER_SIZE,
-            alpha=FAMILY_STYLE["summary_point_alpha"],
-            edgecolors="white",
-            linewidths=FIG04_MARKER_EDGEWIDTH,
+            s=FIG04_POINT_MARKER_SIZE * 0.35,
+            alpha=0.18,
+            linewidths=0.0,
             zorder=3,
         )
-        ax.errorbar(
-            x_pos,
-            mean_val,
-            yerr=sem_val,
-            fmt="o",
-            color=color,
-            markersize=FIG04_MEAN_MARKER_SIZE,
-            capsize=FIG04_ERRORBAR_CAPSIZE,
-            linewidth=FIG04_BASE_LINEWIDTH,
-            zorder=4,
-        )
         ax.text(
-            x_pos,
-            min(mean_val + 0.055, 1.01),
-            f"{mean_val:.2f}",
+            xpos,
+            min(float(np.mean(values)) + 0.06, 1.02),
+            f"{np.mean(values):.2f}",
             fontsize=legend_pt,
             fontweight="bold",
             va="bottom",
             ha="center",
             color=color,
-            zorder=5,
         )
-    ax.set_xlim(-0.5, len(DECODER_VARIANTS) - 0.5)
+
+    ax.axhspan(0.0, 0.2, color=SEMANTIC_PALETTE["highlight"], alpha=FAMILY_STYLE["fill_alpha_secondary"], linewidth=0.0, zorder=0)
+    ax.set_xlim(-0.45, 1.45)
     ax.set_ylim(0.0, 1.05)
-    ax.set_xticks(x_positions)
-    ax.set_xticklabels(display_labels)
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["before", "after"])
     ax.set_yticks([0.0, 0.5, 1.0])
-    ax.tick_params(axis="x", labelsize=tick_label_pt - 0.1, length=0)
+    ax.tick_params(axis="x", labelsize=tick_label_pt, length=0)
     ax.tick_params(axis="y", labelsize=tick_label_pt, length=2)
     ax.grid(axis="y", linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
-    ax.set_title("Ablation consequence", fontsize=title_pt, pad=2.0)
-    ax.set_xlabel("Decoder family", fontsize=axis_label_pt)
-    ax.set_ylabel("Clean Top-1 accuracy", fontsize=axis_label_pt)
+    ax.set_title("Within-15° mass gain", fontsize=title_pt, pad=2.0)
+    ax.set_xlabel("First guided step", fontsize=axis_label_pt)
+    ax.set_ylabel("Mass inside 15°", fontsize=axis_label_pt)
     ax.text(
-        0.02,
-        0.98,
-        "chance floor",
+        0.03,
+        0.96,
+        "validation clips",
         transform=ax.transAxes,
         fontsize=legend_pt - 0.2,
         va="top",
         ha="left",
         color=STYLE_COLORS["muted_text"],
     )
-    ax.text(
-        0.98,
-        0.98,
-        "5 seeds",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.2,
-        va="top",
-        ha="right",
-        color=STYLE_COLORS["muted_text"],
-    )
     if add_label:
         add_panel_label(ax, "e", x=0.02, y=1.01)
-
-
-def _load_ablation_data(data_root: Path) -> dict[str, list[float]]:
-    paths_cfg = load_paths()
-    agg_path = data_root / paths_cfg["ablation_sweep"]["aggregated_json"]
-    if not agg_path.exists():
-        raise FileNotFoundError(f"Fig. 4 ablation sweep not found at {agg_path}")
-    with agg_path.open(encoding="utf-8") as handle:
-        return json.load(handle).get("ablation", {})
 
 
 def _load_mechanics(data_root: Path) -> tuple[Path, dict[str, np.ndarray]]:
@@ -740,7 +567,6 @@ def _load_mechanics(data_root: Path) -> tuple[Path, dict[str, np.ndarray]]:
 def _build_composite(
     fig: plt.Figure,
     mechanics: dict[str, np.ndarray],
-    ablation_data: dict[str, list[float]],
     h_similarity: np.ndarray,
     *,
     axis_label_pt: float,
@@ -805,9 +631,9 @@ def _build_composite(
         wspace=FIG04_BOTTOM_ROW["wspace"],
         width_ratios=FIG04_BOTTOM_ROW["width_ratios"],
     )
+    ax_d = fig.add_subplot(bottom[0, 0])
     _plot_panel_d(
-        fig,
-        bottom[0, 0],
+        ax_d,
         mechanics,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
@@ -818,7 +644,7 @@ def _build_composite(
     ax_e = fig.add_subplot(bottom[0, 1])
     _plot_panel_e(
         ax_e,
-        ablation_data,
+        mechanics,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
@@ -837,8 +663,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     title_pt = typography["title"]
 
     mechanics_path, mechanics = _load_mechanics(data_root)
-    ablation_data = _load_ablation_data(data_root)
-    h_sim = _load_h_similarity(data_root)
+    h_similarity = _load_h_similarity(data_root)
 
     all_paths: list[Path] = []
     fig = make_figure(
@@ -848,109 +673,71 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     _build_composite(
         fig,
         mechanics,
-        ablation_data,
-        h_sim,
+        h_similarity,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
         legend_pt=legend_pt,
         add_panel_labels=True,
     )
-    all_paths.extend(
-        save_outputs(
-            fig,
-            output_dir / "fig04_solver_dynamics",
-            typography=typography,
-        )
-    )
+    all_paths.extend(save_outputs(fig, output_dir / "fig04_solver_dynamics", typography=typography))
     plt.close(fig)
 
     panel_dir = output_dir / "fig04_solver_dynamics_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    fig_a = make_figure(
-        width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["a"],
-        height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["a"],
-    )
+    fig_a = make_figure(width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["a"], height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["a"])
     gs_a = gridspec.GridSpec(1, 1, figure=fig_a, **FIG04_STANDALONE["a"])
     _plot_panel_a(
         fig_a,
         gs_a[0],
         mechanics,
-        h_sim,
+        h_similarity,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
         legend_pt=legend_pt,
         add_label=False,
     )
-    all_paths.extend(
-        save_outputs(
-            fig_a,
-            panel_dir / "fig04_panel_a_architecture_physics",
-            typography=typography,
-        )
-    )
+    all_paths.extend(save_outputs(fig_a, panel_dir / "fig04_panel_a_architecture_physics", typography=typography))
     plt.close(fig_a)
 
-    fig_b = make_figure(
-        width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["b"],
-        height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["b"],
-    )
+    fig_b = make_figure(width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["b"], height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["b"])
     gs_b = gridspec.GridSpec(1, 1, figure=fig_b, **FIG04_STANDALONE["b"])
     _plot_panel_b(
         fig_b,
         gs_b[0],
         mechanics,
-        h_sim,
+        h_similarity,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
         legend_pt=legend_pt,
         add_label=False,
     )
-    all_paths.extend(
-        save_outputs(
-            fig_b,
-            panel_dir / "fig04_panel_b_broad_match",
-            typography=typography,
-        )
-    )
+    all_paths.extend(save_outputs(fig_b, panel_dir / "fig04_panel_b_broad_match", typography=typography))
     plt.close(fig_b)
 
-    fig_c = make_figure(
-        width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["c"],
-        height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["c"],
-    )
+    fig_c = make_figure(width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["c"], height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["c"])
     gs_c = gridspec.GridSpec(1, 1, figure=fig_c, **FIG04_STANDALONE["c"])
     _plot_panel_c(
         fig_c,
         gs_c[0],
         mechanics,
-        h_sim,
+        h_similarity,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
         legend_pt=legend_pt,
         add_label=False,
     )
-    all_paths.extend(
-        save_outputs(
-            fig_c,
-            panel_dir / "fig04_panel_c_local_gate",
-            typography=typography,
-        )
-    )
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig04_panel_c_local_gate", typography=typography))
     plt.close(fig_c)
 
-    fig_d = make_figure(
-        width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["d"],
-        height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["d"],
-    )
-    gs_d = gridspec.GridSpec(1, 1, figure=fig_d, **FIG04_STANDALONE["d"])
+    fig_d = make_figure(width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["d"], height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["d"])
+    ax_d = fig_d.add_subplot(111)
     _plot_panel_d(
-        fig_d,
-        gs_d[0],
+        ax_d,
         mechanics,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
@@ -958,23 +745,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         legend_pt=legend_pt,
         add_label=False,
     )
-    all_paths.extend(
-        save_outputs(
-            fig_d,
-            panel_dir / "fig04_panel_d_residual_purification",
-            typography=typography,
-        )
-    )
+    fig_d.subplots_adjust(**FIG04_STANDALONE["d"])
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig04_panel_d_residual_purification", typography=typography))
     plt.close(fig_d)
 
-    fig_e = make_figure(
-        width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["e"],
-        height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["e"],
-    )
+    fig_e = make_figure(width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["e"], height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["e"])
     ax_e = fig_e.add_subplot(111)
     _plot_panel_e(
         ax_e,
-        ablation_data,
+        mechanics,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
@@ -982,13 +761,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         add_label=False,
     )
     fig_e.subplots_adjust(**FIG04_STANDALONE["e"])
-    all_paths.extend(
-        save_outputs(
-            fig_e,
-            panel_dir / "fig04_panel_e_ablation",
-            typography=typography,
-        )
-    )
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig04_panel_e_ablation", typography=typography))
     plt.close(fig_e)
 
     manifest = _save_panel_manifest(
@@ -996,38 +769,38 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         [
             {
                 "panel_id": "a",
-                "title": "Architecture and physics correspondence",
+                "title": "Neighborhood admissibility strip",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_architecture_physics.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Measured local structure in H paired with the staged broad-match, local-gate, and local-update profiles on the shared angle axis.",
+                "description": "Measured neighborhood in H paired with the broad-match, local-gate, and local-update profiles on the shared angle axis.",
             },
             {
                 "panel_id": "b",
                 "title": "Broad initial match",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_broad_match.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Representative 70-degree validation exemplar showing that broad matching excites neighboring calibrated atoms above the measured local band.",
+                "description": "Representative speech clip showing broad pre-commitment support across nearby calibrated angles above the measured neighborhood band.",
             },
             {
                 "panel_id": "c",
-                "title": "Local gate convergence",
+                "title": "Local contraction",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_local_gate.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Representative exemplar showing local pooling and the resulting update confined to the measured neighborhood.",
+                "description": "Representative local gate and resulting update, both confined to the physically plausible neighborhood around the target angle.",
             },
             {
                 "panel_id": "d",
-                "title": "Residual purification",
+                "title": "Validation-wide neighborhood contraction",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_residual_purification.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Residual norm drop across guided steps and validation-wide concentration of update mass inside the matched 15-degree neighborhood.",
+                "description": "Validation-wide cumulative mass within radius before and after the first guided step, showing contraction into the measured local neighborhood.",
             },
             {
                 "panel_id": "e",
-                "title": "Ablation consequence",
+                "title": "Within-15° mass gain",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Clean-condition comparison across guided, router-bypass, OMP baseline, and dense routing decoders on the same fixed dictionary.",
+                "description": "Per-clip distribution of mass inside the measured 15-degree neighborhood before and after the first guided step.",
             },
         ],
         typography=typography,
@@ -1039,3 +812,4 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         f"{len(all_paths)} files using stepwise mechanics artifact {mechanics_path.name}"
     )
     return all_paths
+

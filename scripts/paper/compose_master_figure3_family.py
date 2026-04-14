@@ -6,8 +6,8 @@ from generator composite assets whenever possible:
 
 - Fig. 1: Paradigm Shift (5 panels: a fixed support + b,c,d,e data-backed)
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
-- Fig. 3: Fingerprint Discriminability (5 panels: all generated)
-- Fig. 4: Solver Mechanism (5 panels: architecture + broad match + gate + purification + ablation)
+- Fig. 3: Speech-side compactness + neighborhood broadening (6 panels: all generated)
+- Fig. 4: Neighborhood-preserving admissibility (5 panels: all generated)
 - Fig. 5: Performance + Structure (5 panels: all generated)
 - Fig. 6: Universality (5 panels: all generated under governed layout)
 """
@@ -818,7 +818,7 @@ def compose_fig02(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig03(paper_dir: Path) -> list[Path]:
-    """Fig 3: All 5 panels from composite PDF (a-e)."""
+    """Fig. 3: all 6 generated panels promoted from the composite PDF."""
     fig03_asset = paper_dir / "fig03_fingerprint-discriminability.jpg"
     fig03_layout_asset = fig03_asset.with_suffix(".layout.json")
 
@@ -861,7 +861,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
         panels=[
             {
                 "panel_id": "a",
-                "title": "Architecture and physics correspondence",
+                "title": "Neighborhood admissibility strip",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_architecture_physics.pdf",
                 "provenance_mode": "data_backed",
             },
@@ -873,19 +873,19 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "c",
-                "title": "Local gate convergence",
+                "title": "Local contraction",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_local_gate.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "d",
-                "title": "Residual purification",
+                "title": "Validation-wide neighborhood contraction",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_d_residual_purification.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "e",
-                "title": "Ablation consequence",
+                "title": "Within-15° mass gain",
                 "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf",
                 "provenance_mode": "data_backed",
             },

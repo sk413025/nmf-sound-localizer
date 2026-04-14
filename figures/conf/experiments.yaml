@@ -101,8 +101,8 @@ fig03_discriminability:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 3"
-  claim: "Speech preserves directional structure but broadens overlap among nearby calibrated angles; stage-0 first-choice matching then fails on held-out speech, and separate white-noise and speech-plus-babble sweeps show monotonic degradation under added noise."
-  legend_summary: "White-noise versus speech discriminability, nearby-angle overlap, held-out speech first-choice failure, and separate noise-robustness sweeps for the stage-0 diagnostic."
+  claim: "Speech preserves the same compact local directional code seen in calibration, but broadens its finite neighborhood and weakens exact local separability on the frozen stage-0 grouped-match surface."
+  legend_summary: "Mirrored compactness, speech-side local-ordering decay, neighborhood coherence, stage-0 local separability, exact first-choice collapse, and speech exact-versus-local tolerance."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig03_fingerprint_discriminability_panels/fig03_panel_manifest.json
   generator: figures/generators/fig03_fingerprint_discriminability.py
@@ -121,7 +121,7 @@ fig03_discriminability:
       keys: [labels, angles_deg, scores_expert, scores_atoms, g_energy_expert, Y_val, selected_counts, selected_mask]
     - path: results/speech_babble_omp_snr_sweep.json
       type: json
-      description: "Speech-plus-babble OMP sweep used in the dose-response panel."
+      description: "Committed speech-side sweep artifact retained as supporting provenance; the active main-paper Fig. 3 stays on the frozen grouped-match family."
     - path: figures/conf/paths.yaml
       type: yaml
       description: "Resolves the white-noise dataset and SNR sweep inputs."
@@ -129,15 +129,15 @@ fig03_discriminability:
 fig04_ablation:
   figure_id: fig04
   figure: "Fig 4"
-  title: "A physics-guided solver concentrates nearby overlap into the correct neighborhood"
+  title: "Preserving the broadened neighborhood makes subtraction admissible"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig04_solver-dynamics.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "The physics-guided solver delays commitment inside the measured local band: panel a aligns the measured local structure with the staged broad-match, gate, and update views; panels b-c show the representative narrowing of support; panel d shows residual purification and validation-wide local concentration; panel e shows the clean-condition consequence when that local pooling is removed."
-  legend_summary: "Data-backed architecture/physics correspondence, representative broad-match and gate-convergence views, residual purification, and clean-condition ablation consequence."
+  claim: "Once speech broadens local overlap, the admissible update is the one that preserves and contracts support inside the measured neighborhood before subtraction: panel a ties the measured neighborhood to the staged broad-match, gate, and update views; panels b-c show representative contraction; panels d-e show validation-wide neighborhood sharpening."
+  legend_summary: "Neighborhood admissibility strip, representative broad-match and local-contraction views, validation-wide neighborhood contraction, and within-15-degree mass gain."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig04_solver_dynamics_manuscript_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
@@ -164,17 +164,12 @@ fig04_ablation:
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
       type: npz
       description: "Validation-set stage-0 routing outputs used to summarize angle-conditioned mechanics and select the shared 70-degree exemplar."
-    - path: results/figure4_data.json
-      type: json
-      is_symlink: true
-      symlink_target: "worktrees/exp-omp-ablation-snr-rerun-20260128/results/figure4_data.json"
-      description: "Aggregated clean-condition ablation sweep."
     - path: results/fig04_stepwise_mechanics.npz
       type: npz
-      description: "Governed derived artifact containing the stage-0 g_t/w_t/Δx_t summaries for panel b and the shared 70-degree residual-cleanup summaries for panel c."
+      description: "Governed derived artifact containing representative stage-0 / guided-step traces plus validation-wide aligned neighborhood-mass summaries."
   panel_provenance:
     a:
-      title: "Architecture and physics correspondence"
+      title: "Neighborhood admissibility strip"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_architecture_physics.pdf
       evidence_sources:
@@ -188,37 +183,25 @@ fig04_ablation:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Local gate convergence"
+      title: "Local contraction"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_local_gate.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     d:
-      title: "Residual purification"
+      title: "Validation-wide neighborhood contraction"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_d_residual_purification.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     e:
-      title: "Ablation consequence"
+      title: "Within-15° mass gain"
       provenance_mode: data_backed
       asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_e_ablation.pdf
       evidence_sources:
-        - results/figure4_data.json
-  sweep:
-    noise_type: babble
-    variants:
-      - Baseline
-      - No Transformer
-      - No Type Bias
-      - Fixed Heuristic
-      - Dense Routing
-      - G-Teacher
-      - G-Fixed
-    snr_levels: ["0dB", "5dB", "10dB", "15dB", "20dB", "30dB", "Clean"]
-    seeds_per_condition: 5
+        - results/fig04_stepwise_mechanics.npz
 
 fig05_performance_structure:
   figure_id: fig05

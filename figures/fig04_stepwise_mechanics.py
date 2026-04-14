@@ -1,13 +1,15 @@
 """Build the governed stepwise-mechanics artifact for Fig. 4.
 
 The artifact is derived from the active primary run and stores only the
-paper-facing quantities needed by the mechanism-first Fig. 4 generator:
+paper-facing quantities needed by the neighborhood-admissibility Fig. 4 generator:
 
 - angle-conditioned stage-0 physics, QK, and routing summaries for panel b
 - a single shared exemplar plus population summaries for the gated update
   ``Δx_t = w_t ⊙ g_t`` in panel c
 - the shared exemplar's mode-resolved routing/update tensors for the
-  aggregation-bridge panel d
+  representative contraction panel
+- validation-wide aligned cumulative-mass rows for fixed-radius neighborhood
+  contraction summaries
 
 It intentionally does not replace the upstream run artifacts recorded in
 ``figures/conf/experiments.yaml``.
@@ -511,8 +513,10 @@ def build_stepwise_mechanics_artifact(
                 dtype=np.float32,
             )
         )
-    aligned_g_mean, aligned_g_sem = _mean_and_sem(np.stack(aligned_g_rows, axis=0).astype(np.float32))
-    aligned_delta_mean, aligned_delta_sem = _mean_and_sem(np.stack(aligned_delta_rows, axis=0).astype(np.float32))
+    aligned_g_rows_arr = np.stack(aligned_g_rows, axis=0).astype(np.float32)
+    aligned_delta_rows_arr = np.stack(aligned_delta_rows, axis=0).astype(np.float32)
+    aligned_g_mean, aligned_g_sem = _mean_and_sem(aligned_g_rows_arr)
+    aligned_delta_mean, aligned_delta_sem = _mean_and_sem(aligned_delta_rows_arr)
 
     np.savez_compressed(
         output_path,
@@ -535,8 +539,10 @@ def build_stepwise_mechanics_artifact(
         aligned_radius_deg=aligned_radius_deg,
         aligned_cum_mass_g_mean=aligned_g_mean.astype(np.float32),
         aligned_cum_mass_g_sem=aligned_g_sem.astype(np.float32),
+        aligned_cum_mass_g_rows=aligned_g_rows_arr.astype(np.float32),
         aligned_cum_mass_delta_mean=aligned_delta_mean.astype(np.float32),
         aligned_cum_mass_delta_sem=aligned_delta_sem.astype(np.float32),
+        aligned_cum_mass_delta_rows=aligned_delta_rows_arr.astype(np.float32),
         aligned_clip_count=np.asarray(len(labels), dtype=np.int32),
         sample_indices=np.asarray(sample_indices, dtype=np.int32),
         sample_predictions=np.asarray(predictions[sample_indices], dtype=np.int16),
