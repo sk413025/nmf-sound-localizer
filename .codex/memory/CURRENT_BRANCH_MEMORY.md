@@ -30,11 +30,14 @@
 - for high-salience manuscript or supplement rounds, default to matched block rewrites across both surfaces instead of patch-style sentence edits; local patching tends to leave mixed-author voice, manuscript-management phrasing, and reviewer-facing crosswalk prose
 - prefer low noun-stack, cause-effect prose: if a reader must unpack compressed labels before seeing what changed, what caused it, and why it matters, the sentence still needs rewriting
 - when solver language remains in the paper spine, describe it as a physics-guided structured readout that preserves measured local-overlap geometry rather than as an autonomous algorithmic advance
+- keep `Fig. 2a-e` as the compactness / shared-structure / reconstruction chain tied to the singular-subspace story; if a 2D geometry panel is used, it must be framed as a complementary descriptive view rather than as the paper's main reduced-order surrogate
+- keep `Fig. 1e -> Fig. 2f` explicit: `Fig. 1e` establishes measured inter-angle neighborhood structure, and `Fig. 2f` may only extend that same structure into a graph view rather than reopen the compactness argument with a second unrelated embedding objective
 
 ## Active Figure And Manuscript Fronts
 
 - figure-family governance: `Fig. 1–6` now route through one active paper-facing contract with layout-spec typography, Arial/Helvetica-only source-PDF fonts, exact mm-to-300 dpi paper-facing JPGs, and a freshness check that keeps `paper/out` from silently lagging behind `paper/figures`
 - `Fig. 1` remains the only figure with a manual-support source panel; panel `a` is now shown through governed crop-and-annotation composition, but it is still the main residual visual-parity risk within the opener family
+- `Fig. 2f`: keep the panel as a graph view of the positive inter-angle similarity structure derived from `Fig. 1e` / Eq. `(S50)`, not as an SVD coordinate view or generic manifold-beauty panel; the panel's job is neighborhood coherence, not proof of intrinsic two-dimensionality
 - `Fig. 4`: reconstruction, panel hierarchy, panel-a historical backtrace, and main-text suitability
 - `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
@@ -48,6 +51,7 @@
 - promoting applications that do not descend from an evidence-earned second-layer discovery
 - letting supplementary text turn into a support-document checklist or reviewer-navigation guide instead of a natural extension of the paper's scientific voice
 - letting noun stacks or compressed technical labels replace explicit cause-effect explanation, forcing readers to decode terminology before they can follow the scientific inference
+- letting a descriptive embedding panel become the apparent theoretical center of gravity; if `Fig. 2f` starts sounding like the natural reduced surrogate while Supplementary Methods still define that surrogate through the singular subspace, the figure logic has drifted
 - broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
 - judging figure typography or font compliance from a stale `paper/out` preview instead of the current `paper/figures` assets or fresh rebuilt preview surfaces
 
