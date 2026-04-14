@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 try:
     import fitz
@@ -52,9 +52,9 @@ PANEL_LABEL_PT = font_pt("panel_label")
 TYPOGRAPHY_PT = font_tokens()
 ACTIVE_FIGURE_IDS = ("fig01", "fig02", "fig03", "fig04", "fig05", "fig06")
 
-# --- Figure 1: Paradigm Shift (5 panels: a fixed support + b,c,d,e data-backed) ---
+# --- Figure 1: Paradigm Shift (5 panels: a fixed support + b support schematic + c,d,e data-backed) ---
 FIG01_PANEL_A = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png"
-FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf"
+FIG01_PANEL_B = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png"
 FIG01_COMPOSITE_CDE = REPO_ROOT / "figures/output/fig01_paradigm_data.pdf"
 FIG01_COMPOSITE_CDE_LAYOUT = REPO_ROOT / "figures/output/fig01_paradigm_data.layout.json"
 FIG01_COMPOSE = figure_section("fig01", "compose")
@@ -62,10 +62,11 @@ FIG01_WIDTH_MM = float(FIG01_COMPOSE["width_mm"])
 FIG01_PANEL_A_WIDTH_MM = float(FIG01_COMPOSE["panel_a_width_mm"])
 FIG01_PANEL_B_WIDTH_MM = float(FIG01_COMPOSE["panel_b_width_mm"])
 FIG01_ROW_HEIGHT_MM = float(FIG01_COMPOSE["row_height_mm"])
+FIG01_BOTTOM_ROW_HEIGHT_MM = float(FIG01_COMPOSE.get("bottom_row_height_mm", FIG01_ROW_HEIGHT_MM))
 FIG01_ROW_GAP_MM = float(FIG01_COMPOSE["row_gap_mm"])
-FIG01_HEIGHT_MM = FIG01_ROW_HEIGHT_MM * 2 + FIG01_ROW_GAP_MM
-FIG01_PANEL_A_CROP = (0.00, 0.10, 0.60, 0.98)
-FIG01_PANEL_B_CROP = (0.00, 0.04, 1.00, 0.98)
+FIG01_HEIGHT_MM = float(FIG01_COMPOSE["height_mm"])
+FIG01_PANEL_A_CROP = (0.00, 0.12, 0.60, 0.78)
+FIG01_PANEL_B_CROP = (0.00, 0.00, 1.00, 1.00)
 FIG01_TYPOGRAPHY_PT = figure_typography("fig01")
 
 # --- Figure 2: SVD Spectrum (7 panels: all generated as composite PDF) ---
@@ -569,60 +570,64 @@ def _mask_rectangles_with_overlay(
 
 def _annotate_fig01_setup_panel(img: Image.Image) -> Image.Image:
     photo = img.convert("RGB")
-    photo = _mask_rectangles_with_overlay(
-        photo,
-        [
-            (145, 215, 345, 310),
-            (360, 245, 535, 335),
-            (215, 590, 365, 690),
-        ],
-        fill=(16, 16, 16, 210),
-    )
+    texture_patches = [
+        {"src": (366, 110, 664, 198), "dst": (382, 356, 728, 494)},
+    ]
+    for patch in texture_patches:
+        src = photo.crop(patch["src"])
+        dst = patch["dst"]
+        src = src.resize((dst[2] - dst[0], dst[3] - dst[1]), Image.Resampling.BICUBIC)
+        photo.paste(src, dst)
+    tag_specs = {
+        "Speaker": {"rect": (74, 266, 320, 392), "alpha": 168},
+        "Acrylic plate": {"rect": (398, 260, 724, 420), "alpha": 182},
+    }
+    for spec in tag_specs.values():
+        rect = spec["rect"]
+        region = photo.crop(rect).filter(ImageFilter.GaussianBlur(radius=9))
+        photo.paste(region, rect)
+    for spec in tag_specs.values():
+        photo = _mask_rectangles_with_overlay(
+            photo,
+            [spec["rect"]],
+            fill=(18, 18, 18, spec["alpha"]),
+        )
 
     draw = ImageDraw.Draw(photo)
-    title_font = _load_regular_font(pt_to_px(FIG01_TYPOGRAPHY_PT["annotation"], COMPOSE_DPI))
     label_font = _load_regular_font(pt_to_px(FIG01_TYPOGRAPHY_PT["tick_label"], COMPOSE_DPI))
     line_color = STYLE_COLORS["guide_line"]
-    text_color = STYLE_COLORS["neutral_text"]
+    text_color = (255, 255, 255)
+    shadow_color = (12, 12, 12)
     arrow_width = _stroke_px("annotation", COMPOSE_DPI)
 
-    callouts = [
-        ((46, 88), (165, 265), "Speaker"),
-        ((560, 116), (404, 285), "Acrylic plate"),
-        ((560, 212), (386, 254), "LDV spot"),
-        ((48, 648), (258, 644), "Isolated table"),
-    ]
+    for label, spec in tag_specs.items():
+        rect = spec["rect"]
+        text_bbox = draw.textbbox((0, 0), label, font=label_font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        anchor_x = rect[0] + (rect[2] - rect[0] - text_width) // 2
+        anchor_y = rect[1] + (rect[3] - rect[1] - text_height) // 2 - 1
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            draw.text((anchor_x + dx, anchor_y + dy), label, fill=shadow_color, font=label_font)
+        draw.text((anchor_x, anchor_y), label, fill=text_color, font=label_font)
 
-    for anchor, target, label in callouts:
-        draw.line([anchor, target], fill=line_color, width=arrow_width)
-        target_dx = -8 if target[0] < anchor[0] else 8
-        draw.line([target, (target[0] + target_dx, target[1] - 8)], fill=line_color, width=arrow_width)
-        bbox = draw.textbbox(anchor, label, font=label_font)
-        pad_x = 8
-        pad_y = 5
-        draw.rounded_rectangle(
-            (bbox[0] - pad_x, bbox[1] - pad_y, bbox[2] + pad_x, bbox[3] + pad_y),
-            radius=7,
-            fill=(255, 255, 255),
-        )
-        draw.text(anchor, label, fill=text_color, font=label_font)
-
-    caption = "Single-point LDV setup"
-    caption_bbox = draw.textbbox((0, 0), caption, font=title_font)
-    caption_x = max((photo.width - (caption_bbox[2] - caption_bbox[0])) // 2, 0)
-    caption_y = 18
-    draw.rounded_rectangle(
-        (
-            caption_x - 10,
-            caption_y - 6,
-            caption_x + (caption_bbox[2] - caption_bbox[0]) + 10,
-            caption_y + (caption_bbox[3] - caption_bbox[1]) + 6,
-        ),
-        radius=8,
-        fill=(255, 255, 255),
-    )
-    draw.text((caption_x, caption_y), caption, fill=text_color, font=title_font)
+    ldv_anchor = (548, 166)
+    ldv_target = (455, 382)
+    draw.line([ldv_anchor, ldv_target], fill=line_color, width=arrow_width)
+    draw.line([ldv_target, (ldv_target[0] - 9, ldv_target[1] - 8)], fill=line_color, width=arrow_width)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        draw.text((ldv_anchor[0] + dx, ldv_anchor[1] + dy), "LDV spot", fill=shadow_color, font=label_font)
+    draw.text(ldv_anchor, "LDV spot", fill=text_color, font=label_font)
     return photo
+
+
+def _clear_fig01_panel_b_header(img: Image.Image) -> Image.Image:
+    """Remove the presentation-style headline while keeping the legacy schematic body."""
+    panel = ImageOps.exif_transpose(img).convert("RGB")
+    draw = ImageDraw.Draw(panel)
+    cutoff_y = int(round(panel.height * 0.12))
+    draw.rectangle((0, 0, panel.width, cutoff_y), fill="white")
+    return panel
 
 
 def compose_fig01(paper_dir: Path) -> list[Path]:
@@ -632,8 +637,10 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     manuscript_manifest = REPO_ROOT / "figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json"
 
     panel_a = ImageOps.exif_transpose(Image.open(FIG01_PANEL_A)).convert("RGB")
-    panel_b = _render_pdf(FIG01_PANEL_B, scale=4.0).convert("RGB")
+    panel_b = ImageOps.exif_transpose(Image.open(FIG01_PANEL_B)).convert("RGB")
     panel_a = _crop_relative(panel_a, *FIG01_PANEL_A_CROP)
+    panel_b = _clear_fig01_panel_b_header(panel_b)
+    panel_b = _trim_white_border(panel_b, padding=0)
     panel_b = _crop_relative(panel_b, *FIG01_PANEL_B_CROP)
     panel_cde = _render_pdf(FIG01_COMPOSITE_CDE, scale=4.0).convert("RGB")
 
@@ -641,13 +648,14 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     panel_a_width_px = _mm_to_px(FIG01_PANEL_A_WIDTH_MM)
     panel_b_width_px = _mm_to_px(FIG01_PANEL_B_WIDTH_MM)
     top_gap_px = figure_width_px - panel_a_width_px - panel_b_width_px
-    row_height_px = _mm_to_px(FIG01_ROW_HEIGHT_MM)
+    top_row_height_px = _mm_to_px(FIG01_ROW_HEIGHT_MM)
+    bottom_row_height_px = _mm_to_px(FIG01_BOTTOM_ROW_HEIGHT_MM)
     row_gap_px = _mm_to_px(FIG01_ROW_GAP_MM)
-    figure_height_px = row_height_px * 2 + row_gap_px
+    figure_height_px = _mm_to_px(FIG01_HEIGHT_MM)
 
-    panel_a = _contain_in_box(panel_a, panel_a_width_px, row_height_px)
+    panel_a = _contain_in_box(panel_a, panel_a_width_px, top_row_height_px)
     panel_a = _annotate_fig01_setup_panel(panel_a)
-    panel_b = _contain_in_box(panel_b, panel_b_width_px, row_height_px)
+    panel_b = _contain_in_box(panel_b, panel_b_width_px, top_row_height_px)
     panel_cde = _resize_to_width(panel_cde, figure_width_px)
 
     canvas = Image.new("RGB", (figure_width_px, figure_height_px), "white")
@@ -657,8 +665,8 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     _draw_panel_label(draw, "a", _mm_to_px(2.5), _mm_to_px(2.0))
     _draw_panel_label(draw, "b", panel_a_width_px + top_gap_px + _mm_to_px(2.5), _mm_to_px(2.0))
 
-    bottom_row_y_px = row_height_px + row_gap_px
-    bottom_strip_y_px = bottom_row_y_px + max((row_height_px - panel_cde.height) // 2, 0)
+    bottom_row_y_px = top_row_height_px + row_gap_px
+    bottom_strip_y_px = bottom_row_y_px + max((bottom_row_height_px - panel_cde.height) // 2, 0)
     canvas.paste(panel_cde, (0, bottom_strip_y_px))
 
     _save_composite(canvas, fig01_asset)
@@ -666,7 +674,7 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
     composite_layout = json.loads(FIG01_COMPOSITE_CDE_LAYOUT.read_text(encoding="utf-8"))
     bottom_scale = FIG01_WIDTH_MM / composite_layout["figure_mm"]["width"]
     bottom_strip_height_mm = composite_layout["figure_mm"]["height"] * bottom_scale
-    bottom_row_offset_mm = max((FIG01_ROW_HEIGHT_MM - bottom_strip_height_mm) / 2.0, 0.0)
+    bottom_row_offset_mm = max((FIG01_BOTTOM_ROW_HEIGHT_MM - bottom_strip_height_mm) / 2.0, 0.0)
 
     axes = [
         {
@@ -677,7 +685,7 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             "title": "Experimental setup",
             **_bbox_payload(
                 x0_mm=0.0,
-                y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
+                y0_mm=FIG01_BOTTOM_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
                 width_mm=FIG01_PANEL_A_WIDTH_MM,
                 height_mm=FIG01_ROW_HEIGHT_MM,
                 figure_width_mm=FIG01_WIDTH_MM,
@@ -687,12 +695,12 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
         {
             "index": 1,
             "panel_id": "b",
-            "kind": "data_backed",
-            "has_data": True,
-            "title": "Shared-response reweighting view",
+            "kind": "manual",
+            "has_data": False,
+            "title": "SM1 physical-principle schematic",
             **_bbox_payload(
                 x0_mm=FIG01_PANEL_A_WIDTH_MM + (FIG01_WIDTH_MM - FIG01_PANEL_A_WIDTH_MM - FIG01_PANEL_B_WIDTH_MM),
-                y0_mm=FIG01_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
+                y0_mm=FIG01_BOTTOM_ROW_HEIGHT_MM + FIG01_ROW_GAP_MM,
                 width_mm=FIG01_PANEL_B_WIDTH_MM,
                 height_mm=FIG01_ROW_HEIGHT_MM,
                 figure_width_mm=FIG01_WIDTH_MM,
@@ -759,26 +767,26 @@ def compose_fig01(paper_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "b",
-                "title": "Shared-response reweighting view",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf",
-                "provenance_mode": "data_backed",
+                "title": "SM1 physical-principle schematic",
+                "asset_path": "figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png",
+                "provenance_mode": "manual_support",
             },
             {
                 "panel_id": "c",
-                "title": "Input-output spectral shaping",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf",
+                "title": "Spectral shaping with repeatability",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_spectral_shaping_repeatability.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "d",
-                "title": "Angle-frequency heatmap",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf",
+                "title": "Frequency-dependent directivity",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_directivity.pdf",
                 "provenance_mode": "data_backed",
             },
             {
                 "panel_id": "e",
-                "title": "Frequency-dependent directivity",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf",
+                "title": "Inter-angle fingerprint similarity",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_e_similarity.pdf",
                 "provenance_mode": "data_backed",
             },
         ],

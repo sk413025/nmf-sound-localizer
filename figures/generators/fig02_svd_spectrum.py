@@ -1,12 +1,12 @@
-"""Figure 2 — SVD spectrum + centered-|H| component patterns + dictionary + manifold.
+"""Figure 2 — compactness, component structure, and local neighborhood of H.
 
 Double-column width (183 mm), 6 panels in a 2×3 grid:
   Row 1: (a) SVD singular-value spectrum + cumulative energy
          (b) Representative component frequency loadings (overlaid)
          (c) Representative component half-plane angle loadings (overlaid)
-  Row 2: (d) Full dictionary H heatmap (angle x freq)
+  Row 2: (d) Local-ordering decay in centered-|H|
          (e) All-angle reconstruction fidelity under rank-r truncation
-         (f) Inter-angle correlation matrix of H
+         (f) Positive-similarity graph embedding of the centered-|H| neighborhood
 """
 
 from __future__ import annotations
@@ -19,7 +19,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.signal import savgol_filter
 from scipy.interpolate import CubicSpline, PchipInterpolator
-from sklearn.manifold import MDS
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
 
 from figures.layout_contract import contract_version, font_pt, source_layout_spec
 from figures.style import (
@@ -171,24 +172,86 @@ def _smooth_angle_series(
     return averaged, angles_interp, values_interp
 
 
-def _metric_mds_embedding(x_rows: np.ndarray) -> np.ndarray:
-    """Two-dimensional metric-MDS embedding for the angle rows."""
-    diffs = x_rows[:, None, :] - x_rows[None, :, :]
-    distances = np.sqrt(np.maximum(np.sum(diffs * diffs, axis=2), 0.0))
-    mds = MDS(
-        n_components=2,
-        metric=True,
-        dissimilarity="precomputed",
-        random_state=0,
-        n_init=8,
-        max_iter=500,
-        normalized_stress="auto",
-    )
-    coords = mds.fit_transform(distances)
+def _positive_similarity_graph_embedding(
+    x_rows: np.ndarray,
+    angles_deg: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Two-dimensional embedding of the positive centered-neighborhood graph."""
+    similarity = np.corrcoef(x_rows)
+    similarity = np.nan_to_num(similarity, nan=0.0, posinf=0.0, neginf=0.0)
+    affinity = np.clip(similarity, 0.0, None)
+    np.fill_diagonal(affinity, 0.0)
+
+    n_components, _ = connected_components(csr_matrix(affinity > 0.0), directed=False)
+    if n_components != 1:
+        raise RuntimeError(
+            f"[fig02] positive similarity graph is disconnected ({n_components} components); "
+            "panel f requires one connected neighborhood graph."
+        )
+
+    degree = affinity.sum(axis=1)
+    if np.any(degree <= 0.0):
+        raise RuntimeError("[fig02] positive similarity graph has an isolated node; panel f is undefined.")
+
+    inv_sqrt_degree = np.diag(1.0 / np.sqrt(degree))
+    laplacian_sym = np.eye(len(degree)) - inv_sqrt_degree @ affinity @ inv_sqrt_degree
+    eigvals, eigvecs = np.linalg.eigh(laplacian_sym)
+    sort_idx = np.argsort(eigvals)
+    eigvals = eigvals[sort_idx]
+    eigvecs = eigvecs[:, sort_idx]
+
+    nontrivial = np.flatnonzero(eigvals > 1e-9)
+    if len(nontrivial) < 2:
+        raise RuntimeError("[fig02] graph embedding needs at least two nontrivial Laplacian eigenvectors.")
+
+    coords = eigvecs[:, nontrivial[:2]].copy()
+
+    corr_axis1 = np.corrcoef(coords[:, 0], angles_deg)[0, 1]
+    if np.isfinite(corr_axis1) and corr_axis1 < 0:
+        coords[:, 0] *= -1.0
+
+    mid_idx = int(np.argmin(np.abs(angles_deg - 90.0)))
+    end_mean = 0.5 * (coords[0, 1] + coords[-1, 1])
+    if coords[mid_idx, 1] < end_mean:
+        coords[:, 1] *= -1.0
+
     coords = coords - coords.mean(axis=0, keepdims=True)
     scale = np.max(np.abs(coords), axis=0)
     coords = coords / np.where(scale > 1e-10, scale, 1.0)
-    return coords
+    return coords, affinity
+
+
+def _centered_neighborhood_decay(
+    centered_mag: np.ndarray,
+    angle_step_deg: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    """Mean and SEM of centered-|H| correlation versus angular separation."""
+    angle_vectors = centered_mag.T.astype(float)
+    angle_vectors = angle_vectors - angle_vectors.mean(axis=1, keepdims=True)
+    norms = np.linalg.norm(angle_vectors, axis=1, keepdims=True) + 1e-12
+    normalized = angle_vectors / norms
+    corr = normalized @ normalized.T
+
+    n_angles = corr.shape[0]
+    separations = np.arange(n_angles, dtype=float) * angle_step_deg
+    mean_corr = np.empty(n_angles, dtype=float)
+    sem_corr = np.empty(n_angles, dtype=float)
+    for lag in range(n_angles):
+        vals = [corr[i, i + lag] for i in range(n_angles - lag)]
+        if lag > 0:
+            vals.extend(corr[i + lag, i] for i in range(n_angles - lag))
+        vals_np = np.asarray(vals, dtype=float)
+        mean_corr[lag] = float(vals_np.mean())
+        if len(vals_np) > 1:
+            sem_corr[lag] = float(vals_np.std(ddof=1) / np.sqrt(len(vals_np)))
+        else:
+            sem_corr[lag] = 0.0
+
+    nonzero = mean_corr[1:]
+    sep_nonzero = separations[1:]
+    crossing = np.where(nonzero <= 0.0)[0]
+    zero_cross_deg = float(sep_nonzero[crossing[0]]) if crossing.size else float(sep_nonzero[-1])
+    return separations, mean_corr, sem_corr, zero_cross_deg
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +276,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
 
     H_mag = np.abs(H_np)
     H_centered = H_mag - H_mag.mean(axis=1, keepdims=True)
-    embedding_coords = _metric_mds_embedding(H_centered.T)
+    embedding_coords, _similarity_affinity = _positive_similarity_graph_embedding(
+        H_centered.T,
+        angles_deg,
+    )
+    angle_step_deg = float(np.median(np.diff(angles_deg))) if len(angles_deg) > 1 else 1.0
+    decay_deg, mean_corr_decay, sem_corr_decay, zero_cross_deg = _centered_neighborhood_decay(
+        H_centered,
+        angle_step_deg=angle_step_deg,
+    )
 
     U, S, Vt = np.linalg.svd(H_centered, full_matrices=False)
     V = Vt.T
@@ -248,7 +319,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # -----------------------------------------------------------------------
     # Build composite figure: 2×3 grid
     # Row 1: (a) SVD spectrum, (b) overlaid freq profiles, (c) overlaid polar
-    # Row 2: (d) full H heatmap, (e) reconstruction quality, (f) correlation
+    # Row 2: (d) local-ordering decay, (e) reconstruction quality, (f) graph embedding
     # -----------------------------------------------------------------------
     fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=130)
     gs = gridspec.GridSpec(
@@ -382,17 +453,74 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_c.legend(fontsize=FIG02_TYPOGRAPHY["legend"], frameon=False, loc="upper left", bbox_to_anchor=(-0.20, 1.10))
     add_panel_label(ax_c, "c", x=-0.15, y=1.09)
 
-    # --- Panel (d): Full dictionary H heatmap ---
+    # --- Panel (d): Local-ordering decay in centered-|H| ---
     ax_d = fig.add_subplot(gs[1, 0])
-    im_d = ax_d.imshow(
-        H_mag.T, aspect="auto", origin="lower", cmap="viridis",
-        extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
+    focus_mask = decay_deg <= 90.0
+    decay_focus = decay_deg[focus_mask]
+    mean_focus = mean_corr_decay[focus_mask]
+    sem_focus = sem_corr_decay[focus_mask]
+    ax_d.axvspan(
+        0.0,
+        15.0,
+        color=STYLE_COLORS["highlight_fill"],
+        alpha=0.55,
+        zorder=-1,
     )
-    ax_d.set_xlabel("Frequency (kHz)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
-    ax_d.set_ylabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
-    ax_d.set_title("Angle-frequency dictionary H", fontsize=FIG02_TYPOGRAPHY["title"])
-    cbar = plt.colorbar(im_d, ax=ax_d, fraction=0.035, pad=0.02)
-    cbar.ax.tick_params(labelsize=FIG02_TYPOGRAPHY["colorbar_tick"])
+    ax_d.fill_between(
+        decay_focus,
+        mean_focus - sem_focus,
+        mean_focus + sem_focus,
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.14,
+        linewidth=0.0,
+        zorder=1,
+    )
+    ax_d.plot(
+        decay_focus,
+        mean_focus,
+        color=SEMANTIC_PALETTE["physics"],
+        linewidth=1.1,
+        marker="o",
+        markersize=2.4,
+        zorder=2,
+    )
+    ax_d.axhline(
+        0.0,
+        color=STYLE_COLORS["guide_line"],
+        linestyle="--",
+        linewidth=0.6,
+        zorder=0,
+    )
+    if zero_cross_deg <= float(decay_focus.max()):
+        idx = int(np.argmin(np.abs(decay_focus - zero_cross_deg)))
+        ax_d.scatter(
+            [zero_cross_deg],
+            [mean_focus[idx]],
+            s=26,
+            marker="o",
+            facecolors="white",
+            edgecolors=SEMANTIC_PALETTE["physics"],
+            linewidths=0.9,
+            zorder=3,
+        )
+    ax_d.text(
+        0.04,
+        0.08,
+        "shaded = nearest-angle regime",
+        transform=ax_d.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=max(FIG02_TYPOGRAPHY["tick_label"] - 0.4, 5.0),
+        color=STYLE_COLORS["muted_text"],
+    )
+    ax_d.set_xlim(0.0, float(decay_focus.max()))
+    ax_d.set_ylim(-0.42, 1.02)
+    ax_d.set_xticks([0, 15, 30, 45, 60, 75, 90])
+    ax_d.set_xlabel("Angular separation |Δθ| (deg)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_d.set_ylabel("Mean centered-|H| corr.", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_d.set_title("Local-ordering decay", fontsize=FIG02_TYPOGRAPHY["title"])
+    ax_d.tick_params(axis="both", labelsize=FIG02_TYPOGRAPHY["tick_label"], pad=1)
+    ax_d.grid(True, linestyle="--", alpha=0.22, linewidth=0.5)
     add_panel_label(ax_d, "d", x=-0.15)
 
     # --- Panel (e): All-angle reconstruction fidelity ---
@@ -430,49 +558,31 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     ax_e.grid(True, linestyle="--", alpha=0.3, linewidth=0.5)
     add_panel_label(ax_e, "e", x=-0.15)
 
-    # --- Panel (f): Inter-angle fingerprint similarity ---
+    # --- Panel (f): Positive-similarity graph embedding ---
     ax_f = fig.add_subplot(gs[1, 2])
-    H_corr = np.corrcoef(H_np.T)  # E x E correlation, matching Fig. 5 structure analysis
-    # Positive-only similarity matrix: use a sequential colormap rather than a zero-centered diverging map.
-    im_f = ax_f.imshow(H_corr, cmap="viridis", aspect="equal",
-                        vmin=float(H_corr.min()), vmax=1.0)
-    tick_pos = np.linspace(0, len(angles_deg) - 1, 5, dtype=int).tolist()
-    tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos]
-    ax_f.set_xticks(tick_pos)
-    ax_f.set_xticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
-    ax_f.set_yticks(tick_pos)
-    ax_f.set_yticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
-    ax_f.set_xlabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
-    ax_f.set_ylabel("Angle (\u00b0)", fontsize=FIG02_TYPOGRAPHY["axis_label"])
-    ax_f.set_title("Inter-angle fingerprint similarity", fontsize=FIG02_TYPOGRAPHY["title"])
-    cax_f = ax_f.inset_axes([1.04, 0.0, 0.045, 1.0])
-    cbar = plt.colorbar(im_f, cax=cax_f)
-    cbar.set_label("Pearson r", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
-    cbar.ax.tick_params(labelsize=FIG02_TYPOGRAPHY["colorbar_tick"])
-    ax_f_in = ax_f.inset_axes([0.54, 0.53, 0.38, 0.38])
     angle_cmap = plt.cm.viridis
     angle_norm = plt.Normalize(float(angles_deg.min()), float(angles_deg.max()))
-    ax_f_in.plot(
+    ax_f.plot(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
         color=STYLE_COLORS["chance_line"],
-        linewidth=0.7,
+        linewidth=0.9,
         alpha=0.9,
         zorder=1,
     )
-    ax_f_in.scatter(
+    scatter_f = ax_f.scatter(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
         c=angles_deg,
         cmap=angle_cmap,
         norm=angle_norm,
-        s=9,
+        s=22,
         linewidths=0.0,
         zorder=2,
     )
     for target_angle in (0, 90, 180):
         idx = int(np.argmin(np.abs(angles_deg - target_angle)))
-        ax_f_in.text(
+        ax_f.text(
             embedding_coords[idx, 0],
             embedding_coords[idx, 1],
             f"{int(angles_deg[idx])}°",
@@ -481,12 +591,16 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             va="bottom",
             color=STYLE_COLORS["neutral_text"],
         )
-    ax_f_in.set_xticks([])
-    ax_f_in.set_yticks([])
-    ax_f_in.set_title("2D geometry", fontsize=FIG02_TYPOGRAPHY["tick_label"], pad=1.2)
-    for spine in ax_f_in.spines.values():
-        spine.set_color(STYLE_COLORS["guide_line"])
-        spine.set_linewidth(0.5)
+    ax_f.set_xlabel("Graph axis 1", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_f.set_ylabel("Graph axis 2", fontsize=FIG02_TYPOGRAPHY["axis_label"])
+    ax_f.set_title("Centered-neighborhood graph embedding", fontsize=FIG02_TYPOGRAPHY["title"])
+    ax_f.tick_params(axis="both", labelsize=FIG02_TYPOGRAPHY["tick_label"], pad=1)
+    ax_f.grid(True, linestyle="--", alpha=0.18, linewidth=0.5)
+    ax_f.set_aspect("equal", adjustable="box")
+    cax_f = ax_f.inset_axes([1.04, 0.0, 0.045, 1.0])
+    cbar = plt.colorbar(scatter_f, cax=cax_f)
+    cbar.set_label("Angle (°)", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
+    cbar.ax.tick_params(labelsize=FIG02_TYPOGRAPHY["colorbar_tick"])
     add_panel_label(ax_f, "f", x=-0.15, y=1.09)
 
     all_paths = save_outputs(fig, output_dir / "fig02_svd_spectrum")
@@ -501,16 +615,63 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel d standalone
     fig_d_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_d_s.add_subplot(111)
-    im = ax.imshow(
-        H_mag.T, aspect="auto", origin="lower", cmap="viridis",
-        extent=[freqs[0] / 1000, freqs[-1] / 1000, angles_deg[0], angles_deg[-1]],
+    ax.axvspan(
+        0.0,
+        15.0,
+        color=STYLE_COLORS["highlight_fill"],
+        alpha=0.55,
+        zorder=-1,
     )
-    ax.set_xlabel("Frequency (kHz)")
-    ax.set_ylabel("Angle (\u00b0)")
-    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04).set_label("|H|", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
+    ax.fill_between(
+        decay_focus,
+        mean_focus - sem_focus,
+        mean_focus + sem_focus,
+        color=SEMANTIC_PALETTE["physics"],
+        alpha=0.14,
+        linewidth=0.0,
+        zorder=1,
+    )
+    ax.plot(
+        decay_focus,
+        mean_focus,
+        color=SEMANTIC_PALETTE["physics"],
+        linewidth=1.1,
+        marker="o",
+        markersize=2.4,
+        zorder=2,
+    )
+    ax.axhline(0.0, color=STYLE_COLORS["guide_line"], linestyle="--", linewidth=0.6, zorder=0)
+    if zero_cross_deg <= float(decay_focus.max()):
+        idx = int(np.argmin(np.abs(decay_focus - zero_cross_deg)))
+        ax.scatter(
+            [zero_cross_deg],
+            [mean_focus[idx]],
+            s=26,
+            marker="o",
+            facecolors="white",
+            edgecolors=SEMANTIC_PALETTE["physics"],
+            linewidths=0.9,
+            zorder=3,
+        )
+    ax.text(
+        0.04,
+        0.08,
+        "shaded = nearest-angle regime",
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=max(FIG02_TYPOGRAPHY["tick_label"] - 0.4, 5.0),
+        color=STYLE_COLORS["muted_text"],
+    )
+    ax.set_xlim(0.0, float(decay_focus.max()))
+    ax.set_ylim(-0.42, 1.02)
+    ax.set_xticks([0, 15, 30, 45, 60, 75, 90])
+    ax.set_xlabel("Angular separation |Δθ| (deg)")
+    ax.set_ylabel("Mean centered-|H| corr.")
+    ax.grid(True, linestyle="--", alpha=0.22, linewidth=0.5)
     add_panel_label(ax, "d")
     fig_d_s.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_d_s, panel_dir / "fig02_panel_d_full_H"))
+    all_paths.extend(save_outputs(fig_d_s, panel_dir / "fig02_panel_d_local_order_decay"))
     plt.close(fig_d_s)
 
     # Panel e standalone
@@ -548,38 +709,27 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     # Panel f standalone
     fig_f_s = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
     ax = fig_f_s.add_subplot(111)
-    im = ax.imshow(H_corr, cmap="viridis", aspect="equal",
-                   vmin=float(H_corr.min()), vmax=1.0)
-    ax.set_xticks(tick_pos)
-    ax.set_xticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
-    ax.set_yticks(tick_pos)
-    ax.set_yticklabels(tick_lab, fontsize=FIG02_TYPOGRAPHY["tick_label"])
-    ax.set_xlabel("Angle (\u00b0)")
-    ax.set_ylabel("Angle (\u00b0)")
-    cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
-    plt.colorbar(im, cax=cax).set_label("Pearson r", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
-    ax_in = ax.inset_axes([0.54, 0.53, 0.38, 0.38])
-    ax_in.plot(
+    ax.plot(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
         color=STYLE_COLORS["chance_line"],
-        linewidth=0.7,
+        linewidth=0.9,
         alpha=0.9,
         zorder=1,
     )
-    ax_in.scatter(
+    scatter = ax.scatter(
         embedding_coords[:, 0],
         embedding_coords[:, 1],
         c=angles_deg,
-        cmap=plt.cm.viridis,
-        norm=plt.Normalize(float(angles_deg.min()), float(angles_deg.max())),
-        s=9,
+        cmap=angle_cmap,
+        norm=angle_norm,
+        s=20,
         linewidths=0.0,
         zorder=2,
     )
     for target_angle in (0, 90, 180):
         idx = int(np.argmin(np.abs(angles_deg - target_angle)))
-        ax_in.text(
+        ax.text(
             embedding_coords[idx, 0],
             embedding_coords[idx, 1],
             f"{int(angles_deg[idx])}°",
@@ -588,15 +738,15 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             va="bottom",
             color=STYLE_COLORS["neutral_text"],
         )
-    ax_in.set_xticks([])
-    ax_in.set_yticks([])
-    ax_in.set_title("2D geometry", fontsize=FIG02_TYPOGRAPHY["tick_label"], pad=1.2)
-    for spine in ax_in.spines.values():
-        spine.set_color(STYLE_COLORS["guide_line"])
-        spine.set_linewidth(0.5)
+    ax.set_xlabel("Graph axis 1")
+    ax.set_ylabel("Graph axis 2")
+    ax.set_aspect("equal", adjustable="box")
+    ax.grid(True, linestyle="--", alpha=0.18, linewidth=0.5)
+    cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
+    plt.colorbar(scatter, cax=cax).set_label("Angle (°)", fontsize=FIG02_TYPOGRAPHY["colorbar_label"])
     add_panel_label(ax, "f")
     fig_f_s.subplots_adjust(left=0.10, right=0.95, bottom=0.10, top=0.92)
-    all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_correlation"))
+    all_paths.extend(save_outputs(fig_f_s, panel_dir / "fig02_panel_f_geometry"))
     plt.close(fig_f_s)
 
     # Panel manifest
@@ -626,10 +776,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "d",
-                "title": "Angle-frequency dictionary H",
-                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_d_full_H.pdf",
+                "title": "Local-ordering decay",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_d_local_order_decay.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Complete angle-frequency heatmap of H (37 angles x 346 freq bins).",
+                "description": "Mean centered-|H| correlation versus angular separation for the acrylic reference object, showing a finite positive local neighborhood that decays toward a first nonpositive mean near 25 degrees.",
             },
             {
                 "panel_id": "e",
@@ -640,10 +790,10 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             },
             {
                 "panel_id": "f",
-                "title": "Inter-angle fingerprint similarity",
-                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_correlation.pdf",
+                "title": "Centered-neighborhood graph embedding",
+                "asset_path": "figures/output/fig02_svd_spectrum_panels/fig02_panel_f_geometry.pdf",
                 "provenance_mode": "data_backed",
-                "description": "37x37 fingerprint-similarity matrix whose near-diagonal band shows smooth local ordering, with a 2D embedding inset of the same centered-|H| geometry.",
+                "description": "Two-dimensional spectral embedding of the positive centered-neighborhood graph derived from centered-|H|, showing a curved and continuous angle trajectory in graph coordinates.",
             },
         ],
     )

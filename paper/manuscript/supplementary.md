@@ -101,7 +101,7 @@ B_{e,m}=b_m(\theta_e),
 \tag{S9}
 $$
 
-The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same shared modal structure at this approximate level. Directional variation enters mainly through the weights on a limited response basis, so nearby angles remain related before any discrete decoder is imposed. Supplementary Methods 2 follows that same structure through measurement, averaging, logarithmic compression, and standardization to obtain the empirical dictionary \(H\) analyzed in Fig. 2.
+The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same shared modal structure at this approximate level. Directional variation enters mainly through the weights on a limited response basis, so nearby angles remain related before any discrete decoder is imposed. Figure 1b gives the corresponding physical-principle schematic, and Supplementary Methods 2 follows the same structure through measurement, averaging, logarithmic compression, and standardization to obtain the empirical dictionary \(H\) analyzed in Figs. 1 and 2.
 
 ## Supplementary Methods 2. Measured fingerprints, local-overlap surrogates, and the Fig. 2 reduced view
 
@@ -530,12 +530,41 @@ s_p^2 =
 \tag{S49}
 $$
 
-The reported \(P\)-values come from the two-sided Mann-Whitney \(U\) test applied to the same pooled samples. The inter-angle similarity statistic used for Fig. 2f is the correlation matrix of the angle-indexed prototypes,
+The reported \(P\)-values come from the two-sided Mann-Whitney \(U\) test applied to the same pooled samples. The inter-angle similarity statistic used for Fig. 1e is the correlation matrix of the angle-indexed prototypes,
 
 $$
 S_{e,e'} = \rho(h_e,h_{e'}).
 \tag{S50}
 $$
+
+For Fig. 2d and Fig. 2f, we use the corresponding centered-neighborhood similarity matrix on the analysis surface \(H_{\mathrm{fig}}\),
+
+$$
+S^{(\mathrm{ctr})}_{e,e'} = \rho\!\left(H_{\mathrm{fig}}[:,e], H_{\mathrm{fig}}[:,e']\right).
+\tag{S51}
+$$
+
+Figure 2d plots the mean of Eq. (S51) at fixed angular separation, so the panel reports how quickly positive local ordering decays on the centered analysis surface.
+
+Figure 2f gives a complementary graph view of that same centered-neighborhood structure. Its affinity matrix is the positive part of Eq. (S51),
+
+$$
+A_{e,e'} =
+\begin{cases}
+\max(S^{(\mathrm{ctr})}_{e,e'}, 0), & e \neq e',\\
+0, & e = e',
+\end{cases}
+$$
+
+and the displayed coordinates are the first two nontrivial eigenvectors of the symmetric normalized graph Laplacian
+
+$$
+L_{\mathrm{sym}} = I - D^{-1/2} A D^{-1/2},
+\qquad
+D_{e,e} = \sum_{e'} A_{e,e'}.
+$$
+
+This graph embedding is therefore a descriptive two-dimensional view of the centered local-neighborhood structure implied by Eq. (S51). It is not the singular-coordinate surrogate of Eqs. (S19)-(S20), which remains the reduced-order model used for the hard-commitment analysis.
 
 These are descriptive statistics on the executed standardized fingerprints. They summarize directional separability in the experimentally constructed feature space and do not by themselves constitute a first-principles identifiability theorem.
 

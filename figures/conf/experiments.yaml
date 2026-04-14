@@ -19,7 +19,7 @@ fig01_manual:
   width_mode: double
   manuscript_anchor: "Results / Fig. 1"
   claim: "Single-point structural response produces direction-specific spectral fingerprints."
-  legend_summary: "Setup photo, hybrid governing-principle panel, and generator-backed spectral evidence."
+  legend_summary: "Setup photo, SM1-aligned physical-principle schematic, spectral shaping with repeatability, directivity, and first local-geometry evidence."
   panel_order: ["a", "b", "c", "d", "e"]
   panel_manifest: figures/output/fig01_paradigm_shift_panels/fig01_panel_manifest.json
   generator: figures/generators/fig01_paradigm_data.py
@@ -41,34 +41,29 @@ fig01_manual:
       asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_a_experimental_setup.png
       note: "Committed setup support source; the manuscript-facing panel is a governed crop-and-annotation presentation derived during composition."
     b:
-      title: "Shared-response reweighting view"
-      provenance_mode: data_backed
-      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf
-      note: "Hybrid panel: a compact explanatory schematic is embedded within the data-backed decomposition asset; quantitative content remains tied to dictionary.npz."
-      evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+      title: "SM1 physical-principle schematic"
+      provenance_mode: manual_support
+      asset_path: figures/output/fig01_paradigm_shift_panels/fig01_panel_b_spectral_fingerprint.png
+      note: "Legacy conceptual support panel retained for the main-paper opener; it gives the intuitive physical picture corresponding to Supplementary Methods 1 rather than a quantitative low-rank analysis."
     c:
-      title: "Input-output spectral shaping"
+      title: "Spectral shaping with repeatability"
       provenance_mode: data_backed
-      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_c_spectral_shaping_repeatability.pdf
       evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
         - figures/conf/paths.yaml
     d:
-      title: "Angle-frequency heatmap"
-      provenance_mode: data_backed
-      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf
-      evidence_sources:
-        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-        - figures/conf/paths.yaml
-    e:
       title: "Frequency-dependent directivity"
       provenance_mode: data_backed
-      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_d_directivity.pdf
       evidence_sources:
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
-        - figures/conf/paths.yaml
-  note: "Panel a remains a manual-support source but is presented through the same governed manuscript composition path as the other active figures; panels b-e remain data-backed."
+    e:
+      title: "Inter-angle fingerprint similarity"
+      provenance_mode: data_backed
+      asset_path: figures/output/fig01_paradigm_data_panels/fig01_panel_e_similarity.pdf
+      evidence_sources:
+        - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
+  note: "Panels a and b are support assets composed into the opener; panels c-e are data-backed and now emphasize phenomenon, repeatability, and first local geometry rather than low-rank decomposition."
 
 fig02_svd:
   figure_id: fig02
@@ -80,8 +75,8 @@ fig02_svd:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 2"
-  claim: "Calibration fingerprints occupy a compact angle-ordered space with rapid low-rank saturation and strong local continuity across nearby angles."
-  legend_summary: "Singular spectrum, reusable component patterns, and local angle ordering in the calibrated fingerprint space."
+  claim: "Calibration fingerprints occupy a compact angle-ordered space with rapid low-rank saturation, a finite centered local neighborhood, and a coherent graph view of that neighborhood."
+  legend_summary: "Singular spectrum, reusable component patterns, local-ordering decay, reconstruction fidelity, and a graph view of the centered neighborhood geometry."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig02_svd_spectrum_panels/fig02_panel_manifest.json
   generator: figures/generators/fig02_svd_spectrum.py

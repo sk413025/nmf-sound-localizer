@@ -1,15 +1,15 @@
-"""Figure 1 — Phenomenon-first opener with a hybrid governing-principle panel.
+"""Figure 1 — phenomenon-first evidence panels under the SM1 schematic.
 
 Panel (a) remains the committed setup photo support asset.
-This generator produces:
-  (b) a hybrid schematic-plus-data panel showing that direction reweights
-      shared structural responses rather than creating unrelated fingerprints
-  (c) representative input-to-output spectral shaping
-  (d) a full angle-frequency heatmap from the white-noise calibration bundle
-  (e) band-limited directivity
+Panel (b) is the legacy conceptual schematic composed separately.
+This generator produces the bottom-row data-backed panels:
+  (c) input-to-output spectral shaping with overlaid calibration-trial repeatability
+  (d) frequency-dependent directivity
+  (e) inter-angle fingerprint similarity
 
-Together these panels keep Fig. 1 as a phenomenon-first opener while tying it
-more explicitly to the compact measured geometry formalized in Fig. 2.
+Together these panels establish that a fixed LDV point records angle-dependent,
+repeatable spectral fingerprints, then show the first local-geometry signal
+before Fig. 2 takes over the compactness argument.
 """
 
 from __future__ import annotations
@@ -17,26 +17,24 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Polygon
-from scipy.signal import savgol_filter
+import matplotlib.pyplot as plt
+import numpy as np
 from scipy.interpolate import CubicSpline
+from scipy.signal import savgol_filter
 
-from figures.layout_contract import contract_version, font_pt, source_layout_spec
+from figures.layout_contract import contract_version, figure_section, font_pt, source_layout_spec, stroke_pt
 from figures.style import (
-    add_panel_label,
     DOUBLE_COL_MM,
-    PALETTE_WONG,
-    SEMANTIC_PALETTE,
+    PALETTE_VIRIDIS_8,
     STYLE_COLORS,
+    add_panel_label,
     load_paths,
     make_figure,
     save_outputs,
     set_nature_rcparams,
 )
+
 
 FIG01_TYPOGRAPHY = {
     "panel_label": font_pt("panel_label"),
@@ -48,33 +46,42 @@ FIG01_TYPOGRAPHY = {
     "colorbar_tick": font_pt("colorbar_tick"),
     "colorbar_label": font_pt("colorbar_label"),
 }
-FIG01_COMPONENT_COLORS = [
-    SEMANTIC_PALETTE["physics"],
-    SEMANTIC_PALETTE["ablation"],
-    SEMANTIC_PALETTE["learned"],
+FIG01_STROKES = {
+    "annotation": stroke_pt("annotation"),
+    "base": stroke_pt("base"),
+    "data": stroke_pt("data"),
+    "emphasis": stroke_pt("emphasis"),
+    "grid": stroke_pt("grid"),
+}
+FIG01_GENERATOR = figure_section("fig01", "generator")
+FIG01_COMPOSITE_GRID = dict(FIG01_GENERATOR["composite_grid"])
+FIG01_ANGLE_COLORS = [
+    PALETTE_VIRIDIS_8[1],
+    PALETTE_VIRIDIS_8[2],
+    PALETTE_VIRIDIS_8[3],
+    PALETTE_VIRIDIS_8[4],
+    PALETTE_VIRIDIS_8[5],
 ]
-FIG01_REPRESENTATIVE_COLORS = [
-    PALETTE_WONG[5],
-    PALETTE_WONG[2],
-    PALETTE_WONG[6],
-    PALETTE_WONG[1],
-    PALETTE_WONG[3],
+FIG01_BAND_COLORS = [
+    PALETTE_VIRIDIS_8[1],
+    PALETTE_VIRIDIS_8[2],
+    PALETTE_VIRIDIS_8[4],
+    PALETTE_VIRIDIS_8[5],
 ]
 
 
-# ---------------------------------------------------------------------------
-# Data helpers
-# ---------------------------------------------------------------------------
-
-def _build_freq_axis(F: int, fs: float = 16000.0, n_fft: float = 2048.0,
-                     f_min: float = 300.0) -> np.ndarray:
+def _build_freq_axis(
+    F: int,
+    fs: float = 16000.0,
+    n_fft: float = 2048.0,
+    f_min: float = 300.0,
+) -> np.ndarray:
     df = fs / n_fft
     k_start = int(np.ceil(f_min / df))
     return (k_start + np.arange(F)) * df
 
 
 def _smooth_spectrum(y: np.ndarray, window: int = 31, polyorder: int = 3) -> np.ndarray:
-    """Apply Savitzky-Golay filter for smooth spectral curves."""
     if len(y) < window:
         return y
     return savgol_filter(y, window, polyorder)
@@ -92,23 +99,17 @@ def _save_panel_manifest(panel_dir: Path, panel_specs: list[dict]) -> Path:
         "source_layout_spec": source_layout_spec(),
         "typography_pt": FIG01_TYPOGRAPHY,
     }
-    manifest_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return manifest_path
 
 
-# ---------------------------------------------------------------------------
-# Public interface
-# ---------------------------------------------------------------------------
-
 def generate(data_root: Path, output_dir: Path) -> list[Path]:
-    """Generate Figure 1 data panels (c, d, e)."""
+    """Generate Figure 1 data-backed panels (c, d, e)."""
     set_nature_rcparams(base_fontsize=7)
 
-    paths_cfg = load_paths()
+    from scipy.signal import stft as scipy_stft
 
-    # Use 37-angle H from dictionary.npz (0-180 deg, 5 deg steps)
+    paths_cfg = load_paths()
     run_dir = data_root / paths_cfg["primary_run"]
     dict_path = run_dir / "dictionary.npz"
 
@@ -117,550 +118,272 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         return []
 
     dict_data = dict(np.load(dict_path, allow_pickle=True))
-    H_np = dict_data["H"]         # (346, 37)
-    angles_deg = dict_data["angles"]  # (37,)
-    F, E = H_np.shape
+    H_np = np.asarray(dict_data["H"], dtype=float)
+    angles_deg = np.asarray(dict_data["angles"], dtype=float)
+    F, _E = H_np.shape
     freqs = _build_freq_axis(F)
-    H_mag = np.abs(H_np)
-    H_centered = H_mag - H_mag.mean(axis=1, keepdims=True)
-    U, S, Vt = np.linalg.svd(H_centered, full_matrices=False)
 
-    # 5 representative angles for panels (c) and (d)
     representative = [0, 45, 90, 135, 180]
-    angle_indices = []
-    for target in representative:
-        idx = int(np.argmin(np.abs(angles_deg - target)))
-        angle_indices.append(idx)
-
-    colors_5 = FIG01_REPRESENTATIVE_COLORS
-    angle_labels = [f"{angles_deg[i]:.0f}\u00b0" for i in angle_indices]
-    component_indices = [0, 1, 5]
-    component_colors = FIG01_COMPONENT_COLORS
-    component_labels = ["Resp. 1", "Resp. 2", "Resp. 6"]
-    bridge_angle_targets = [0, 90, 180]
-    bridge_angle_indices = [int(np.argmin(np.abs(angles_deg - target))) for target in bridge_angle_targets]
-    bridge_angle_labels = [f"{angles_deg[idx]:.0f}\u00b0" for idx in bridge_angle_indices]
-    component_profiles = []
-    for mode_idx in component_indices:
-        profile = np.abs(U[:, mode_idx] * S[mode_idx])
-        profile = _smooth_spectrum(profile, window=41, polyorder=3)
-        profile = np.clip(profile, 0.0, None)
-        profile = profile / (profile.max() + 1e-10)
-        component_profiles.append(profile)
-    bridge_weights = np.stack(
-        [np.abs(Vt[component_indices, idx]) for idx in bridge_angle_indices],
-        axis=1,
-    )
-    bridge_weights = bridge_weights / (bridge_weights.sum(axis=0, keepdims=True) + 1e-10)
-    bridge_measured_profiles = []
-    bridge_reconstructed_profiles = []
-    for angle_idx in bridge_angle_indices:
-        measured_profile = np.abs(H_centered[:, angle_idx])
-        measured_profile = _smooth_spectrum(measured_profile, window=41, polyorder=3)
-        measured_profile = np.clip(measured_profile, 0.0, None)
-        reconstructed_profile = np.sum(
-            np.stack(
-                [
-                    U[:, mode_idx] * S[mode_idx] * Vt[mode_idx, angle_idx]
-                    for mode_idx in component_indices
-                ],
-                axis=0,
-            ),
-            axis=0,
-        )
-        reconstructed_profile = np.abs(reconstructed_profile)
-        reconstructed_profile = _smooth_spectrum(
-            reconstructed_profile, window=41, polyorder=3
-        )
-        reconstructed_profile = np.clip(reconstructed_profile, 0.0, None)
-        norm = max(
-            float(measured_profile.max()),
-            float(reconstructed_profile.max()),
-            1e-10,
-        )
-        bridge_measured_profiles.append(measured_profile / norm)
-        bridge_reconstructed_profiles.append(reconstructed_profile / norm)
-
-    # Load real WN spectra for panel (c): source (original) vs output (box)
-    from scipy.signal import stft as scipy_stft
+    angle_indices = [int(np.argmin(np.abs(angles_deg - target))) for target in representative]
+    angle_labels = [f"{angles_deg[idx]:.0f}°" for idx in angle_indices]
+    tick_pos = np.linspace(0, len(angles_deg) - 1, 5, dtype=int).tolist()
+    tick_lab = [f"{int(angles_deg[i])}" for i in tick_pos]
 
     wn_dataset = paths_cfg.get("white_noise_dataset", "")
     wn_base = Path(wn_dataset)
-    # Source (original) WN — same dir structure but "original" instead of "box"
-    src_base = Path(str(wn_base).replace(
-        "white_noise_box_snrInf_sync_vad_normalized",
-        "white_noise_original_sync_vad"))
+    src_base = Path(
+        str(wn_base).replace(
+            "white_noise_box_snrInf_sync_vad_normalized",
+            "white_noise_original_sync_vad",
+        )
+    )
 
     def _compute_mean_spectrum(wav_path: Path) -> np.ndarray | None:
         if not wav_path.exists():
             return None
         wav = np.load(wav_path).astype(np.float64)
-        f, _, Zxx = scipy_stft(wav, fs=16000, window="hann", nperseg=2048,
-                                noverlap=1024, nfft=2048, detrend="constant",
-                                return_onesided=True, boundary=None, padded=False)
+        f, _, Zxx = scipy_stft(
+            wav,
+            fs=16000,
+            window="hann",
+            nperseg=2048,
+            noverlap=1024,
+            nfft=2048,
+            detrend="constant",
+            return_onesided=True,
+            boundary=None,
+            padded=False,
+        )
         mag = np.abs(Zxx)
         mask = (f >= 300) & (f <= 3000)
         return mag[mask].mean(axis=1)
 
-    # Source spectrum (average over all 3 clips at one angle — should be flat)
-    src_spec = _compute_mean_spectrum(src_base / "angle_90" / "clip_000.npy")
+    def _load_trial_spectra(angle_dir: Path, max_clips: int = 3) -> list[np.ndarray]:
+        trial_spectra: list[np.ndarray] = []
+        for clip_path in sorted(angle_dir.glob("*.npy"))[:max_clips]:
+            spec = _compute_mean_spectrum(clip_path)
+            if spec is not None:
+                trial_spectra.append(_smooth_spectrum(spec, window=121, polyorder=2))
+        return trial_spectra
 
-    # Output spectra at each representative angle
-    output_spectra: list[np.ndarray | None] = []
-    for aidx in angle_indices:
-        angle_val = int(angles_deg[aidx])
-        spec = _compute_mean_spectrum(wn_base / f"angle_{angle_val}" / "clip_000.npy")
-        output_spectra.append(spec)
+    source_trials = _load_trial_spectra(src_base / "angle_90")
+    output_trials_by_angle: list[list[np.ndarray]] = []
+    for angle_idx in angle_indices:
+        angle_val = int(angles_deg[angle_idx])
+        output_trials_by_angle.append(_load_trial_spectra(wn_base / f"angle_{angle_val}"))
 
-    has_io_data = src_spec is not None and all(s is not None for s in output_spectra)
+    src_spec = np.stack(source_trials).mean(axis=0) if source_trials else None
+    has_io_data = src_spec is not None and all(trials for trials in output_trials_by_angle)
 
-    # Frequency band intervals for panel (e) directivity
-    # Matches the band decomposition used in the analysis pipeline
     band_defs = [
-        ("0.3\u20130.5 kHz", 300.0, 500.0, False),
-        ("0.5\u20131 kHz",   500.0, 1000.0, False),
-        ("1\u20132 kHz",     1000.0, 2000.0, False),
-        ("2\u20133 kHz",     2000.0, 3000.0, True),
+        ("0.3–0.5 kHz", 300.0, 500.0, False),
+        ("0.5–1 kHz", 500.0, 1000.0, False),
+        ("1–2 kHz", 1000.0, 2000.0, False),
+        ("2–3 kHz", 2000.0, 3000.0, True),
     ]
     freq_band_masks = []
-    freq_labels_e = []
-    colors_4e = [
-        SEMANTIC_PALETTE["physics"],
-        SEMANTIC_PALETTE["ablation"],
-        SEMANTIC_PALETTE["learned"],
-        PALETTE_WONG[7],
-    ]
+    freq_labels_d = []
     for name, lo, hi, inc_upper in band_defs:
         if inc_upper:
             mask = (freqs >= lo) & (freqs <= hi)
         else:
             mask = (freqs >= lo) & (freqs < hi)
         freq_band_masks.append(mask)
-        freq_labels_e.append(name)
+        freq_labels_d.append(name)
 
-    # Smoothing parameters
-    sg_window = 121  # extremely wide for clean overview envelope
-    sg_poly = 2
+    H_corr = np.corrcoef(H_np.T)
 
-    # -----------------------------------------------------------------------
-    # Build composite figure (panels c, d, e in a row)
-    # -----------------------------------------------------------------------
-    fig = make_figure(width_mm=DOUBLE_COL_MM, height_mm=65)
+    fig = make_figure(
+        width_mm=float(FIG01_GENERATOR["composite_width_mm"]),
+        height_mm=float(FIG01_GENERATOR["composite_height_mm"]),
+    )
     gs = gridspec.GridSpec(
-        1, 3, figure=fig, width_ratios=[1.0, 1.0, 1.0],
-        wspace=0.40, left=0.06, right=0.97, bottom=0.18, top=0.88,
+        1,
+        3,
+        figure=fig,
+        width_ratios=list(FIG01_COMPOSITE_GRID["width_ratios"]),
+        wspace=float(FIG01_COMPOSITE_GRID["wspace"]),
+        left=float(FIG01_COMPOSITE_GRID["left"]),
+        right=float(FIG01_COMPOSITE_GRID["right"]),
+        bottom=float(FIG01_COMPOSITE_GRID["bottom"]),
+        top=float(FIG01_COMPOSITE_GRID["top"]),
     )
 
-    # --- Panel (c): Input vs Output spectral comparison ---
     ax_c = fig.add_subplot(gs[0, 0])
     if has_io_data:
-        # Source spectrum (smoothed, normalized)
-        src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
+        src_smooth = _smooth_spectrum(src_spec, window=121, polyorder=2)
         src_norm = src_smooth / (src_smooth.max() + 1e-10)
-        ax_c.plot(freqs / 1000, src_norm, color=STYLE_COLORS["guide_line"], linewidth=1.5,
-                  alpha=0.7, label="Source (WN)", linestyle="--")
-
-        # Output spectra at each angle (smoothed, normalized to source max)
-        for aidx, color, label, spec in zip(
-            angle_indices, colors_5, angle_labels, output_spectra
+        ax_c.plot(
+            freqs / 1000.0,
+            src_norm,
+            color=STYLE_COLORS["guide_line"],
+            linewidth=FIG01_STROKES["emphasis"],
+            linestyle="--",
+            alpha=0.8,
+            label="Source (WN)",
+            zorder=2,
+        )
+        norm_factor = src_smooth.max() + 1e-10
+        for color, label, trial_spectra in zip(
+            FIG01_ANGLE_COLORS,
+            angle_labels,
+            output_trials_by_angle,
+            strict=True,
         ):
-            spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
-            spec_norm = spec_smooth / (src_smooth.max() + 1e-10)
-            ax_c.plot(freqs / 1000, spec_norm, color=color, linewidth=0.8,
-                      label=label, alpha=0.85)
-
+            stacked = np.stack(trial_spectra)
+            for trial in stacked:
+                ax_c.plot(
+                    freqs / 1000.0,
+                    trial / norm_factor,
+                    color=color,
+                    linewidth=FIG01_STROKES["base"] * 0.75,
+                    alpha=0.22,
+                    zorder=1,
+                )
+            mean_spec = stacked.mean(axis=0) / norm_factor
+            ax_c.plot(
+                freqs / 1000.0,
+                mean_spec,
+                color=color,
+                linewidth=FIG01_STROKES["data"],
+                alpha=0.95,
+                label=label,
+                zorder=3,
+            )
     ax_c.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
     ax_c.set_ylabel("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_c.set_title("Input \u2192 output spectral shaping", fontsize=FIG01_TYPOGRAPHY["title"])
+    ax_c.set_title("Spectral shaping with repeatability", fontsize=FIG01_TYPOGRAPHY["title"])
+    ax_c.tick_params(axis="both", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
+    ax_c.grid(axis="y", linestyle="--", linewidth=FIG01_STROKES["grid"], alpha=0.3)
     ax_c.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="center right", ncol=1)
-    ax_c.grid(axis="y", linestyle="--", alpha=0.3)
-    add_panel_label(ax_c, "c", x=-0.10, y=1.06)
-
-    # --- Panel (d): Full angle-frequency heatmap from the calibration bundle ---
-    ax_d = fig.add_subplot(gs[0, 1])
-
-    heatmap_rows: list[np.ndarray] = []
-    for angle_val in angles_deg.astype(int):
-        clip_dir = wn_base / f"angle_{angle_val}"
-        clips = sorted(clip_dir.glob("*.npy"))[:3]
-        trial_spectra = []
-        for clip_path in clips:
-            spec = _compute_mean_spectrum(clip_path)
-            if spec is not None:
-                trial_spectra.append(_smooth_spectrum(spec, sg_window, sg_poly))
-        if trial_spectra:
-            stacked = np.stack(trial_spectra)
-            mean_spec = stacked.mean(axis=0)
-            norm_factor = src_spec.max() + 1e-10 if src_spec is not None else mean_spec.max() + 1e-10
-            heatmap_rows.append(mean_spec / norm_factor)
-        else:
-            heatmap_rows.append(np.zeros_like(freqs, dtype=float))
-    heatmap = np.stack(heatmap_rows, axis=0)
-
-    im = ax_d.imshow(
-        heatmap,
-        origin="lower",
-        aspect="auto",
-        interpolation="bilinear",
-        extent=[freqs[0] / 1000, freqs[-1] / 1000, float(angles_deg[0]), float(angles_deg[-1])],
-        cmap="magma",
-        vmin=0.0,
-        vmax=np.percentile(heatmap, 99.5),
+    ax_c.text(
+        0.02,
+        0.98,
+        "Thin = trials, thick = mean",
+        transform=ax_c.transAxes,
+        fontsize=FIG01_TYPOGRAPHY["tick_label"],
+        ha="left",
+        va="top",
+        color=STYLE_COLORS["neutral_text"],
     )
-    ax_d.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_d.set_ylabel("Angle (°)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_d.set_title("Angle-frequency heatmap", fontsize=FIG01_TYPOGRAPHY["title"])
-    ax_d.set_yticks([0, 45, 90, 135, 180])
-    ax_d.tick_params(labelsize=FIG01_TYPOGRAPHY["tick_label"])
-    cbar = fig.colorbar(im, ax=ax_d, fraction=0.046, pad=0.02)
-    cbar.set_label("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
-    cbar.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
-    add_panel_label(ax_d, "d", x=-0.12, y=1.06)
+    add_panel_label(ax_c, "c", x=-0.12, y=1.06)
 
-    # --- Panel (e): Directivity polar plot (3 frequency bands, 37 angles) ---
-    ax_e = fig.add_subplot(gs[0, 2], polar=True)
-
-    # Convert angles to radians for polar plot
+    ax_d = fig.add_subplot(gs[0, 1], polar=True)
     angles_rad = np.deg2rad(angles_deg)
     angles_fine_rad = np.linspace(angles_rad[0], angles_rad[-1], 300)
-
-    for mask, color, flabel in zip(freq_band_masks, colors_4e, freq_labels_e):
+    for mask, color, label in zip(freq_band_masks, FIG01_BAND_COLORS, freq_labels_d, strict=True):
         directivity = np.abs(H_np[mask, :]).mean(axis=0)
         directivity_norm = directivity / (directivity.max() + 1e-10)
-        # Savgol smooth over angles, then cubic spline for display
         if len(directivity_norm) >= 9:
             directivity_smooth = savgol_filter(directivity_norm, 9, 3)
             directivity_smooth = np.clip(directivity_smooth, 0, None)
         else:
             directivity_smooth = directivity_norm
         cs = CubicSpline(angles_rad, directivity_smooth)
-        ax_e.plot(angles_fine_rad, cs(angles_fine_rad), linewidth=1.0,
-                  color=color, label=flabel)
+        ax_d.plot(
+            angles_fine_rad,
+            cs(angles_fine_rad),
+            linewidth=FIG01_STROKES["data"],
+            color=color,
+            label=label,
+        )
+    ax_d.set_theta_zero_location("N")
+    ax_d.set_theta_direction(-1)
+    ax_d.set_thetalim(0, np.pi)
+    ax_d.set_rlabel_position(90)
+    ax_d.tick_params(labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
+    ax_d.set_rticks([0.2, 0.4, 0.6, 0.8, 1.0])
+    ax_d.set_title("Frequency-dependent directivity", fontsize=FIG01_TYPOGRAPHY["title"], pad=12)
+    ax_d.legend(
+        fontsize=FIG01_TYPOGRAPHY["legend"],
+        frameon=False,
+        loc="upper left",
+        bbox_to_anchor=(-0.26, 0.48),
+    )
+    add_panel_label(ax_d, "d", x=-0.15, y=1.10)
 
-    ax_e.set_theta_zero_location("N")
-    ax_e.set_theta_direction(-1)
-    ax_e.set_thetalim(0, np.pi)
-    ax_e.set_rlabel_position(90)
-    ax_e.tick_params(labelsize=FIG01_TYPOGRAPHY["tick_label"])
-    ax_e.set_rticks([0.2, 0.4, 0.6, 0.8, 1.0])
-    ax_e.set_title("Directivity", fontsize=FIG01_TYPOGRAPHY["title"], pad=12)
-    ax_e.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="upper left",
-                bbox_to_anchor=(-0.25, 0.45))
-    add_panel_label(ax_e, "e", x=-0.15, y=1.10)
+    ax_e = fig.add_subplot(gs[0, 2])
+    im_e = ax_e.imshow(H_corr, cmap="viridis", aspect="equal", vmin=float(H_corr.min()), vmax=1.0)
+    ax_e.set_xticks(tick_pos)
+    ax_e.set_xticklabels(tick_lab, fontsize=FIG01_TYPOGRAPHY["tick_label"])
+    ax_e.set_yticks(tick_pos)
+    ax_e.set_yticklabels(tick_lab, fontsize=FIG01_TYPOGRAPHY["tick_label"])
+    ax_e.set_xlabel("Angle (°)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_e.set_ylabel("Angle (°)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
+    ax_e.set_title("Inter-angle fingerprint similarity", fontsize=FIG01_TYPOGRAPHY["title"])
+    cax_e = ax_e.inset_axes([1.04, 0.0, 0.045, 1.0])
+    cbar_e = plt.colorbar(im_e, cax=cax_e)
+    cbar_e.set_label("Pearson r", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
+    cbar_e.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
+    add_panel_label(ax_e, "e", x=-0.15, y=1.06)
 
-    # Save composite
     all_paths = save_outputs(fig, output_dir / "fig01_paradigm_data")
     plt.close(fig)
 
-    # -----------------------------------------------------------------------
-    # Standalone panels
-    # -----------------------------------------------------------------------
     panel_dir = output_dir / "fig01_paradigm_data_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    # Panel b standalone: hybrid schematic + empirical reweighting view
-    fig_b = make_figure(width_mm=110, height_mm=65)
-    gs_b = gridspec.GridSpec(
-        2,
-        3,
-        figure=fig_b,
-        width_ratios=[0.92, 1.22, 1.06],
-        height_ratios=[1.06, 0.94],
-        wspace=0.30,
-        hspace=0.34,
-        left=0.05,
-        right=0.98,
-        bottom=0.18,
-        top=0.88,
-    )
-    ax_bs = fig_b.add_subplot(gs_b[:, 0])
-    ax_b1 = fig_b.add_subplot(gs_b[0, 1:])
-    ax_b2 = fig_b.add_subplot(gs_b[1, 1])
-    ax_b3 = fig_b.add_subplot(gs_b[1, 2])
-
-    # Left schematic: incoming angle -> passive plate -> shared responses -> single-point readout
-    ax_bs.set_xlim(0.0, 1.0)
-    ax_bs.set_ylim(0.0, 1.0)
-    ax_bs.axis("off")
-    box_face = STYLE_COLORS["chance_fill"]
-    box_edge = STYLE_COLORS["guide_line"]
-    flow_color = SEMANTIC_PALETTE["physics"]
-    emphasis_color = SEMANTIC_PALETTE["highlight"]
-
-    ax_bs.text(0.50, 0.96, "Incoming angle", fontsize=FIG01_TYPOGRAPHY["annotation"], ha="center", va="top")
-    ax_bs.add_patch(
-        FancyArrowPatch(
-            (0.12, 0.92),
-            (0.35, 0.81),
-            arrowstyle="-|>",
-            mutation_scale=8,
-            linewidth=0.9,
-            color=flow_color,
-        )
-    )
-    ax_bs.add_patch(
-        FancyArrowPatch(
-            (0.88, 0.92),
-            (0.64, 0.84),
-            arrowstyle="-|>",
-            mutation_scale=8,
-            linewidth=0.9,
-            color=flow_color,
-        )
-    )
-    ax_bs.text(0.10, 0.91, "0°", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=flow_color, ha="left", va="bottom")
-    ax_bs.text(0.90, 0.91, "180°", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=flow_color, ha="right", va="bottom")
-
-    plate = Polygon(
-        [[0.24, 0.74], [0.68, 0.80], [0.60, 0.63], [0.16, 0.57]],
-        closed=True,
-        facecolor=STYLE_COLORS["guide_fill"],
-        edgecolor=box_edge,
-        linewidth=0.9,
-    )
-    ax_bs.add_patch(plate)
-    ax_bs.add_patch(Circle((0.47, 0.70), radius=0.018, color=emphasis_color))
-    ax_bs.text(0.50, 0.73, "Passive plate", fontsize=FIG01_TYPOGRAPHY["tick_label"], ha="center", va="bottom")
-    ax_bs.text(0.70, 0.67, "Fixed LDV spot", fontsize=FIG01_TYPOGRAPHY["tick_label"], color=emphasis_color, ha="left", va="center")
-
-    ax_bs.add_patch(
-        FancyArrowPatch(
-            (0.50, 0.56),
-            (0.50, 0.44),
-            arrowstyle="-|>",
-            mutation_scale=8,
-            linewidth=0.9,
-            color=flow_color,
-        )
-    )
-    responses_box = FancyBboxPatch(
-        (0.18, 0.31),
-        0.64,
-        0.11,
-        boxstyle="round,pad=0.02,rounding_size=0.03",
-        facecolor=box_face,
-        edgecolor=box_edge,
-        linewidth=0.8,
-    )
-    ax_bs.add_patch(responses_box)
-    response_x = np.linspace(0.23, 0.77, 120)
-    base_y = 0.355
-    for offset, color, phase in zip(
-        [0.025, 0.0, -0.025],
-        component_colors,
-        [0.0, 0.9, 1.8],
-        strict=True,
-    ):
-        response_y = base_y + offset + 0.012 * np.sin(
-            np.linspace(0.0, 2.8 * np.pi, response_x.size) + phase
-        )
-        ax_bs.plot(response_x, response_y, color=color, linewidth=1.1, clip_on=False)
-
-    ax_bs.add_patch(
-        FancyArrowPatch(
-            (0.50, 0.29),
-            (0.50, 0.18),
-            arrowstyle="-|>",
-            mutation_scale=8,
-            linewidth=0.9,
-            color=flow_color,
-        )
-    )
-    readout_box = FancyBboxPatch(
-        (0.18, 0.06),
-        0.64,
-        0.10,
-        boxstyle="round,pad=0.02,rounding_size=0.03",
-        facecolor=box_face,
-        edgecolor=box_edge,
-        linewidth=0.8,
-    )
-    ax_bs.add_patch(readout_box)
-    readout_x = np.linspace(0.23, 0.77, 180)
-    readout_y = 0.105 + 0.02 * (
-        0.7 * np.sin(np.linspace(0.0, 2.0 * np.pi, readout_x.size))
-        + 0.35 * np.sin(np.linspace(0.0, 6.4 * np.pi, readout_x.size) + 0.8)
-    )
-    ax_bs.plot(readout_x, readout_y, color=STYLE_COLORS["dense_routing"], linewidth=1.0, clip_on=False)
-    ax_bs.text(0.50, 0.01, "Single-point spectrum", fontsize=FIG01_TYPOGRAPHY["tick_label"], ha="center", va="bottom")
-
-    for profile, color, label in zip(component_profiles, component_colors, component_labels, strict=True):
-        ax_b1.plot(freqs / 1000.0, profile, color=color, linewidth=1.05)
-        label_x = 2.48
-        label_idx = int(np.argmin(np.abs(freqs / 1000.0 - label_x)))
-        label_y = float(profile[label_idx])
-        ax_b1.text(
-            label_x + 0.03,
-            label_y,
-            label,
-            color=color,
-            fontsize=FIG01_TYPOGRAPHY["tick_label"],
-            ha="left",
-            va="center",
-        )
-    ax_b1.set_title("Shared responses", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
-    ax_b1.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_b1.set_ylabel("Relative loading", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_b1.set_xticks([0.5, 1.5, 2.5])
-    ax_b1.set_ylim(0.0, 1.05)
-    ax_b1.set_xlim(0.28, 3.05)
-    ax_b1.tick_params(axis="both", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
-    ax_b1.grid(True, axis="y", linestyle="--", alpha=0.25)
-
-    y = np.arange(len(bridge_angle_indices), dtype=float)
-    left = np.zeros(len(bridge_angle_indices), dtype=float)
-    for comp_idx, color in enumerate(component_colors):
-        ax_b2.barh(
-            y,
-            bridge_weights[comp_idx],
-            left=left,
-            height=0.54,
-            color=color,
-            alpha=0.85,
-        )
-        left += bridge_weights[comp_idx]
-    ax_b2.set_title("Angle weights", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
-    ax_b2.set_xlim(0.0, 1.0)
-    ax_b2.set_xlabel("Weight share", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_b2.set_yticks(y)
-    ax_b2.set_yticklabels(bridge_angle_labels, fontsize=FIG01_TYPOGRAPHY["tick_label"])
-    ax_b2.tick_params(axis="x", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
-    ax_b2.tick_params(axis="y", pad=1)
-    ax_b2.grid(True, axis="x", linestyle="--", alpha=0.25)
-    ax_b2.invert_yaxis()
-
-    trace_offsets = np.array([2.10, 1.05, 0.0], dtype=float)
-    for offset, angle_label, color, measured, reconstructed in zip(
-        trace_offsets,
-        bridge_angle_labels,
-        colors_5[: len(bridge_angle_labels)],
-        bridge_measured_profiles,
-        bridge_reconstructed_profiles,
-        strict=True,
-    ):
-        ax_b3.plot(
-            freqs / 1000.0,
-            measured + offset,
-            color=color,
-            linewidth=1.0,
-        )
-        ax_b3.plot(
-            freqs / 1000.0,
-            reconstructed + offset,
-            color=STYLE_COLORS["dense_routing"],
-            linewidth=0.85,
-            linestyle="--",
-        )
-        ax_b3.text(
-            0.31,
-            offset + 0.80,
-            angle_label,
-            fontsize=FIG01_TYPOGRAPHY["tick_label"],
-            color=color,
-            ha="left",
-            va="center",
-        )
-    ax_b3.set_title("Resulting fingerprints", fontsize=FIG01_TYPOGRAPHY["title"], pad=1.5)
-    ax_b3.set_xlim(0.28, 3.05)
-    ax_b3.set_ylim(-0.10, 3.20)
-    ax_b3.set_xlabel("Frequency (kHz)", fontsize=FIG01_TYPOGRAPHY["axis_label"])
-    ax_b3.set_yticks([])
-    ax_b3.set_xticks([0.5, 1.5, 2.5])
-    ax_b3.tick_params(axis="x", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
-    ax_b3.grid(True, axis="y", linestyle="--", alpha=0.18)
-    ax_b3.spines["left"].set_visible(False)
-    legend_handles = [
-        Line2D([0], [0], color=STYLE_COLORS["dense_routing"], linewidth=1.0, label="Measured"),
-        Line2D(
-            [0],
-            [0],
-            color=STYLE_COLORS["dense_routing"],
-            linewidth=0.85,
-            linestyle="--",
-            label="3-response recon.",
-        ),
-    ]
-    ax_b3.legend(
-        handles=legend_handles,
-        fontsize=FIG01_TYPOGRAPHY["legend"],
-        frameon=False,
-        loc="upper right",
-        handlelength=2.2,
-        borderaxespad=0.2,
-    )
-
-    all_paths.extend(save_outputs(fig_b, panel_dir / "fig01_panel_b_component_bridge"))
-    plt.close(fig_b)
-
-    # Panel c standalone
     fig_c = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
     ax = fig_c.add_subplot(111)
     if has_io_data:
-        src_smooth = _smooth_spectrum(src_spec, sg_window, sg_poly)
+        src_smooth = _smooth_spectrum(src_spec, window=121, polyorder=2)
         src_norm = src_smooth / (src_smooth.max() + 1e-10)
-        ax.plot(freqs / 1000, src_norm, color=STYLE_COLORS["guide_line"], linewidth=1.5,
-                alpha=0.7, label="Source (WN)", linestyle="--")
-        for aidx, color, label, spec in zip(
-            angle_indices, colors_5, angle_labels, output_spectra
+        ax.plot(
+            freqs / 1000.0,
+            src_norm,
+            color=STYLE_COLORS["guide_line"],
+            linewidth=FIG01_STROKES["emphasis"],
+            linestyle="--",
+            alpha=0.8,
+            label="Source (WN)",
+        )
+        norm_factor = src_smooth.max() + 1e-10
+        for color, label, trial_spectra in zip(
+            FIG01_ANGLE_COLORS,
+            angle_labels,
+            output_trials_by_angle,
+            strict=True,
         ):
-            spec_smooth = _smooth_spectrum(spec, sg_window, sg_poly)
-            spec_norm = spec_smooth / (src_smooth.max() + 1e-10)
-            ax.plot(freqs / 1000, spec_norm, color=color, linewidth=0.9,
-                    label=label, alpha=0.85)
+            stacked = np.stack(trial_spectra)
+            for trial in stacked:
+                ax.plot(
+                    freqs / 1000.0,
+                    trial / norm_factor,
+                    color=color,
+                    linewidth=FIG01_STROKES["base"] * 0.75,
+                    alpha=0.22,
+                )
+            ax.plot(
+                freqs / 1000.0,
+                stacked.mean(axis=0) / norm_factor,
+                color=color,
+                linewidth=FIG01_STROKES["data"],
+                alpha=0.95,
+                label=label,
+            )
     ax.set_xlabel("Frequency (kHz)")
     ax.set_ylabel("Normalized amplitude")
+    ax.tick_params(axis="both", labelsize=FIG01_TYPOGRAPHY["tick_label"], pad=1)
+    ax.grid(axis="y", linestyle="--", linewidth=FIG01_STROKES["grid"], alpha=0.3)
     ax.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="center right", ncol=1)
+    ax.text(
+        0.02,
+        0.98,
+        "Thin = trials, thick = mean",
+        transform=ax.transAxes,
+        fontsize=FIG01_TYPOGRAPHY["tick_label"],
+        ha="left",
+        va="top",
+        color=STYLE_COLORS["neutral_text"],
+    )
     add_panel_label(ax, "c")
     fig_c.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_c, panel_dir / "fig01_panel_c_input_output"))
+    all_paths.extend(save_outputs(fig_c, panel_dir / "fig01_panel_c_spectral_shaping_repeatability"))
     plt.close(fig_c)
 
-    # Panel d standalone
-    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=70)
-    ax = fig_d.add_subplot(111)
-    heatmap_rows: list[np.ndarray] = []
-    for angle_val in angles_deg.astype(int):
-        clip_dir = wn_base / f"angle_{angle_val}"
-        clips = sorted(clip_dir.glob("*.npy"))[:3]
-        trial_spectra = []
-        for clip_path in clips:
-            spec = _compute_mean_spectrum(clip_path)
-            if spec is not None:
-                trial_spectra.append(_smooth_spectrum(spec, sg_window, sg_poly))
-        if trial_spectra:
-            stacked = np.stack(trial_spectra)
-            mean_spec = stacked.mean(axis=0)
-            norm_factor = src_spec.max() + 1e-10 if src_spec is not None else mean_spec.max() + 1e-10
-            heatmap_rows.append(mean_spec / norm_factor)
-        else:
-            heatmap_rows.append(np.zeros_like(freqs, dtype=float))
-    heatmap = np.stack(heatmap_rows, axis=0)
-    im = ax.imshow(
-        heatmap,
-        origin="lower",
-        aspect="auto",
-        interpolation="bilinear",
-        extent=[freqs[0] / 1000, freqs[-1] / 1000, float(angles_deg[0]), float(angles_deg[-1])],
-        cmap="magma",
-        vmin=0.0,
-        vmax=np.percentile(heatmap, 99.5),
-    )
-    ax.set_xlabel("Frequency (kHz)")
-    ax.set_ylabel("Angle (°)")
-    ax.set_title("Angle-frequency heatmap", fontsize=FIG01_TYPOGRAPHY["title"])
-    ax.set_yticks([0, 45, 90, 135, 180])
-    cbar = fig_d.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
-    cbar.set_label("Normalized amplitude", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
-    cbar.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
-    add_panel_label(ax, "d")
-    fig_d.subplots_adjust(left=0.08, right=0.95, bottom=0.15, top=0.92)
-    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_angle_frequency_heatmap"))
-    plt.close(fig_d)
-
-    # Panel e standalone (polar)
-    fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
-    ax = fig_e.add_subplot(111, polar=True)
-    for mask, color, flabel in zip(freq_band_masks, colors_4e, freq_labels_e):
+    fig_d = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_d.add_subplot(111, polar=True)
+    for mask, color, label in zip(freq_band_masks, FIG01_BAND_COLORS, freq_labels_d, strict=True):
         directivity = np.abs(H_np[mask, :]).mean(axis=0)
         directivity_norm = directivity / (directivity.max() + 1e-10)
         if len(directivity_norm) >= 9:
@@ -669,56 +392,76 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         else:
             directivity_smooth = directivity_norm
         cs = CubicSpline(angles_rad, directivity_smooth)
-        ax.plot(angles_fine_rad, cs(angles_fine_rad), linewidth=1.0,
-                color=color, label=flabel)
+        ax.plot(
+            angles_fine_rad,
+            cs(angles_fine_rad),
+            linewidth=FIG01_STROKES["data"],
+            color=color,
+            label=label,
+        )
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
     ax.set_thetalim(0, np.pi)
     ax.set_rlabel_position(90)
-    ax.legend(fontsize=FIG01_TYPOGRAPHY["legend"], frameon=False, loc="lower right",
-              bbox_to_anchor=(1.3, -0.05))
+    ax.legend(
+        fontsize=FIG01_TYPOGRAPHY["legend"],
+        frameon=False,
+        loc="upper left",
+        bbox_to_anchor=(-0.26, 0.48),
+    )
+    add_panel_label(ax, "d")
+    fig_d.subplots_adjust(left=0.05, right=0.85, bottom=0.05, top=0.92)
+    all_paths.extend(save_outputs(fig_d, panel_dir / "fig01_panel_d_directivity"))
+    plt.close(fig_d)
+
+    fig_e = make_figure(width_mm=DOUBLE_COL_MM, height_mm=80)
+    ax = fig_e.add_subplot(111)
+    im = ax.imshow(H_corr, cmap="viridis", aspect="equal", vmin=float(H_corr.min()), vmax=1.0)
+    ax.set_xticks(tick_pos)
+    ax.set_xticklabels(tick_lab, fontsize=FIG01_TYPOGRAPHY["tick_label"])
+    ax.set_yticks(tick_pos)
+    ax.set_yticklabels(tick_lab, fontsize=FIG01_TYPOGRAPHY["tick_label"])
+    ax.set_xlabel("Angle (°)")
+    ax.set_ylabel("Angle (°)")
+    cax = ax.inset_axes([1.04, 0.0, 0.045, 1.0])
+    cbar = plt.colorbar(im, cax=cax)
+    cbar.set_label("Pearson r", fontsize=FIG01_TYPOGRAPHY["colorbar_label"])
+    cbar.ax.tick_params(labelsize=FIG01_TYPOGRAPHY["colorbar_tick"])
     add_panel_label(ax, "e")
-    fig_e.subplots_adjust(left=0.05, right=0.85, bottom=0.05, top=0.92)
-    all_paths.extend(save_outputs(fig_e, panel_dir / "fig01_panel_e_directivity"))
+    fig_e.subplots_adjust(left=0.10, right=0.95, bottom=0.15, top=0.92)
+    all_paths.extend(save_outputs(fig_e, panel_dir / "fig01_panel_e_similarity"))
     plt.close(fig_e)
 
-    # Panel manifest
     manifest = _save_panel_manifest(
         panel_dir,
         [
             {
-                "panel_id": "b",
-                "title": "Shared-response reweighting view",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_b_component_bridge.pdf",
-                "provenance_mode": "data_backed",
-                "description": "A compact schematic traces incoming angle through the passive plate to a fixed LDV readout, while the adjoining decomposition shows shared responses, angle-specific weights, and representative measured-versus-reconstructed fingerprints.",
-            },
-            {
                 "panel_id": "c",
-                "title": "Input-output spectral shaping",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_input_output.pdf",
+                "title": "Spectral shaping with repeatability",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_c_spectral_shaping_repeatability.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Flat WN source vs direction-shaped output spectra at 5 angles, demonstrating structural filtering.",
+                "description": "Flat white-noise source baseline plus five representative angle bundles, with thin trial traces and thick means showing both spectral reshaping and calibration repeatability.",
             },
             {
                 "panel_id": "d",
-                "title": "Angle-frequency heatmap",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_angle_frequency_heatmap.pdf",
+                "title": "Frequency-dependent directivity",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_d_directivity.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Full white-noise calibration heatmap across all 37 measured angles, showing structured spectral variation across directions.",
+                "description": "Polar directivity across the 0°–180° half-plane for four frequency bands spanning 0.3–3 kHz.",
             },
             {
                 "panel_id": "e",
-                "title": "Directivity polar plot",
-                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_e_directivity.pdf",
+                "title": "Inter-angle fingerprint similarity",
+                "asset_path": "figures/output/fig01_paradigm_data_panels/fig01_panel_e_similarity.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Polar directivity H(theta) at 0.7, 1.5, 2.5 kHz bands (37 angles, cubic spline).",
+                "description": "Inter-angle similarity matrix of the angle-indexed prototype fingerprints, showing a near-diagonal local-geometry band.",
             },
         ],
     )
     all_paths.append(manifest)
 
-    print(f"[fig01] Generated {len(all_paths)} files "
-          f"(H={H_np.shape}, angles={len(angles_deg)}, "
-          f"io_data={'yes' if has_io_data else 'no'})")
+    print(
+        f"[fig01] Generated {len(all_paths)} files "
+        f"(H={H_np.shape}, angles={len(angles_deg)}, io_data={'yes' if has_io_data else 'no'})"
+    )
     return all_paths
