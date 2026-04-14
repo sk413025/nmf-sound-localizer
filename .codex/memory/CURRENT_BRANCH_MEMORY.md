@@ -35,6 +35,7 @@
 - keep the `Fig. 2 -> Fig. 3 -> Fig. 4` Results spine explicit and stable: `Fig. 2` establishes that calibration fingerprints occupy a compact finite local neighborhood; `Fig. 3` shows that held-out speech preserves that code but broadens the neighborhood enough to weaken exact local separability; `Fig. 4` then answers what kind of readout remains admissible once support stays local but no longer collapses to one angle immediately
 - keep `Fig. 3` as the speech-side bridge rather than a generic discriminability or robustness board: its chapter job is `mirrored compactness -> broadened local neighborhood -> retained neighborhood coherence -> degraded exact local separability`, not pooled within-versus-between summaries, noise-dose curves, or generic speech-hurts-accuracy framing
 - keep `Fig. 4` as the neighborhood-preserving admissibility chapter rather than a solver-tour chapter: the figure must read as `preserve the broadened neighborhood before subtraction`, with the measured neighborhood as protagonist and the guided solver only as the supporting device that makes that admissibility condition visible
+- keep `Fig. 5` as the structure-first continuation of `Fig. 4`: panel `a` carries the guided neighborhood bridge, `b-c-d` turn that bridge into a family-wide locality-and-consequence block, `e` anchors the measured neighborhood, `f` compares each family back to that measured neighborhood, and `g` is the noisy consequence panel
 - treat `local separability` as the key bridge concept between the discovery chapter and the readout chapter: once nearby directions remain jointly plausible under speech, the paper should say that the code survives as structured local ambiguity rather than implying that directional information has disappeared
 
 ## Active Figure And Manuscript Fronts
@@ -54,6 +55,9 @@
   Panels `b-c` are the representative clip evidence for broad support followed by local contraction.
   Panels `d-e` are validation-wide neighborhood-sharpening summaries and should stay on radius-based cumulative-mass language that directly continues the local-separability vocabulary introduced in `Fig. 3`.
   The figure should not drift back toward residual-cleanup mini-stories, clean-condition ablation comparison, or solver-branding panel jobs.
+- `Fig. 5`: the active paper-facing figure now uses a 7-panel structure-first architecture. Panel `a` keeps the guided bridge from `Fig. 4`; panels `b-d` form the coherent family-backed locality and exact-consequence block rebuilt from the governed legacy babble sweep; panel `e` is the measured neighborhood anchor; panel `f` is the family-to-measured alignment panel with local retention as the primary term and profile agreement as a secondary weighting; panel `g` is the noisy babble consequence panel.
+- the previous source-drift problem for `Fig. 5c` and `Fig. 5g` is now resolved at the active-figure level by rebuilding family-backed consequence panels from the governed legacy babble families rather than later reevaluation summaries.
+- for any later `Fig. 5` work, keep the family-backed consequence block and the measured-neighborhood explanation surfaces distinct in provenance handling even when the main-text prose reads as one continuous chapter.
 - analysis-surface discipline across `Fig. 2-4` is now a live manuscript constraint:
   `Fig. 2` stays on calibration-side `centered-|H|`;
   `Fig. 3a-c` stay on angle-conditioned centered summary surfaces;
@@ -77,12 +81,15 @@
 - letting `Fig. 4` revert to a solver-feature tour; if the panel sequence starts emphasizing residual cleanup, ablation-family comparison, or architecture branding more than neighborhood preservation before subtraction, the readout chapter has displaced the measured geometry as protagonist
 - blurring the adjacent but different analysis surfaces used across `Fig. 2-4`; if centered summary panels, grouped stage-0 support, and guided replay summaries are all described as though they are one undifferentiated similarity object, the manuscript has fallen into quantity drift
 - forgetting the exact-vs-local distinction once speech enters the story; if the prose treats low exact first-choice success as though directional structure has vanished, it misses the paper's actual point that the code survives as broadened local support
+- silently swapping `Fig. 5` family-backed panels onto a different evaluation surface and treating the result as equivalent evidence; the governed legacy babble family bundle, the guided geometry surfaces, and later synthetic or matched reevaluations are not interchangeable without re-auditing the chapter claim
+- collapsing the coherent family-backed consequence block and the measured-neighborhood explanation surfaces into one undifferentiated protocol in provenance or methods language
 - broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
 - judging figure typography or font compliance from a stale `paper/out` preview instead of the current `paper/figures` assets or fresh rebuilt preview surfaces
 
 ## Open Unresolved Items
 
 - `Fig. 4` and `Fig. 6` still require ongoing evidence and editorial hardening as the manuscript evolves, but `Fig. 3` and the `Fig. 2 -> Fig. 4` bridge now have a stabilized chapter architecture that later rounds should preserve unless the whole-paper spine is being deliberately reopened
+- a future `Fig. 5` round may still revisit whether the family-to-measured alignment panel should be rebuilt from a broader family-wide structure surface rather than final confusion morphology, but that is now a separate extension task rather than a blocker on the active figure
 - `Fig. 1 panel a` still depends on a legacy raster source rather than a clean paper-native setup image, even though the manuscript-facing panel is now governed rather than unmanaged
 - `high-risk` governance artifacts under `results/` do not enter version control by default because `results/` is gitignored; `governance_round.yaml` needs force-add or a policy change when the branch wants those artifacts tracked
 
