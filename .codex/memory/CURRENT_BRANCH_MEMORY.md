@@ -32,6 +32,10 @@
 - when solver language remains in the paper spine, describe it as a physics-guided structured readout that preserves measured local-overlap geometry rather than as an autonomous algorithmic advance
 - keep `Fig. 2a-e` as the compactness / shared-structure / reconstruction chain tied to the singular-subspace story; if a 2D geometry panel is used, it must be framed as a complementary descriptive view rather than as the paper's main reduced-order surrogate
 - keep the `Fig. 1e -> Fig. 2d -> Fig. 2f` bridge explicit: `Fig. 1e` stays on raw-`H` measured similarity as the opener observation that nearby directions are not isolated templates; `Fig. 2d` then shifts to `centered-|H|` to quantify a finite local neighborhood; `Fig. 2f` may only visualize that same centered neighborhood structure in graph form rather than reopen the compactness argument with a second unrelated embedding objective
+- keep the `Fig. 2 -> Fig. 3 -> Fig. 4` Results spine explicit and stable: `Fig. 2` establishes that calibration fingerprints occupy a compact finite local neighborhood; `Fig. 3` shows that held-out speech preserves that code but broadens the neighborhood enough to weaken exact local separability; `Fig. 4` then answers what kind of readout remains admissible once support stays local but no longer collapses to one angle immediately
+- keep `Fig. 3` as the speech-side bridge rather than a generic discriminability or robustness board: its chapter job is `mirrored compactness -> broadened local neighborhood -> retained neighborhood coherence -> degraded exact local separability`, not pooled within-versus-between summaries, noise-dose curves, or generic speech-hurts-accuracy framing
+- keep `Fig. 4` as the neighborhood-preserving admissibility chapter rather than a solver-tour chapter: the figure must read as `preserve the broadened neighborhood before subtraction`, with the measured neighborhood as protagonist and the guided solver only as the supporting device that makes that admissibility condition visible
+- treat `local separability` as the key bridge concept between the discovery chapter and the readout chapter: once nearby directions remain jointly plausible under speech, the paper should say that the code survives as structured local ambiguity rather than implying that directional information has disappeared
 
 ## Active Figure And Manuscript Fronts
 
@@ -41,7 +45,21 @@
 - `Fig. 2d` should remain the acrylic single-object `local-ordering decay` panel on `centered-|H|`, not a return to the raw `|H|` heatmap; its job is to quantify a finite local neighborhood before `Fig. 2f` shows the same structure in graph form
 - `Fig. 2f`: keep the panel as a graph view of the positive `centered-|H|` neighborhood structure, not as an SVD coordinate view, a raw-`H` restatement of `Fig. 1e`, or a generic manifold-beauty panel; the panel's job is neighborhood coherence, not proof of intrinsic two-dimensionality
 - `Fig. 2d` and `Fig. 6c` now belong to one analysis family: single-object local-ordering decay in the acrylic opener arc, then cross-object local-ordering decay as the later generalization surface
-- `Fig. 4`: reconstruction, panel hierarchy, panel-a historical backtrace, and main-text suitability
+- `Fig. 3`: keep the rebuilt six-panel board on two aligned surface families only.
+  Panels `a-c` are the speech-side continuation of the `Fig. 2` compactness / neighborhood story and should stay on angle-conditioned centered summary surfaces.
+  Panels `d-f` are the local-separability closure and should stay on the frozen ungated grouped stage-0 support family.
+  The figure should not drift back toward pooled within/between correlation, per-angle discriminability margins, or separate noise-response sweeps in the main paper.
+- `Fig. 4`: keep the rebuilt five-panel board on one admissibility sentence.
+  Panel `a` anchors the measured neighborhood beside the broad-match, local-gate, and local-update views on one shared angle frame.
+  Panels `b-c` are the representative clip evidence for broad support followed by local contraction.
+  Panels `d-e` are validation-wide neighborhood-sharpening summaries and should stay on radius-based cumulative-mass language that directly continues the local-separability vocabulary introduced in `Fig. 3`.
+  The figure should not drift back toward residual-cleanup mini-stories, clean-condition ablation comparison, or solver-branding panel jobs.
+- analysis-surface discipline across `Fig. 2-4` is now a live manuscript constraint:
+  `Fig. 2` stays on calibration-side `centered-|H|`;
+  `Fig. 3a-c` stay on angle-conditioned centered summary surfaces;
+  `Fig. 3d-f` stay on ungated grouped stage-0 support;
+  `Fig. 4a-e` stay on guided replay / grouped-match / routed-update surfaces.
+  These are adjacent surfaces in one scientific argument, not interchangeable quantities, so prose and legends must name the shift when moving from one surface family to the next
 - `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
 
@@ -55,12 +73,16 @@
 - letting supplementary text turn into a support-document checklist or reviewer-navigation guide instead of a natural extension of the paper's scientific voice
 - letting noun stacks or compressed technical labels replace explicit cause-effect explanation, forcing readers to decode terminology before they can follow the scientific inference
 - letting a descriptive embedding panel become the apparent theoretical center of gravity; if `Fig. 2f` starts sounding like the natural reduced surrogate while Supplementary Methods still define that surrogate through the singular subspace, the figure logic has drifted
+- letting `Fig. 3` revert to a generic speech-versus-white-noise discriminability board; if the main paper starts foregrounding pooled within/between statistics, per-angle discriminability margins, or noise-dose curves again, the `Fig. 2 -> Fig. 3` bridge has drifted away from the local-neighborhood storyline
+- letting `Fig. 4` revert to a solver-feature tour; if the panel sequence starts emphasizing residual cleanup, ablation-family comparison, or architecture branding more than neighborhood preservation before subtraction, the readout chapter has displaced the measured geometry as protagonist
+- blurring the adjacent but different analysis surfaces used across `Fig. 2-4`; if centered summary panels, grouped stage-0 support, and guided replay summaries are all described as though they are one undifferentiated similarity object, the manuscript has fallen into quantity drift
+- forgetting the exact-vs-local distinction once speech enters the story; if the prose treats low exact first-choice success as though directional structure has vanished, it misses the paper's actual point that the code survives as broadened local support
 - broad manuscript builds can refresh tracked figure outputs and review bundles, so prose-only rounds should prefer minimal validation or isolate commit scope before rebuilding assets
 - judging figure typography or font compliance from a stale `paper/out` preview instead of the current `paper/figures` assets or fresh rebuilt preview surfaces
 
 ## Open Unresolved Items
 
-- `Fig. 4` and `Fig. 6` still require ongoing evidence and editorial hardening as the manuscript evolves
+- `Fig. 4` and `Fig. 6` still require ongoing evidence and editorial hardening as the manuscript evolves, but `Fig. 3` and the `Fig. 2 -> Fig. 4` bridge now have a stabilized chapter architecture that later rounds should preserve unless the whole-paper spine is being deliberately reopened
 - `Fig. 1 panel a` still depends on a legacy raster source rather than a clean paper-native setup image, even though the manuscript-facing panel is now governed rather than unmanaged
 - `high-risk` governance artifacts under `results/` do not enter version control by default because `results/` is gitignored; `governance_round.yaml` needs force-add or a policy change when the branch wants those artifacts tracked
 
