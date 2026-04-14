@@ -50,11 +50,13 @@
   Panels `a-c` are the speech-side continuation of the `Fig. 2` compactness / neighborhood story and should stay on angle-conditioned centered summary surfaces.
   Panels `d-f` are the local-separability closure and should stay on the frozen ungated grouped stage-0 support family.
   The figure should not drift back toward pooled within/between correlation, per-angle discriminability margins, or separate noise-response sweeps in the main paper.
-- `Fig. 4`: keep the rebuilt five-panel board on one admissibility sentence.
-  Panel `a` anchors the measured neighborhood beside the broad-match, local-gate, and local-update views on one shared angle frame.
-  Panels `b-c` are the representative clip evidence for broad support followed by local contraction.
-  Panels `d-e` are validation-wide neighborhood-sharpening summaries and should stay on radius-based cumulative-mass language that directly continues the local-separability vocabulary introduced in `Fig. 3`.
-  The figure should not drift back toward residual-cleanup mini-stories, clean-condition ablation comparison, or solver-branding panel jobs.
+- `Fig. 4`: keep the rebuilt six-panel board on one admissibility sentence.
+  Panel `a` defines admissible contraction on one shared angle frame.
+  Panels `b-c` keep one representative 70° clip only as a before/after shape witness.
+  Panel `d` is the load-bearing validation-wide contraction curve on the shared radius axis.
+  Panel `e` fixes the operative 15° neighborhood and shows the same inward shift across the directional grid.
+  Panel `f` shows that the same 15° gain is positive for nearly all clips.
+  The figure should stay population-led and exemplar-light, and it should not drift back toward solver-tour, repeated measured-neighborhood reference boards, residual-cleanup, or architecture-branding panel jobs.
 - `Fig. 5`: the active paper-facing figure now uses a 7-panel structure-first architecture. Panel `a` keeps the guided bridge from `Fig. 4`; panels `b-d` form the coherent family-backed locality and exact-consequence block rebuilt from the governed legacy babble sweep; panel `e` is the measured neighborhood anchor; panel `f` is the family-to-measured alignment panel with local retention as the primary term and profile agreement as a secondary weighting; panel `g` is the noisy babble consequence panel.
 - the previous source-drift problem for `Fig. 5c` and `Fig. 5g` is now resolved at the active-figure level by rebuilding family-backed consequence panels from the governed legacy babble families rather than later reevaluation summaries.
 - for any later `Fig. 5` work, keep the family-backed consequence block and the measured-neighborhood explanation surfaces distinct in provenance handling even when the main-text prose reads as one continuous chapter.
@@ -62,7 +64,7 @@
   `Fig. 2` stays on calibration-side `centered-|H|`;
   `Fig. 3a-c` stay on angle-conditioned centered summary surfaces;
   `Fig. 3d-f` stay on ungated grouped stage-0 support;
-  `Fig. 4a-e` stay on guided replay / grouped-match / routed-update surfaces.
+  `Fig. 4a-d` stay on guided replay / grouped-match / routed-update surfaces.
   These are adjacent surfaces in one scientific argument, not interchangeable quantities, so prose and legends must name the shift when moving from one surface family to the next
 - `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
