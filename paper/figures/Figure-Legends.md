@@ -19,22 +19,22 @@ f, Two-dimensional spectral embedding of the positive centered-neighborhood grap
 
 ## Fig. 3 (6 panels)
 
-**Fig. 3 | Speech preserves the code but broadens nearby-angle overlap.**
-a, White-noise stimulus: violin plot of within-angle versus between-angle Pearson correlations (\(d = 2.83\), within \(\bar{r} = 1.000\)).
-b, Speech stimulus: same analysis (\(d = 1.95\), within \(\bar{r} = 0.907\)); within-angle similarity exceeds between-angle similarity despite content variation.
-c, Per-angle discriminability margin (within \(\bar{r}\) minus between \(\bar{r}\)) for white noise (\(\Delta \bar{r} = 0.28\)) and speech (\(\Delta \bar{r} = 0.11\)), shown with light bootstrap uncertainty bands; the speech margin is smaller but remains above zero at all angles.
-d, Stage-0 greedy-choice diagnostic across angle for white noise and held-out speech, shown with light clip-level uncertainty bands. The diagnostic is strong on most white-noise fingerprints but drops to near chance across the calibrated grid for held-out speech clips.
-e, Pairwise fingerprint-similarity map in split-triangle form: lower-left = white noise (near-identity), upper-right = speech (broader local overlap but retained angle ordering), with the diagonal masked to separate the two regimes.
-f, Stage-0 greedy-choice diagnostic versus SNR. The white-noise curve (blue, clip-level standard error of the mean (SEM) shading) is recomputed on synthetic noisy white-noise datasets. The speech-plus-babble curve (orange, 5-seed mean \(\pm\) standard error of the mean (SEM) shading) comes from a separate five-seed sweep. Both curves decline monotonically as noise increases, so added noise extends the same local-overlap failure to lower SNR.
+**Fig. 3 | Speech preserves the code but broadens local overlap.**
+a, Mirrored compactness on the centered angle-conditioned summary surface. Calibration and speech both show early cumulative-energy saturation, so the speech-side directional code remains compact rather than dissolving into a high-rank response family.
+b, Speech-side local-ordering decay. Mean inter-angle correlation is plotted against angular separation for calibration and speech on matched centered summary surfaces. Speech keeps a positive nearest-angle neighborhood but broadens it relative to calibration.
+c, Neighborhood-coherence map in split-triangle form: lower-left = calibration centered-neighborhood similarity, upper-right = speech-side centered similarity. Speech preserves the coarse angle ordering and near-diagonal structure while widening the local band.
+d, Stage-0 local separability on the frozen grouped-match surface. Mean cumulative match mass within radius \(r\) is plotted for white noise and held-out speech. Speech retains substantial local support within nearby angle bands even as exact support weakens.
+e, Angle-resolved exact first-choice collapse. Stage-0 exact-match accuracy across the calibrated grid remains high for white noise but drops sharply for held-out speech.
+f, Speech exact versus local tolerance. On the same stage-0 grouped-match family, within-10° tolerance remains well above exact-match success across the grid, showing that the failure under speech is local rather than random.
 
 ## Fig. 4 (5 panels)
 
-**Fig. 4 | Preserving the measured neighborhood keeps subtraction physically plausible.**
-a, Architecture and physics correspondence. The measured local band in \(H\) is shown beside the staged broad-match, local-gate, and local-update profiles on the shared angle axis, defining the neighborhood that should be preserved before subtraction.
-b, Broad initial match for a representative 70° validation clip. Broad residual-to-dictionary matching excites several nearby calibrated angles above the measured local band in \(H\).
-c, Local gate convergence for the same representative clip. Learned local pooling contracts support around the correct neighborhood and keeps the resulting update confined there.
-d, Residual purification. Left, relative residual norm across the guided steps for the representative clip. Right, validation-wide cumulative update mass within radius before and after one local step across 1,924 clips; the mass within 15° rises from 0.18 to 0.98. Nearly all correction therefore collapses into the physically plausible neighborhood before subtraction proceeds.
-e, Clean-condition Top-1 comparison of four overlap-handling rules on the same fixed dictionary (individual seeds shown as dots; large markers and error bars indicate mean \(\pm\) s.e.m.). The displayed clean means are 0.98 for the guided solver, 0.58 for router-bypass, 0.44 for the OMP baseline, and 0.03 for dense routing. Preserving the local angle band is what keeps subtraction physically plausible.
+**Fig. 4 | Preserving the broadened neighborhood keeps subtraction admissible.**
+a, Neighborhood admissibility strip. The measured local neighborhood in \(H\) is shown beside the representative broad-match, local-gate, and local-update profiles on the shared angle axis, defining the neighborhood that should be preserved before subtraction.
+b, Broad initial match for a representative 70° validation clip. Stage-0 matching excites several nearby calibrated angles above the measured local band.
+c, Local contraction for the same representative clip. The routed update contracts that broad support into the physically plausible neighborhood before subtraction proceeds.
+d, Validation-wide neighborhood contraction. Cumulative update mass within radius is plotted before and after one guided step across the validation set. The entire curve shifts inward, showing that the first routed update sharpens support toward the local band exposed by calibration.
+e, Within-15° mass gain across validation clips. Per-clip before/after summaries show that the first guided step consistently increases mass inside the physically plausible neighborhood.
 
 ## Fig. 5 (6 panels)
 

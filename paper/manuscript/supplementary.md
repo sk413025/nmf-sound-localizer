@@ -312,15 +312,13 @@ which is the \(t=0\) case of the same grouped correlation surface that drives th
 $$
 g_0^{(\mathrm{grp})}[e]
 =
-\left(
 \sum_{m=1}^{M}
-\left|g_0[e,m]\right|^2
-\right)^{1/2}.
+\left|g_0[e,m]\right|.
 $$
 
 When that diagnostic concentrates near one direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint remains locally ordered but immediate commitment becomes unstable. The directional code is still present. What fails is the rule that one direction should be chosen before that shared neighborhood evidence has been pooled.
 
-For Fig. 3f, we apply the same stage-0 diagnostic on a separate noise-response surface. The white-noise branch is recomputed on synthetic noisy white-noise datasets. The speech branch comes from a separate five-seed speech-plus-babble sweep. Added noise therefore extends the same neighborhood-coupled failure regime to lower SNR.
+Figure 3d-f stay on this same ungated grouped-match family. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on the same frozen surface. The relevant question is therefore no longer whether the code disappears under speech. It is how much of the grouped stage-0 evidence remains confined to the local neighborhood before any routed update has acted.
 
 ## Supplementary Methods 4. Routed updates on the grouped full standardized surface
 
@@ -457,11 +455,11 @@ Equations (S39)-(S42) close the same recursion with a readout, a reconstruction 
 
 For the Fig. 5f alignment summary, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed full-matrix and local-band correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
 
-## Supplementary Methods 5. Fig. 2 and Fig. 3 summary statistics
+## Supplementary Methods 5. Fig. 2 and Fig. 3 compactness, neighborhood, and local-separability summaries
 
-The Fig. 2 and Fig. 3 separability results are measured properties of the executed standardized fingerprints rather than impressionistic visual summaries. This section defines the descriptive statistics used to quantify angle separability and similarity.
+The Fig. 2 and Fig. 3 panels summarize measured geometry on two aligned but distinct surfaces. Figure 2 stays on the calibration-side centered-magnitude matrix \(H_{\mathrm{fig}}\). Figure 3 first builds angle-conditioned centered summaries for calibration and speech to ask whether the same compact local code survives realistic source variation, and then returns to the frozen ungated grouped-match surface \(g_0^{(\mathrm{grp})}\) to ask how much exact versus local support remains before any residual correction has acted.
 
-Let \(\tilde y_{e,n}\in\mathbb{R}^F\) denote the standardized fingerprint of trial \(n\) at angle \(e\). For any two vectors \(u,v\in\mathbb{R}^F\), the Pearson correlation coefficient is
+For any two vectors \(u,v\in\mathbb{R}^F\), the Pearson correlation coefficient is
 
 $$
 \rho(u,v)
@@ -473,80 +471,23 @@ $$
 
 where \(\bar u\) and \(\bar v\) are sample means across frequency bins.
 
-For angle \(e\), the within-angle correlation set is
-
-$$
-\mathcal W_e
-=
-\left\{
-\rho(\tilde y_{e,n},\tilde y_{e,n'})
-\;:\;
-n<n'
-\right\},
-\tag{S44}
-$$
-
-and the corresponding mean is
-
-$$
-\bar r_{\mathrm{within}}(e) = \frac{1}{|\mathcal W_e|}\sum_{\rho\in\mathcal W_e}\rho.
-\tag{S45}
-$$
-
-The between-angle correlation set anchored at angle \(e\) is
-
-$$
-\mathcal B_e
-=
-\left\{
-\rho(\tilde y_{e,n},\tilde y_{e',n'})
-\;:\;
-e'\neq e
-\right\},
-\tag{S46}
-$$
-
-with mean
-
-$$
-\bar r_{\mathrm{between}}(e) = \frac{1}{|\mathcal B_e|}\sum_{\rho\in\mathcal B_e}\rho.
-\tag{S47}
-$$
-
-The per-angle discriminability margin plotted in Fig. 3c is
-
-$$
-\Delta r(e) = \bar r_{\mathrm{within}}(e) - \bar r_{\mathrm{between}}(e).
-\tag{S48}
-$$
-
-The pooled violin-plot summaries in Fig. 3a,b are obtained by aggregating all elements of \(\mathcal W_e\) and \(\mathcal B_e\) over angles. For two pooled correlation samples \(X\) and \(Y\), Cohen's \(d\) is
-
-$$
-d = \frac{\bar X-\bar Y}{s_p},
-\qquad
-s_p^2 =
-\frac{(n_X-1)s_X^2 + (n_Y-1)s_Y^2}{n_X+n_Y-2}.
-\tag{S49}
-$$
-
-The reported \(P\)-values come from the two-sided Mann-Whitney \(U\) test applied to the same pooled samples. The inter-angle similarity statistic used for Fig. 1e is the correlation matrix of the angle-indexed prototypes,
+The inter-angle similarity statistic used for Fig. 1e is the correlation matrix of the angle-indexed prototypes,
 
 $$
 S_{e,e'} = \rho(h_e,h_{e'}).
-\tag{S50}
+\tag{S44}
 $$
 
 For Fig. 2d and Fig. 2f, we use the corresponding centered-neighborhood similarity matrix on the analysis surface \(H_{\mathrm{fig}}\),
 
 $$
 S^{(\mathrm{ctr})}_{e,e'} = \rho\!\left(H_{\mathrm{fig}}[:,e], H_{\mathrm{fig}}[:,e']\right).
-\tag{S51}
+\tag{S45}
 $$
 
-Figure 2d plots the mean of Eq. (S51) at fixed angular separation, so the panel reports how quickly positive local ordering decays on the centered analysis surface.
+Figure 2d plots the mean of Eq. (S45) at fixed angular separation, so the panel reports how quickly positive local ordering decays on the centered calibration surface.
 
-Figure 2f gives a complementary graph view of that same centered-neighborhood structure. Its affinity matrix is the positive part of Eq. (S51),
+Figure 2f gives a complementary graph view of that same centered-neighborhood structure. Its affinity matrix is the positive part of Eq. (S45),
 
 $$
 A_{e,e'} =
@@ -564,9 +505,84 @@ L_{\mathrm{sym}} = I - D^{-1/2} A D^{-1/2},
 D_{e,e} = \sum_{e'} A_{e,e'}.
 $$
 
-This graph embedding is therefore a descriptive two-dimensional view of the centered local-neighborhood structure implied by Eq. (S51). It is not the singular-coordinate surrogate of Eqs. (S19)-(S20), which remains the reduced-order model used for the hard-commitment analysis.
+This graph embedding is therefore a descriptive two-dimensional view of the centered local-neighborhood structure implied by Eq. (S45). It is not the singular-coordinate surrogate of Eqs. (S19)-(S20), which remains the reduced-order model used for the hard-commitment analysis.
 
-These are descriptive statistics on the executed standardized fingerprints. They summarize directional separability in the experimentally constructed feature space and do not by themselves constitute a first-principles identifiability theorem.
+To compare calibration and speech on a matched summary representation in Fig. 3a-c, let \(\tilde y^{(c)}_{e,n}\in\mathbb{R}^F\) denote the standardized fingerprint of clip \(n\) at angle \(e\) under condition \(c\in\{\mathrm{cal},\mathrm{speech}\}\). We form the angle-conditioned mean magnitude profile
+
+$$
+\mu^{(c)}_e[k]
+=
+\frac{1}{N^{(c)}_e}\sum_{n=1}^{N^{(c)}_e}\left|\tilde y^{(c)}_{e,n}[k]\right|,
+\tag{S46}
+$$
+
+and then center across angle,
+
+$$
+M^{(c)}[k,e]
+=
+\mu^{(c)}_e[k]
+- \frac{1}{E}\sum_{e'=1}^{E}\mu^{(c)}_{e'}[k].
+\tag{S47}
+$$
+
+The mirrored compactness curve in Fig. 3a is the cumulative singular-value energy of \(M^{(c)}\),
+
+$$
+\mathcal E^{(c)}(r)
+=
+\frac{\sum_{j=1}^{r}\sigma_j(M^{(c)})^2}
+{\sum_{j}\sigma_j(M^{(c)})^2},
+\tag{S48}
+$$
+
+where \(\sigma_j(M^{(c)})\) are the singular values of the centered summary matrix. The corresponding speech-side neighborhood similarity matrix is
+
+$$
+S^{(c)}_{e,e'} = \rho\!\left(M^{(c)}[:,e], M^{(c)}[:,e']\right),
+\tag{S49}
+$$
+
+and Fig. 3b plots the mean of Eq. (S49) at fixed angular separation. Figure 3c displays the same similarity family in split-triangle form, with calibration in the lower-left triangle and speech in the upper-right triangle.
+
+Figure 3d-f then return to the ungated grouped-match surface from Supplementary Methods 3. Let
+
+$$
+\pi_i[e]
+=
+\frac{g^{(\mathrm{grp})}_{0,i}[e]}
+{\sum_{e'=1}^{E} g^{(\mathrm{grp})}_{0,i}[e']},
+\tag{S50}
+$$
+
+denote the row-normalized stage-0 support across direction groups for clip \(i\) with ground-truth angle index \(e_i\). The cumulative mass within angular radius \(r\) is
+
+$$
+m_i(r)
+=
+\sum_{|\theta_e-\theta_{e_i}|\le r}\pi_i[e],
+\tag{S51}
+$$
+
+and Fig. 3d plots the condition-wise mean of Eq. (S51) over the radius sequence \(r=0^\circ,5^\circ,\dots,30^\circ\). Exact first-choice success is the radius-zero case
+
+$$
+a_i^{(0)} = \mathbf{1}\!\left[\arg\max_e g^{(\mathrm{grp})}_{0,i}[e] = e_i\right],
+\tag{S52}
+$$
+
+whereas neighborhood-tolerant success at tolerance \(\tau\) is
+
+$$
+a_i^{(\tau)}
+=
+\mathbf{1}\!\left[|\theta_{\arg\max_e g^{(\mathrm{grp})}_{0,i}[e]}-\theta_{e_i}| \le \tau\right].
+\tag{S53}
+$$
+
+Figure 3e reports the angle-wise mean of Eq. (S52) for calibration and speech, and Fig. 3f compares the speech-side angle-wise means of Eqs. (S52) and (S53) with \(\tau=10^\circ\).
+
+These are descriptive statistics on the executed standardized fingerprints and grouped stage-0 support surfaces. They summarize compactness, neighborhood width, and local separability in the experimentally constructed feature space; they do not by themselves constitute a first-principles identifiability theorem.
 
 ## Supplementary Methods 6. Cross-object descriptor interpretation for Fig. 6
 
