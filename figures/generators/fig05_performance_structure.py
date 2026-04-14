@@ -239,6 +239,8 @@ def _plot_support_curves(
     show_ylabel: bool = True,
     callout_radius_deg: float | None = LOCAL_CALLOUT_DEG,
     shade_local_regime: bool = True,
+    legend_loc: str = "lower right",
+    legend_bbox_to_anchor: tuple[float, float] | None = None,
 ) -> None:
     if shade_local_regime:
         ax.axvspan(
@@ -292,9 +294,10 @@ def _plot_support_curves(
     ax.tick_params(axis="both", labelsize=tick_label_pt, length=2)
     ax.grid(axis="y", linestyle="--", alpha=0.25)
     ax.legend(
-        fontsize=max(legend_pt - 0.35, 5.8),
+        fontsize=max(legend_pt - 0.9, 5.2),
         frameon=False,
-        loc="lower right",
+        loc=legend_loc,
+        bbox_to_anchor=legend_bbox_to_anchor,
         handlelength=1.4,
         handletextpad=0.35,
         borderaxespad=0.2,
@@ -319,6 +322,8 @@ def _plot_snr_panel(
     axis_label_pt: float,
     tick_label_pt: float,
     legend_pt: float,
+    legend_loc: str = "lower left",
+    legend_bbox_to_anchor: tuple[float, float] | None = None,
 ) -> None:
     x_snr = np.arange(len(SNR_ORDER))
     for family_key, cfg in FAMILY_CONFIG.items():
@@ -344,9 +349,10 @@ def _plot_snr_panel(
     ax.tick_params(axis="both", labelsize=tick_label_pt)
     ax.grid(axis="y", linestyle="--", alpha=0.3)
     ax.legend(
-        fontsize=max(legend_pt - 0.4, 5.8),
+        fontsize=max(legend_pt - 0.9, 5.2),
         frameon=False,
-        loc="lower left",
+        loc=legend_loc,
+        bbox_to_anchor=legend_bbox_to_anchor,
         ncol=1,
         handlelength=1.4,
         handletextpad=0.35,
@@ -380,14 +386,28 @@ def _plot_exact_vs_local_scorecard(
             markersize=5.0,
             capsize=2.0,
         )
-        ax.text(
-            x + 0.015,
-            y + 0.01,
+        dx = 0.015
+        dy = 0.01
+        ha = "left"
+        va = "bottom"
+        if x >= 0.92:
+            dx = -0.010
+            ha = "right"
+        if y >= 0.96:
+            dy = -0.008
+            va = "top"
+        if family_key == "dense":
+            dy = 0.014
+        ax.annotate(
             cfg["display"],
+            xy=(x, y),
+            xytext=(x + dx, y + dy),
+            textcoords="data",
             fontsize=annotation_pt,
             color=cfg["color"],
-            ha="left",
-            va="bottom",
+            ha=ha,
+            va=va,
+            clip_on=True,
         )
     ax.plot([0.0, 1.0], [0.0, 1.0], linestyle="--", color=STYLE_COLORS["guide_line"], linewidth=0.9)
     ax.set_xlim(0.0, 1.02)
@@ -499,14 +519,15 @@ def _plot_family_alignment_panel(
     ax.tick_params(axis="y", labelsize=tick_label_pt)
     ax.grid(axis="y", linestyle="--", alpha=0.25)
     ax.text(
-        0.02,
-        0.97,
+        0.98,
+        0.96,
         "bars: local-band agreement\ncircles: global matrix r",
         transform=ax.transAxes,
-        ha="left",
+        ha="right",
         va="top",
-        fontsize=max(annotation_pt - 0.15, 5.8),
+        fontsize=max(annotation_pt - 0.45, 5.4),
         color=STYLE_COLORS["muted_text"],
+        bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.72, "pad": 1.4},
     )
 
 
@@ -747,7 +768,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         radii_deg=LOCAL_RADII_DEG,
         curves=[
             (
-                f"speech stage-0 ({_mass_value_at_radius(speech_stage0_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"stage-0 ({_mass_value_at_radius(speech_stage0_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 speech_stage0_mean,
                 speech_stage0_sem,
                 SEMANTIC_PALETTE["physics"],
@@ -755,7 +776,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"first guided step ({_mass_value_at_radius(step1_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"first step ({_mass_value_at_radius(step1_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 step1_mean,
                 step1_sem,
                 SEMANTIC_PALETTE["learned"],
@@ -763,7 +784,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.20,
             ),
             (
-                f"final guided prediction ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"final guided ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["guided"],
                 family_curves_sem["guided"],
                 STYLE_COLORS["guide_line"],
@@ -776,6 +797,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         legend_pt=legend_pt,
         title="Neighborhood-preservation cascade",
         annotation_pt=annotation_pt,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.04),
     )
     add_panel_label(ax_a, "a", x=-0.15, y=1.02)
 
@@ -785,7 +808,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         radii_deg=LOCAL_RADII_DEG,
         curves=[
             (
-                f"{FAMILY_CONFIG['guided']['display']} ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"guided ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["guided"],
                 family_curves_sem["guided"],
                 FAMILY_CONFIG["guided"]["color"],
@@ -793,7 +816,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.20,
             ),
             (
-                f"{FAMILY_CONFIG['router_bypass']['display']} ({_mass_value_at_radius(family_curves_mean['router_bypass'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"router ({_mass_value_at_radius(family_curves_mean['router_bypass'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["router_bypass"],
                 family_curves_sem["router_bypass"],
                 FAMILY_CONFIG["router_bypass"]["color"],
@@ -801,7 +824,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"{FAMILY_CONFIG['omp']['display']} ({_mass_value_at_radius(family_curves_mean['omp'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"OMP ({_mass_value_at_radius(family_curves_mean['omp'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["omp"],
                 family_curves_sem["omp"],
                 FAMILY_CONFIG["omp"]["color"],
@@ -809,7 +832,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"{FAMILY_CONFIG['dense']['display']} ({_mass_value_at_radius(family_curves_mean['dense'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"dense ({_mass_value_at_radius(family_curves_mean['dense'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["dense"],
                 family_curves_sem["dense"],
                 FAMILY_CONFIG["dense"]["color"],
@@ -823,6 +846,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         title="Coherent family neighborhood preservation",
         annotation_pt=annotation_pt,
         show_ylabel=False,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.04),
     )
     add_panel_label(ax_b, "b", x=-0.12, y=1.02)
 
@@ -932,6 +957,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         legend_pt=legend_pt,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.02),
     )
     ax_g.set_title("Noise robustness consequence", fontsize=title_pt)
     add_panel_label(ax_g, "g", x=-0.10, y=1.02)
@@ -949,7 +976,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         radii_deg=LOCAL_RADII_DEG,
         curves=[
             (
-                f"speech stage-0 ({_mass_value_at_radius(speech_stage0_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"stage-0 ({_mass_value_at_radius(speech_stage0_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 speech_stage0_mean,
                 speech_stage0_sem,
                 SEMANTIC_PALETTE["physics"],
@@ -957,7 +984,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"first guided step ({_mass_value_at_radius(step1_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"first step ({_mass_value_at_radius(step1_mean, LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 step1_mean,
                 step1_sem,
                 SEMANTIC_PALETTE["learned"],
@@ -965,7 +992,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.20,
             ),
             (
-                f"final guided prediction ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"final guided ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["guided"],
                 family_curves_sem["guided"],
                 STYLE_COLORS["guide_line"],
@@ -978,6 +1005,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         legend_pt=legend_pt,
         title="Neighborhood-preservation cascade",
         annotation_pt=annotation_pt,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.04),
     )
     add_panel_label(ax, "a")
     fig_a.subplots_adjust(**FIG05_STANDALONE["a"]["subplots_adjust"])
@@ -991,7 +1020,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         radii_deg=LOCAL_RADII_DEG,
         curves=[
             (
-                f"{FAMILY_CONFIG['guided']['display']} ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"guided ({_mass_value_at_radius(family_curves_mean['guided'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["guided"],
                 family_curves_sem["guided"],
                 FAMILY_CONFIG["guided"]["color"],
@@ -999,7 +1028,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.20,
             ),
             (
-                f"{FAMILY_CONFIG['router_bypass']['display']} ({_mass_value_at_radius(family_curves_mean['router_bypass'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"router ({_mass_value_at_radius(family_curves_mean['router_bypass'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["router_bypass"],
                 family_curves_sem["router_bypass"],
                 FAMILY_CONFIG["router_bypass"]["color"],
@@ -1007,7 +1036,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"{FAMILY_CONFIG['omp']['display']} ({_mass_value_at_radius(family_curves_mean['omp'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"OMP ({_mass_value_at_radius(family_curves_mean['omp'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["omp"],
                 family_curves_sem["omp"],
                 FAMILY_CONFIG["omp"]["color"],
@@ -1015,7 +1044,7 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
                 1.05,
             ),
             (
-                f"{FAMILY_CONFIG['dense']['display']} ({_mass_value_at_radius(family_curves_mean['dense'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
+                f"dense ({_mass_value_at_radius(family_curves_mean['dense'], LOCAL_RADII_DEG, LOCAL_CALLOUT_DEG):.2f})",
                 family_curves_mean["dense"],
                 family_curves_sem["dense"],
                 FAMILY_CONFIG["dense"]["color"],
@@ -1029,6 +1058,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         title="Coherent family neighborhood preservation",
         annotation_pt=annotation_pt,
         show_ylabel=False,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.04),
     )
     add_panel_label(ax, "b")
     fig_b.subplots_adjust(**FIG05_STANDALONE["b"]["subplots_adjust"])
@@ -1141,6 +1172,8 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         legend_pt=legend_pt,
+        legend_loc="lower left",
+        legend_bbox_to_anchor=(0.02, 0.02),
     )
     ax.set_title("Noise robustness consequence", fontsize=title_pt, fontweight="bold")
     add_panel_label(ax, "g")
