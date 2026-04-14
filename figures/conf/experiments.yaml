@@ -206,16 +206,16 @@ fig04_ablation:
 fig05_performance_structure:
   figure_id: fig05
   figure: "Fig 5"
-  title: "Prediction structure stays organized around the measured local band"
+  title: "Final prediction succeeds by preserving the measured neighborhood"
   type: data_backed_composite
   manuscript_asset: paper/figures/fig05_performance-structure.jpg
   asset_layer: manuscript_composite
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
-  claim: "Panels d and e show that the guided solver's neighborhood-emphasis map remains organized around the near-diagonal local band in H, panels a-c show the robustness, clean-accuracy, and prediction-locality consequences of that organization, and panel f closes the chapter with an explicit quantitative structure-alignment summary."
-  legend_summary: "Noise robustness, clean prediction accuracy, confusion-locality consequences, measured local structure, learned neighborhood emphasis, and quantitative structure-alignment closure for the same delayed-commitment solver."
-  panel_order: ["a", "b", "c", "d", "e", "f"]
+  claim: "Figure 5 follows one radius-based neighborhood metric from speech stage-0 support, through first-step guided contraction, to final prediction; the same local metric then orders decoder families, while the final-prediction locality map, measured-versus-guided neighborhood geometry pair, and quantitative alignment closure explain why guided decoding stays local and why that locality predicts the downstream clean and noisy performance hierarchy."
+  legend_summary: "Structure-first bridge from stage-0 local support to final prediction locality, followed by family-level neighborhood preservation, a representative final-prediction locality consequence, a measured-versus-guided neighborhood-geometry pair, quantitative neighborhood alignment, and downstream clean/noisy performance summaries."
+  panel_order: ["a", "b", "c", "d", "e", "f", "g"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
   generator_outputs:
@@ -232,21 +232,24 @@ fig05_performance_structure:
       type: npz
     - path: results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
       type: npz
+    - path: results/fig04_stepwise_mechanics.npz
+      type: npz
+      description: "Governed first-step neighborhood-contraction summaries reused by panel a on the shared radius axis."
     - path: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
       type: npz
-      description: "Clean seed42 g-routing confusion metrics used by panel b as the paper-facing OMP baseline."
+      description: "Clean seed42 g-routing confusion metrics used by panels b and c as the paper-facing OMP baseline."
     - path: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
       type: npz
       description: "Representative clean dense-routing confusion metrics used by panel b."
     - path: results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz
       type: npz
-      description: "Five-seed clean mean/std per-angle accuracy summary used by panel e, with the guided family sourced from the `No Type Bias` sweep."
+      description: "Five-seed clean mean/std per-angle accuracy summary used by panel g, with the guided family sourced from the `No Type Bias` sweep."
     - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
       type: npz
-      description: "Guided-solver confusion metrics used by panels b and d through paths.yaml[confusion_matrix.baseline]; this representative run already uses `no_type_bias=true`."
+      description: "Guided-solver confusion metrics used by panels b and c through paths.yaml[confusion_matrix.baseline]; this representative run already uses `no_type_bias=true`."
     - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
       type: npz
-      description: "No-transformer confusion metrics used by panels b and d."
+      description: "No-transformer confusion metrics used by panel b."
   model_params:
     d_model: 128
     nhead: 2

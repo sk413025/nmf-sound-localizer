@@ -8,7 +8,7 @@ from generator composite assets whenever possible:
 - Fig. 2: SVD Spectrum (7 panels: all generated as composite PDF)
 - Fig. 3: Speech-side compactness + neighborhood broadening (6 panels: all generated)
 - Fig. 4: Neighborhood-preserving admissibility (5 panels: all generated)
-- Fig. 5: Performance + Structure (5 panels: all generated)
+- Fig. 5: Neighborhood preservation through final prediction (7 panels: all generated)
 - Fig. 6: Universality (5 panels: all generated under governed layout)
 """
 
@@ -76,20 +76,20 @@ FIG02_COMPOSE = figure_section("fig02", "compose")
 FIG02_WIDTH_MM = float(FIG02_COMPOSE["width_mm"])
 FIG02_HEIGHT_MM = float(FIG02_COMPOSE["height_mm"])
 
-# --- Figure 3: Fingerprint Discriminability (5 panels: all generated) ---
+# --- Figure 3: Fingerprint Discriminability (6 panels: all generated) ---
 FIG03_COMPOSITE = REPO_ROOT / "figures/output/fig03_fingerprint_discriminability.pdf"
 FIG03_COMPOSITE_LAYOUT = FIG03_COMPOSITE.with_suffix(".layout.json")
 FIG03_COMPOSE = figure_section("fig03", "compose")
 FIG03_WIDTH_MM = float(FIG03_COMPOSE["width_mm"])
 FIG03_HEIGHT_MM = float(FIG03_COMPOSE["height_mm"])
 
-# --- Figure 4: Solver Mechanism (5 panels: all generated as composite PDF) ---
+# --- Figure 4: Solver Dynamics (5 panels: all generated as composite PDF) ---
 FIG04_COMPOSITE = REPO_ROOT / "figures/output/fig04_solver_dynamics.pdf"
 FIG04_COMPOSITE_LAYOUT = FIG04_COMPOSITE.with_suffix(".layout.json")
 FIG04_COMPOSE = figure_section("fig04", "compose")
 FIG04_WIDTH_MM = float(FIG04_COMPOSE["width_mm"])
 FIG04_HEIGHT_MM = float(FIG04_COMPOSE["height_mm"])
-# --- Figure 5: Performance + Structure (5 panels: all generated) ---
+# --- Figure 5: Neighborhood preservation through final prediction (7 panels: all generated) ---
 FIG05_COMPOSITE = REPO_ROOT / "figures/output/fig05_performance_structure.pdf"
 FIG05_COMPOSITE_LAYOUT = FIG05_COMPOSITE.with_suffix(".layout.json")
 FIG05_COMPOSE = figure_section("fig05", "compose")
@@ -906,7 +906,7 @@ def compose_fig04(paper_dir: Path) -> list[Path]:
 
 
 def compose_fig05(paper_dir: Path) -> list[Path]:
-    """Fig 5: All 5 panels from composite PDF (a-e)."""
+    """Fig 5: All 7 panels from composite PDF (a-g)."""
     fig05_asset = paper_dir / "fig05_performance-structure.jpg"
     fig05_layout_asset = fig05_asset.with_suffix(".layout.json")
 

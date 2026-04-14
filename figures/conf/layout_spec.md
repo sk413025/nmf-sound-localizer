@@ -73,20 +73,21 @@ figures:
   fig01:
     compose:
       width_mm: 183.0
-      height_mm: 135.0
-      row_height_mm: 65.0
-      row_gap_mm: 5.0
-      panel_a_width_mm: 68.0
-      panel_b_width_mm: 110.0
+      height_mm: 144.0
+      row_height_mm: 60.0
+      bottom_row_height_mm: 80.0
+      row_gap_mm: 4.0
+      panel_a_width_mm: 54.0
+      panel_b_width_mm: 124.0
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 65.0
+      composite_height_mm: 80.0
       composite_grid:
-        left: 0.06
-        right: 0.97
-        bottom: 0.18
-        top: 0.88
-        wspace: 0.40
+        left: 0.055
+        right: 0.985
+        bottom: 0.12
+        top: 0.92
+        wspace: 0.28
         width_ratios: [1.0, 1.0, 1.0]
   fig02:
     compose:
@@ -163,25 +164,29 @@ figures:
         right: 0.970
         bottom: 0.046
         top: 0.966
-        hspace: 0.280
-        height_ratios: [80.0, 80.0]
+        hspace: 0.245
+        height_ratios: [41.0, 58.0, 61.0]
       top_row:
-        wspace: 0.170
-        width_ratios: [50.0, 50.0, 72.0]
+        wspace: 0.180
+        width_ratios: [1.0, 1.0]
+      middle_row:
+        wspace: 0.160
+        width_ratios: [72.0, 51.0, 51.0]
       bottom_row:
-        wspace: 0.190
-        width_ratios: [51.0, 51.0, 70.0]
+        wspace: 0.180
+        width_ratios: [72.0, 72.0]
       confusion_pair: {wspace: 0.10, colorbar_ratio: 0.065}
       quantitative_stack: {hspace: 0.30}
+      consequence_stack: {hspace: 0.24}
       standalone:
         a:
           width_mm: 183.0
-          height_mm: 70.0
+          height_mm: 68.0
           subplots_adjust: {left: 0.10, right: 0.95, bottom: 0.15, top: 0.92}
         b:
           width_mm: 183.0
-          height_mm: 70.0
-          subplots_adjust: {left: 0.08, right: 0.95, bottom: 0.15, top: 0.92}
+          height_mm: 68.0
+          subplots_adjust: {left: 0.10, right: 0.95, bottom: 0.15, top: 0.92}
         c:
           width_mm: 183.0
           height_mm: 96.0
@@ -198,6 +203,10 @@ figures:
           width_mm: 183.0
           height_mm: 96.0
           grid: {left: 0.10, right: 0.95, bottom: 0.12, top: 0.92, hspace: 0.30}
+        g:
+          width_mm: 183.0
+          height_mm: 96.0
+          grid: {left: 0.10, right: 0.95, bottom: 0.12, top: 0.92, hspace: 0.24}
   fig06:
     compose:
       width_mm: 183.0

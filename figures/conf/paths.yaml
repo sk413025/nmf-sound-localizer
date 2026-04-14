@@ -30,7 +30,7 @@ confusion_matrix:
   no_transformer: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
   dense_routing: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
 
-# Aggregated clean 5-seed per-angle summary used by the current Fig. 5 per-angle panel
+# Aggregated clean 5-seed per-angle summary used by the current Fig. 5 performance-consequence panel
 fig05_panel_f_summary: results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz
 
 # White noise dataset (Fig 3 WN vs Speech comparison)
