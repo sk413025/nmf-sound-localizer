@@ -69,33 +69,19 @@ decisions, not to replace manuscript prose.
     - code-state git head: `3785b1f`
   - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz`
     - code-state git head: `3785b1f`
-  - `results/fig05_panel_c_g_routing_seed42_clean/metrics.npz`
-    - external sweep lineage: `14feb94` (`ablate_speech260_g_routing_snrInf_seed42_ep20_lr1e-3_babble_speech260_full_20260209_011327`)
-  - `results/fig05_dense_routing_repro34403c7_clean/metrics.npz`
-    - external sweep lineage: `34403c7` (`snrInf_dense_routing_repro34403c7_20260119_080918`)
-  - `results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz`
-    - derived from the clean 5-seed sweep families behind `results/figure4_data.json`, with the guided family sourced from the `No Type Bias` sweep
-  - `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz`
-    - code-state git head: `3785b1f`
-  - `results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz`
-    - code-state git head: `34403c7`
+  - `/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/worktrees/exp-omp-ablation-snr-rerun-20260128/results`
+    - governed babble sweep root aggregated directly by the active generator for family-backed panels `b`, `c`, `d`, `f`, and `g`
 - External reference commits noted in active evidence docs:
   - `88a8940` confusion/ablation analysis family
   - `15b2981` modal visualization family
 - Panel notes:
-  - `a`: binds artifact keys `No Type Bias`, `No Transformer`, `Fixed Heuristic`, `Dense Routing` to the four active paper-facing decoder families
-  - `b`: compares five-seed clean mean per-angle accuracy across the guided solver, router-bypass, OMP baseline, and dense routing; the guided curve comes from the `No Type Bias` sweep family rather than the retired `Baseline` sweep key
-  - `c`: reduces the confusion-family block to the chapter-defining locality comparison: clean seed42 `g_routing` (OMP baseline) versus the guided solver
-  - `d`: isolates the measured physical local-structure matrix as its own panel
-  - `e`: isolates the guided neighborhood-emphasis map on the same angle frame and correlation scale as panel `d`
-  - `f`: closes the chapter with quantitative structure alignment: normalized local-band profile overlay plus concordance scatter derived from the same measured and learned matrices
-- Guided-family alignment note:
-  - The guided confusion map inside `panel c` and the guided correlation map inside `panel e` both resolve through `paths.yaml[confusion_matrix.baseline]`.
-  - That path currently points to `results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz`.
-  - The `20251202` metrics file is byte-identical to `results/omp_transformer_speech260_trainval_split_full_20251115_082341/metrics.npz` (`sha256=12085706b58eaa346f2d6de9681d986f6e8e02eefb429cc30299abe578db5d5b`), so `panel c/e` already use the same representative guided-solver outputs as the active primary run.
-  - The practical consequence is that the Fig. 5 guided-family unification only required source-family changes in the aggregate benchmark panels:
-    `panel a` switched from the retired `Baseline` sweep key to `No Type Bias`, and `panel b` now uses `results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz` for the guided clean-accuracy curve.
-  - No separate confusion-artifact swap was needed for the guided entries in `panel c` or `panel e`; those panels were already on the intended `no_type_bias=true` guided family.
+  - `a`: keeps the guided stage-0 support, first-step contraction, and final guided prediction on one shared radius axis
+  - `b`: aggregates the coherent clean family mass-within-radius curves directly from the governed babble sweep families
+  - `c`: adds the exact-versus-local family bridge, using the same coherent clean family bundle as panel `b`
+  - `d`: expands final prediction locality into a four-family confusion grid so the accepted hierarchy is visible as morphology rather than only as summary statistics
+  - `e`: isolates the measured physical local-structure matrix as its own panel
+  - `f`: compares each family's final clean confusion against the same measured neighborhood surface using a local-band agreement score, with global matrix correlation retained only as a secondary reference
+  - `g`: keeps only the noisy babble sweep as the final consequence panel; the clean consequence burden is carried earlier by panels `b-c`
 
 ## Fig. 6
 

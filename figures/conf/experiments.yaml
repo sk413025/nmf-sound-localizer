@@ -213,8 +213,8 @@ fig05_performance_structure:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 5"
-  claim: "Figure 5 follows one radius-based neighborhood metric from speech stage-0 support, through first-step guided contraction, to final prediction; the same local metric then orders decoder families, while the final-prediction locality map, measured-versus-guided neighborhood geometry pair, and quantitative alignment closure explain why guided decoding stays local and why that locality predicts the downstream clean and noisy performance hierarchy."
-  legend_summary: "Structure-first bridge from stage-0 local support to final prediction locality, followed by family-level neighborhood preservation, a representative final-prediction locality consequence, a measured-versus-guided neighborhood-geometry pair, quantitative neighborhood alignment, and downstream clean/noisy performance summaries."
+  claim: "Figure 5 follows one radius-based neighborhood metric from speech stage-0 support, through first-step guided contraction, to a coherent family-backed final prediction block; the same local metric then orders decoder families, the exact-versus-local scorecard and family-wide locality maps make that ordering concrete, the measured neighborhood provides the reference surface for a family-wide alignment comparison, and the noisy babble sweep cashes out the same hierarchy."
+  legend_summary: "Structure-first bridge from stage-0 local support to coherent family neighborhood preservation, exact-versus-local consequence, family-wide final locality, measured neighborhood anchor, family-to-measured alignment, and noisy consequence."
   panel_order: ["a", "b", "c", "d", "e", "f", "g"]
   panel_manifest: figures/output/fig05_performance_structure_panels/fig05_panel_manifest.json
   generator: figures/generators/fig05_performance_structure.py
@@ -235,21 +235,12 @@ fig05_performance_structure:
     - path: results/fig04_stepwise_mechanics.npz
       type: npz
       description: "Governed first-step neighborhood-contraction summaries reused by panel a on the shared radius axis."
-    - path: results/fig05_panel_c_g_routing_seed42_clean/metrics.npz
-      type: npz
-      description: "Clean seed42 g-routing confusion metrics used by panels b and c as the paper-facing OMP baseline."
-    - path: results/fig05_dense_routing_repro34403c7_clean/metrics.npz
-      type: npz
-      description: "Representative clean dense-routing confusion metrics used by panel b."
-    - path: results/fig05_panel_f_no_type_bias_clean_seed_means/summary.npz
-      type: npz
-      description: "Five-seed clean mean/std per-angle accuracy summary used by panel g, with the guided family sourced from the `No Type Bias` sweep."
-    - path: results/omp_transformer_speech260_trainval_split_full_20251202_192153/metrics.npz
-      type: npz
-      description: "Guided-solver confusion metrics used by panels b and c through paths.yaml[confusion_matrix.baseline]; this representative run already uses `no_type_bias=true`."
-    - path: results/ablate_identity_speech260_seed42_20251210_134919/metrics.npz
-      type: npz
-      description: "No-transformer confusion metrics used by panel b."
+    - path: figures/conf/paths.yaml
+      type: yaml
+      description: "Resolves the governed legacy babble sweep root and suffix used to aggregate the coherent family-backed locality, alignment, and noise-consequence panels."
+    - path: /Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/worktrees/exp-omp-ablation-snr-rerun-20260128/results
+      type: directory
+      description: "Governed babble sweep root containing the five-seed clean/noisy family runs aggregated directly by the active Fig. 5 generator for family-backed locality, alignment, and noise-consequence panels."
   model_params:
     d_model: 128
     nhead: 2
