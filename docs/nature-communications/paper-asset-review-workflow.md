@@ -34,7 +34,7 @@ Every paper-facing figure review uses three explicit roles:
 1. `visual-reviewer`
    - judges readability, hierarchy, spacing, overload, typography compliance, semantic color consistency, and narration restraint
 2. `manuscript-fit-reviewer`
-   - judges whether the figure supports the intended claim, belongs in the intended paper role, and delegates explanation to the caption instead of overexplaining inside the artwork
+   - judges whether the figure supports the intended claim, belongs in the intended paper role, delegates explanation to the caption instead of overexplaining inside the artwork, and remains consistent with the canonical panel-to-method crosswalk at `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`
 3. `supervisor`
    - consolidates both role reports into the final `review.json`
 
@@ -76,7 +76,8 @@ Review must follow this inspection order:
 4. Inspect split panel assets or upstream figure assets listed in `context.json`.
 5. Inspect the generator or composition code that produced the figure.
 6. Inspect the evidence or provenance sources that the figure claims to summarize.
-7. Only then decide manuscript fit, lineage, and Nature suitability.
+7. For active main-paper figures, inspect the corresponding entries in `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`.
+8. Only then decide manuscript fit, lineage, and Nature suitability.
 
 ## Acceptance rules
 
@@ -91,6 +92,7 @@ A paper-facing figure is not releasable unless:
 - the role fit matches the target role
 - no split or supplementary move is recommended for a main-paper figure
 - the review does not identify typography-band violations, semantic-color drift, or presentation-style narration overload as unresolved blockers
+- for active main-paper figures, the review agrees with the canonical crosswalk on panel scientific job, method/supplement anchor, and overlap verdict, or records the mismatch as a blocker
 
 ## Required visual rubric
 
@@ -107,6 +109,12 @@ Every `visual-reviewer` pass must explicitly judge:
 - whether the reviewer inspected the actual asset rather than inferring content from filenames or manuscript text
 - whether any PDF assets were reviewed through page-by-page PNG previews
 - whether the visual story agrees with the generator or composition code and the listed evidence sources
+
+Every `manuscript-fit-reviewer` pass for an active main-paper figure must explicitly judge:
+
+- whether each panel's scientific job still matches the canonical entry in `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`
+- whether the panel's method anchor and supplementary anchor remain adequate for the paper-facing claim
+- whether any overlap risk recorded in the crosswalk has reappeared in the current paper-facing asset
 
 ## Governance principle
 

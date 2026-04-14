@@ -33,6 +33,7 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - Every paper-facing figure judgment must begin with visual inspection of the actual asset.
 - `jpg` and `png` assets must be reviewed directly; `pdf` assets must first be converted page-by-page into PNG previews for visual inspection.
 - Generated or data-backed figures are not submission-ready unless the visual asset has been reconciled against both its generator or composition code and its upstream evidence or provenance sources.
+- Active main-paper figures are not submission-ready unless the paper-facing asset review is also consistent with the canonical panel-to-method crosswalk at `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`.
 - Paper-facing explanatory prose in legends, captions, availability sections, and submission-facing notes inherits the same paper-facing explanation standard as the broader branch model: clear subject, strong verb, explicit consequence, low noun-stack friction, natural scientific English where precision permits, and supporting-actor language that does not let figures or tools replace the paper's discovery as protagonist.
 
 ## Required outputs
@@ -58,6 +59,8 @@ Use this contract for Nature Communications compliance, figure/table packaging, 
 - realized layout sidecars exist where the figure workflow requires them
 - geometry and clearance checks pass where the figure workflow requires them
 - figure acceptance does not rely on filenames, registry prose, or manuscript text alone when visual inspection or provenance backtrace would change the interpretation
+- active main-paper figure acceptance also checks that the figure's panel jobs, method anchors, supplementary anchors, and overlap verdicts remain consistent with `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`
+- no accepted active main-paper panel remains uncategorized at the level of scientific job, panel type, or method/supplement linkage
 - paper-facing legends, captions, and availability prose do not regress into caption-choreography, formal-register compression, or unexplained number clusters simply because they sit outside the main manuscript body
 
 ## Executable gates

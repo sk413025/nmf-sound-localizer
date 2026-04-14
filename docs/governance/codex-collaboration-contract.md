@@ -29,6 +29,8 @@ Use this contract for Codex-native workflow, local skills, task routing, governa
   - `START_HERE_AGENT.md`
 - derived branch-memory brief:
   - `.codex/memory/CURRENT_BRANCH_MEMORY.md`
+- canonical panel-to-method crosswalk for active main-paper figures:
+  - `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`
 - top-level execution, delegation, supervision, and unfamiliarity bootstrap:
   - `.codex/skills/agent-orchestrator/SKILL.md`
 - task packet schema and per-task templates:
@@ -43,6 +45,7 @@ Use this contract for Codex-native workflow, local skills, task routing, governa
   - `results/<round_name>/governance_round.yaml`
 
 Do not restate operational detail from these homes in parallel documents. Point to the canonical home instead.
+For active main-paper figures, panel-method traceability must live in `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`, not in branch memory, ad hoc working notes, or duplicated contract tables.
 
 ## Anti-duplication rule
 

@@ -47,6 +47,10 @@ This contract governs the main-manuscript subset of the broader `paper-facing ex
 - Any manuscript change that depends on figure meaning, panel mapping, or figure lineage must be grounded in actual visual inspection of the figure asset.
 - For `jpg` and `png` figure assets, inspect the image directly. For `pdf` assets, convert every page to PNG previews before interpreting the figure.
 - For generated or data-backed figures, reconcile manuscript claims with both the generator or composition code and the upstream data or provenance artifacts, not with filenames or captions alone.
+- Active main-paper figure planning must remain traceable through the canonical panel-to-method crosswalk at `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`.
+- That crosswalk must record, for every active main-paper panel, the scientific job, panel type, encoded quantity, main-text method anchor, supplementary anchor, overlap verdict, and required action.
+- Any `cross-section` or `whole-manuscript` round that changes panel role, panel order, Results handoff, or method linkage for an active main-paper figure must update the canonical crosswalk in the same round.
+- Figure planning and manuscript acceptance must not rely on readability, panel density, or visual polish alone when panel scientific job, method anchor, supplementary anchor, or overlap verdict would change the paper-level interpretation.
 - If a multi-panel figure changes comparator family, evidence role, or panel-block purpose across panels, the Results prose and figure legend must state that panel logic explicitly rather than relying on the reader to infer it.
 - Manuscript closeout must distinguish exact changed text from high-level interpretation. When claiming that prose was revised, aligned, tightened, or resolved, provide the exact changed language or exact diff evidence rather than summary alone.
 - A manuscript review pass does not by itself establish that every planned manuscript change was implemented. Closeout must distinguish reviewer pass from full plan completion and disclose any deferred or narrowed manuscript surface.
@@ -179,7 +183,9 @@ Use this gate whenever a manuscript round wants to land broader significance.
 - required manuscript sections are present
 - figure references are consistent with the manuscript and figure registry
 - figure-dependent claim edits are grounded in visual inspection plus generator and provenance backtrace when applicable
+- active main-paper figure-dependent claim edits are also reconciled against `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`
 - figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
+- active main-paper panels do not remain unclassified or unanchored at the level of scientific job, panel type, and method/supplement linkage
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
 - prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
 - prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
