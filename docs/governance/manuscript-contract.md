@@ -73,6 +73,8 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Introduce difficult concepts in this order when possible: `physical intuition -> observable consequence -> formal anchor`. Do not make the reader learn an internal label, metric name, or symbolic object before the scientific role of that object is clear.
 - If a paper-facing umbrella term spans more than one formal surface, the prose must mark that surface shift in plain language rather than silently reusing the same noun across distinct quantities.
 - Treat private-vocabulary pressure as a manuscript failure mode. If a paragraph would require a reader to mentally translate among several near-synonyms or internal labels before understanding the science, simplify the terminology instead of adding more bridge jargon.
+- Every high-salience manuscript round should pass a bidirectional no-translation check: `Introduction/Results -> Methods` should read like progressive formalization of the same actors and quantities, and `Methods/Supplementary -> Introduction/Results` should let a reader recover the matching paper-facing concept without building a separate term dictionary.
+- Treat one-way traceability as insufficient. It is not enough that `Results` can be defended from `Methods`; the formal surfaces must also point back naturally to the paper-facing language they are instantiating.
 
 **Sentence and punctuation discipline:**
 
@@ -201,6 +203,7 @@ Use this gate whenever a manuscript round wants to land broader significance.
 - active main-paper panels do not remain unclassified or unanchored at the level of scientific job, panel type, and method/supplement linkage
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
 - a skimming editor can identify, in each high-salience paragraph, the physical phenomenon, the active observable or quantity, and the scientific consequence without translating an internal term map
+- the in-scope surface passes a bidirectional no-translation test: a reader can move from `Introduction/Results` into `Methods` and from `Methods/Supplementary` back into `Introduction/Results` while recognizing the same concepts without inventing a private synonym map
 - prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
 - prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
 - prose states the supported claim floor clearly in affirmative form before naming the evidence boundary, and does not rely on defensive self-negation or prebuttal phrasing to signal rigor

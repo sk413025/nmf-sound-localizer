@@ -22,6 +22,7 @@ Use this contract for Codex-native workflow, local skills, task routing, governa
 - Keep paper-facing workflow claim-forward and reader-first. Closeout rigor belongs in routing, review, and verification, not in the paper's sentence tone.
 - Keep governance and memory language positive and compressive. State the supported rule, posture, or constraint directly rather than storing anticipated objections or reviewer-prebuttal phrasing as if they were policy.
 - When a governance or memory sentence feels too broad, narrow the rule or scope directly instead of rewriting it as `not X`, `should not be read as`, or other defensive explanation.
+- For manuscript-routing and prose-hardening work, treat bidirectional term traceability as a required workflow check: agents should test `Introduction/Results -> Methods` and `Methods/Supplementary -> Introduction/Results` and reject rounds that still force readers to build a private translation map.
 
 ## Canonical homes
 

@@ -318,7 +318,7 @@ $$
 
 When that diagnostic concentrates near one direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint remains locally ordered but immediate commitment becomes unstable. The directional code is still present. What fails is the rule that one direction should be chosen before that shared neighborhood evidence has been pooled.
 
-Figure 3d-f stay on this same pre-update family. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on the same frozen surface. The relevant question is no longer whether the code disappears under speech. It is how much of the grouped evidence remains confined to the local neighborhood before any routed update has acted.
+Figure 3d-f summarize this frozen pre-update surface in three ways. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on that same surface. The relevant question is no longer whether the code disappears under speech. It is how much of the grouped evidence remains confined to the local neighborhood before any routed update has acted.
 
 ## Supplementary Methods 4. Routed updates on the grouped full standardized surface
 
@@ -453,13 +453,13 @@ $$
 
 Equations (S39)-(S42) close the same recursion with a readout, a reconstruction loss, and a monotonic residual regularizer defined on the neighborhood-preserving updates. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The routed solver still follows the OMP-style residual-correction scaffold, but it replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides the atom-level compatibility scores in (S32), and straight-through Gumbel approximations convert those scores into the stagewise gates in (S34) and (S35), so that broad local matches can be focused before subtraction within the staged residual updates. That implementation detail matters here only because it preserves the measured neighborhood that calibration had already exposed.
 
-Figure 5 extends the same neighborhood metric from admissibility to final prediction. For any row-normalized support distribution \(p_i[e]\) on the angle grid \(\{\theta_e\}_{e=1}^E\), we summarize prediction locality by the cumulative neighborhood mass
+Figure 5 carries the neighborhood argument from admissibility to final prediction. For any row-normalized support distribution \(p_i[e]\) on the angle grid \(\{\theta_e\}_{e=1}^E\), prediction locality is summarized by the cumulative neighborhood mass
 
 $$
 m_i(r)=\sum_{e:\,|\theta_e-\theta_i|\le r} p_i[e].
 $$
 
-Figure 5a applies this same statistic to three aligned surfaces: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies the same row-normalized statistic to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays on the same neighborhood axis rather than changing quantities between chapters. Across all three stages, the quantity being tracked is the same: how much nearby-angle support remains local as the readout sharpens.
+Figure 5a applies this statistic to three aligned stages: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies it to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays tied to one locality measure throughout. Across all three stages, the question is the same: how much nearby-angle support remains local as the readout sharpens.
 
 Figure 5f gives the formal version of the same comparison. Let
 
@@ -633,7 +633,7 @@ r_{\mathrm{eff}}
 p_j = \frac{\sigma_j^2}{\sum_\ell \sigma_\ell^2},
 $$
 
-where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The descriptor used in Fig. 6d is the cross-object subspace overlap. Formally, it is the mean top-3 overlap burden: the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis therefore remain response-level descriptors of the measured geometry.
+where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The descriptor used in Fig. 6d is the shared-response overlap across objects. Formally, it is the mean top-3 overlap burden: the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis therefore remain response-level descriptors of the measured geometry.
 
 The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
 
