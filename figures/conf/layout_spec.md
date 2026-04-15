@@ -433,46 +433,52 @@ Full generated figure. Compares white noise and speech encoding/decoding.
 
 ---
 
-## Figure 4 — Solver Dynamics (4 panels)
+## Figure 4 — Solver Dynamics (6 panels)
 
-Composed: a full-width admissibility thesis strip `a`, followed by three
-equal-weight lower panels `b/c/d`. The figure should read as
-measured neighborhood -> representative broad-to-local transition ->
-validation-wide contraction -> angle-resolved within-15° contraction. The design is
-population-led, but it keeps one light exemplar so the broad-to-local shape
-remains visible before the chapter hands its radius-based logic to Fig. 5.
+Composed as a high-density **2×3 admissibility pivot**:
+
+- top row `a-b-c`: synthesis, mechanism, and operating-point recovery
+- bottom row `d-e-f`: validation-wide contraction, angle-wide systematicity,
+  and clip-level robustness
+
+Panel `a` is intentionally composite: it carries one coherent local-admissibility
+job by pairing validation-mean broad-versus-contracted support with one
+representative clip on the same local angle frame. Panels `b-c` add genuinely
+new information rather than repeating the same broad-to-local witness. The
+bottom row keeps the population and robustness surfaces on three distinct axes:
+vary radius, fix radius and vary angle, and fix radius and vary clips.
 
 ```
                          183.0 mm
 ┌──────────────────────────────────────────────────────┐
 │                4.0 mm manuscript collar              │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ (a) Admissibility strip                        │  │ 36.0 mm slot
-│  │              175.0 × 36.0 mm                  │  │
-│  └────────────────────────────────────────────────┘  │
-│                    4.0 mm row gap                    │
-│  ┌────────────────┬────────────────┬─────────────┐  │
-│  │ (b) Exemplary  │ (c) Validation │ (d) Angle × │  │
-│  │ broad-to-local │ wide           │ radius      │  │ 52.0 mm
-│  │ transition     │ contraction    │ map         │  │
-│  │ 55.7 × 52.0 mm │ 55.7 × 52.0 mm │ 55.7 × 52.0 │  │
-│  └────────────────┴────────────────┴─────────────┘  │
+│  ┌─────────────┬──────────────────┬────────────────┐ │
+│  │ (a)         │ (b) routing      │ (c) operating  │ │
+│  │ synthesis   │ decomposition    │ point recovery │ │ 52.7 mm
+│  │ 47.8×52.7mm │ 47.8×52.7 mm     │ 47.8×52.7 mm   │ │
+│  └─────────────┴──────────────────┴────────────────┘ │
+│                    17.9 mm row gap                   │
+│  ┌─────────────┬──────────────────┬────────────────┐ │
+│  │ (d) radius  │ (e) angle        │ (f) clip CDF   │ │
+│  │ contraction │ contraction      │ robustness     │ │ 52.7 mm
+│  │ 47.8×52.7mm │ 47.8×52.7 mm     │ 47.8×52.7 mm   │ │
+│  └─────────────┴──────────────────┴────────────────┘ │
 │                4.0 mm manuscript collar              │
 └──────────────────────────────────────────────────────┘
-                              total = 132.0 mm
+                              total = 140.0 mm
 ```
 
-| Parameter      | Value                                  |
-|----------------|----------------------------------------|
-| width_mm       | 183                                    |
-| height_mm      | **132**                                |
-| Outer collar   | **4.0 mm** on all four sides           |
-| Panel (a) slot | **175.0 × 36.0 mm**                    |
-| Row gap        | **4.0 mm**                             |
-| Panels (b-d)   | **55.7 × 52.0 mm**                     |
-| Column gap     | **4.0 mm** between lower panels        |
-| Label lane     | **4.5 mm** at the top of each slot     |
-| Content inset  | **1.5 mm** left/right/bottom           |
+| Parameter      | Value                                   |
+|----------------|-----------------------------------------|
+| width_mm       | 183                                     |
+| height_mm      | **140**                                 |
+| Outer collar   | **4.0 mm** on all four sides            |
+| Row height     | **52.7 mm**                             |
+| Row gap        | **17.9 mm**                             |
+| Column width   | **47.8 mm**                             |
+| Column gap     | **13.4 mm**                             |
+| Label lane     | **4.5 mm** at the top of each slot      |
+| Content inset  | **1.5 mm** left/right/bottom            |
 
 ---
 

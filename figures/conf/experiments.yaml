@@ -136,8 +136,8 @@ fig04_ablation:
   provenance_mode: data_backed_composite
   width_mode: double
   manuscript_anchor: "Results / Fig. 4"
-  claim: "Once speech broadens local overlap, the admissible update is the one that preserves and contracts support inside the measured neighborhood before subtraction: panels a-c define and visualize the broad-to-local first-step transition, panel d shows the validation-wide inward shift over radius, panel e shows the same effect across target angle at 15°, and panel f shows that the local 15-degree gain is positive for nearly all clips."
-  legend_summary: "Admissible neighborhood contraction, representative broad support, representative contracted support, validation-wide neighborhood contraction, angle-resolved within-15° contraction, and clip-level within-15° gain CDF."
+  claim: "Once speech broadens local overlap, the admissible update is the one that preserves and contracts support inside the measured neighborhood before subtraction: panel a synthesizes the broad-to-local first-step transition on one shared local frame, panel b shows how the routed update is carved from within the broad physical support, panel c compresses first-step recovery onto exact, 5°, 10°, and 15° operating points, panel d shows the validation-wide inward shift over radius, panel e shows the same effect across target angle at 15°, and panel f shows that the local 15-degree gain is positive for nearly all clips."
+  legend_summary: "Admissibility synthesis, routing carves a local update, first-step operating-point recovery, validation-wide neighborhood contraction, angle-resolved within-15° contraction, and clip-level within-15° gain CDF."
   panel_order: ["a", "b", "c", "d", "e", "f"]
   panel_manifest: figures/output/fig04_solver_dynamics_panels/fig04_panel_manifest.json
   generator: figures/generators/fig04_solver_dynamics.py
@@ -169,23 +169,23 @@ fig04_ablation:
       description: "Governed derived artifact containing representative stage-0 / guided-step traces plus validation-wide aligned neighborhood-mass summaries."
   panel_provenance:
     a:
-      title: "Admissible neighborhood contraction"
+      title: "Admissibility synthesis"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_admissible_contraction.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_a_admissibility_synthesis.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/dictionary.npz
     b:
-      title: "Representative broad support"
+      title: "Routing carves a local update"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_representative_broad_support.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_b_routing_decomposition.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz
     c:
-      title: "Representative contracted support"
+      title: "First-step operating-point recovery"
       provenance_mode: data_backed
-      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_representative_contracted_support.pdf
+      asset_path: figures/output/fig04_solver_dynamics_panels/fig04_panel_c_operating_point_recovery.pdf
       evidence_sources:
         - results/fig04_stepwise_mechanics.npz
         - results/omp_transformer_speech260_trainval_split_full_20251115_082341/modal_routing_val.npz

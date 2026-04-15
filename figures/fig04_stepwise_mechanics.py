@@ -91,6 +91,7 @@ def _instantiate_model(run_dir: Path) -> tuple[Any, torch.Tensor]:
         expert_agg=str(args.get("expert_agg", "l2")),
     )
     for attr in (
+        "disable_omp_sparsity",
         "no_type_bias",
         "encoder_identity",
         "single_gate_expert",

@@ -2,9 +2,9 @@
 
 This generator produces the six paper-facing governed panels:
 
-- (a) admissible neighborhood contraction
-- (b) representative broad support
-- (c) representative contracted support
+- (a) admissibility synthesis
+- (b) routing carves a local update
+- (c) first-step operating-point recovery
 - (d) validation-wide neighborhood contraction
 - (e) angle-resolved within-15° contraction
 - (f) clip-level within-15° gain CDF
@@ -213,6 +213,8 @@ def _plot_trace(
     linewidth: float,
     linestyle: str = "-",
     alpha: float = 1.0,
+    marker: str | None = None,
+    markersize: float | None = None,
 ) -> None:
     ax.plot(
         angles_deg,
@@ -221,6 +223,8 @@ def _plot_trace(
         linewidth=linewidth,
         linestyle=linestyle,
         alpha=alpha,
+        marker=marker,
+        markersize=markersize,
         zorder=3,
     )
 
@@ -306,8 +310,30 @@ def _compute_clip_gain_cdf(
     return gain_sorted, cdf, median_gain, positive_rate
 
 
+def _compute_operating_point_summary(
+    mechanics: dict[str, np.ndarray],
+) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray]:
+    radius_deg = np.asarray(mechanics["aligned_radius_deg"], dtype=np.float32)
+    before_rows = np.asarray(mechanics["aligned_cum_mass_g_rows"], dtype=np.float32)
+    after_rows = np.asarray(mechanics["aligned_cum_mass_delta_rows"], dtype=np.float32)
+    targets = [0.0, 5.0, 10.0, 15.0]
+    labels = ["exact", "5°", "10°", "15°"]
+    before = []
+    after = []
+    gain = []
+    for target in targets:
+        idx = int(np.argmin(np.abs(radius_deg - target)))
+        bb = before_rows[:, idx]
+        aa = after_rows[:, idx]
+        before.append(float(bb.mean(dtype=np.float64)))
+        after.append(float(aa.mean(dtype=np.float64)))
+        gain.append(float((aa - bb).mean(dtype=np.float64)))
+    return labels, np.asarray(before, dtype=np.float32), np.asarray(after, dtype=np.float32), np.asarray(gain, dtype=np.float32)
+
+
 def _plot_panel_a(
-    ax: plt.Axes,
+    fig: plt.Figure,
+    slot_spec,
     mechanics: dict[str, np.ndarray],
     angles_deg: np.ndarray,
     h_similarity: np.ndarray,
@@ -317,63 +343,114 @@ def _plot_panel_a(
     title_pt: float,
     legend_pt: float,
     add_label: bool,
-) -> None:
+) -> list[plt.Axes]:
+    outer = slot_spec.subgridspec(1, 2, width_ratios=[1.05, 1.0], wspace=0.14)
     target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     x_min, x_max = _local_focus(target_angle)
     local_band = _local_band_profile(h_similarity, angles_deg, target_angle)
-    broad = _normalize_in_window(
+
+    broad_mean = _normalize_in_window(
         np.asarray(mechanics["stage0_g_norm_mean"][0], dtype=np.float32),
         angles_deg,
         x_min,
         x_max,
     )
-    contracted = _normalize_in_window(
+    contracted_mean = _normalize_in_window(
         np.asarray(mechanics["stage0_delta_norm_mean"][0], dtype=np.float32),
         angles_deg,
         x_min,
         x_max,
     )
-    _draw_local_band_guide(ax, angles_deg, local_band, target_angle=target_angle)
-    _plot_trace(
-        ax,
+    broad_rep = _normalize_in_window(
+        np.asarray(mechanics["sample_g_expert_steps"][0, 0], dtype=np.float32),
         angles_deg,
-        broad,
+        x_min,
+        x_max,
+    )
+    contracted_rep = _normalize_in_window(
+        np.asarray(mechanics["sample_delta_expert_steps"][0, 0], dtype=np.float32),
+        angles_deg,
+        x_min,
+        x_max,
+    )
+
+    ax_left = fig.add_subplot(outer[0, 0])
+    _draw_local_band_guide(ax_left, angles_deg, local_band, target_angle=target_angle)
+    _plot_trace(
+        ax_left,
+        angles_deg,
+        broad_mean,
         color=SEMANTIC_PALETTE["physics"],
         linestyle="--",
         linewidth=FIG04_BASE_LINEWIDTH,
     )
-    _fill_trace(ax, angles_deg, broad, color=SEMANTIC_PALETTE["physics"], alpha=0.08)
+    _fill_trace(ax_left, angles_deg, broad_mean, color=SEMANTIC_PALETTE["physics"], alpha=0.08)
     _plot_trace(
-        ax,
+        ax_left,
         angles_deg,
-        contracted,
+        contracted_mean,
         color=SEMANTIC_PALETTE["learned"],
         linewidth=FIG04_HEAVY_LINEWIDTH,
     )
-    _fill_trace(ax, angles_deg, contracted, color=SEMANTIC_PALETTE["learned"], alpha=0.12)
-    _configure_profile_axis(ax, tick_label_pt=tick_label_pt, target_angle=target_angle)
-    ax.set_title("Admissible neighborhood contraction", fontsize=title_pt, pad=2.5)
-    ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
-    ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
+    _fill_trace(ax_left, angles_deg, contracted_mean, color=SEMANTIC_PALETTE["learned"], alpha=0.12)
+    _configure_profile_axis(ax_left, tick_label_pt=tick_label_pt - 0.1, target_angle=target_angle)
+    ax_left.set_title("Admissibility synthesis", fontsize=title_pt, pad=2.5)
+    ax_left.set_xlabel("Angle (°)", fontsize=axis_label_pt)
+    ax_left.set_ylabel("Normalized support", fontsize=axis_label_pt)
     _style_text_box(
-        ax,
+        ax_left,
         0.03,
         0.95,
-        "validation mean\nbroad support vs first guided step",
-        fontsize=legend_pt - 0.45,
-    )
-    ax.text(
-        0.97,
-        0.12,
-        "measured neighborhood",
-        transform=ax.transAxes,
+        "validation mean\nbroad support → contracted support",
         fontsize=legend_pt - 0.55,
+    )
+    if add_label:
+        add_panel_label(ax_left, "a", x=0.02, y=1.01)
+
+    ax_right = fig.add_subplot(outer[0, 1])
+    _draw_local_band_guide(ax_right, angles_deg, local_band, target_angle=target_angle)
+    _plot_trace(
+        ax_right,
+        angles_deg,
+        broad_rep,
+        color=SEMANTIC_PALETTE["physics"],
+        linestyle="--",
+        linewidth=FIG04_BASE_LINEWIDTH,
+    )
+    _fill_trace(ax_right, angles_deg, broad_rep, color=SEMANTIC_PALETTE["physics"], alpha=0.08)
+    _plot_trace(
+        ax_right,
+        angles_deg,
+        contracted_rep,
+        color=SEMANTIC_PALETTE["learned"],
+        linewidth=FIG04_HEAVY_LINEWIDTH,
+    )
+    _fill_trace(ax_right, angles_deg, contracted_rep, color=SEMANTIC_PALETTE["learned"], alpha=0.12)
+    _configure_profile_axis(
+        ax_right,
+        tick_label_pt=tick_label_pt - 0.1,
+        target_angle=target_angle,
+        show_yticks=False,
+    )
+    ax_right.set_xlabel("Angle (°)", fontsize=axis_label_pt)
+    _style_text_box(
+        ax_right,
+        0.03,
+        0.95,
+        f"representative {target_angle:.0f}° clip\nsame broad-to-local transition",
+        fontsize=legend_pt - 0.55,
+    )
+    ax_right.text(
+        0.97,
+        0.11,
+        "measured neighborhood",
+        transform=ax_right.transAxes,
+        fontsize=legend_pt - 0.7,
         ha="right",
         va="bottom",
         color=STYLE_COLORS["muted_text"],
     )
-    if add_label:
-        add_panel_label(ax, "a", x=0.02, y=1.01)
+    return [ax_left, ax_right]
 
 
 def _plot_panel_b(
@@ -397,47 +474,19 @@ def _plot_panel_b(
         x_min,
         x_max,
     )
-    _draw_local_band_guide(ax, angles_deg, local_band, target_angle=target_angle)
-    _plot_trace(
-        ax,
+    qk = _normalize_in_window(
+        np.asarray(mechanics["sample_qk_expert_steps"][0, 0], dtype=np.float32),
         angles_deg,
-        broad,
-        color=SEMANTIC_PALETTE["physics"],
-        linestyle="--",
-        linewidth=FIG04_BASE_LINEWIDTH,
+        x_min,
+        x_max,
     )
-    _fill_trace(ax, angles_deg, broad, color=SEMANTIC_PALETTE["physics"], alpha=0.10)
-    _configure_profile_axis(ax, tick_label_pt=tick_label_pt, target_angle=target_angle)
-    ax.set_title("Representative broad support", fontsize=title_pt, pad=2.5)
-    ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
-    ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
-    _style_text_box(
-        ax,
-        0.03,
-        0.95,
-        f"{target_angle:.0f}° validation clip\nbefore first guided step",
-        fontsize=legend_pt - 0.45,
+    routed = _normalize_in_window(
+        np.asarray(mechanics["sample_w_theta_steps"][0, 0], dtype=np.float32),
+        angles_deg,
+        x_min,
+        x_max,
     )
-    if add_label:
-        add_panel_label(ax, "b", x=0.02, y=1.01)
-
-
-def _plot_panel_c(
-    ax: plt.Axes,
-    mechanics: dict[str, np.ndarray],
-    angles_deg: np.ndarray,
-    h_similarity: np.ndarray,
-    *,
-    axis_label_pt: float,
-    tick_label_pt: float,
-    title_pt: float,
-    legend_pt: float,
-    add_label: bool,
-) -> None:
-    target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
-    x_min, x_max = _local_focus(target_angle)
-    local_band = _local_band_profile(h_similarity, angles_deg, target_angle)
-    contracted = _normalize_in_window(
+    update = _normalize_in_window(
         np.asarray(mechanics["sample_delta_expert_steps"][0, 0], dtype=np.float32),
         angles_deg,
         x_min,
@@ -447,22 +496,92 @@ def _plot_panel_c(
     _plot_trace(
         ax,
         angles_deg,
-        contracted,
+        broad,
+        color=SEMANTIC_PALETTE["physics"],
+        linestyle="--",
+        linewidth=FIG04_BASE_LINEWIDTH,
+    )
+    _plot_trace(
+        ax,
+        angles_deg,
+        qk,
+        color=STYLE_COLORS["neutral_text"],
+        linestyle=":",
+        linewidth=FIG04_LIGHT_LINEWIDTH,
+        alpha=0.85,
+    )
+    _plot_trace(
+        ax,
+        angles_deg,
+        routed,
+        color=SEMANTIC_PALETTE["highlight"],
+        linewidth=FIG04_BASE_LINEWIDTH,
+    )
+    _plot_trace(
+        ax,
+        angles_deg,
+        update,
         color=SEMANTIC_PALETTE["learned"],
         linewidth=FIG04_HEAVY_LINEWIDTH,
     )
-    _fill_trace(ax, angles_deg, contracted, color=SEMANTIC_PALETTE["learned"], alpha=0.14)
     _configure_profile_axis(ax, tick_label_pt=tick_label_pt, target_angle=target_angle)
-    ax.set_title("Representative contracted support", fontsize=title_pt, pad=2.5)
+    ax.set_title("Routing carves a local update", fontsize=title_pt, pad=2.5)
     ax.set_xlabel("Angle (°)", fontsize=axis_label_pt)
-    ax.set_ylabel("Normalized support", fontsize=axis_label_pt)
+    ax.set_ylabel("Normalized profile", fontsize=axis_label_pt)
     _style_text_box(
         ax,
         0.03,
         0.95,
-        f"same {target_angle:.0f}° clip\nafter first guided step",
-        fontsize=legend_pt - 0.45,
+        "same 70° clip\nphysical support, learned cue, routed weight, update",
+        fontsize=legend_pt - 0.55,
     )
+    ax.text(0.97, 0.95, "update", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["learned"])
+    ax.text(0.97, 0.86, "routed weight", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["highlight"])
+    ax.text(0.97, 0.77, "learned cue", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=STYLE_COLORS["neutral_text"])
+    ax.text(0.97, 0.68, "broad support", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["physics"])
+    if add_label:
+        add_panel_label(ax, "b", x=0.02, y=1.01)
+
+
+def _plot_panel_c(
+    ax: plt.Axes,
+    labels: list[str],
+    before: np.ndarray,
+    after: np.ndarray,
+    gain: np.ndarray,
+    *,
+    axis_label_pt: float,
+    tick_label_pt: float,
+    title_pt: float,
+    legend_pt: float,
+    add_label: bool,
+) -> None:
+    x = np.arange(len(labels), dtype=np.float32)
+    for i in range(len(labels)):
+        ax.plot([x[i], x[i]], [before[i], after[i]], color=STYLE_COLORS["guide_line"], linewidth=FIG04_LIGHT_LINEWIDTH, zorder=1)
+    ax.scatter(x, before, color=SEMANTIC_PALETTE["physics"], s=18, zorder=3)
+    ax.scatter(x, after, color=SEMANTIC_PALETTE["learned"], s=18, zorder=4)
+    ax.set_xlim(-0.45, len(labels) - 0.55)
+    ax.set_ylim(0.0, 1.05)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=tick_label_pt)
+    ax.set_yticks([0.0, 0.5, 1.0])
+    ax.tick_params(axis="y", labelsize=tick_label_pt, length=2)
+    ax.grid(axis="y", linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+    ax.set_xlabel("Local commitment threshold", fontsize=axis_label_pt)
+    ax.set_ylabel("Mass within threshold", fontsize=axis_label_pt)
+    ax.set_title("First-step operating-point recovery", fontsize=title_pt, pad=2.5)
+    _style_text_box(
+        ax,
+        0.03,
+        0.95,
+        f"exact: {before[0]:.2f} → {after[0]:.2f}\nwithin 15°: {before[-1]:.2f} → {after[-1]:.2f}",
+        fontsize=legend_pt - 0.55,
+    )
+    ax.text(0.97, 0.95, "after first guided step", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["learned"])
+    ax.text(0.97, 0.86, "before", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["physics"])
+    for i, g in enumerate(gain):
+        ax.text(x[i], max(before[i], after[i]) + 0.035, f"{g:+.2f}", ha="center", va="bottom", fontsize=legend_pt - 0.9, color=STYLE_COLORS["muted_text"])
     if add_label:
         add_panel_label(ax, "c", x=0.02, y=1.01)
 
@@ -491,12 +610,7 @@ def _plot_panel_d(
         alpha=FAMILY_STYLE["fill_alpha_primary"],
         linewidth=0.0,
     )
-    ax.plot(
-        radius_deg,
-        after_mean,
-        color=SEMANTIC_PALETTE["learned"],
-        linewidth=FIG04_HEAVY_LINEWIDTH,
-    )
+    ax.plot(radius_deg, after_mean, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH)
     ax.fill_between(
         radius_deg,
         np.clip(before_mean - before_sem, 0.0, 1.05),
@@ -505,26 +619,9 @@ def _plot_panel_d(
         alpha=FAMILY_STYLE["fill_alpha_secondary"],
         linewidth=0.0,
     )
-    ax.plot(
-        radius_deg,
-        before_mean,
-        color=SEMANTIC_PALETTE["physics"],
-        linestyle="--",
-        linewidth=FIG04_BASE_LINEWIDTH,
-    )
-    ax.axvspan(
-        0.0,
-        FIG04_TARGET_RADIUS_DEG,
-        color=SEMANTIC_PALETTE["highlight"],
-        alpha=FAMILY_STYLE["fill_alpha_secondary"],
-        linewidth=0.0,
-    )
-    ax.axvline(
-        FIG04_TARGET_RADIUS_DEG,
-        color=STYLE_COLORS["chance_line"],
-        linewidth=FIG04_RULE_LINEWIDTH,
-        linestyle=":",
-    )
+    ax.plot(radius_deg, before_mean, color=SEMANTIC_PALETTE["physics"], linestyle="--", linewidth=FIG04_BASE_LINEWIDTH)
+    ax.axvspan(0.0, FIG04_TARGET_RADIUS_DEG, color=SEMANTIC_PALETTE["highlight"], alpha=FAMILY_STYLE["fill_alpha_secondary"], linewidth=0.0)
+    ax.axvline(FIG04_TARGET_RADIUS_DEG, color=STYLE_COLORS["chance_line"], linewidth=FIG04_RULE_LINEWIDTH, linestyle=":")
     idx15 = int(np.argmin(np.abs(radius_deg - FIG04_TARGET_RADIUS_DEG)))
     ax.set_xlim(float(radius_deg[0]), 45.0)
     ax.set_ylim(0.0, 1.05)
@@ -535,33 +632,9 @@ def _plot_panel_d(
     ax.set_title("Validation-wide neighborhood contraction", fontsize=title_pt, pad=2.5)
     ax.set_xlabel("Neighborhood radius (°)", fontsize=axis_label_pt)
     ax.set_ylabel("Mass within radius", fontsize=axis_label_pt)
-    _style_text_box(
-        ax,
-        0.03,
-        0.95,
-        f"n = {clip_count:,}\nwithin 15°: {before_mean[idx15]:.2f} → {after_mean[idx15]:.2f}",
-        fontsize=legend_pt - 0.45,
-    )
-    ax.text(
-        0.97,
-        0.92,
-        "after first guided step",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.5,
-        ha="right",
-        va="top",
-        color=SEMANTIC_PALETTE["learned"],
-    )
-    ax.text(
-        0.97,
-        0.82,
-        "before",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.5,
-        ha="right",
-        va="top",
-        color=SEMANTIC_PALETTE["physics"],
-    )
+    _style_text_box(ax, 0.03, 0.95, f"n = {clip_count:,}\nwithin 15°: {before_mean[idx15]:.2f} → {after_mean[idx15]:.2f}", fontsize=legend_pt - 0.55)
+    ax.text(0.97, 0.95, "after first guided step", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["learned"])
+    ax.text(0.97, 0.86, "before", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["physics"])
     if add_label:
         add_panel_label(ax, "d", x=0.02, y=1.01)
 
@@ -621,28 +694,10 @@ def _plot_panel_e(
         0.03,
         0.95,
         f"mean gain = {float(np.mean(gain_mean)):+.2f}\npositive mean gain at every angle",
-        fontsize=legend_pt - 0.45,
+        fontsize=legend_pt - 0.55,
     )
-    ax.text(
-        0.97,
-        0.92,
-        "after first guided step",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.5,
-        ha="right",
-        va="top",
-        color=SEMANTIC_PALETTE["learned"],
-    )
-    ax.text(
-        0.97,
-        0.82,
-        "before",
-        transform=ax.transAxes,
-        fontsize=legend_pt - 0.5,
-        ha="right",
-        va="top",
-        color=SEMANTIC_PALETTE["physics"],
-    )
+    ax.text(0.97, 0.95, "after first guided step", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["learned"])
+    ax.text(0.97, 0.86, "before", transform=ax.transAxes, fontsize=legend_pt - 0.7, ha="right", va="top", color=SEMANTIC_PALETTE["physics"])
     if add_label:
         add_panel_label(ax, "e", x=0.02, y=1.01)
 
@@ -660,24 +715,9 @@ def _plot_panel_f(
     legend_pt: float,
     add_label: bool,
 ) -> None:
-    ax.plot(
-        gain_sorted,
-        cdf,
-        color=SEMANTIC_PALETTE["learned"],
-        linewidth=FIG04_HEAVY_LINEWIDTH,
-    )
-    ax.axvline(
-        0.0,
-        color=STYLE_COLORS["chance_line"],
-        linewidth=FIG04_RULE_LINEWIDTH,
-        linestyle=":",
-    )
-    ax.axvline(
-        median_gain,
-        color=SEMANTIC_PALETTE["highlight"],
-        linewidth=FIG04_RULE_LINEWIDTH,
-        linestyle="--",
-    )
+    ax.plot(gain_sorted, cdf, color=SEMANTIC_PALETTE["learned"], linewidth=FIG04_HEAVY_LINEWIDTH)
+    ax.axvline(0.0, color=STYLE_COLORS["chance_line"], linewidth=FIG04_RULE_LINEWIDTH, linestyle=":")
+    ax.axvline(median_gain, color=SEMANTIC_PALETTE["highlight"], linewidth=FIG04_RULE_LINEWIDTH, linestyle="--")
     ax.set_xlim(float(gain_sorted.min()) - 0.02, float(gain_sorted.max()) + 0.02)
     ax.set_ylim(0.0, 1.02)
     ax.set_yticks([0.0, 0.5, 1.0])
@@ -691,7 +731,7 @@ def _plot_panel_f(
         0.03,
         0.95,
         f"median = {median_gain:+.2f}\n{positive_rate * 100.0:.1f}% of clips > 0",
-        fontsize=legend_pt - 0.45,
+        fontsize=legend_pt - 0.55,
     )
     if add_label:
         add_panel_label(ax, "f", x=0.02, y=1.01)
@@ -731,17 +771,17 @@ def _build_composite(
         height_ratios=FIG04_GRID["height_ratios"],
     )
     angles_deg = np.asarray(mechanics["angles_deg"], dtype=np.float32)
-    target_angle = float(np.asarray(mechanics["representative_angles_deg"]).item())
     before_mean, after_mean, gain_mean = _compute_angle_resolved_contraction(
         mechanics,
         labels,
         angle_grid_deg,
     )
     gain_sorted, cdf, median_gain, positive_rate = _compute_clip_gain_cdf(mechanics)
+    op_labels, op_before, op_after, op_gain = _compute_operating_point_summary(mechanics)
 
-    ax_a = fig.add_subplot(grid[0, 0])
     _plot_panel_a(
-        ax_a,
+        fig,
+        grid[0, 0],
         mechanics,
         angles_deg,
         h_similarity,
@@ -766,9 +806,10 @@ def _build_composite(
     ax_c = fig.add_subplot(grid[0, 2])
     _plot_panel_c(
         ax_c,
-        mechanics,
-        angles_deg,
-        h_similarity,
+        op_labels,
+        op_before,
+        op_after,
+        op_gain,
         axis_label_pt=axis_label_pt,
         tick_label_pt=tick_label_pt,
         title_pt=title_pt,
@@ -826,6 +867,13 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     h_similarity = _load_h_similarity(data_root)
     labels, angle_grid_deg = _load_validation_grid(data_root)
     angles_deg = np.asarray(mechanics["angles_deg"], dtype=np.float32)
+    before_mean, after_mean, gain_mean = _compute_angle_resolved_contraction(
+        mechanics,
+        labels,
+        angle_grid_deg,
+    )
+    gain_sorted, cdf, median_gain, positive_rate = _compute_clip_gain_cdf(mechanics)
+    op_labels, op_before, op_after, op_gain = _compute_operating_point_summary(mechanics)
 
     all_paths: list[Path] = []
     fig = make_figure(
@@ -847,17 +895,32 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
     all_paths.extend(save_outputs(fig, output_dir / "fig04_solver_dynamics", typography=typography))
     plt.close(fig)
 
-    before_mean, after_mean, gain_mean = _compute_angle_resolved_contraction(
-        mechanics,
-        labels,
-        angle_grid_deg,
-    )
-    gain_sorted, cdf, median_gain, positive_rate = _compute_clip_gain_cdf(mechanics)
-
     panel_dir = output_dir / "fig04_solver_dynamics_panels"
     panel_dir.mkdir(parents=True, exist_ok=True)
 
-    def _make_standalone(panel_id: str, plot_fn, *plot_args) -> list[Path]:
+    def _make_standalone_panel_a() -> list[Path]:
+        fig_panel = make_figure(
+            width_mm=FIG04_PANEL_SLOT_WIDTHS_MM["a"],
+            height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM["a"],
+        )
+        gs = gridspec.GridSpec(1, 1, figure=fig_panel, **FIG04_SPLIT["standalone_subplots"]["a"])
+        _plot_panel_a(
+            fig_panel,
+            gs[0],
+            mechanics,
+            angles_deg,
+            h_similarity,
+            axis_label_pt=axis_label_pt,
+            tick_label_pt=tick_label_pt,
+            title_pt=title_pt,
+            legend_pt=legend_pt,
+            add_label=False,
+        )
+        paths = save_outputs(fig_panel, panel_dir / "fig04_panel_a_admissibility_synthesis", typography=typography)
+        plt.close(fig_panel)
+        return paths
+
+    def _make_standalone(panel_id: str, plot_fn, stem: str, *plot_args) -> list[Path]:
         fig_panel = make_figure(
             width_mm=FIG04_PANEL_SLOT_WIDTHS_MM[panel_id],
             height_mm=FIG04_PANEL_SLOT_HEIGHTS_MM[panel_id],
@@ -873,50 +936,50 @@ def generate(data_root: Path, output_dir: Path) -> list[Path]:
             add_label=False,
         )
         fig_panel.subplots_adjust(**FIG04_SPLIT["standalone_subplots"][panel_id])
-        stem = {
-            "a": "fig04_panel_a_admissible_contraction",
-            "b": "fig04_panel_b_representative_broad_support",
-            "c": "fig04_panel_c_representative_contracted_support",
-            "d": "fig04_panel_d_validation_contraction",
-            "e": "fig04_panel_e_angle_resolved_within15",
-            "f": "fig04_panel_f_clip_gain_cdf",
-        }[panel_id]
         paths = save_outputs(fig_panel, panel_dir / stem, typography=typography)
         plt.close(fig_panel)
         return paths
 
-    all_paths.extend(_make_standalone("a", _plot_panel_a, mechanics, angles_deg, h_similarity))
-    all_paths.extend(_make_standalone("b", _plot_panel_b, mechanics, angles_deg, h_similarity))
-    all_paths.extend(_make_standalone("c", _plot_panel_c, mechanics, angles_deg, h_similarity))
-    all_paths.extend(_make_standalone("d", _plot_panel_d, mechanics))
+    all_paths.extend(_make_standalone_panel_a())
     all_paths.extend(
-        _make_standalone("e", _plot_panel_e, before_mean, after_mean, gain_mean, angle_grid_deg)
+        _make_standalone("b", _plot_panel_b, "fig04_panel_b_routing_decomposition", mechanics, angles_deg, h_similarity)
     )
-    all_paths.extend(_make_standalone("f", _plot_panel_f, gain_sorted, cdf, median_gain, positive_rate))
+    all_paths.extend(
+        _make_standalone("c", _plot_panel_c, "fig04_panel_c_operating_point_recovery", op_labels, op_before, op_after, op_gain)
+    )
+    all_paths.extend(
+        _make_standalone("d", _plot_panel_d, "fig04_panel_d_validation_contraction", mechanics)
+    )
+    all_paths.extend(
+        _make_standalone("e", _plot_panel_e, "fig04_panel_e_angle_resolved_within15", before_mean, after_mean, gain_mean, angle_grid_deg)
+    )
+    all_paths.extend(
+        _make_standalone("f", _plot_panel_f, "fig04_panel_f_clip_gain_cdf", gain_sorted, cdf, median_gain, positive_rate)
+    )
 
     manifest = _save_panel_manifest(
         panel_dir,
         [
             {
                 "panel_id": "a",
-                "title": "Admissible neighborhood contraction",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_admissible_contraction.pdf",
+                "title": "Admissibility synthesis",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_a_admissibility_synthesis.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Validation-mean broad support and first-step contracted support shown against the measured neighborhood on one shared angle frame.",
+                "description": "Composite admissibility panel pairing validation-mean and representative broad-to-local support against the measured neighborhood band.",
             },
             {
                 "panel_id": "b",
-                "title": "Representative broad support",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_representative_broad_support.pdf",
+                "title": "Routing carves a local update",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_b_routing_decomposition.pdf",
                 "provenance_mode": "data_backed",
-                "description": "Representative 70-degree validation clip before the first guided step, showing broad local support against the measured neighborhood band.",
+                "description": "Representative first-step decomposition showing broad physical support, learned cue, routed weight, and the resulting local update on the same angle frame.",
             },
             {
                 "panel_id": "c",
-                "title": "Representative contracted support",
-                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_representative_contracted_support.pdf",
+                "title": "First-step operating-point recovery",
+                "asset_path": "figures/output/fig04_solver_dynamics_panels/fig04_panel_c_operating_point_recovery.pdf",
                 "provenance_mode": "data_backed",
-                "description": "The same representative 70-degree validation clip after one guided step, showing contraction back into the measured neighborhood band.",
+                "description": "Before-versus-after recovery at exact, 5°, 10°, and 15° operating points for the first guided step.",
             },
             {
                 "panel_id": "d",

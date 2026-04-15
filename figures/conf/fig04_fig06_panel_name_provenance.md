@@ -35,15 +35,18 @@ decisions, not to replace manuscript prose.
   - `results/fig04_stepwise_mechanics.npz`
     - governed derived artifact rebuilt from the active primary run
 - Panel notes:
-  - `a`: admissibility thesis panel; it keeps the measured neighborhood only as
-    a guide band and overlays validation-mean broad support with the first-step
-    contracted support on one shared angle frame
-  - `b`: representative broad-support witness; it shows the chosen 70°
-    validation clip before the first guided step, without turning the exemplar
-    into the main chapter proof
-  - `c`: representative contracted-support witness; it shows the same 70°
-    validation clip after one guided step so the broad-to-local transition is
-    explicit rather than hidden inside panel `a`
+  - `a`: admissibility synthesis panel; it pairs validation-mean broad versus
+    contracted support with the chosen 70° representative clip on one local
+    angle frame, keeping the measured neighborhood only as a guide band rather
+    than as a standalone panel job
+  - `b`: routing-decomposition panel; it shows broad physical support, the
+    learned cue, the routed-weight profile, and the resulting local update for
+    the same 70° representative clip so the update is visibly carved from
+    within the broad support
+  - `c`: first-step operating-point recovery panel; it summarizes before/after
+    mass at exact, 5°, 10°, and 15° thresholds so the immediate consequence of
+    the first guided step is visible without preempting Fig. 5's final
+    family-level scorecard
   - `d`: validation-wide contraction panel; it shows the cumulative local-mass
     shift before versus after the first guided step on the shared radius axis
   - `e`: angle-resolved within-15° contraction; it fixes the operative 15°
