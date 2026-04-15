@@ -37,6 +37,9 @@ spine`, and the `Methods spine` on one shared term map.
 - Reopen each concept family in `Methods` / `Supplementary Methods` with that
   same canonical head term before attaching notation, equations, or exact score
   names.
+- Concentrate each required surface bridge at the first shift where it becomes
+  necessary, then refer back to that landing site rather than re-explaining the
+  same mapping in later paragraphs.
 - If a paper-facing umbrella term spans more than one formal surface, keep the
   umbrella term but require a short bridge that tells the reader which surface
   is active in that paragraph.
@@ -183,10 +186,11 @@ second-layer precision rather than competing reader-facing names.
 
 ## Working Conclusion
 
-The manuscript does not need more names. It needs fewer paper-facing names and
-clearer division of labor between paper-facing intuition and formal Methods
-labels. The canonical set above should carry `Introduction` and `Results`; the
-retired terms should remain available only where the formal construction itself
-must be stated. In practice, `Fig. 4-5` should now read in paper-facing terms
-as `admissibility`, `local support`, and `family consequence`, with decoder
-internals appearing only as bounded formal bridges.
+The manuscript does not need more names. It needs fewer paper-facing names,
+one stable landing site for each bridge, and clearer division of labor between
+paper-facing intuition and formal Methods labels. The canonical set above
+should carry `Introduction` and `Results`; the retired terms should remain
+available only where the formal construction itself must be stated. In
+practice, `Fig. 4-5` should read in paper-facing terms as `admissibility`,
+`local support`, and `family consequence`, with decoder internals appearing
+only as bounded formal bridges and not as a second narrative spine.

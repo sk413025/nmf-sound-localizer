@@ -1,0 +1,35 @@
+risk_level: high-risk
+architecture_scope: cross-section
+broader_significance_in_scope: true
+role_mode: compressed
+role_compression_reason: "This manuscript hardening round was implemented, reviewed, and verified directly in one Codex session without a separate reviewer/verifier handoff."
+
+task_packet:
+  core_discovery: "Ordinary passive objects carry a recurring directional code with a readable local neighborhood in single-point vibrometry."
+  second_layer_discovery: "Passive structure itself is part of the directional sensing substrate."
+  trunk: "Directional front-end information can reside in passive structure rather than only in dedicated directional hardware."
+  branch: ""
+  leaf: ""
+  proposed_status: second-layer earned
+  front_door_preload_sentence: "Our aim is therefore to establish a recurring directional code across ordinary passive objects and to identify the condition that governs its recoverability: readout must preserve the measured local neighborhood before it sharpens it."
+  two_takeaway_editor_readout:
+    - "Ordinary passive objects carry a recurring directional code with a finite local neighborhood."
+    - "Passive structure is part of the sensing substrate because that code can be read from the structure itself."
+  no_bolt_on_test: ""
+
+review_verdict:
+  reviewer_owner: "Codex direct round"
+  reviewed_status: second-layer earned
+  status_change_note: "Keep the broader implication at one second-layer discovery and do not promote a downstream application branch."
+
+verification_verdict:
+  verifier_owner: "Codex direct round"
+  verified_status: second-layer earned
+  independent_verification_complete: yes
+  closeout_ready: yes
+
+closeout:
+  implementer_owner: "Codex direct round"
+  final_status: second-layer earned
+  status_change_note: none
+  remaining_gap_disclosed: "Independent multi-owner review and verification were compressed into the direct round."

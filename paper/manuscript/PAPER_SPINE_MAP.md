@@ -12,12 +12,13 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 
 ## Current Round Status
 
-- `Architecture scope:` `whole-manuscript`
-- `Current use:` architecture audit, implemented text hardening, and closeout planning
+- `Architecture scope:` `cross-section`
+- `Current use:` whole-paper operating-model lock, cross-section block rewrites, and closeout planning
 - `Not yet claiming:` whole-paper architecture fully landed
-- `Why:` the whole-paper spine is now explicit, but weaker methods-anchor
-  surfaces and supplementary burden still need one more verification pass
-  before closeout should report that the architecture has fully landed
+- `Why:` the paper spine is explicit, but the active round still needs to verify
+  that `Fig. 4-6`, main Methods, and Supplementary Methods `2-5` now share one
+  reader contract instead of splitting between discovery-first and
+  framework-stabilization-first prose
 
 ## Whole-Paper Spine Map
 
@@ -61,6 +62,10 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 - `Discovery-vs-tool weight budget`
   - target approximately `70:30` in favor of the discovery and its governing
     principle over calibration/decoder mechanics
+- `Operating-model rule`
+  - main text changes the reader's model of the system, main Methods formalizes
+    already-stable actors, and Supplementary Methods proves those actors without
+    renegotiating their identity
 - `Second-layer discovery`
   - passive structure is part of the sensing substrate rather than only a
     nuisance surrounding the sensor
@@ -176,15 +181,15 @@ as a second figure-method ledger; panel-level traceability remains canonical in
   figure and prose rounds reopen local sections
 - the main-text `Fig. 4 -> Fig. 5 -> Fig. 6` arc now lands the intended
   discovery-first weighting, but it still needs one verification pass to make
-  sure later local edits do not drift back toward solver-first phrasing
+  sure the chapter now reads as one continuous readout-to-cash-out block rather
+  than as local section patches
 - the method spine is now explicit at its previously weakest panels:
   `Fig. 5f`, `Fig. 6a`, and `Fig. 6d` are no longer weakly defined, but they
   still require discipline so their descriptor language does not drift away
   from the underlying constructions
-- the largest remaining readability risk is now supplementary burden rather
-  than a missing Results chapter; the supplementary opening and Methods `2-4`
-  have been compressed, but the full supplement still needs one editor-style
-  pass for repeated representation defense
+- the largest remaining readability risk is now split reader contract rather
+  than a missing Results chapter: the supplement still needs to read as formal
+  backing rather than as repeated concept stabilization
 
 ### What does not currently justify a large redraw
 
@@ -216,8 +221,9 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 ### Packet B — Methods-anchor tightening
 
 - `Why`
-  - completed in the current round; the crosswalk's weakest panel-to-method
-    links have now been tightened in main text and supplementary methods
+  - active in the current round; the next task is to rewrite the weakest
+    methods-anchor surfaces as one aligned formal bridge instead of as separate
+    local fixes
 - `Target surfaces`
   - `Fig. 5f`
   - `Fig. 6a`
