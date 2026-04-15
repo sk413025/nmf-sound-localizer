@@ -30,7 +30,7 @@
 - route broader significance through `core discovery -> second-layer discovery -> downstream consequence`, with any weaker leaf dropped if it harms editor memory for the trunk
 - for high-salience manuscript or supplement rounds, default to matched block rewrites across both surfaces instead of patch-style sentence edits; local patching tends to leave mixed-author voice, manuscript-management phrasing, and reviewer-facing crosswalk prose
 - prefer low noun-stack, cause-effect prose: if a reader must unpack compressed labels before seeing what changed, what caused it, and why it matters, the sentence still needs rewriting
-- keep `Results-to-method` linkage quantity-first and equation-backgrounded: Results should state what the quantity does and why it matters, while full formulas stay in Methods unless the formula itself is a paper-level object
+- keep `Results-to-method` linkage quantity-first, equation-backgrounded, and surface-explicit: Results should state what the quantity does and why it matters while full formulas stay in Methods, and umbrella terms such as local neighborhood, directional code, and overlap burden must stay tied to the actual analysis surface they name
 - when solver language remains in the paper spine, describe it as a physics-guided structured readout that preserves measured local-overlap geometry rather than as an autonomous algorithmic advance
 - keep `Fig. 2a-e` as the compactness / shared-structure / reconstruction chain tied to the singular-subspace story; if a 2D geometry panel is used, it must be framed as a complementary descriptive view rather than as the paper's main reduced-order surrogate
 - keep the `Fig. 1e -> Fig. 2d -> Fig. 2f` bridge explicit: `Fig. 1e` stays on raw-`H` measured similarity as the opener observation that nearby directions are not isolated templates; `Fig. 2d` then shifts to `centered-|H|` to quantify a finite local neighborhood; `Fig. 2f` may only visualize that same centered neighborhood structure in graph form rather than reopen the compactness argument with a second unrelated embedding objective
@@ -72,6 +72,7 @@
   `Fig. 3d-f` stay on ungated grouped stage-0 support;
   `Fig. 4a-d` stay on guided replay / grouped-match / routed-update surfaces.
   These are adjacent surfaces in one scientific argument, not interchangeable quantities, so prose and legends must name the shift when moving from one surface family to the next
+- manuscript-side terminology routing now has an active home at `paper/manuscript/INTRO_RESULTS_METHOD_TERM_CROSSWALK.md`; use it to audit whether `Introduction` / `Results` method-facing terms resolve to one `Methods` anchor before local prose cleanup
 - `Fig. 6`: external-critique pressure, evidence sufficiency, physical-axis interpretation, and keeping the cross-object claim bounded to a tested passive-object archetype set rather than a universality or nominal-material catalog reading
 - governance and agent docs: enforce `old-world belief`, `new-world belief`, `paper protagonist`, `pivot`, `tool role`, and broader-significance discipline as explicit routing surfaces
 
@@ -107,4 +108,5 @@
 - constitution: [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 - agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
 - scientific voice canon: [scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
+- term crosswalk: [INTRO_RESULTS_METHOD_TERM_CROSSWALK.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/manuscript/INTRO_RESULTS_METHOD_TERM_CROSSWALK.md)
 - whole-paper spine map: [PAPER_SPINE_MAP.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/manuscript/PAPER_SPINE_MAP.md)
