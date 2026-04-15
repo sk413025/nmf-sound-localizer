@@ -117,7 +117,7 @@ Legend for `Action`:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `4a` Admissibility synthesis | Define the admissible first-step rule on one local frame | mechanism instantiation | local angle window (deg) | normalized support | Broad support must contract inside the measured neighborhood before subtraction | Results admissibility paragraph; main-text Eqs. (4), (6), (7) | Supp. Methods 4, Eqs. (S31), (S37), (S38) | direct equation-backed | strong | low | keep |
 | `4b` Routing carves a local update | Show how the learned cue and routed weight carve an update from broad physical support | mechanism instantiation | local angle window (deg) | normalized profiles for support, cue, weight, update | The update is carved from within the broad support, not invented outside it | Results mechanism paragraph; main-text Eqs. (4), (5), (6) | Supp. Methods 4, Eqs. (S31-S37) | direct equation-backed | strong | low | keep |
-| `4c` First-step operating-point recovery | Show the immediate consequence of one guided step at exact / 5 / 10 / 15 deg thresholds | consequence / validation | local commitment threshold | mass within threshold | The first step sharply recovers exact and local commitment | Results operating-point paragraph; main-text Eq. (8) in consequence language | Supp. Methods 4 neighborhood-preserving update plus Fig. 5 locality statistic paragraph | method-defined statistic | adequate | moderate with `5c` | tighten methods anchor |
+| `4c` First-step operating-point recovery | Show the immediate consequence of one guided step at exact / 5 / 10 / 15 deg thresholds | consequence / validation | local commitment threshold | mass within threshold | The first guided step sharply recovers exact and local commitment | Results operating-point paragraph; guided-only first-step consequence distinct from the final family scorecard in `5c` | Supp. Methods 4 neighborhood-preserving update plus the governed first-step locality statistics used in `4d-f` | method-defined statistic | strong | moderate with `5c` | keep |
 | `4d` Validation-wide neighborhood contraction | Show the main population-level inward shift over radius | consequence / validation | neighborhood radius (deg) | cumulative mass within radius | The first guided step shifts support inward validation-wide | Results contraction paragraph | Supp. Methods 4 final locality statistic paragraph | method-defined statistic | strong | low | keep |
 | `4e` Angle-resolved within-15 deg contraction | Show that the same inward shift holds across the directional grid | consequence / validation | true angle (deg) | mass inside 15 deg | The 15 deg gain stays positive across angle | Results contraction paragraph | Supp. Methods 4 locality statistic at operative radius | method-defined statistic | strong | low | keep |
 | `4f` Clip-level within-15 deg gain CDF | Show that the effect is not driven by a minority of clips | consequence / validation | gain in mass inside 15 deg | cumulative fraction of clips | Nearly all clips gain local mass after one step | Results contraction paragraph | Supp. Methods 4 locality statistic at clip level | method-defined statistic | strong | low | keep |
@@ -126,8 +126,8 @@ Legend for `Action`:
 
 - Chapter role: admissible first-step contraction pivot
 - Method linkage quality: strongest in the paper
-- Main risk: `4c` has a valid role, but its operating-point statistic should be
-  kept explicitly step-level and guided-only so it does not drift into `Fig. 5c`
+- Main risk: low once `4c` stays explicitly step-level and guided-only rather
+  than drifting into the final family scorecard in `Fig. 5c`
 
 ## Fig. 5
 

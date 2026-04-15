@@ -30,9 +30,9 @@ f, Speech exact versus local tolerance. On the same stage-0 grouped-match family
 ## Fig. 4 (6 panels)
 
 **Fig. 4 | Preserving the broadened neighborhood keeps subtraction admissible.**
-a, Admissible neighborhood contraction. On one shared local angle frame, the measured neighborhood is used only as the physical reference band while stage-0 broad support and the contracted support after the first guided step are overlaid on the same axis.
-b, Representative broad support for a 70° validation clip. Before the first guided step, support remains spread across several nearby calibrated angles rather than collapsing immediately to one direction.
-c, Representative contracted support for the same 70° validation clip. After one guided step, that same support contracts back into the physically plausible neighborhood.
+a, Admissibility synthesis. On one local angle frame, the broad first-step physical match, its contracted post-routing profile, and one representative 70° validation clip are plotted against the measured-neighborhood band. The admissible update therefore contracts broad local support back into the measured band rather than sharpening outside it.
+b, Routing carves a local update. For the same representative clip, the broad physical match, learned routing cue, routed weight profile, and resulting gated update are plotted on one shared angle frame. Routing concentrates support from within the broad physical match rather than inventing a new neighborhood.
+c, First-step operating-point recovery. Guided-only, one-step before-versus-after mass is summarized at exact, 5°, 10°, and 15° operating thresholds. The first guided step sharply recovers exact commitment while keeping local commitment inside the operative neighborhood nearly saturated.
 d, Validation-wide neighborhood contraction. Cumulative update mass within radius is plotted before and after one guided step across the validation set. The full curve shifts inward, showing that the first routed update sharpens support toward the local band exposed by calibration.
 e, Angle-resolved within-15° contraction. Mass inside the operative 15° neighborhood is plotted before and after the first guided step for each target angle, showing that the inward shift remains positive across the directional grid.
 f, Clip-level within-15° gain CDF. The empirical cumulative distribution of per-clip gain inside the operative 15° neighborhood shows that the first guided step increases local mass for nearly all validation clips.
