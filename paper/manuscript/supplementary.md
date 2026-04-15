@@ -300,7 +300,7 @@ $$
 
 Equations (S22)-(S28) therefore isolate the classical hard-commitment limit of the same reduced surrogate introduced in Supplementary Methods 2. The reduced coordinates make the local competition explicit, but they do not remove the shared neighborhood structure inherited from the calibrated dictionary. The failure comes from the commitment rule: selection and orthogonalization occur too early, before locally shared evidence has been consolidated across neighboring directions. Once one direction is chosen, evidence that is physically shared across that neighborhood is forced into the reduced residual \(\rho_t\) rather than retained as a coherent local band.
 
-That same failure is already visible before the first refit. We therefore return from the reduced surrogate \((z,A)\) to the grouped full standardized surface built in Supplementary Methods 2 and ask how the measured fingerprint aligns with the grouped dictionary before any support update has modified it. This pre-update grouped match is
+That same failure is already visible before the first refit. We therefore return from the reduced surrogate \((z,A)\) to the grouped full standardized surface built in Supplementary Methods 2 and ask how the measured fingerprint aligns with the grouped dictionary before any support update has modified it. This is the formal surface behind the `pre-update grouped match` in Fig. 3:
 
 $$
 g_0 = D^\top \tilde y,
@@ -318,7 +318,7 @@ $$
 
 When that diagnostic concentrates near one direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint remains locally ordered but immediate commitment becomes unstable. The directional code is still present. What fails is the rule that one direction should be chosen before that shared neighborhood evidence has been pooled.
 
-Figure 3d-f summarize this frozen pre-update surface in three ways. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on that same surface. The relevant question is no longer whether the code disappears under speech. It is how much of the grouped evidence remains confined to the local neighborhood before any routed update has acted.
+Figure 3d-f summarize this pre-update grouped match in three ways. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on that same surface. The relevant question is no longer whether the code disappears under speech. It is how much of the grouped evidence remains confined to the local neighborhood before any routed update has acted.
 
 ## Supplementary Methods 4. Routed updates on the grouped full standardized surface
 
@@ -461,7 +461,7 @@ $$
 
 Figure 5a applies this statistic to three aligned stages: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies it to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays tied to one locality measure throughout. Across all three stages, the question is the same: how much nearby-angle support remains local as the readout sharpens.
 
-Figure 5f gives the formal version of the same comparison. Let
+Figure 5f gives the formal version of the paper-facing phrase `local support aligned with the measured geometry`. Let
 
 $$
 w_{15}^{(m)} = \frac{1}{E}\sum_{i=1}^{E} m_i^{(m)}(15^\circ)
@@ -633,7 +633,7 @@ r_{\mathrm{eff}}
 p_j = \frac{\sigma_j^2}{\sum_\ell \sigma_\ell^2},
 $$
 
-where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The descriptor used in Fig. 6d is the shared-response overlap across objects. Formally, it is the mean top-3 overlap burden: the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis therefore remain response-level descriptors of the measured geometry.
+where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The descriptor used in Fig. 6d is the shared-response overlap across objects. Formally, it is the mean top-3 overlap burden: the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. In other words, the formal descriptor asks how strongly each object's leading directional-response subspace overlaps with those of the other objects. The compression and separability summaries in the bridge analysis therefore remain response-level descriptors of the measured geometry.
 
 The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
 

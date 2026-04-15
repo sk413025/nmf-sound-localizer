@@ -46,7 +46,7 @@ spine`, and the `Methods spine` on one shared term map.
 - `local support`
 - `exact support`
 - `guided solver`
-- `cross-object subspace overlap`
+- `shared-response overlap across objects`
 - `object-specific informative band`
 
 ## Reduction Ledger
@@ -60,7 +60,7 @@ spine`, and the `Methods spine` on one shared term map.
 | Readout-side nearby-angle retention | `local support` | mass-within-radius; within-10° success; within-15° mass; locality metric | `operative 15° neighborhood`; `radius-based neighborhood metric`; `local-band metric` in main text | When the paragraph is on decoder behavior, stop saying only `neighborhood`; say `local support` if the active quantity is retained nearby-angle mass. |
 | Immediate exact-angle concentration | `exact support` | exact-match success; radius-zero case; Top-1 exact first choice | `exact commitment` when it is being used as a metric label rather than a consequence verb | Pair it with `local support` when both are compared. |
 | Active learned decoder family | `guided solver` | routed update; direction-level routing score; grouped dictionary recursion; Gumbel gate | `routing` or `routed update` as a family name; `physics-guided structured readout` as the default family label in Results | In Results, use `guided solver` for the family and reserve routing internals for Fig. 4 mechanism sentences or Methods. |
-| Cross-object descriptor for recoverability | `cross-object subspace overlap` | mean top-3 overlap burden; pairwise squared canonical correlations between top-3 centered-`\|H\|` subspaces | `overlap burden` as the first paper-facing name | First use should explain that the descriptor summarizes how strongly each object's leading directional-response subspace overlaps with those of the other objects. |
+| Cross-object descriptor for recoverability | `shared-response overlap across objects` | mean top-3 overlap burden; pairwise squared canonical correlations between top-3 centered-`\|H\|` subspaces | `overlap burden` as the first paper-facing name; `cross-object subspace overlap` once the plainer phrase has landed | First use should explain that the descriptor summarizes how strongly each object's leading directional-response subspace overlaps with those of the other objects. |
 | Cross-object frequency-side descriptor | `object-specific informative band` | contrast-selection rule; smoothed contrast profile; band-averaged directional code construction | `contrast-selection rule` as a first main-text label; `band-limited directional code` as the default main-text phrase | First use should say that each object has its own informative band, then point to Methods for how that band is selected. |
 | Descriptive compactness language | `compact` or `compact structure` | centered-magnitude energy; cumulative singular-value energy; effective rank | `centered representation family`; `compactness analysis surface` in main text | Keep the sentence on what the structure does before naming the formal compactness statistic. |
 | Descriptive coherence language | `locally ordered` or `neighborhood coherence` | centered-neighborhood graph; spectral embedding; graph Laplacian | `positive centered-neighborhood graph` and `spectral embedding` as the main sentence subject in Results | Keep graph language descriptive and secondary to the main local-neighborhood claim. |
@@ -80,8 +80,9 @@ spine`, and the `Methods spine` on one shared term map.
   Keep for calibration-side geometry. When the paragraph has moved to decoder
   behavior, switch to `local support` rather than overloading `neighborhood`.
 
-- `cross-object subspace overlap`
-  Promote this as the paper-facing descriptor and demote `overlap burden` to
+- `shared-response overlap across objects`
+  Promote this as the paper-facing descriptor and demote `overlap burden` and
+  `cross-object subspace overlap` to
   Methods / Supplementary language.
 
 - `pre-update grouped match`
