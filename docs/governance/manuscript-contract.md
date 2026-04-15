@@ -61,8 +61,10 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 
 **Mathematics presentation:**
 
-- Core equations in Results must use display math with numbered equations, not inline math only. If a formula defines the paper's central physical model or inference problem, it gets a display equation.
-- Every symbol must be defined with an inline "where" clause at its first appearance in Results. Do not assume the reader will read Methods first.
+- Results must make method linkage visible, but they should introduce quantities by scientific role and physical meaning before notation.
+- Use equation numbers in Results only as light anchors when they improve traceability. Do not force full symbolic unpacking into high-salience Results sentences when the same linkage can be made more naturally in quantity-first language.
+- Full display equations belong in Methods unless the formula itself is a paper-level object in the Results argument, such as the paper's central physical model or inference problem.
+- If notation appears in Results, keep it to the minimum needed for reader traceability and define it through an immediate bridge to physical meaning. Do not assume the reader will read Methods first.
 
 **Sentence and punctuation discipline:**
 
