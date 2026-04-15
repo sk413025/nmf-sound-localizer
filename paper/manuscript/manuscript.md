@@ -1,4 +1,4 @@
-# A recurring local directional code emerges across passive objects in single-point vibrometry
+# A recurring locally ordered directional code emerges across passive objects in single-point vibrometry
 
 ## Abstract
 Sound direction is usually measured with arrays or specialized directional sensors.
@@ -7,7 +7,7 @@ In an acrylic plate, direction appears as a compact local code: nearby angles re
 Held-out speech preserves that code but broadens overlap among neighboring angles, so the main difficulty becomes local ambiguity rather than loss of directional structure.
 Readout therefore succeeds only when it preserves that measured neighborhood long enough for subtraction to sharpen it.
 Across acrylic, paper, cardboard, wood, and a laptop shell, the same locally ordered directional code recurs, and cross-object readout is governed more by local overlap burden than by response energy alone.
-Ordinary passive objects therefore act as directional sensing substrates: some directional front-end information can already reside in the passive structures present in a scene.
+Ordinary passive objects therefore act as directional sensing substrates: some directional front-end information can already reside in passive structures present in a scene.
 
 ## Introduction
 Sound direction is usually engineered by separating sensors in space. Arrays and specialized directional sensors are designed so that direction is measurable at the sensor, while the vibrating or scattering object is usually treated as a nuisance. That default picture leaves a broader possibility mostly unexplored: an ordinary passive object may already separate direction in how it vibrates. If so, directional sensing need not be designed only into the transducer.
@@ -16,7 +16,7 @@ Prior work makes that possibility plausible, but not yet general. Some single-se
 
 Our hypothesis is that direction changes how sound couples into an object's vibration modes, so one fixed point records repeatable spectral reweighting across angle. If nearby directions excite overlapping structural responses, then realistic source variation should broaden ambiguity locally rather than erase the code. We test that idea with a non-contact laser Doppler vibrometer (LDV), whose surface-velocity readout avoids the loading introduced by attached piezoelectric patches or accelerometers [@rothberg2017ldv; @castellini2006ldv; @wagner2021_laser_microphone_calibration; @ewins2000modal; @bi2013transducer_mass_loading; @nassif2005ldv_contact_sensors].
 
-The acrylic plate offers the clearest first view of this behavior. We then ask whether the same local directional organization recurs across ordinary passive objects, and whether local separability rather than response energy determines when that organization remains readable. This question sits alongside wave systems that treat complex scattering as an encoding resource rather than as noise [@fink1997time; @duarte2008single; @gigan2022imaging_computing_disorder; @rotter2017complex_media; @jiang2020randomized_metamaterial]. Our aim is therefore to establish a recurring local directional code across ordinary passive objects and to identify the variable that governs its recoverability. If that organization recurs, then part of directional sensing resides in the passive structures already present in a scene [@iravantchi2023sawsense; @wang2024gpms].
+The acrylic plate offers the clearest first view of this behavior. We then ask whether the same local directional organization recurs across ordinary passive objects, and whether local separability rather than response energy determines when that organization remains readable. This question sits alongside wave systems that treat complex scattering as an encoding resource rather than as noise [@fink1997time; @duarte2008single; @gigan2022imaging_computing_disorder; @rotter2017complex_media; @jiang2020randomized_metamaterial]. Our aim is therefore to establish a recurring locally ordered directional code across ordinary passive objects and to identify the variable that governs its recoverability. If that organization recurs, then part of directional sensing resides in passive structures already present in a scene [@iravantchi2023sawsense; @wang2024gpms].
 
 ## Results
 
