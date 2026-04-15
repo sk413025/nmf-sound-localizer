@@ -38,6 +38,7 @@ Memory files here may summarize branch state, but they must not create new polic
 - write memory in positive branch-state language when possible: store the supported posture, active constraint, or stable failure mode directly instead of narrating anticipated objections
 - when scope needs tightening, narrow the stored lesson itself rather than phrasing the memory as `not X`, `should not be read as`, or other reviewer-prebuttal language
 - when a stored manuscript lesson concerns term routing or reader burden, prefer recording it as a bidirectional no-translation posture: the paper should read naturally from `Introduction/Results` into `Methods` and back again without forcing readers to invent a private synonym map
+- when a stored manuscript lesson concerns terminology, prefer recording it as a single-head term posture: one concept family should keep one canonical reader-facing name across manuscript, legends, `Methods`, and `Supplementary Methods`, with formal labels added as precision rather than as competing names
 
 ## Memory Update Review
 

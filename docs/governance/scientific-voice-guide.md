@@ -245,6 +245,26 @@ Use this test whenever a paper-facing round claims broader significance:
 - `Branch-boundary test`:
   - downstream consequences should read as bounded uses of the trunk, not as new protagonists
 
+## Lexical no-translation test
+
+Use this test whenever paper-facing explanation and formal explanation must describe the same concept family across manuscript, legends, `Methods`, and `Supplementary Methods`.
+
+- `Single-head term test`:
+  - each concept family should keep one canonical head term
+  - let notation, equations, and exact score names sharpen that head term rather than introducing a second reader-facing name
+- `First-mention lock test`:
+  - when `Methods` or `Supplementary Methods` reopen a concept family, start with the same canonical head term used in `Introduction` or `Results`
+  - attach the formal specification after the reader has recognized the shared scientific actor
+- `Legend parity test`:
+  - figure legends should reinforce the same head term used in the surrounding body text
+  - keep local precision, but do not let the legend become a second naming surface
+- `Forward read test`:
+  - `Introduction/Results -> Methods` should feel like one term map gaining precision
+- `Reverse read test`:
+  - `Methods/Supplementary -> Introduction/Results` should let a reader recover the same paper-facing concept immediately, without synonym reconstruction
+
+Use the test to reward lexical stability, not only conceptual similarity.
+
 ## Whole-paper spine map
 
 Use `Architecture scope` to decide when this map is required:

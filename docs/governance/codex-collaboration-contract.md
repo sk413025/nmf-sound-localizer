@@ -23,6 +23,8 @@ Use this contract for Codex-native workflow, local skills, task routing, governa
 - Keep governance and memory language positive and compressive. State the supported rule, posture, or constraint directly rather than storing anticipated objections or reviewer-prebuttal phrasing as if they were policy.
 - When a governance or memory sentence feels too broad, narrow the rule or scope directly instead of rewriting it as `not X`, `should not be read as`, or other defensive explanation.
 - For manuscript-routing and prose-hardening work, treat bidirectional term traceability as a required workflow check: agents should test `Introduction/Results -> Methods` and `Methods/Supplementary -> Introduction/Results` and reject rounds that still force readers to build a private translation map.
+- For manuscript-routing and prose-hardening work, enforce single-head term propagation across manuscript, legends, `Methods`, and `Supplementary Methods`: one concept family should keep one canonical reader-facing name, with formal labels added as precision rather than as a second naming layer.
+- In workflow terms, treat `Methods` / `Supplementary Methods` first-mention lock as part of the same check: when a formal surface is reopened, the first mention should reuse the canonical head term before notation or score construction appears.
 
 ## Canonical homes
 
