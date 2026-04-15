@@ -148,7 +148,7 @@ $$
 \tag{S14}
 $$
 
-The angle-indexed calibration dictionary is the mean standardized fingerprint at each angle,
+The calibrated dictionary \(H\) is the mean standardized fingerprint at each angle,
 
 $$
 h_e = \frac{1}{N_e}\sum_{n\in\mathcal C_e}\tilde y_{e,n} \in \mathbb{R}^F,
@@ -157,11 +157,11 @@ H=[h_1,\dots,h_E]\in\mathbb{R}^{F\times E},
 \tag{S15}
 $$
 
-where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This \(H\) is the empirical dictionary of standardized measured fingerprints that carries local angle ordering on the calibration grid. By contrast, \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix before measurement and nonlinear preprocessing.
+where \(\mathcal C_e\) is the set of calibration trials at angle \(e\). This calibrated dictionary \(H\) is the empirical dictionary of standardized measured fingerprints that carries local angle ordering on the calibration grid. By contrast, \(\mathcal H\) from Supplementary Methods 1 is the ideal complex transfer matrix before measurement and nonlinear preprocessing.
 
-In that sense, \(\mathcal H_{k,e}\) and \(H[k,e]\) live on the same sampled angle-frequency grid but not at the same descriptive level. The former is the ideal complex response at sampled \((\omega_k,\theta_e)\). The latter is the empirical prototype that remains after repeated trials, power averaging, logarithmic compression, and standardization have converted those sampled responses into measured fingerprints.
+In that sense, \(\mathcal H_{k,e}\) and \(H[k,e]\) live on the same sampled angle-frequency grid but not at the same descriptive level. The former is the ideal complex response at sampled \((\omega_k,\theta_e)\). The latter is the empirical mean fingerprint that remains after repeated trials, power averaging, logarithmic compression, and standardization have converted those sampled responses into measured fingerprints.
 
-Written as a processing chain rather than an equality, the ideal sampled surface \(\mathcal H_{k,e}\) is carried into the empirical prototype matrix through repeated trials, time-frequency power statistics, logarithmic compression, and standardization:
+Written as a processing chain rather than an equality, the ideal sampled surface \(\mathcal H_{k,e}\) is carried into the calibrated dictionary \(H\) through repeated trials, time-frequency power statistics, logarithmic compression, and standardization:
 
 $$
 \mathcal H_{k,e}
@@ -195,7 +195,7 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. The compact structure is not a property of the ideal transfer matrix alone. It is the measured geometry that remains after those processing steps, and that measured geometry is what the local-overlap model must explain.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. The compactness seen in Fig. 2 is not a property of the ideal transfer matrix alone. It is the measured geometry that remains after those processing steps, and that measured geometry is what the local-overlap model must explain.
 
 Calibration carries the smooth physical response in Eq. (S6) into a discrete dictionary of measured fingerprints while preserving the local angle ordering on the calibration grid. In the full standardized feature space, a held-out fingerprint can then be written as
 
@@ -235,9 +235,9 @@ D=[d_{e,m}] \in \mathbb{R}^{F\times (EM)}.
 \tag{S21}
 $$
 
-The grouped dictionary \(D\) lives on the same full standardized surface as \(\tilde y\), but it refines each direction group into \(M\) within-direction atoms instead of collapsing that group to one mean prototype. Supplementary Methods 3 uses this finer grouped surface only to expose the pre-refit failure at stage 0. Supplementary Methods 4 uses the same grouped surface for neighborhood-preserving updates.
+The grouped dictionary \(D\) lives on the same full standardized surface as \(\tilde y\), but it refines each direction group into \(M\) within-direction atoms instead of collapsing that group to one mean fingerprint. Supplementary Methods 3 uses this finer grouped surface only to expose the pre-refit failure at stage 0. Supplementary Methods 4 uses the same grouped surface for neighborhood-preserving updates.
 
-The roles of \(H\) and \(D\) are therefore different. The matrix \(H=[h_1,\dots,h_E]\) averages the calibration fingerprints within each sampled angle and provides one empirical prototype \(h_e\) per direction, so it defines the coarse local-overlap geometry across the \(E\) sampled angles. The grouped dictionary \(D=[d_{e,m}]\) stays on that same \(F\)-dimensional standardized calibration surface but keeps a finer within-direction expansion by replacing each single prototype \(h_e\) with an \(M\)-atom set. In that sense, \(D\) is not a second measurement surface or a different physical model. It is a more resolved readout surface built from the same calibrated fingerprint space on which \(H\) was defined.
+The roles of \(H\) and \(D\) are therefore different. The matrix \(H=[h_1,\dots,h_E]\) averages the calibration fingerprints within each sampled angle and provides one empirical mean fingerprint \(h_e\) per direction, so it defines the coarse local-overlap geometry across the \(E\) sampled angles. The grouped dictionary \(D=[d_{e,m}]\) stays on that same \(F\)-dimensional standardized calibration surface but keeps a finer within-direction expansion by replacing each single mean fingerprint \(h_e\) with an \(M\)-atom set. In that sense, \(D\) is not a second measurement surface or a different physical model. It is a more resolved readout surface built from the same calibrated fingerprint space on which \(H\) was defined.
 
 ## Supplementary Methods 3. Hard OMP and stage-0 failure on the local-overlap surrogate
 
@@ -307,7 +307,7 @@ g_0 = D^\top \tilde y,
 \tag{S29}
 $$
 
-which is the \(t=0\) case of the same grouped correlation surface that drives the routed updates below. The direction-level form of this pre-update grouped match, used in Fig. 3, is the corresponding ungated group summary
+which is the \(t=0\) case of the same grouped correlation surface that drives the routed updates below. The direction-level form of this pre-update grouped match, used in Fig. 3, is
 
 $$
 g_0^{(\mathrm{grp})}[e]
@@ -423,7 +423,7 @@ $$
 \tag{S39}
 $$
 
-where \(K_{\mathrm{sup}}=1\) in the configuration studied here, so the readout is the first-stage expert score. The composite training objective is
+where \(K_{\mathrm{sup}}=1\) in the configuration studied here, so the readout is the first-stage direction-level routing score. The composite training objective is
 
 $$
 \mathcal L = \alpha\,\mathcal L_{\mathrm{rec}} + \beta\,\mathcal L_{\mathrm{mono}} + \gamma\,\mathcal L_{\mathrm{cls}},
@@ -484,9 +484,9 @@ w_{15}^{(m)}
 \right],
 $$
 
-that is, local support inside \(15^\circ\) multiplied by a bounded profile-agreement factor in \([0.75, 1]\). This construction keeps local support as the dominant term while rewarding families whose anglewise local-support ordering also matches the local neighborhood. The open-circle annotations on the same panel report only the corresponding full-matrix correlation between the row-normalized clean confusion map and the calibrated angle-angle matrix that quantifies that same local neighborhood, used as a secondary reference rather than as the primary family-ranking quantity.
+that is, local support inside \(15^\circ\) multiplied by a bounded profile-agreement factor in \([0.75, 1]\). This construction keeps local support as the dominant term while rewarding families whose anglewise local-support ordering also matches the local neighborhood. The open-circle annotations on the same panel report only the corresponding whole-map correlation between the row-normalized clean confusion map and the calibrated angle-angle matrix that quantifies that same local neighborhood, used as a secondary reference rather than as the primary family-ranking quantity.
 
-For the Fig. 5f null check, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed profile and full-matrix correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
+For the Fig. 5f null check, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed profile and whole-map correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 compactness, neighborhood, and local separability summaries
 
@@ -504,7 +504,7 @@ $$
 
 where \(\bar u\) and \(\bar v\) are sample means across frequency bins.
 
-The inter-angle similarity statistic used for Fig. 1e is the correlation matrix of the angle-indexed prototypes,
+The inter-angle similarity statistic used for Fig. 1e is the correlation matrix of the angle-indexed mean fingerprints,
 
 $$
 S_{e,e'} = \rho(h_e,h_{e'}).
@@ -538,7 +538,7 @@ L_{\mathrm{sym}} = I - D^{-1/2} A D^{-1/2},
 D_{e,e} = \sum_{e'} A_{e,e'}.
 $$
 
-This graph embedding is therefore a descriptive two-dimensional view of the centered structure of that same local neighborhood implied by Eq. (S45). It is not the singular-coordinate surrogate of Eqs. (S19)-(S20), which remains the reduced-order model used for the hard-commitment analysis.
+This graph view is therefore constructed as a graph embedding of the centered structure of that same local neighborhood implied by Eq. (S45). It is not the singular-coordinate surrogate of Eqs. (S19)-(S20), which remains the reduced-order model used for the hard-commitment analysis.
 
 To compare calibration and speech on a matched summary representation in Fig. 3a-c, let \(\tilde y^{(c)}_{e,n}\in\mathbb{R}^F\) denote the standardized fingerprint of clip \(n\) at angle \(e\) under condition \(c\in\{\mathrm{cal},\mathrm{speech}\}\). We form the angle-conditioned mean magnitude profile
 
