@@ -2,7 +2,7 @@
 
 **A recurring directional code across passive objects**
 
-The same directional code traced in the main text is developed here from a continuous single-point response into a measured fingerprint dictionary and then into two inference forms: a local-overlap surrogate whose classical hard-commitment limit fractures the local neighborhood and a grouped full-space surface on which that neighborhood can be preserved before subtraction. The final sections give the descriptive statistics behind Figs. 2 and 3 and the bounded cross-object interpretation behind Fig. 6.
+The same directional code traced in the main text is developed here from a continuous single-point response into a calibrated dictionary of measured fingerprints and then into two inference forms: a local-overlap surrogate whose classical hard-commitment limit fractures the local neighborhood and a grouped dictionary on the full standardized surface that can preserve that neighborhood before subtraction. The final sections give the descriptive statistics behind Figs. 2 and 3 and the bounded cross-object interpretation behind Fig. 6.
 
 ## Supplementary Methods 1. Single-spectrum response from the continuous plate model
 
@@ -103,7 +103,7 @@ $$
 
 The singular value decomposition of \(\mathcal H\) is therefore an orthogonal re-expression of the same shared modal structure at this approximate level. Directional variation enters mainly through the weights on a limited response basis, so nearby angles remain related before any discrete decoder is imposed. Figure 1b gives the corresponding physical-principle schematic, and Supplementary Methods 2 follows the same structure through measurement, averaging, logarithmic compression, and standardization to obtain the empirical dictionary \(H\) analyzed in Figs. 1 and 2.
 
-## Supplementary Methods 2. Measured fingerprints, local-overlap surrogates, and the Fig. 2 reduced view
+## Supplementary Methods 2. Measured fingerprints, the local-overlap surrogate, and the Fig. 2 reduced view
 
 Matched calibration carries the sampled response of Supplementary Methods 1 into an empirical dictionary of measured fingerprints on the same angle-frequency grid. The carried-over symbols are therefore the sampled direction index \(e\leftrightarrow\theta_e\), the sampled frequency index \(k\leftrightarrow\omega_k\), and the ideal sampled surface \(\mathcal H_{k,e}=Y(\omega_k;\theta_e)\).
 
@@ -195,7 +195,7 @@ H_{\mathrm{fig}} = U\Sigma V^\top.
 \tag{S17}
 $$
 
-The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. The compactness seen in Fig. 2 is not a property of the ideal transfer matrix alone. It is the measured geometry that remains after those processing steps, and that measured geometry is what the local-overlap model must explain.
+The early saturation in Fig. 2 is therefore an empirical property of \(H_{\mathrm{fig}}\), after the nonlinear steps \(\mathcal H \mapsto |\,\mathcal H\,|\), trial averaging, log compression, and row-wise centering. The compactness seen in Fig. 2 is not a property of the ideal transfer matrix alone. It is the measured geometry that remains after those processing steps, and that measured geometry is what the local-overlap surrogate must explain.
 
 Calibration carries the smooth physical response in Eq. (S6) into a discrete dictionary of measured fingerprints while preserving the local angle ordering on the calibration grid. In the full standardized feature space, a held-out fingerprint can then be written as
 
@@ -206,7 +206,7 @@ $$
 \tag{S18}
 $$
 
-where \(x\) is the surrogate coefficient vector. A dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) is therefore the full-space local-overlap model in the standardized fingerprint coordinates, not a choice among unrelated angle templates.
+where \(x\) is the surrogate coefficient vector. A dominant coefficient marks the source angle, and any additional support captures overlap among nearby calibrated directions or residual noise. Operationally, \(K\) is the residual-correction budget or pursuit depth. Equation (S18) is therefore the full-space local-overlap model in the standardized fingerprint coordinates, not a choice among unrelated calibrated directions.
 
 Projecting the same local-overlap surrogate into a retained singular subspace gives
 
@@ -414,7 +414,7 @@ $$
 
 where \(\eta\) is a learned step size. These equations close the staged residual-correction scaffold: each stage computes a physical correlation, routes that evidence across the local angle ordering, applies a gated coefficient update, and then redefines the residual for the next stage. The routing step matters here only because it lets subtraction respect the measured directional code rather than destroy it.
 
-Training and evaluation do not decode direction from \(\|x_K^{(e)}\|_2\). Instead they read out expert-level routing scores. Let
+Training and evaluation do not decode direction from \(\|x_K^{(e)}\|_2\). Instead they read out direction-level routing scores. Let
 
 $$
 \bar s[e] = \frac{1}{K_{\mathrm{sup}}}\sum_{t=1}^{K_{\mathrm{sup}}} s_t[e],
@@ -451,7 +451,7 @@ $$
 \tag{S42}
 $$
 
-Equations (S39)-(S42) close the same recursion with a readout, a reconstruction loss, and a monotonic residual regularizer defined on the neighborhood-preserving updates. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize expert assignment before the full routed objective dominates. The guided solver still follows the OMP-style residual-correction scaffold, but it replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides the atom-level compatibility scores in (S32), and straight-through Gumbel approximations convert those scores into the stagewise gates in (S34) and (S35), so that broad local matches can be focused before subtraction within the staged residual updates. That implementation detail matters here only because it preserves the local neighborhood that calibration had already exposed.
+Equations (S39)-(S42) close the same recursion with a readout, a reconstruction loss, and a monotonic residual regularizer defined on the neighborhood-preserving updates. During early training, an auxiliary cross-entropy term is added for the first 10 epochs to stabilize direction-group assignment before the full routed objective dominates. The guided solver still follows the OMP-style residual-correction scaffold, but it replaces exact least-squares refitting with learned local routing. In the reported implementation, a compact transformer parameterization provides the atom-level compatibility scores in (S32), and straight-through Gumbel approximations convert those scores into the stagewise gates in (S34) and (S35), so that broad local matches can be focused before subtraction within the staged residual updates. That implementation detail matters here only because it preserves the local neighborhood that calibration had already exposed.
 
 Figure 5 follows the same local-support story from admissibility to final prediction. For any row-normalized support distribution \(p_i[e]\) on the angle grid \(\{\theta_e\}_{e=1}^E\), local support is summarized by the cumulative neighborhood mass
 
@@ -490,7 +490,7 @@ For the Fig. 5f null check, we compare the measured and learned structures again
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 compactness, neighborhood, and local separability summaries
 
-The Fig. 2 and Fig. 3 panels summarize measured geometry on two aligned but distinct surfaces. Figure 2 stays on the calibration-side centered-magnitude matrix \(H_{\mathrm{fig}}\). Figure 3 first builds angle-conditioned centered summaries for calibration and speech to ask whether the same directional code survives realistic source variation, and then returns to the pre-update grouped match \(g_0^{(\mathrm{grp})}\) to ask how much support remains exact and how much has already broadened into the local neighborhood before any residual correction has acted.
+The Fig. 2 and Fig. 3 panels summarize measured geometry on two aligned but distinct surfaces. Figure 2 stays on the calibration-side centered-magnitude matrix \(H_{\mathrm{fig}}\). Figure 3 first builds matched angle-conditioned summaries for calibration and speech to ask whether the same directional code survives realistic source variation, and then returns to the pre-update grouped match \(g_0^{(\mathrm{grp})}\) to ask how much support remains exact and how much has already broadened into the local neighborhood before any residual correction has acted.
 
 For any two vectors \(u,v\in\mathbb{R}^F\), the Pearson correlation coefficient is
 
