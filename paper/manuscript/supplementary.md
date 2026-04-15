@@ -461,7 +461,32 @@ $$
 
 Figure 5a applies this same statistic to three aligned surfaces: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies the same row-normalized statistic to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays on the same neighborhood axis rather than changing quantities between chapters. The figure therefore asks one question across three stages: whether local support exposed before subtraction remains local after contraction and at final prediction.
 
-For the Fig. 5f alignment summary, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed full-matrix and local-band correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
+Figure 5f then summarizes family-to-measured alignment on the same operative \(15^\circ\) neighborhood used throughout the locality bridge. Let
+
+$$
+w_{15}^{(m)} = \frac{1}{E}\sum_{i=1}^{E} m_i^{(m)}(15^\circ)
+$$
+
+denote the mean retained within-\(15^\circ\) mass for decoder family \(m\), computed from the corresponding row-normalized clean confusion matrix. Let \(q_i^{(m)}\) denote the decoder's anglewise local-band profile, defined as the row-normalized mass that family \(m\) keeps inside the \(\pm 15^\circ\) neighborhood around target angle \(i\), and let \(q_i^{(H)}\) denote the corresponding measured local-band profile derived from the calibrated neighborhood geometry. The family-to-measured profile agreement is then
+
+$$
+\rho_{\mathrm{prof}}^{(m)} = \rho\!\left(q^{(m)}, q^{(H)}\right),
+$$
+
+where \(\rho(\cdot,\cdot)\) is the Pearson correlation from Eq. (S43). The primary bar score reported in Fig. 5f is
+
+$$
+A^{(m)}
+=
+w_{15}^{(m)}
+\left[
+0.75 + 0.25\left(\frac{\rho_{\mathrm{prof}}^{(m)}+1}{2}\right)
+\right],
+$$
+
+that is, retained within-\(15^\circ\) mass multiplied by a bounded profile-agreement factor in \([0.75, 1]\). This construction keeps local mass as the dominant term while rewarding families whose anglewise local-band ordering also matches the measured neighborhood. The open-circle annotations on the same panel report only the corresponding full-matrix correlation between the row-normalized clean confusion map and the measured angle-angle correlation matrix, used as a secondary reference rather than as the primary family-ranking quantity.
+
+For the Fig. 5f null check, we compare the measured and learned structures against a permutation null that shuffles the angle ordering of the learned map while preserving its marginal values. The observed profile and full-matrix correlations exceed the corresponding 95th-percentile permutation nulls, so the reported agreement is stronger than shuffled angle structure would permit.
 
 ## Supplementary Methods 5. Fig. 2 and Fig. 3 compactness, neighborhood, and local-separability summaries
 
@@ -598,7 +623,17 @@ Figure 6 should be read as recurrence across a tested set of structurally distin
 
 The five objects in Fig. 6 span visibly different structural layouts: flat plate, curved shell, corrugated hollow shell, orthotropic board, and thin consumer-device shell with cavity. In the manuscript, they are therefore interpreted at the level of coupled material-structure archetypes rather than nominal material name alone. The claim is deliberately conservative. The data show that local directional coding recurs across this tested archetype set. They do not establish a universal law for all passive objects.
 
-The descriptor axes used in Fig. 6a and the summary quantities used in Fig. 6d are response-level summaries derived from the executed measurements. The correlation-decay width and effective rank summarize how broad or compact the measured directional response is on the calibrated angle grid. The mean top-3 overlap burden summarizes how strongly neighboring directions compete under the same matched-calibration readout. The compression and separability summaries in the bridge analysis should therefore be read as descriptors of measured response geometry, not as intrinsic material constants.
+The descriptor axes used in Fig. 6a and the summary quantities used in Fig. 6d are response-level summaries derived from the executed measurements. For each object, the centered response matrix is the row-wise mean-centered magnitude matrix \(|H|-\mathrm{mean}_\theta(|H|)\). The correlation-decay width is the first angular separation at which the mean centered-\(|H|\) inter-angle correlation becomes non-positive. The effective rank is the entropy-equivalent rank of the same centered-\(|H|\) singular-value spectrum,
+
+$$
+r_{\mathrm{eff}}
+=
+\exp\!\left(-\sum_j p_j \log p_j\right),
+\qquad
+p_j = \frac{\sigma_j^2}{\sum_\ell \sigma_\ell^2},
+$$
+
+where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The mean top-3 overlap burden used in Fig. 6d is the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis should therefore be read as descriptors of measured response geometry, not as intrinsic material constants.
 
 That distinction sets the correct reading of the figure. The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
 

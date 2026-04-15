@@ -25,10 +25,11 @@ against scientific role rather than visual taste alone.
 - `Fig. 6` asks whether the same locally ordered directional code recurs across
   a broader set of passive-object archetypes.
 
-Current diagnosis: the Results spine is coherent, but the figure-to-method
-traceability is uneven. `Fig. 4` is strongly anchored to the routed-update
-equations; `Fig. 2f`, `Fig. 5f`, and parts of `Fig. 6` are more weakly anchored
-and rely more heavily on prose explanation.
+Current diagnosis: the Results spine is coherent, and the weakest visible
+method anchors have now been tightened. `Fig. 4` remains the most directly
+equation-anchored chapter; `Fig. 5f`, `Fig. 6a`, and `Fig. 6d` now have
+explicit method definitions; `Fig. 2f` remains the most purely descriptive
+complement and therefore still depends most on bounded prose framing.
 
 Legend for `Panel type`:
 
@@ -137,32 +138,33 @@ Legend for `Action`:
 | `5c` Exact-versus-local consequence | Show that local mass predicts exact clean consequence across families | consequence / validation | within-15 deg local mass | exact clean accuracy | Families that preserve more local support predict better exactly | Results exact-vs-local paragraph | Supp. Methods 4 locality statistic paragraph plus coherent family protocol note | method-defined statistic | adequate | moderate with `4c` | tighten methods anchor |
 | `5d` Final prediction locality by family | Make the family hierarchy visible directly as confusion morphology | consequence / validation | predicted angle (deg) | true angle (deg), row-normalized confusion | The same hierarchy is visible in final morphology | Results morphology paragraph; main-text Eq. (8) at final prediction level | Supp. Methods 4 readout and locality extension paragraph | method-defined statistic | adequate | low | keep |
 | `5e` Measured neighborhood geometry | Reintroduce the measured reference surface for final-family explanation | derived statistic | angle (deg) | angle-angle correlation of calibrated `H` | The measured neighborhood is the common reference surface | Results reference-surface paragraph; centered-`H` description | Supp. Methods 2, Eq. (S15); Supp. Methods 5, Eq. (S44) | method-defined statistic | strong | low | keep |
-| `5f` Family-to-measured neighborhood alignment | Compare each family back to the measured neighborhood | consequence / validation | family / decoder | local-band agreement bar plus full-matrix correlation point | Stronger decoders retain the highest neighborhood agreement | Results alignment paragraph | Supp. Methods 4 final note on Fig. 5f alignment summary and permutation null | method-defined statistic | weak | moderate with `5e` | tighten methods anchor |
+| `5f` Family-to-measured neighborhood alignment | Compare each family back to the measured neighborhood | consequence / validation | family / decoder | local-band agreement bar plus full-matrix correlation point | Stronger decoders retain the highest neighborhood agreement | Results alignment paragraph; Methods evaluation paragraph defining the primary bar score and secondary full-matrix reference | Supp. Methods 4 explicit local-band agreement definition and permutation null | method-defined statistic | adequate | moderate with `5e` | keep |
 | `5g` Noise robustness consequence | Show that the same hierarchy persists under babble degradation | consequence / validation | babble SNR (dB) | Top-1 accuracy | Noise robustness follows the same hierarchy | Results noise-robustness paragraph | coherent family sweep provenance; no single main-text equation | method-defined statistic | adequate | low | keep |
 
 **Figure verdict**
 
 - Chapter role: final family consequence under one locality metric
-- Method linkage quality: strong for `5a-b-e`; weaker for `5f`
-- Main risk: `5f` has a strong paper role but a weak visible methods definition in
-  the main manuscript, so it depends heavily on supplementary anchoring
+- Method linkage quality: strong for `5a-b-e`; now adequate for `5f`
+- Main risk: `5f` still sits close to `5e` in paper role, so the prose must keep
+  the primary local-band metric and the secondary full-matrix reference distinct
 
 ## Fig. 6
 
 | Panel / title | Scientific job | Panel type | X-axis | Y / encoding | Legend claim | Main-text anchor | Supplementary anchor | Linkage type | Linkage verdict | Overlap risk | Action |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `6a` Measured response-regime map | Summarize each object's response width and compactness on one descriptor map | derived statistic | correlation-decay width (deg) | effective rank | Response geometry differs across objects without invoking intrinsic constants | Results cross-object opening paragraph; centered-`H` descriptor text | Supp. Methods 6 descriptor interpretation | method-defined statistic | weak | moderate with `2a/2d` | tighten methods anchor |
+| `6a` Measured response-regime map | Summarize each object's response width and compactness on one descriptor map | derived statistic | correlation-decay width (deg) | effective rank | Response geometry differs across objects without invoking intrinsic constants | Results cross-object opening paragraph; Methods paragraph defining first non-positive correlation-decay separation and entropy-equivalent effective rank | Supp. Methods 6 explicit descriptor definitions | method-defined statistic | adequate | moderate with `2a/2d` | keep |
 | `6b` Per-object template matrices `H` | Show structured angle-frequency fingerprints across objects | observation | angle (deg) | frequency (kHz), color = log10 `|H|` | Each object retains structured angle-frequency encoding | Results cross-object opening paragraph | Supp. Methods 2 measured fingerprints; Supp. Methods 6 object reading | observation-led with method context | adequate | low | keep |
 | `6c` Local-ordering decay across objects | Show that every object retains a finite positive local neighborhood | derived statistic | angular separation (deg) | mean centered-`|H|` correlation | Local ordering recurs across structurally distinct objects | Results cross-object opening paragraph | Supp. Methods 5, Eq. (S45); Supp. Methods 6 descriptor interpretation | method-defined statistic | strong | low | keep |
-| `6d` Object-conditioned readout vs overlap burden | Show that recoverability tracks overlap burden more than response energy | consequence / validation | mean top-3 overlap burden | Top-1 mean, plus per-angle distribution and marker area = normalized `|H|` energy | Local separability, not energy alone, orders the objects | Results cross-object consequence paragraph | Supp. Methods 6 descriptor interpretation; Supplementary Table 1 | method-defined statistic | adequate | moderate with `6a` | tighten methods anchor |
+| `6d` Object-conditioned readout vs overlap burden | Show that recoverability tracks overlap burden more than response energy | consequence / validation | mean top-3 overlap burden | Top-1 mean, plus per-angle distribution and marker area = normalized `|H|` energy | Local separability, not energy alone, orders the objects | Results cross-object consequence paragraph; Methods paragraph defining mean top-3 subspace overlap burden from pairwise squared canonical correlations | Supp. Methods 6 descriptor definitions; Supplementary Table 1 | method-defined statistic | adequate | moderate with `6a` | keep |
 | `6e` Selected bands and recovered directional codes | Show that recurrence does not require one universal informative band | derived statistic | selected contrast band (top) / angle (bottom) | recovered band code | The informative band changes across objects but the local directional principle does not | Results cross-object frequency paragraph | Supp. Methods 6 plus Supplementary Table 1 | method-defined statistic | adequate | low | keep |
 
 **Figure verdict**
 
 - Chapter role: bounded cross-object recurrence cash-out
-- Method linkage quality: adequate but more descriptor-heavy than earlier figures
-- Main risk: `6a` and `6d` need stronger explicit methods anchoring so they read
-  as measurement-derived descriptors rather than free-floating summary graphics
+- Method linkage quality: now adequate but still more descriptor-heavy than
+  earlier figures
+- Main risk: `6a` and `6d` must keep reading as executed response descriptors
+  rather than as intrinsic material constants or free-floating summary graphics
 
 ## Redesign Priority Ledger
 
@@ -170,20 +172,19 @@ Legend for `Action`:
 
 - `2f`: keep its role explicitly descriptive; do not let it sound like a second
   reduced-order model.
-- `5f`: make the methods definition of the local-band agreement score more
-  visible when the panel is discussed in paper-facing prose.
+- `5f`: keep the primary local-band score and the secondary full-matrix
+  reference visibly distinct whenever the panel is discussed in paper-facing
+  prose.
 - `6a`, `6d`: keep saying these are response-level descriptors, not intrinsic
   material constants.
 
 ### Methods / supplementary anchoring needed
 
-- `4c`: tie the operating-point recovery panel more explicitly to the locality
-  statistic inherited by `Fig. 5`, so it is visibly a step-level bridge rather
-  than an isolated scorecard.
-- `5f`: promote its current supplementary-only definition into a clearer
-  manuscript-facing methods anchor.
-- `6a`, `6d`: add clearer mention that the descriptor axes are executed response
-  summaries defined in Supplementary Methods 6 and Supplementary Table 1.
+- `5c`: if the family exact-versus-local scorecard takes on more narrative
+  weight, give it a more explicit method-facing statement that it reuses the
+  same within-15° statistic as the locality bridge.
+- `2f`, `4c`: no new methods work needed; keep their current roles bounded in
+  prose and legend language.
 
 ### Panel redesign candidates
 
@@ -197,6 +198,8 @@ The current active panel map is not principally wrong. The main architecture
 problem is traceability unevenness:
 
 - `Fig. 1-4` are already fairly well tied to methods and supplementary logic.
-- `Fig. 5f` and parts of `Fig. 6` are the weakest links.
-- the paper now needs one stable canonical surface that makes these panel-to-
-  method links explicit before any new large-scale figure redesign is attempted.
+- `Fig. 5f` and parts of `Fig. 6` were the weakest links and have now been
+  tightened by explicit main-text and supplementary definitions.
+- the current priority after this round is to keep those anchors stable and only
+  reopen panel redesign where traceability or whole-paper architecture still
+  fails after the wording repair.
