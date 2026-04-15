@@ -13,11 +13,11 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 ## Current Round Status
 
 - `Architecture scope:` `whole-manuscript`
-- `Current use:` architecture audit and rewrite planning
+- `Current use:` architecture audit, implemented text hardening, and closeout planning
 - `Not yet claiming:` whole-paper architecture fully landed
 - `Why:` the whole-paper spine is now explicit, but weaker methods-anchor
-  surfaces still need tightening before closeout should report that the
-  architecture has fully landed
+  surfaces and supplementary burden still need one more verification pass
+  before closeout should report that the architecture has fully landed
 
 ## Whole-Paper Spine Map
 
@@ -46,9 +46,9 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 - `Pivot section`
   - `Fig. 4`
 - `Pivot sentence`
-  - "The admissible readout is therefore the one that preserves and contracts
-    the broadened neighborhood exposed in Fig. 3 before subtraction is allowed
-    to act."
+  - "The scientific point is therefore not the update machinery by itself. It
+    is that a usable readout must preserve the measured local neighborhood
+    before subtraction is allowed to sharpen it."
 - `Discovery cash-out section`
   - `Fig. 6`
 - `Tool role`
@@ -106,35 +106,39 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 ### Abstract trunk
 
 - `Current trunk sentence`
-  - "Ordinary passive objects therefore act as directional sensing substrates:
-    some directional front-end information can already reside in the passive
-    structures present in a scene."
+  - "Directional sensing therefore need not be designed only into dedicated
+    hardware: some directional front-end information can already reside in
+    passive structures present in a scene."
 - `Verdict`
   - strong and aligned with the current `second-layer earned` status
 
 ### Introduction preload
 
 - `Current preload sentence`
-  - "If that organization recurs, then part of directional sensing resides in
-    the passive structures already present in a scene."
+  - "Our aim is therefore to establish a recurring directional code across
+    ordinary passive objects and to identify the condition that governs its
+    recoverability: readout must preserve the measured local neighborhood
+    before it sharpens it."
 - `Verdict`
   - aligned with the abstract trunk and the current broader-significance status
 
 ### Pivot
 
 - `Current pivot sentence`
-  - "The admissible readout is therefore the one that preserves and contracts
-    the broadened neighborhood exposed in Fig. 3 before subtraction is allowed
-    to act."
+  - "The scientific point is therefore not the update machinery by itself. It
+    is that a usable readout must preserve the measured local neighborhood
+    before subtraction is allowed to sharpen it."
 - `Verdict`
   - strong and well aligned with the `Fig. 3 -> Fig. 4 -> Fig. 5` bridge
 
 ### Discovery cash-out
 
 - `Current Results cash-out sentence`
-  - "On that bounded reading, directional front-end information resides partly
-    in the passive structure itself rather than only in dedicated directional
-    hardware."
+  - "What recurs across objects is not one universal spectrum, but one
+    recurring directional code expressed through different passive structures.
+    That cross-object recurrence is where the paper's broader inference becomes
+    unavoidable: passive structure is part of the sensing substrate, not merely
+    surrounding hardware."
 - `Verdict`
   - good Results-side cash-out; this is where the paper-level discovery becomes
     unavoidable before Discussion restates its broader meaning
@@ -142,11 +146,11 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 ### Discussion opening
 
 - `Current worldview-shift sentence`
-  - "Directional encoding need not be designed only into arrays and specialized
+  - "Directional sensing need not be designed only into arrays and specialized
     sensors. Across the tested passive-object archetypes, one fixed vibrometric
-    point repeatedly records a finite local directional code after matched
-    calibration. Passive structure is therefore part of the sensing substrate,
-    not merely a nuisance surrounding the sensor."
+    point repeatedly records a recurring directional code with a finite local
+    neighborhood after matched calibration. Passive structure is therefore part
+    of the sensing front end, not merely a nuisance surrounding the sensor."
 - `Verdict`
   - strong and claim-forward; it lands the worldview shift cleanly
 
@@ -170,14 +174,17 @@ as a second figure-method ledger; panel-level traceability remains canonical in
 - the front door is now unified across `manuscript.md` and `metadata.yaml`, but
   the unified discovery-first framing still needs to stay stable as later
   figure and prose rounds reopen local sections
+- the main-text `Fig. 4 -> Fig. 5 -> Fig. 6` arc now lands the intended
+  discovery-first weighting, but it still needs one verification pass to make
+  sure later local edits do not drift back toward solver-first phrasing
 - the method spine is now explicit at its previously weakest panels:
   `Fig. 5f`, `Fig. 6a`, and `Fig. 6d` are no longer weakly defined, but they
   still require discipline so their descriptor language does not drift away
   from the underlying constructions
-- the current active `Fig. 4` rewrite lives in worktree state that is not yet
-  stabilized into a final accepted architecture verdict; the chapter is much
-  better aligned than before, but it should still be treated as an active
-  hardening surface rather than a fully closed one
+- the largest remaining readability risk is now supplementary burden rather
+  than a missing Results chapter; the supplementary opening and Methods `2-4`
+  have been compressed, but the full supplement still needs one editor-style
+  pass for repeated representation defense
 
 ### What does not currently justify a large redraw
 
