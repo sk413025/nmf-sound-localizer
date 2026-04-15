@@ -28,7 +28,7 @@ Required roles:
 2. `manuscript-fit-reviewer`
    - inspect manuscript fit, claim support, caption delegation, and whether the asset belongs in the intended paper role
    - reconcile the figure's visual content with its generator or composition code and its evidence or provenance sources before concluding what the figure means
-   - inspect whether any manuscript-facing acceptance claim depends on a governance bypass in the figure, generator, composition path, or review path; if so, fail the review until that bypass is removed and the asset is rewritten through the governed path
+   - inspect whether any paper-facing acceptance claim depends on a governance bypass in the figure, generator, composition path, or review path; if so, fail the review until that bypass is removed and the asset is rewritten through the governed path
    - fill every checklist item in `checklist_results` with `pass`, `fail`, or `n/a`, plus a concrete reason and concrete evidence anchors
    - write `reviews/manuscript-fit-reviewer.json`
 3. `supervisor`
@@ -40,10 +40,10 @@ Required roles:
 
 Asset model reminder:
 
-- `context.json` distinguishes the manuscript-facing review asset from any upstream generator outputs and evidence sources.
+- `context.json` distinguishes the paper-facing review asset from any upstream generator outputs and evidence sources.
 - For multi-panel figures, inspect the split top-level panel assets listed in `context.json` to separate panel-local problems from recomposition problems.
 - Use `registry_path`, `manuscript_path`, and the figure metadata in `context.json` to locate the generator or composition code path when needed.
-- For `data_backed_*` provenance modes, judge the final manuscript asset as the release candidate, but use the upstream evidence references to detect provenance gaps or slide-style recomposition mistakes.
+- For `data_backed_*` provenance modes, judge the final paper-facing asset as the release candidate, but use the upstream evidence references to detect provenance gaps or slide-style recomposition mistakes.
 - If the final asset appears to discard or distort the data-backed upstream figure, call that out explicitly in the role reports.
 - Apply the branch visual grammar: panel labels about 8 pt, most other figure text within 5–7 pt, restrained internal narration, and stable semantic colors across the paper.
 - Apply the governance-bypass rule: if a figure, panel, generator, composition path, or review path bypasses the governed visual grammar or review contract, require removal of the bypass-causing implementation and a rewrite through the governed path before the figure can pass.
@@ -64,4 +64,4 @@ Checklist items that must be answered with concrete evidence:
 
 Bundle hash:
 
-- `4e3dcd4f4332a180de191ef50052dab0447b8f03257d18547bd52ae729d2a5b5`
+- `607144f2bda346f6e9879c109954240990e2a97ae54b57a4b602abcee5341e5d`

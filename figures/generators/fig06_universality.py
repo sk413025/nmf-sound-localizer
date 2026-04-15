@@ -469,12 +469,13 @@ def _plot_panel_b(
     heatmap_grid = slot_spec.subgridspec(
         1,
         len(ranking) + 1,
-        width_ratios=[1] * len(ranking) + [0.06],
-        wspace=0.08,
+        width_ratios=[1] * len(ranking) + [0.085],
+        wspace=0.06,
     )
 
     heatmap_axes = [fig.add_subplot(heatmap_grid[0, idx]) for idx in range(len(ranking))]
     cax = fig.add_subplot(heatmap_grid[0, len(ranking)])
+    cax.set_gid("fig06.panel_b.colorbar")
 
     log_mats = [
         np.log10(np.clip(np.abs(data["h_matrices"][material]), 1e-8, None))
@@ -500,7 +501,7 @@ def _plot_panel_b(
             vmin=vmin,
             vmax=vmax,
         )
-        ax.set_title(MATERIAL_SHORT_LABELS[material], fontsize=title_pt - 0.2, pad=1.2)
+        ax.set_title(MATERIAL_SHORT_LABELS[material], fontsize=title_pt - 0.3, pad=0.8)
         ax.set_xticks([0, 45, 90, 135, 180])
         ax.set_yticks(y_ticks)
         ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=0.8)
@@ -588,7 +589,7 @@ def _plot_panel_a(
             linewidths=STROKE_TOKENS["base"],
             zorder=3,
         )
-        thumb = OffsetImage(thumbs[material], zoom=0.068)
+        thumb = OffsetImage(thumbs[material], zoom=0.058)
         thumb_dx, thumb_dy = thumb_offsets.get(material, (18, 0))
         ab = AnnotationBbox(
             thumb,
@@ -616,17 +617,6 @@ def _plot_panel_a(
             fontsize=max(tick_label_pt - 0.2, 5.4),
             color=style["color"],
         )
-
-    ax.text(
-        0.99,
-        0.08,
-        "descriptor axes, not material constants",
-        transform=ax.transAxes,
-        ha="right",
-        va="bottom",
-        fontsize=max(tick_label_pt - 0.45, 4.9),
-        color=STYLE_COLORS["muted_text"],
-    )
 
     ax.set_xlabel("Correlation-decay width (deg)", fontsize=axis_label_pt, labelpad=0.2)
     ax.set_ylabel("Effective rank", fontsize=axis_label_pt)
@@ -747,7 +737,7 @@ def _plot_panel_d(
         title_pt=title_pt,
         add_label=add_label,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.10, 1.25], hspace=0.14)
+    grid = slot_spec.subgridspec(2, 1, height_ratios=[1.00, 1.00], hspace=0.06)
     ax_top = fig.add_subplot(grid[0, 0])
     ax_bottom = fig.add_subplot(grid[1, 0])
 
@@ -771,7 +761,6 @@ def _plot_panel_d(
         dtype=float,
     )
 
-    energy_color = STYLE_COLORS["guide_line"]
     top1_color = SEMANTIC_PALETTE["physics"]
     violin = ax_top.violinplot(
         [data["angle_top1_by_material"][material] for material in ranking],
@@ -820,17 +809,6 @@ def _plot_panel_d(
     ax_top.set_ylabel("Top-1", fontsize=axis_label_pt, labelpad=1.0)
     ax_top.tick_params(axis="y", labelsize=tick_label_pt, length=2, pad=1)
     ax_top.tick_params(axis="x", bottom=False, labelbottom=False)
-    ax_top.text(
-        0.98,
-        0.05,
-        "violin = per-angle Top-1 distribution",
-        transform=ax_top.transAxes,
-        ha="right",
-        va="bottom",
-        fontsize=max(tick_label_pt - 0.45, 5.0),
-        color=STYLE_COLORS["muted_text"],
-    )
-
     marker_sizes = 28.0 + 56.0 * energy
     label_offsets = {
         "b": (-12, 9),
@@ -871,29 +849,21 @@ def _plot_panel_d(
             fontsize=max(tick_label_pt - 0.4, 5.0),
             color=style["color"],
         )
-    ax_bottom.scatter(
-        [],
-        [],
-        s=52.0,
-        marker="o",
-        facecolors="white",
-        edgecolors=energy_color,
-        linewidths=STROKE_TOKENS["base"],
-        label="marker area scales with norm. |H| energy",
-    )
     ax_bottom.set_xlim(float(overlap_burden.min()) - 0.005, float(overlap_burden.max()) + 0.005)
     ax_bottom.set_ylim(0.60, 0.88)
     ax_bottom.set_yticks([0.65, 0.75, 0.85])
     ax_bottom.set_xlabel("Mean top-3 subspace overlap burden", fontsize=axis_label_pt, labelpad=1.0)
     ax_bottom.set_ylabel("Top-1 mean", fontsize=axis_label_pt, labelpad=1.0)
     ax_bottom.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
-    ax_bottom.legend(
-        frameon=False,
+    ax_bottom.text(
+        0.98,
+        0.05,
+        "area scales with norm. |H| energy",
+        transform=ax_bottom.transAxes,
+        ha="right",
+        va="bottom",
         fontsize=max(tick_label_pt - 0.35, 5.0),
-        loc="lower right",
-        handlelength=1.1,
-        borderpad=0.1,
-        labelspacing=0.2,
+        color=STYLE_COLORS["muted_text"],
     )
     return [ax_block, ax_top, ax_bottom]
 
@@ -920,11 +890,8 @@ def _plot_panel_e(
         title_x=0.03,
         title_y=0.94,
     )
-    grid = slot_spec.subgridspec(2, 1, height_ratios=[0.70, 1.66], hspace=0.40)
-    ax_band = fig.add_subplot(grid[0, 0])
-    ax_code = fig.add_subplot(grid[1, 0])
-
-    y_pos = np.arange(len(ranking), dtype=float)
+    ax_code = fig.add_subplot(slot_spec)
+    ax_band = ax_code.twiny()
     short_labels = {
         "b": "Card",
         "w": "Wood",
@@ -937,34 +904,6 @@ def _plot_panel_e(
         lo = data["representative_band_lo_khz"][material]
         hi = data["representative_band_hi_khz"][material]
         center = data["representative_band_freq_hz"][material] / 1000.0
-        ax_band.barh(
-            idx,
-            hi - lo,
-            left=lo,
-            height=0.58,
-            color=style["color"],
-            alpha=0.35,
-            edgecolor=style["color"],
-            linewidth=max(STROKE_TOKENS["base"] * 1.4, 1.0),
-        )
-        ax_band.plot(
-            [center],
-            [idx],
-            marker=style["marker"],
-            color=style["color"],
-            markersize=FAMILY_STYLE["standard_marker_pt"] + 0.6,
-            linewidth=0.0,
-            zorder=3,
-        )
-        ax_band.axvline(
-            center,
-            color=style["color"],
-            linewidth=STROKE_TOKENS["annotation"],
-            alpha=0.30,
-            ymin=max(0.0, (idx - 0.25) / max(len(ranking) - 0.5, 1.0)),
-            ymax=min(1.0, (idx + 0.25) / max(len(ranking) - 0.5, 1.0)),
-            zorder=1,
-        )
         ax_code.plot(
             data["angles"][material],
             data["representative_directivity"][material],
@@ -974,46 +913,62 @@ def _plot_panel_e(
             markersize=FAMILY_STYLE["compact_marker_pt"] + 0.3,
             markevery=6,
         )
-
-    for ax in (ax_band, ax_code):
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color(STYLE_COLORS["guide_line"])
-        ax.spines["bottom"].set_color(STYLE_COLORS["guide_line"])
-        ax.spines["left"].set_linewidth(STROKE_TOKENS["base"])
-        ax.spines["bottom"].set_linewidth(STROKE_TOKENS["base"])
-        ax.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
-        ax.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
-
-    ax_band.set_xlim(0.3, 3.0)
-    ax_band.set_ylim(-0.6, len(ranking) - 0.4)
-    ax_band.set_yticks(y_pos)
-    ax_band.set_yticklabels([short_labels[material] for material in ranking])
-    for label, material in zip(ax_band.get_yticklabels(), ranking, strict=False):
-        label.set_color(_screening_material_style(material)["color"])
-    ax_band.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
-    ax_band.xaxis.set_label_position("bottom")
-    ax_band.xaxis.tick_bottom()
-    ax_band.tick_params(axis="x", labeltop=False, top=False, labelbottom=True, bottom=True, pad=1.0)
-    ax_band.set_xlabel("Selected contrast band (kHz)", fontsize=axis_label_pt, labelpad=2.8)
-    ax_band.set_ylabel("")
-    ax_band.tick_params(axis="y", labelsize=tick_label_pt, length=0, pad=1)
-    ax_band.text(
-        0.99,
-        0.12,
-        "segment = band, marker = center",
-        transform=ax_band.transAxes,
-        ha="right",
-        va="bottom",
-        fontsize=max(tick_label_pt - 0.4, 5.0),
-        color=STYLE_COLORS["muted_text"],
-    )
+        y_band = 1.08 + (len(ranking) - 1 - idx) * 0.055
+        ax_band.hlines(
+            y_band,
+            lo,
+            hi,
+            color=style["color"],
+            alpha=0.35,
+            linewidth=max(STROKE_TOKENS["base"] * 1.8, 1.4),
+            zorder=2,
+        )
+        ax_band.plot(
+            [center],
+            [y_band],
+            marker=style["marker"],
+            color=style["color"],
+            markersize=FAMILY_STYLE["standard_marker_pt"] + 0.3,
+            linewidth=0.0,
+            zorder=3,
+        )
+        ax_band.text(
+            0.28,
+            y_band,
+            short_labels[material],
+            ha="right",
+            va="center",
+            fontsize=max(tick_label_pt - 0.25, 5.0),
+            color=style["color"],
+        )
 
     ax_code.set_xlim(0.0, 186.0)
     ax_code.set_ylim(0.0, 1.02)
     ax_code.set_xticks([0, 30, 60, 90, 120, 150, 180])
+    ax_code.set_yticks([0.0, 0.5, 1.0])
     ax_code.set_ylabel("Recovered band code", fontsize=axis_label_pt, labelpad=1.0)
     ax_code.set_xlabel("Angle (deg)", fontsize=axis_label_pt, labelpad=1.0)
+    ax_code.spines["top"].set_visible(False)
+    ax_code.spines["right"].set_visible(False)
+    ax_code.spines["left"].set_color(STYLE_COLORS["guide_line"])
+    ax_code.spines["bottom"].set_color(STYLE_COLORS["guide_line"])
+    ax_code.spines["left"].set_linewidth(STROKE_TOKENS["base"])
+    ax_code.spines["bottom"].set_linewidth(STROKE_TOKENS["base"])
+    ax_code.tick_params(axis="both", labelsize=tick_label_pt, length=2, pad=1)
+    ax_code.grid(True, linestyle="--", alpha=FAMILY_STYLE["grid_alpha"])
+
+    ax_band.set_xlim(0.3, 3.0)
+    ax_band.set_ylim(0.0, 1.34)
+    ax_band.set_xticks([0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
+    ax_band.set_xlabel("Selected contrast band (kHz)", fontsize=axis_label_pt, labelpad=2.1)
+    ax_band.tick_params(axis="x", labelsize=tick_label_pt, length=2, pad=1.0)
+    ax_band.set_yticks([])
+    ax_band.grid(False)
+    ax_band.spines["bottom"].set_visible(False)
+    ax_band.spines["left"].set_visible(False)
+    ax_band.spines["right"].set_visible(False)
+    ax_band.spines["top"].set_color(STYLE_COLORS["guide_line"])
+    ax_band.spines["top"].set_linewidth(STROKE_TOKENS["base"])
     end_label_x = 182.0
     y_targets: list[tuple[str, float]] = []
     for material in ranking:
@@ -1039,7 +994,7 @@ def _plot_panel_e(
             annotation_clip=False,
         )
 
-    return [ax_block, ax_band, ax_code]
+    return [ax_block, ax_code, ax_band]
 
 
 def generate(data_root: Path, output_dir: Path) -> list[Path]:

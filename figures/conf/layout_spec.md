@@ -205,17 +205,17 @@ figures:
   fig06:
     compose:
       width_mm: 183.0
-      height_mm: 170.0
+      height_mm: 166.0
       outer_margin_x_mm: 6.0
-      outer_margin_top_mm: 3.0
-      outer_margin_bottom_mm: 3.0
-      panel_a_height_mm: 29.0
-      panel_b_height_mm: 24.0
-      row_cd_height_mm: 47.0
+      outer_margin_top_mm: 2.0
+      outer_margin_bottom_mm: 2.0
+      panel_a_height_mm: 28.0
+      panel_b_height_mm: 28.0
+      row_cd_height_mm: 60.0
       panel_d_width_mm: 83.0
-      panel_e_height_mm: 55.0
+      panel_e_height_mm: 44.0
       col_gap_mm: 4.0
-      row_gap_mm: 3.0
+      row_gap_mm: 2.0
     typography:
       panel_label: 8.0
       title: 6.8
@@ -226,41 +226,41 @@ figures:
       colorbar_label: 5.5
     generator:
       composite_width_mm: 183.0
-      composite_height_mm: 170.0
+      composite_height_mm: 166.0
       composite_grid:
-        left: 0.055
-        right: 0.945
-        bottom: 0.065
-        top: 0.955
-        hspace: 0.34
+        left: 0.05
+        right: 0.95
+        bottom: 0.055
+        top: 0.965
+        hspace: 0.22
         wspace: 0.0
         width_ratios: [1.0]
-        height_ratios: [29.0, 24.0, 47.0, 55.0]
+        height_ratios: [28.0, 28.0, 60.0, 44.0]
       middle_row:
-        wspace: 0.18
+        wspace: 0.14
         width_ratios: [84.0, 83.0]
       split:
         standalone:
           a:
             width_mm: 171.0
-            height_mm: 29.0
-            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.26, top: 0.88}
+            height_mm: 28.0
+            subplots_adjust: {left: 0.07, right: 0.988, bottom: 0.24, top: 0.90}
           b:
             width_mm: 171.0
-            height_mm: 24.0
-            subplots_adjust: {left: 0.06, right: 0.985, bottom: 0.18, top: 0.92}
+            height_mm: 28.0
+            subplots_adjust: {left: 0.055, right: 0.988, bottom: 0.16, top: 0.93}
           c:
             width_mm: 84.0
-            height_mm: 47.0
-            subplots_adjust: {left: 0.11, right: 0.985, bottom: 0.17, top: 0.92}
+            height_mm: 60.0
+            subplots_adjust: {left: 0.105, right: 0.988, bottom: 0.15, top: 0.93}
           d:
             width_mm: 83.0
-            height_mm: 47.0
-            subplots_adjust: {left: 0.12, right: 0.985, bottom: 0.18, top: 0.92}
+            height_mm: 60.0
+            subplots_adjust: {left: 0.115, right: 0.988, bottom: 0.16, top: 0.93}
           e:
             width_mm: 171.0
-            height_mm: 55.0
-            subplots_adjust: {left: 0.08, right: 0.985, bottom: 0.13, top: 0.94}
+            height_mm: 44.0
+            subplots_adjust: {left: 0.075, right: 0.988, bottom: 0.12, top: 0.92}
 ```
 <!-- runtime-layout-contract:end -->
 
@@ -555,12 +555,12 @@ Panels `a-e` are generated at their final manuscript slot sizes.
 ├──────────────────────────────────────────────────────┤ ─┼─
 │   (a) 171.0 × 28.0 mm response-regime map           │  │ 28.0 mm
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
-│      (b) 171.0 × 29.0 mm cross-material H row       │  │ 29.0 mm
+│      (b) 171.0 × 28.0 mm cross-material H row       │  │ 28.0 mm
 ├───────────────────────────────┬──────────────────────┤ ─┼─ 4.0 mm
-│ (c) 84.0 × 48.0 mm            │ (d) 83.0 × 48.0 mm  │  │ 48.0 mm
+│ (c) 84.0 × 60.0 mm            │ (d) 83.0 × 60.0 mm  │  │ 60.0 mm
 │ Local-ordering decay          │ Readout summary      │  │
 ├──────────────────────────────────────────────────────┤ ─┼─ 4.0 mm
-│ (e) 171.0 × 43.0 mm contrast-band + code row        │  │ 43.0 mm
+│ (e) 171.0 × 44.0 mm contrast-band + code row        │  │ 44.0 mm
 └───────────────────────────────┴──────────────────────┘ ─┼─
                                                         ─┴─ 4.0 mm bottom margin
 ```
@@ -568,14 +568,14 @@ Panels `a-e` are generated at their final manuscript slot sizes.
 | Parameter         | Value                       |
 |------------------|-----------------------------|
 | width_mm         | 183                         |
-| height_mm        | **165**                     |
+| height_mm        | **166**                     |
 | outer_margin_x   | **6.0 mm** each side        |
-| outer_margin_top | **4.0 mm**                  |
-| outer_margin_bot | **4.0 mm**                  |
+| outer_margin_top | **2.0 mm**                  |
+| outer_margin_bot | **2.0 mm**                  |
 | Panel (a)        | **171.0 × 28.0 mm**         |
-| Panel (b)        | **171.0 × 29.0 mm**         |
-| Panel (c)        | **84.0 × 48.0 mm**          |
-| Panel (d)        | **83.0 × 48.0 mm**          |
-| Panel (e)        | **171.0 × 43.0 mm**         |
-| row_gap          | **4.0 mm**                  |
+| Panel (b)        | **171.0 × 28.0 mm**         |
+| Panel (c)        | **84.0 × 60.0 mm**          |
+| Panel (d)        | **83.0 × 60.0 mm**          |
+| Panel (e)        | **171.0 × 44.0 mm**         |
+| row_gap          | **2.0 mm**                  |
 | col_gap          | **4.0 mm**                  |
