@@ -16,6 +16,7 @@
 - the planned submission direction remains a `Nature Communications` mainline editorial read, not a method-specialist venue pivot
 - the manuscript currently lands most naturally at `second-layer earned` broader significance: passive structure acts as part of the sensing substrate, while downstream application branches should be dropped when they read like added framing rather than natural growth from the discovery
 - the paper's most natural external positioning is `physics-guided scientific discovery` rather than a method-first algorithm paper
+- keep the front door unified around the recurring locally ordered directional code as protagonist; matched calibration remains a supporting actor in the title and other highest-salience surfaces rather than the paper's main subject
 - the closest adjacent editor-facing fit emphasizes cross-disciplinary scientific discovery, physics-guided or physics-structured inference, and data-driven physical insight more than stand-alone algorithm novelty
 - when writing for adjacent physics-informed or physics-guided editorial reads, emphasize discovery-level physical insight, theory-guided or structure-preserving inference, and data-driven scientific interpretation before any claim of algorithmic novelty
 - that adjacent fit is strongest when the solver is presented as the mechanism that preserves and exposes measured physical geometry, not as the paper's main contribution
@@ -39,6 +40,7 @@
 - treat `local separability` as the key bridge concept between the discovery chapter and the readout chapter: once nearby directions remain jointly plausible under speech, the paper should say that the code survives as structured local ambiguity rather than implying that directional information has disappeared
 - active main-paper figure planning now routes through `paper/manuscript/FIGURE_METHOD_CROSSWALK.md`; panel redesign should not be approved on visual density or readability alone when panel scientific job, method anchor, supplementary anchor, or overlap verdict would change
 - the `Fig. 1–6` surface is now governed not only by a figure spine but also by an explicit method spine; branch memory may note that routing lesson, but the crosswalk file remains the only canonical per-panel ledger
+- whole-paper architecture planning now has an active manuscript-side home at `paper/manuscript/PAPER_SPINE_MAP.md`; use it to keep title/front door, pivot, discovery cash-out, Discussion opening, and rewrite priorities on one surface before reopening large figure redesign
 
 ## Active Figure And Manuscript Fronts
 
@@ -104,3 +106,4 @@
 - constitution: [AGENTS.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/AGENTS.md)
 - agent quickstart: [START_HERE_AGENT.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/START_HERE_AGENT.md)
 - scientific voice canon: [scientific-voice-guide.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/docs/governance/scientific-voice-guide.md)
+- whole-paper spine map: [PAPER_SPINE_MAP.md](/Users/sbplab/jiawei/pg-ltr-frame-byol-worktree/worktrees/nature-comm-paper/paper/manuscript/PAPER_SPINE_MAP.md)
