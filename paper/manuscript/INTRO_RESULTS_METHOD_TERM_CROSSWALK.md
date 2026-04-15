@@ -1,115 +1,109 @@
 # Introduction-Results-to-Methods Term Crosswalk
 
-This document is the canonical term-level crosswalk for Methods-relevant
-language already used in the `Introduction` and `Results` sections of the main
-manuscript. Its job is narrower than a glossary and narrower than a Methods
-rewrite. It maps paper-facing term families onto the exact Methods surfaces
-that define, quantify, or operationalize them, so terminology drift can be
-judged against one explicit ledger.
+This document is the canonical terminology-reduction ledger for
+Methods-relevant language in the `Introduction` and `Results` sections of the
+main manuscript.
 
-It is not a second Methods section, a second figure legend, or a manuscript
-management checklist. It exists to keep the `front-door prose`, the `Results
-spine`, and the `Methods spine` on one shared terminology map.
+Its job is narrower than a glossary and narrower than a Methods rewrite. It
+decides which paper-facing terms should remain in `Introduction` / `Results`,
+which formal labels belong only in `Methods` or `Supplementary Methods`, and
+which near-synonyms should be retired from the main text so cross-disciplinary
+readers do not have to learn a second internal vocabulary before they can
+follow the science.
+
+It is not a second Methods section, a second naming contract, or a second
+governance vocabulary. It exists to keep the `front-door prose`, the `Results
+spine`, and the `Methods spine` on one shared term map.
 
 ## Scope And Exclusions
 
 - Scope: terms in `Introduction` and `Results` that imply a representation,
   statistic, inference object, protocol, or evaluation quantity in `Methods`.
-- Scope: paper-facing terms that act as bridges between the physical narrative
-  and the implemented analysis surface.
+- Scope: paper-facing terms that bridge physical intuition to a formal Methods
+  surface.
 - Exclusion: generic content nouns such as `speech`, `white noise`, `object`,
   `angle`, or `LDV` unless they appear as part of a methods-defined construct.
 - Exclusion: figure-only labels that do not carry an independent Methods
   meaning.
 
-Status legend:
+## Reduction Policy
 
-- `explicitly defined`
-- `partially defined`
-- `distributed across sections`
-- `paper-facing only`
+- Keep one default paper-facing term per concept in `Introduction` / `Results`.
+- Keep formal labels, symbols, and internal surface names in `Methods` /
+  `Supplementary Methods` unless the formal label itself is the scientific point
+  of the sentence.
+- If a paper-facing umbrella term spans more than one formal surface, keep the
+  umbrella term but require a short bridge that tells the reader which surface
+  is active in that paragraph.
+- Do not create a second paper-facing synonym once a canonical term is chosen.
 
-## Whole-Manuscript Diagnosis
+## Canonical Main-Text Vocabulary
 
-- The manuscript already has a stable `local-neighborhood` narrative, but that
-  narrative spans two distinct quantity families: `centered-|H|` descriptive
-  structure and `radius-based support/locality` metrics for readout behavior.
-- The strongest Methods anchors already exist for `centered representation`,
-  `template/dictionary` objects, `guided solver` updates, and `mass-within-radius`
-  locality metrics.
-- The terms most at risk of drift are the paper-facing bridge terms
-  `directional code`, `measured neighborhood`, `stage-0 grouped-match surface`,
-  and `overlap burden`, because each compresses several lower-level quantities.
-- `Introduction` uses some scientifically useful umbrella terms on purpose. The
-  crosswalk should keep them, but it should make clear when they are narrative
-  labels rather than one-to-one Methods objects.
+- `directional code`
+- `fingerprint`
+- `local neighborhood`
+- `local separability`
+- `local support`
+- `exact support`
+- `guided solver`
+- `cross-object subspace overlap`
+- `object-specific informative band`
 
-## Crosswalk
+## Reduction Ledger
 
-| Term family | Representative manuscript phrases | Section role in Introduction / Results | Primary Methods anchor | Secondary anchor | Current status | Risk / note |
-|---|---|---|---|---|---|---|
-| `local neighborhood` | `finite local neighborhood`; `broadened neighborhood`; `measured neighborhood`; `operative 15° neighborhood` | Core bridge from the compactness chapter to the admissible-readout and final-family chapters | `Calibration object and centered-magnitude representation`; `Diagnostic analyses`; `Evaluation metrics and statistics` | `Evaluation protocols` | `distributed across sections` | This is the most important umbrella term in the paper, but it names two different surfaces: the descriptive neighborhood in centered `|H|` and the readout-side radius metric. The prose should keep naming the surface shift when moving between them. |
-| `local separability / local ambiguity / local overlap` | `local separability problem`; `local ambiguity`; `nearby directions become jointly plausible`; `speech broadens overlap locally` | Names the scientific problem created once the code survives but exact commitment weakens | `Inference formulations and algorithms` | `Diagnostic analyses` | `partially defined` | The surrogate sparse-recovery language and the stage-0 diagnostic define the mechanism, but the paper-facing phrase `local ambiguity` remains a narrative compression rather than one single formula name. |
-| `directional code / local directional organization` | `reusable directional code`; `locally ordered directional code`; `local directional organization`; `the code survives speech` | Paper protagonist and front-door discovery label | `Signal processing and feature extraction`; `Calibration object and centered-magnitude representation` | `Diagnostic analyses` | `paper-facing only` | This is intentionally a paper-level term, not a Methods variable. It cashes out through fingerprints, centered `|H|`, neighborhood decay, and readout locality rather than through one object called `directional code`. |
-| `fingerprint / spectral fingerprint` | `single-point spectral fingerprint`; `direction-dependent vibration fingerprints`; `calibrated fingerprints`; `speech fingerprints` | Front-door observable that carries directional information before any decoder enters | `Signal processing and feature extraction` | `Experimental setup and data acquisition` | `explicitly defined` | This family is well grounded: the Methods section defines the standardized log-power fingerprint from the LDV response and keeps it as the observable used downstream. |
-| `centered representation / centered-|H| / centered-magnitude` | `centered representation`; `centered-magnitude energy`; `centered summary surface`; `centered-neighborhood statistics` | Main descriptive surface for compactness, local ordering, and cross-object descriptors | `Calibration object and centered-magnitude representation` | `Diagnostic analyses`; `Evaluation protocols` | `explicitly defined` | This is one of the cleanest term families in the manuscript. The main consistency requirement is to keep distinguishing centered descriptive summaries from grouped-match or replay surfaces. |
-| `compactness / low-rank structure / effective rank` | `compact shared response`; `low-rank space`; `cumulative energy still saturates early`; `effective rank` | Quantifies that the code lives in a limited structural subspace rather than a field of unrelated templates | `Calibration object and centered-magnitude representation`; `Evaluation protocols` | `Diagnostic analyses` | `explicitly defined` | `Compactness` in the acrylic and speech chapters is well defined through SVD-style summaries. `Effective rank` in the cross-object chapter is also defined, but it is a descriptor derived from the same centered surface rather than a new independent object. |
-| `local ordering / neighborhood coherence / graph embedding` | `locally ordered`; `mean inter-angle correlation decays`; `neighborhood coherence`; `positive centered-neighborhood graph`; `spectral embedding` | Describes the shape of the neighborhood after centering, especially in Figs. 2 and 3 | `Calibration object and centered-magnitude representation` | `Diagnostic analyses` | `partially defined` | Correlation-decay statistics are clearly grounded. The graph-embedding view is weaker as a primary Methods object and should remain a descriptive complement rather than a second reduced-order thesis. |
-| `template matrix H / calibrated dictionary / grouped dictionary / grouped templates` | `calibrated dictionary H`; `template matrix H`; `grouped dictionary`; `grouped templates` | Connects measured calibration fingerprints to the inference surface used for readout | `Calibration object and centered-magnitude representation`; `Inference formulations and algorithms` | `Evaluation protocols` | `distributed across sections` | The manuscript uses `H` for the measured calibration matrix and `D` for the grouped inference dictionary. That distinction exists in Methods, but the Results prose can still drift if `dictionary`, `template`, and `grouped` are used too loosely. |
-| `stage-0 grouped-match surface` | `frozen stage-0 grouped-match surface`; `stage-0 local separability`; `stage-0 support`; `stage-0 matching` | Defines the pre-correction diagnostic surface on which speech broadening first appears | `Inference formulations and algorithms`; `Diagnostic analyses` | `Evaluation metrics and statistics` | `partially defined` | This term is operationally grounded by the stage-0 match and the grouped support diagnostics, but the exact manuscript label is still a compact phrase rather than a canonical Methods subsection name. |
-| `guided solver / routing / routed update / subtraction` | `guided solver`; `routing`; `learned cue`; `routed weight`; `gated update`; `subtraction remains admissible` | Makes the admissibility rule visible once local ambiguity appears | `Inference formulations and algorithms` | `Training and optimization`; `Diagnostic analyses` | `explicitly defined` | This family is strongly anchored by Eqs. (4)-(8) and the grouped update logic. The main prose risk is not missing definition but accidentally letting the solver become the paper protagonist. |
-| `exact support / local support / mass-within-radius / within-15° local mass` | `exact support`; `local support`; `mass within radius`; `within-10° tolerance`; `within-15° local mass` | Shared evaluation vocabulary for the Fig. 3 diagnostic and the Fig. 4-5 locality bridge | `Diagnostic analyses`; `Evaluation metrics and statistics` | `Evaluation protocols` | `explicitly defined` | This family is method-defined and reusable across figures. The main requirement is to keep `exact` and `local` consequence distinct rather than treating them as interchangeable notions of success. |
-| `local-band agreement / anglewise profile agreement / full-matrix correlation` | `local-band agreement score`; `bounded anglewise profile-agreement factor`; `full-matrix correlation` | Gives the final-family alignment metric back to the measured neighborhood in Fig. 5f | `Evaluation protocols`; `Evaluation metrics and statistics` | `Diagnostic analyses` | `explicitly defined` | The Methods section now states the primary bar metric and the secondary full-matrix reference clearly enough. The paper-facing risk is role drift: the secondary full-matrix correlation should not sound like the primary ranking quantity. |
-| `overlap burden / canonical-correlation overlap` | `mean top-3 overlap burden`; `pairwise squared canonical-correlation overlap`; `neighboring directions overlap more broadly` | Cross-object descriptor that explains why recoverability does not follow response energy alone | `Evaluation protocols` | `Evaluation metrics and statistics` | `partially defined` | The formal descriptor is defined, but the Results phrase `overlap burden` still compresses both the averaging procedure and the top-3 subspace construction. Keep it reading as an executed response descriptor, not an intrinsic material constant. |
-| `contrast-selection rule / band-limited directional code` | `shared contrast-selection rule`; `informative window`; `band-limited directional code`; `object-specific bands` | Cross-object frequency-side cash-out showing recurrence without a universal band | `Evaluation protocols` | `Signal processing and feature extraction` | `partially defined` | The executed rule is present, but this family is more descriptor-heavy than the earlier figures. The prose should keep saying that the band is selected by an executed contrast rule, not by post hoc visual choice. |
+| Term family | Canonical paper-facing term | Formal term(s) allowed only in Methods / Supplementary | Terms to retire from Introduction / Results | First-use bridge rule |
+|---|---|---|---|---|
+| Recurring directional structure across angles | `directional code` | centered `\|H\|` descriptors; grouped support statistics; routed locality metrics | `local directional organization`; `directional encoding` as a protagonist synonym | First use should say the code is carried by `fingerprints` or by the `single-point readout`, not leave `code` floating as an abstract label. |
+| Single-point observable | `fingerprint` | standardized log-power fingerprint; `\tilde y`; prototype matrix `H` | none by default | First use should connect `fingerprint` to the single-point LDV readout. |
+| Calibration-side nearby-angle geometry | `local neighborhood` | centered-neighborhood similarity; centered `\|H\|` correlation matrix; correlation-decay width | `measured neighborhood` as a generic catch-all; `finite positive local neighborhood` when the simpler phrase works | When the paragraph is on calibration-side geometry, say `local neighborhood` and make clear that nearby angles remain related on the calibrated fingerprint surface. |
+| Readout difficulty under nearby-angle competition | `local separability` | local-overlap surrogate; grouped stage-0 summaries; neighborhood-tolerant success definitions | `local ambiguity` as a peer term unless the sentence is explicitly contrasting ambiguity with exact commitment | First use should say that nearby candidates become jointly plausible before a final angle is chosen. |
+| Readout-side nearby-angle retention | `local support` | mass-within-radius; within-10° success; within-15° mass; locality metric | `operative 15° neighborhood`; `radius-based neighborhood metric`; `local-band metric` in main text | When the paragraph is on decoder behavior, stop saying only `neighborhood`; say `local support` if the active quantity is retained nearby-angle mass. |
+| Immediate exact-angle concentration | `exact support` | exact-match success; radius-zero case; Top-1 exact first choice | `exact commitment` when it is being used as a metric label rather than a consequence verb | Pair it with `local support` when both are compared. |
+| Active learned decoder family | `guided solver` | routed update; direction-level routing score; grouped dictionary recursion; Gumbel gate | `routing` or `routed update` as a family name; `physics-guided structured readout` as the default family label in Results | In Results, use `guided solver` for the family and reserve routing internals for Fig. 4 mechanism sentences or Methods. |
+| Cross-object descriptor for recoverability | `cross-object subspace overlap` | mean top-3 overlap burden; pairwise squared canonical correlations between top-3 centered-`\|H\|` subspaces | `overlap burden` as the first paper-facing name | First use should explain that the descriptor summarizes how strongly each object's leading directional-response subspace overlaps with those of the other objects. |
+| Cross-object frequency-side descriptor | `object-specific informative band` | contrast-selection rule; smoothed contrast profile; band-averaged directional code construction | `contrast-selection rule` as a first main-text label; `band-limited directional code` as the default main-text phrase | First use should say that each object has its own informative band, then point to Methods for how that band is selected. |
+| Descriptive compactness language | `compact` or `compact structure` | centered-magnitude energy; cumulative singular-value energy; effective rank | `centered representation family`; `compactness analysis surface` in main text | Keep the sentence on what the structure does before naming the formal compactness statistic. |
+| Descriptive coherence language | `locally ordered` or `neighborhood coherence` | centered-neighborhood graph; spectral embedding; graph Laplacian | `positive centered-neighborhood graph` and `spectral embedding` as the main sentence subject in Results | Keep graph language descriptive and secondary to the main local-neighborhood claim. |
+| Calibration vs inference objects | `calibrated fingerprints` or `calibrated dictionary` when needed | prototype matrix `H`; grouped dictionary `D`; grouped atom set | loose alternation among `dictionary`, `template`, `grouped templates`, and `references` without object name | When both objects are in play, name them explicitly as `calibrated dictionary H` and `grouped dictionary D` in formal surfaces, but keep main-text prose on what they do rather than on the letters themselves. |
+| Pre-update diagnostic under speech | `pre-update grouped match` | `ungated stage-0 grouped-match surface`; `g_0^{(grp)}` | `stage-0 grouped-match surface` as the default reader-facing phrase | First use should describe it as the grouped match before any routing or refitting acts, then point to Supplementary Methods 3 for the formal label. |
+| Final family alignment descriptor | `local support aligned with the measured geometry` | local-band agreement score; anglewise profile-agreement factor; full-matrix correlation | `local-band agreement score`; `anglewise profile-agreement factor`; `full-matrix correlation` as peer main-text ranking terms | In Results, describe the ranking consequence in words and reserve the exact score construction for Methods and Supplementary. |
 
 ## Priority Harmonization Ledger
 
 ### Highest priority
 
-- `local neighborhood`
-  This is the paper's main bridge term, but it spans both centered descriptive
-  geometry and radius-based readout locality. Later manuscript cleanup should
-  keep those surfaces distinct whenever the paper moves from `Fig. 2-3` into
-  `Fig. 4-5`.
-
-- `template matrix H / grouped dictionary D`
-  The measured calibration object and the grouped inference object are both
-  present in Methods, but the manuscript can still blur them in Results if
-  `dictionary`, `template`, and `grouped support` are used without the object
-  name.
-
-- `stage-0 grouped-match surface`
-  The concept is real and operationally grounded, but the exact phrase is still
-  a compressed narrative label. If this term gains more salience, it may need a
-  tighter local bridge sentence in Methods or Diagnostic analyses.
-
-### Medium priority
-
 - `directional code`
-  Keep it as the paper protagonist, but do not let it pretend to be a single
-  Methods variable.
+  Keep as protagonist, but never let it stand in for one formal matrix, score,
+  or decoder surface.
 
-- `overlap burden`
-  Keep the descriptor language explicit so the cross-object result does not read
-  as though a hidden intrinsic constant had been measured.
+- `local neighborhood`
+  Keep for calibration-side geometry. When the paragraph has moved to decoder
+  behavior, switch to `local support` rather than overloading `neighborhood`.
 
-- `contrast-selection rule / band-limited directional code`
-  Keep the executed rule visible whenever the selected band is discussed in
-  paper-facing prose.
+- `cross-object subspace overlap`
+  Promote this as the paper-facing descriptor and demote `overlap burden` to
+  Methods / Supplementary language.
+
+- `pre-update grouped match`
+  Use as the reader-facing bridge for the formal stage-0 grouped diagnostic.
+
+- `object-specific informative band`
+  Promote this as the paper-facing descriptor and demote `contrast-selection
+  rule` and `band-limited directional code` to formal surfaces.
 
 ### Lower priority
 
 - `graph embedding`
-  The current manuscript already treats it as a descriptive complement. It
-  becomes risky only if later prose starts making it sound like the paper's
-  central reduced-order representation.
+  Keep only as a descriptive complement.
+
+- `full-matrix correlation`
+  Keep only as a secondary Methods-side reference, not as a main-text ranking
+  label.
 
 ## Working Conclusion
 
-The current terminology map is usable and mostly coherent. The strongest method
-anchors already exist for the observable fingerprints, centered representations,
-guided updates, and locality metrics. The remaining cleanup pressure is mainly
-about `quantity discipline`: making sure umbrella terms such as `local
-neighborhood`, `directional code`, and `overlap burden` stay connected to the
-right analysis surface at the right point in the Results spine.
+The manuscript does not need more names. It needs fewer paper-facing names and
+clearer division of labor between paper-facing intuition and formal Methods
+labels. The canonical set above should carry `Introduction` and `Results`; the
+retired terms should remain available only where the formal construction itself
+must be stated.

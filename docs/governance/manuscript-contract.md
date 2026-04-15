@@ -66,6 +66,14 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Full display equations belong in Methods unless the formula itself is a paper-level object in the Results argument, such as the paper's central physical model or inference problem.
 - If notation appears in Results, keep it to the minimum needed for reader traceability and define it through an immediate bridge to physical meaning. Do not assume the reader will read Methods first.
 
+**Editor-first reading contract:**
+
+- High-salience `Introduction` and `Results` prose must let a skimming Nature Communications editor or cross-disciplinary reviewer tell, without `Methods`-first reading, what physical phenomenon is being claimed, what observable or quantity carries it in the current paragraph, and why it matters.
+- Front-door prose should feel like progressive sharpening of one idea, not repeated renaming. Use one stable paper-facing term per concept and let `Methods` or `Supplementary Methods` carry the formal labels, internal surface names, and exact score constructions.
+- Introduce difficult concepts in this order when possible: `physical intuition -> observable consequence -> formal anchor`. Do not make the reader learn an internal label, metric name, or symbolic object before the scientific role of that object is clear.
+- If a paper-facing umbrella term spans more than one formal surface, the prose must mark that surface shift in plain language rather than silently reusing the same noun across distinct quantities.
+- Treat private-vocabulary pressure as a manuscript failure mode. If a paragraph would require a reader to mentally translate among several near-synonyms or internal labels before understanding the science, simplify the terminology instead of adding more bridge jargon.
+
 **Sentence and punctuation discipline:**
 
 - Do not use bold emphasis in Introduction, Results, or Discussion body text. Bold is reserved for figure legend titles and Methods sub-section headings.
@@ -91,10 +99,11 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 
 - Manuscript-facing prose must advance by `observation -> inference -> bounded conclusion`, not by document guidance, rebuttal-style positioning, curator narration, or manuscript-management phrasing.
 - For each claim-bearing sentence or paragraph, keep three layers distinct: `claim floor`, `claim ceiling`, and `evidence boundary`.
-- `Claim floor` is the strongest finding the current evidence does support. State it clearly and early instead of hiding it behind defensive qualifiers.
+- `Claim floor` is the strongest finding the current evidence does support. State it clearly, early, and in affirmative scientific language before introducing scope limits.
 - `Claim ceiling` is the stronger statement the current evidence does not yet support. Bound it explicitly only when that distinction matters for scientific accuracy.
-- `Evidence boundary` is the real scope limit, transfer condition, or open question that constrains the claim. Keep it separate from the lead claim instead of collapsing the paragraph into self-diminishing wording.
+- `Evidence boundary` is the real scope limit, transfer condition, or open question that constrains the claim. Use it to contain the supported claim, not to pre-weaken it or pre-answer a reviewer objection before the discovery lands.
 - Treat self-diminishing prose as a manuscript failure mode. Do not lower the claim floor with prophylactic negation, straw-man disclaimers, or "safe" wording when the evidence already supports a clearer statement.
+- Do not write anticipated reviewer misreadings into paper-facing prose. If a sentence feels too broad, narrow the scientific claim itself rather than adding `not X`, `should not be read as`, or other prebuttal phrasing.
 - Hold supplementary text, figure legends, inline legends, and main-manuscript Methods prose to the same prose standard as the main text.
 - Prefer scientific actors and observations over figure-as-actor wording. Avoid panel-choreography phrasing when the sentence can instead name what was measured, changed, or inferred.
 - If a sentence mainly explains how to read the paper, how the manuscript is organized, or how a figure is being used, rewrite it so the sentence states what the evidence implies.
@@ -109,6 +118,7 @@ These rules prevent recurring style errors when AI agents or collaborators draft
 - Build broader-significance promotion in this order when possible: prove the core discovery, earn the second-layer discovery, earn one bounded branch, then decide whether any optional leaf is still worth the reader burden.
 - Use the canonical `SV#` exemplars in `scientific-voice-guide.md` when a sentence sounds defensively cautious but the evidence remains strong.
 - When the evidence is strong, strengthen clarity rather than dampening tone. The correct fix for perceived overstatement is usually a narrower claim, not a weaker verb.
+- When scope needs to be narrowed, narrow the actor, condition, or consequence. Do not turn the sentence into a defensive explanation of how it might be misread.
 - Distinguish `descriptive` from `insignificant`. A descriptive result may still be central if it organizes the paper's discovery.
 - Treat `paper protagonist`, `pivot`, and `tool role` as explicit design choices, not as emergent side effects of paragraph edits.
 - Treat `second-layer discovery`, `broader-implication trunk`, and `downstream-consequence branch` as explicit design choices whenever the paper reaches beyond its immediate field.
@@ -153,11 +163,12 @@ Use this gate whenever a manuscript round wants to land broader significance.
   - The proposed second-layer discovery must still be stated with the paper's own discovery actor as subject.
   - If the sentence only works as an application slogan, future-use promise, or literature-tour justification, it is not earned and must demote.
 - `Boundary-pressure test`:
-  - Rewrite the broader implication in the most conservative truthful form.
-  - If the conservative version is still worth placing in the Abstract tail, Introduction ending, or Discussion trunk, it may remain promoted.
+  - Rewrite the broader implication in the narrowest affirmative form that remains fully supported.
+  - If that narrower positive version is still worth placing in the Abstract tail, Introduction ending, or Discussion trunk, it may remain promoted.
   - If the conservative version collapses into vague usefulness, demote it to `core-only` or drop it.
 - `Reviewer-routing survival test`:
   - Ask whether the proposed trunk would still look evidence-earned if the paper were read first by an immediate-field reviewer rather than a sympathetic adjacent-field reader.
+  - Keep the prose discovery-led while making that judgment; do not convert the paper-facing sentence into reviewer-prebuttal language.
   - If the claim would likely be read as scope drift, it cannot be promoted beyond `core-only`.
 - `Demotion rule`:
   - If the trunk fails, demote to `core-only` and rewrite the prose accordingly.
@@ -189,9 +200,10 @@ Use this gate whenever a manuscript round wants to land broader significance.
 - figure-dependent narrative makes comparator and panel-block logic explicit when panel roles change within a figure
 - active main-paper panels do not remain unclassified or unanchored at the level of scientific job, panel type, and method/supplement linkage
 - prose is understandable to scientifically literate cross-disciplinary readers without requiring Methods-first reading
+- a skimming editor can identify, in each high-salience paragraph, the physical phenomenon, the active observable or quantity, and the scientific consequence without translating an internal term map
 - prose uses active voice and direct cause-effect phrasing where scientifically appropriate, without dense nominalization or overloaded noun stacks that increase cognitive load
 - prose advances by evidence and inference rather than manuscript-management language, and uses scientific actors instead of figure-as-actor or panel-choreography phrasing when possible
-- prose states the supported claim floor clearly before naming the evidence boundary, and does not rely on defensive self-negation to signal rigor
+- prose states the supported claim floor clearly in affirmative form before naming the evidence boundary, and does not rely on defensive self-negation or prebuttal phrasing to signal rigor
 - the in-scope surface passes the editor-first readout test from `scientific-voice-guide.md`, meaning a skimming editor would remember the supported discovery rather than the caveat
 - the in-scope surface passes a sentence-energy test: high-salience sentences use clear subjects, explicit causal links, and low enough noun-stack density for one-pass reading
 - the in-scope surface passes an architecture test: the protagonist is stable, the pivot is legible, tool sections remain subordinate to discovery, and the Discussion opening upgrades the paper's meaning rather than restating Results

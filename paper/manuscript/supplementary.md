@@ -300,7 +300,7 @@ $$
 
 Equations (S22)-(S28) therefore isolate the classical hard-commitment limit of the same reduced surrogate introduced in Supplementary Methods 2. The reduced coordinates make the local competition explicit, but they do not remove the shared neighborhood structure inherited from the calibrated dictionary. The failure comes from the commitment rule: selection and orthogonalization occur too early, before locally shared evidence has been consolidated across neighboring directions. Once one direction is chosen, evidence that is physically shared across that neighborhood is forced into the reduced residual \(\rho_t\) rather than retained as a coherent local band.
 
-That same failure is already visible before the first refit. To expose that pre-refit geometry, we now return from the reduced surrogate \((z,A)\) to the grouped full standardized surface built in Supplementary Methods 2 and ask how the measured fingerprint aligns with the grouped dictionary before any support update has modified it. The ungated stage-0 grouped match is
+That same failure is already visible before the first refit. We therefore return from the reduced surrogate \((z,A)\) to the grouped full standardized surface built in Supplementary Methods 2 and ask how the measured fingerprint aligns with the grouped dictionary before any support update has modified it. This pre-update grouped match is
 
 $$
 g_0 = D^\top \tilde y,
@@ -318,13 +318,13 @@ $$
 
 When that diagnostic concentrates near one direction, the fingerprint is locally separable. When it spreads across neighboring groups, the fingerprint remains locally ordered but immediate commitment becomes unstable. The directional code is still present. What fails is the rule that one direction should be chosen before that shared neighborhood evidence has been pooled.
 
-Figure 3d-f stay on this same ungated grouped-match family. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on the same frozen surface. The relevant question is therefore no longer whether the code disappears under speech. It is how much of the grouped stage-0 evidence remains confined to the local neighborhood before any routed update has acted.
+Figure 3d-f stay on this same pre-update family. Panel d aggregates the normalized stage-0 group summary over increasing angular radii to report local separability before any residual correction. Panels e and f then compare exact first-choice success with neighborhood-tolerant success on the same frozen surface. The relevant question is no longer whether the code disappears under speech. It is how much of the grouped evidence remains confined to the local neighborhood before any routed update has acted.
 
 ## Supplementary Methods 4. Routed updates on the grouped full standardized surface
 
 Supplementary Methods 4 stays on the same calibrated local-overlap geometry introduced in Supplementary Methods 2. There that geometry was written in reduced form as \((z,A)\) to expose competition among nearby directions, and Supplementary Methods 3 used that reduced view to isolate how hard commitment fails. Here we return to the grouped full standardized surface \(D=[d_{e,m}]\) and the full fingerprint \(\tilde y\), because subtraction should act where the measured neighborhood itself is still visible rather than after that neighborhood has already been collapsed into a one-angle choice.
 
-The mathematical change from Supplementary Methods 3 is only the commitment rule. Hard OMP chose one direction and refit immediately on the reduced surrogate. The routed update first consolidates evidence across the measured neighborhood and subtracts only afterward. At the paper-facing level, the corresponding direction-level score is denoted \(s_t[e]\). Here that same score is developed from the grouped atom-level routing quantities that produce it.
+The mathematical change from Supplementary Methods 3 is only the commitment rule. Hard OMP chose one direction and refit immediately on the reduced surrogate. The routed update first consolidates evidence across the measured neighborhood and subtracts only afterward. The direction-level score tracked in the main text is denoted \(s_t[e]\), and here it is developed from the grouped atom-level routing quantities that produce it.
 
 Its columns are partitioned by direction \(e\in\{1,\dots,E\}\) and source-atom index \(m\in\{1,\dots,M\}\). The grouped coefficient state \(x_t=\{x_t^{(e,m)}\}\) now lives on \(D\) rather than on the direction-level matrices \(H\) or \(A\). The initialization is
 
@@ -459,9 +459,9 @@ $$
 m_i(r)=\sum_{e:\,|\theta_e-\theta_i|\le r} p_i[e].
 $$
 
-Figure 5a applies this same statistic to three aligned surfaces: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies the same row-normalized statistic to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays on the same neighborhood axis rather than changing quantities between chapters. The figure therefore asks one question across three stages: whether local support exposed before subtraction remains local after contraction and at final prediction.
+Figure 5a applies this same statistic to three aligned surfaces: the speech stage-0 grouped-match summary \(g_0^{(\mathrm{grp})}\), the first guided-step validation replay from Supplementary Methods 4, and the final guided clean confusion matrix after row normalization. Figure 5b then applies the same row-normalized statistic to the final clean confusion matrices of the guided solver, router-bypass ablation, OMP baseline, and dense routing, so the family comparison stays on the same neighborhood axis rather than changing quantities between chapters. Across all three stages, the quantity being tracked is the same: how much nearby-angle support remains local as the readout sharpens.
 
-Figure 5f then summarizes family-to-measured alignment on the same operative \(15^\circ\) neighborhood used throughout the locality bridge. Let
+Figure 5f gives the formal version of the same comparison. Let
 
 $$
 w_{15}^{(m)} = \frac{1}{E}\sum_{i=1}^{E} m_i^{(m)}(15^\circ)
@@ -619,9 +619,9 @@ These are descriptive statistics on the executed standardized fingerprints and g
 
 ## Supplementary Methods 6. Cross-object descriptor interpretation for Fig. 6
 
-Figure 6 should be read as recurrence across a tested set of structurally distinct passive-object archetypes rather than as a constitutive catalog of five nominal materials.
+Figure 6 examines recurrence across a tested set of structurally distinct passive-object archetypes rather than a constitutive catalog of five nominal materials.
 
-The five objects in Fig. 6 span visibly different structural layouts: flat plate, curved shell, corrugated hollow shell, orthotropic board, and thin consumer-device shell with cavity. In the manuscript, they are therefore interpreted at the level of coupled material-structure archetypes rather than nominal material name alone. The claim is deliberately conservative. The data show that local directional coding recurs across this tested archetype set. They do not establish a universal law for all passive objects.
+The five objects in Fig. 6 span visibly different structural layouts: flat plate, curved shell, corrugated hollow shell, orthotropic board, and thin consumer-device shell with cavity. The manuscript therefore interprets them at the level of coupled material-structure archetypes rather than nominal material name alone. The data show that local directional coding recurs across this tested archetype set.
 
 The descriptor axes used in Fig. 6a and the summary quantities used in Fig. 6d are response-level summaries derived from the executed measurements. For each object, the centered response matrix is the row-wise mean-centered magnitude matrix \(|H|-\mathrm{mean}_\theta(|H|)\). The correlation-decay width is the first angular separation at which the mean centered-\(|H|\) inter-angle correlation becomes non-positive. The effective rank is the entropy-equivalent rank of the same centered-\(|H|\) singular-value spectrum,
 
@@ -633,13 +633,13 @@ r_{\mathrm{eff}}
 p_j = \frac{\sigma_j^2}{\sum_\ell \sigma_\ell^2},
 $$
 
-where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The mean top-3 overlap burden used in Fig. 6d is the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis should therefore be read as descriptors of measured response geometry, not as intrinsic material constants.
+where \(\sigma_j\) are the singular values of the centered-\(|H|\) matrix. The descriptor used in Fig. 6d is the cross-object subspace overlap. Formally, it is the mean top-3 overlap burden: the material-wise average of pairwise mean squared canonical correlations between each object's top-3 centered-\(|H|\) subspace and those of the other objects. The compression and separability summaries in the bridge analysis therefore remain response-level descriptors of the measured geometry.
 
-That distinction sets the correct reading of the figure. The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
+The five objects differ in stiffness, damping, anisotropy, shell-versus-plate geometry, layering, and cavity structure, but Fig. 6 does not isolate any one of those factors as a controlled causal variable. Instead, it asks whether a common directional principle survives across structurally different passive substrates. The answer supported by the executed measurements is yes: each object retains structured angle-frequency fingerprints, a finite neighborhood of positive local ordering, and above-chance single-point readout under matched calibration.
 
-The same cross-object view also clarifies what orders performance. Fig. 6d should not be read as evidence that overall response energy determines usability. The paper-cup branch makes the opposite point: it carries the strongest overall \(|H|\) energy in this set, yet its neighboring directions overlap more broadly and its readout is worse than cardboard. Across this tested archetype set, local separability tracks directional usability more closely than energy alone.
+The same cross-object view also clarifies what orders performance. The paper-cup branch makes the contrast explicit: it carries the strongest overall \(|H|\) energy in this set, yet its neighboring directions overlap more broadly and its readout is worse than cardboard. Across this tested archetype set, local separability tracks directional usability more closely than energy alone.
 
-Finally, Fig. 6e shows that recurrence does not require one shared informative band. The selected contrast window shifts across objects, and the recovered band-limited directional codes take different spectral forms. What persists across the set is not one universal spectrum. It is one local directional principle expressed through different structural bands. That is the level at which the main-text cross-object claim should be read.
+Finally, Fig. 6e shows that recurrence does not require one shared informative band. The selected contrast window shifts across objects, and the recovered band-limited directional codes take different spectral forms. What persists across the set is not one universal spectrum. It is one local directional principle expressed through different structural bands.
 
 ## Supplementary Table 1. Cross-object archetype descriptors and executed response summaries
 

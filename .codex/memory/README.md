@@ -35,6 +35,8 @@ Memory files here may summarize branch state, but they must not create new polic
 - move session-derived detail into `archive/` rather than letting the current brief expand into a ledger
 - record only stable lessons, current branch priorities, and unresolved fronts that are still active
 - do not paste long session transcripts into this directory
+- write memory in positive branch-state language when possible: store the supported posture, active constraint, or stable failure mode directly instead of narrating anticipated objections
+- when scope needs tightening, narrow the stored lesson itself rather than phrasing the memory as `not X`, `should not be read as`, or other reviewer-prebuttal language
 
 ## Memory Update Review
 
@@ -78,6 +80,14 @@ When rewriting a chronology-heavy candidate, compress it into one of these forms
 - `open unresolved item`
 
 If the line cannot survive that compression without preserving the timeline, drop it.
+
+When rewriting a defensive or objection-shaped candidate, compress it into one of these forms:
+
+- `affirmative branch posture`
+- `scope-containing constraint`
+- `stable failure mode`
+
+If the line only works as an anticipated rebuttal, rewrite it or drop it.
 
 ## Supersession And Cleanup
 

@@ -42,6 +42,7 @@ Use these architecture defaults unless the packet explicitly declares a method-f
 - Keep one broader-implication trunk. Let branches and optional leaves descend from that trunk instead of competing with it.
 - If the trunk does not land, remove or weaken downstream branches rather than multiplying applications.
 - Promote broader significance conservatively. If evidence does not clearly earn the trunk, keep the round at `core-only` rather than writing a broader slogan.
+- Keep paper-facing prose affirmative even when narrowing scope. Narrow the supported claim itself rather than writing the sentence as a warning about how it should not be interpreted.
 - Write down a whole-paper spine map for any cross-section or whole-manuscript rewrite. Name the Results section jobs, the pivot sentence, the discovery cash-out section, and the discovery-versus-tool weight budget.
 - Do not narrate the paper in experiment time order.
 - Reserve the Discussion opening for worldview shift, not recap.
@@ -65,6 +66,7 @@ Use this ladder to decide whether a sentence belongs in the paper spine at all.
 - If a consequence outruns the second-layer discovery, demote it to a weaker branch or delete it.
 - If broader significance cannot survive conservative pressure, keep the round at `core-only`.
 - Do not let applications compete with the trunk for paper-level memory.
+- Do not let reviewer-prevention language compete with the trunk for paper-level memory either. Scope control belongs in a narrower positive claim, not in caveat-first or `not X` prose.
 
 The branch-local worked example for this ladder belongs only in `paper-submission/references/results-to-narrative.md`. Do not recreate a second worked example in contracts, reviewer docs, or closeout templates.
 
@@ -85,7 +87,7 @@ Treat these as complexity symptoms in paper-facing narrative:
 
 When those symptoms appear, repair in this order:
 
-1. rewrite the trunk in its most conservative truthful form around the paper's own discovery actor
+1. rewrite the trunk in its narrowest affirmative truthful form around the paper's own discovery actor
 2. demote any branch that outruns that trunk
 3. delete any leaf that costs more memory than it returns
 4. only then perform local sentence polish
@@ -210,11 +212,12 @@ Use these tests before promoting broader significance beyond `core-only`:
   - The sentence must still read as an inference from the paper's own discovery actor.
   - If the sentence only works as a use case, future application, or literature-tour rationale, it is not a second-layer discovery.
 - `Boundary-pressure test`
-  - Rewrite the broader implication in the most conservative truthful form.
+  - Rewrite the broader implication in the narrowest affirmative truthful form.
   - If the sentence still sounds worth saying in the Abstract tail, Introduction ending, or Discussion trunk, it may stay promoted.
   - If the sentence collapses into vague usefulness, demote it.
 - `Reviewer-routing survival test`
   - Ask whether the proposed promotion would survive first contact with an immediate-field reviewer.
+  - Make that judgment without rewriting the sentence as reviewer-facing caution or prebuttal.
   - If the statement depends on adjacent-field enthusiasm to seem reasonable, it is over-promoted.
 
 Use these tests before preserving an optional leaf:

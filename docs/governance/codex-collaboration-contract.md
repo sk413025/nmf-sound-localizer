@@ -20,6 +20,8 @@ Use this contract for Codex-native workflow, local skills, task routing, governa
 - Repo-local branch memory may summarize stable branch state, but it remains a derived layer. `.codex/memory/` must not create new policy, new canonical schemas, or a second governance vocabulary.
 - Do not let the checker over-model reviewer judgment. Executable gates should enforce low-ambiguity consistency and ownership boundaries, not infer paper-level scientific verdicts.
 - Keep paper-facing workflow claim-forward and reader-first. Closeout rigor belongs in routing, review, and verification, not in the paper's sentence tone.
+- Keep governance and memory language positive and compressive. State the supported rule, posture, or constraint directly rather than storing anticipated objections or reviewer-prebuttal phrasing as if they were policy.
+- When a governance or memory sentence feels too broad, narrow the rule or scope directly instead of rewriting it as `not X`, `should not be read as`, or other defensive explanation.
 
 ## Canonical homes
 

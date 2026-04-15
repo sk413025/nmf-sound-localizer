@@ -24,8 +24,8 @@ The retired nine-figure main-paper contract is historical only. Do not use it as
 | 1 | `paper/figures/fig01_paradigm-shift.jpg` | Direction-dependent structural filtering revealed by single-point laser vibrometry | a-e | `figures/conf/layout_spec.md` |
 | 2 | `paper/figures/fig02_svd-physical-dictionary.jpg` | Calibration fingerprints occupy a compact angle-ordered space | a-f | `figures/conf/layout_spec.md` |
 | 3 | `paper/figures/fig03_fingerprint-discriminability.jpg` | Speech preserves the local code while broadening nearby-angle overlap | a-f | `figures/conf/layout_spec.md` |
-| 4 | `paper/figures/fig04_solver-dynamics.jpg` | Preserving the broadened neighborhood keeps subtraction admissible | a-f | `figures/conf/layout_spec.md` |
-| 5 | `paper/figures/fig05_performance-structure.jpg` | Final prediction succeeds by preserving the measured neighborhood | a-g | `figures/conf/layout_spec.md` |
+| 4 | `paper/figures/fig04_solver-dynamics.jpg` | Preserving local support keeps subtraction admissible | a-f | `figures/conf/layout_spec.md` |
+| 5 | `paper/figures/fig05_performance-structure.jpg` | Final prediction succeeds by preserving local support | a-g | `figures/conf/layout_spec.md` |
 | 6 | `paper/figures/fig06_universality.jpg` | Matched calibration extends object-conditioned directional readout beyond the acrylic reference object | a-e | `figures/conf/layout_spec.md` |
 
 ## Canonical Model And Method Terms
